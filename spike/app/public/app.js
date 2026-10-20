@@ -420,10 +420,18 @@ function updateSelectionBar(rect) {
   hlBar.style.top = `${top}px`;
 }
 
+function ocrSelectionText(selection) {
+  const words = [...textLayerEl.querySelectorAll('.ocr-word')]
+    .filter((span) => selection.containsNode(span, true))
+    .map((span) => span.textContent.trim())
+    .filter(Boolean);
+  return words.length ? words.join(' ') : selection.toString().trim();
+}
+
 function onSelection() {
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed) return;
-  const text = selection.toString().trim();
+  const text = ocrSelectionText(selection);
   if (!text) return;
   const range = selection.getRangeAt(0);
   if (!textLayerEl.contains(range.commonAncestorContainer)) return;
@@ -545,6 +553,18 @@ hlNote.addEventListener('keydown', (event) => {
 });
 
 textLayerEl.addEventListener('mouseup', () => setTimeout(onSelection, 0));
+
+textLayerEl.addEventListener('copy', (event) => {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed) return;
+  const words = [...textLayerEl.querySelectorAll('.ocr-word')]
+    .filter((span) => selection.containsNode(span, true))
+    .map((span) => span.textContent.trim())
+    .filter(Boolean);
+  if (!words.length || !event.clipboardData) return;
+  event.clipboardData.setData('text/plain', words.join(' '));
+  event.preventDefault();
+});
 
 document.addEventListener('mousedown', (event) => {
   if (!hlBar.hidden && !hlBar.contains(event.target)) {
