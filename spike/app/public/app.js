@@ -1383,6 +1383,7 @@ async function openBook(book) {
       cMapUrl: '/vendor/pdfjs/cmaps/',
       cMapPacked: true,
       standardFontDataUrl: '/vendor/pdfjs/standard_fonts/',
+      disableFontFace: new URLSearchParams(window.location.search).get('fontpaths') === '1',
     });
     state.pdf = await task.promise;
     state.perf.pdfLoadMs = performance.now() - state.perf.openedAt;
