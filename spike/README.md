@@ -16,7 +16,7 @@ The scaffold can be built with a public-domain PDF. **Measurement does not start
 
 | Day | Work | Output |
 |---|---|---|
-| D1 | Repo, Compose (web + postgres + minio), upload, auth stub, seed | `docker compose up` works |
+| D1 | Repo, Compose (web + postgres), upload, auth stub, seed | `docker compose up` works |
 | D2 | PDF.js viewer + range requests; load 50 MB | First page renders |
 | D3 | Cold first page + memory measurement; highlight UI start | Metric row 1 |
 | D4 | Annotation `anchor jsonb` persisted; reload test | Highlight in place after reload |
@@ -54,7 +54,7 @@ node server.mjs
 
 Without `DATABASE_URL`, the server uses in-memory demo data (one sample work). Catalog, reader, search, annotations, and progress work; nothing persists.
 
-### Docker (Postgres + MinIO + Caddy)
+### Docker (Postgres + Caddy)
 
 ```bash
 cp .env.example .env        # change passwords
@@ -62,7 +62,7 @@ docker compose up --build
 # http://localhost:8080
 ```
 
-This mode runs the same app with `DATABASE_URL`, applies `db/schema.sql` and `db/seed.sql`, and stores the database in the `pgdata` volume. MinIO is provisioned but not used by the app yet.
+This mode runs the same app with `DATABASE_URL`, applies `db/schema.sql` and `db/seed.sql`, and stores the database in the `pgdata` volume. Object storage is not wired yet; the seed PDF is served from the image.
 
 ### Deep link
 

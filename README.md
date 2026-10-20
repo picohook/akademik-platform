@@ -20,7 +20,7 @@ node server.mjs
 # http://localhost:3000
 ```
 
-Full scaffold (Postgres + MinIO + Caddy):
+Full scaffold (Postgres + Caddy):
 
 ```bash
 cp .env.example .env
@@ -54,7 +54,7 @@ Out of scope for this repository: payments, invoicing, publisher procurement, ro
 docs/        specification and ADRs
 db/          PostgreSQL schema and demo seed
 infra/       Caddyfile
-docker-compose.yml  Postgres + MinIO + web + Caddy
+docker-compose.yml  Postgres + web + Caddy
 spike/       spike plan, measurements, fixtures
 spike/app/   working harness (Node + PDF.js)
 apps/        production web/API (after the spike)
