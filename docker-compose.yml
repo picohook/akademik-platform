@@ -30,6 +30,7 @@ services:
     volumes:
       - ./incoming:/app/incoming
       - ./data/uploads:/app/public/uploads
+      - ./data/ocr:/app/public/ocr
     depends_on:
       db:
         condition: service_healthy
