@@ -1039,6 +1039,11 @@ async function renderPage() {
     canvas: Math.round(canvasEnd - perfStart),
     text: Math.round(textEnd - canvasEnd),
   });
+  try {
+    page.cleanup();
+  } catch {
+    // Page cleanup is best-effort; a later getPage() will rehydrate it.
+  }
 }
 
 function renderHighlights() {
@@ -1411,6 +1416,7 @@ async function closeReader() {
   if (state.renderTask) {
     try { state.renderTask.cancel(); } catch { /* noop */ }
   }
+  const pdf = state.pdf;
   state.renderTask = null;
   state.pdf = null;
   state.book = null;
@@ -1421,9 +1427,19 @@ async function closeReader() {
   state.outline = [];
   state.searchRun += 1;
   state.activeQuery = '';
+  state.pageText.clear();
+  state.ocrCache.clear();
+  state.ocrManifest.clear();
+  state.annotations = [];
+  state.viewport = null;
+  canvas.width = 0;
+  canvas.height = 0;
   clearPending();
   textLayerEl.replaceChildren();
   highlightsEl.replaceChildren();
+  if (pdf) {
+    try { await pdf.destroy(); } catch { /* noop */ }
+  }
 }
 
 function updateSelectionBar(rect) {
