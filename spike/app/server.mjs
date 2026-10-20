@@ -86,6 +86,26 @@ function normalizeText(value) {
   return String(value || '').toLocaleLowerCase('tr').replace(/\s+/g, ' ').trim();
 }
 
+function parseAuthors(value) {
+  const items = Array.isArray(value) ? value : String(value || '').split(';');
+  return items.map((item) => {
+    if (item && typeof item === 'object') {
+      return {
+        family: String(item.family || item.last || '').trim(),
+        given: String(item.given || item.first || '').trim(),
+      };
+    }
+    const text = String(item || '').trim();
+    if (!text) return null;
+    if (text.includes(',')) {
+      const [family, ...given] = text.split(',');
+      return { family: family.trim(), given: given.join(',').trim() };
+    }
+    const parts = text.split(/\s+/);
+    return { family: parts.pop(), given: parts.join(' ') };
+  }).filter((author) => author && author.family);
+}
+
 async function readJson(req, limit = 1_000_000) {
   let size = 0;
   const chunks = [];
@@ -102,7 +122,7 @@ async function listBooks() {
   if (!pool) return demoBooks;
   return withTenant(async (client) => {
     const { rows } = await client.query(
-      `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects,
+      `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
               a.id as asset_id, a.storage_key, a.page_count
          from works w
@@ -120,7 +140,7 @@ async function getBook(id) {
   if (!pool) return findBook(id) || null;
   return withTenant(async (client) => {
     const { rows } = await client.query(
-      `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects,
+      `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
               a.id as asset_id, a.storage_key, a.page_count
          from works w
@@ -145,6 +165,9 @@ async function updateBook(id, body) {
     if (body.publisher !== undefined) book.publisher = body.publisher || null;
     if (body.year !== undefined) book.publication_year = Number(body.year);
     if (body.subjects !== undefined) book.subjects = Array.isArray(body.subjects) ? body.subjects : [];
+    if (body.authors !== undefined) {
+      book.metadata = { ...(book.metadata || {}), authors: parseAuthors(body.authors) };
+    }
     return book;
   }
 
@@ -176,6 +199,15 @@ async function updateBook(id, body) {
       );
     }
 
+    if (body.authors !== undefined) {
+      await client.query(
+        `update works
+            set metadata = jsonb_set(coalesce(metadata, '{}'::jsonb), '{authors}', $1::jsonb)
+          where id = $2 and tenant_id = $3`,
+        [JSON.stringify(parseAuthors(body.authors)), id, TENANT_ID],
+      );
+    }
+
     const editionSets = [];
     const editionValues = [];
     let editionIndex = 1;
@@ -199,7 +231,7 @@ async function updateBook(id, body) {
     }
 
     const { rows } = await client.query(
-      `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects,
+      `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
               a.id as asset_id, a.storage_key, a.page_count
          from works w
@@ -242,7 +274,7 @@ async function searchBooks(query) {  const q = String(query || '').trim();
   }
   return withTenant(async (client) => {
     const { rows } = await client.query(
-      `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects,
+      `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
               a.id as asset_id, a.storage_key, a.page_count,
               ts_rank(a.search_vector, websearch_to_tsquery('turkish', $2)) as rank
@@ -520,6 +552,7 @@ async function handleUpload(req) {
     .split(/[;,]/)
     .map((item) => item.trim())
     .filter(Boolean);
+  const authors = parseAuthors(fields.authors);
 
   if (!pool) {
     if (demoHashes.has(fileMeta.sha256)) {
@@ -541,6 +574,7 @@ async function handleUpload(req) {
       asset_id: assetId,
       storage_key: fileMeta.storageKey,
       page_count: pageCount,
+      metadata: { authors },
     };
     demoBooks.unshift(book);
     return book;
@@ -560,7 +594,7 @@ async function handleUpload(req) {
           `insert into works (tenant_id, content_type, title, subtitle, language, abstract, subjects, metadata)
            values ($1, 'monograph', $2, $3, $4, null, $5, $6::jsonb)
            returning id`,
-          [TENANT_ID, title, subtitle, language, subjects, JSON.stringify({ uploaded: true })],
+          [TENANT_ID, title, subtitle, language, subjects, JSON.stringify({ uploaded: true, authors })],
         );
         const edition = await client.query(
           `insert into editions (tenant_id, work_id, publisher, publication_year, license_note, rights_note)

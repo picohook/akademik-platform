@@ -70,8 +70,16 @@ This mode runs the same app with `DATABASE_URL`, applies `db/schema.sql` and `db
 
 `/?book=33333333-3333-3333-3333-333333333333` opens the sample book directly.
 
-### In-book search index
+### Citation tests
 
+```bash
+cd spike/app
+npm run test:citations
+```
+
+Covers six records × APA/MLA/Chicago/IEEE/BibTeX, including Turkish characters, editors, editions, DOI, and missing metadata.
+
+### In-book search index
 The reader searches the per-page text index. On an existing database, apply the migration and build the index once:
 
 ```bash

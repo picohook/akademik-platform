@@ -1,4 +1,5 @@
 import * as pdfjsLib from '/vendor/pdfjs/pdf.mjs';
+import { formatCitation } from '/citations.mjs';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.mjs';
 
@@ -76,6 +77,7 @@ const editLanguage = $('editLanguage');
 const editYear = $('editYear');
 const editPublisher = $('editPublisher');
 const editSubjects = $('editSubjects');
+const editAuthors = $('editAuthors');
 
 const uploadModal = $('uploadModal');
 const uploadForm = $('uploadForm');
@@ -86,7 +88,14 @@ const uploadLanguage = $('uploadLanguage');
 const uploadYear = $('uploadYear');
 const uploadPublisher = $('uploadPublisher');
 const uploadSubjects = $('uploadSubjects');
+const uploadAuthors = $('uploadAuthors');
 const uploadSubmitButton = $('submitUpload');
+
+const citeModal = $('citeModal');
+const citeStyle = $('citeStyle');
+const citePage = $('citePage');
+const citeOutput = $('citeOutput');
+const citeWarning = $('citeWarning');
 
 function toast(message) {
   toastEl.textContent = message;
@@ -190,6 +199,15 @@ function renderBooks() {
   empty.hidden = visible.length !== 0;
 }
 
+function authorsToText(authors) {
+  return (authors || []).map((author) => {
+    if (author && typeof author === 'object') {
+      return author.family ? `${author.family}${author.given ? `, ${author.given}` : ''}` : '';
+    }
+    return String(author || '');
+  }).filter(Boolean).join('; ');
+}
+
 function openEdit(book) {
   editId.value = book.id;
   editTitle.value = book.title || '';
@@ -198,12 +216,49 @@ function openEdit(book) {
   editYear.value = book.publication_year || '';
   editPublisher.value = book.publisher || '';
   editSubjects.value = (book.subjects || []).join('; ');
+  editAuthors.value = authorsToText(book.metadata?.authors);
   editModal.hidden = false;
   setTimeout(() => editTitle.focus(), 0);
 }
 
 function closeEdit() {
   editModal.hidden = true;
+}
+
+function openCite() {
+  if (!state.book) return;
+  citeStyle.value = 'apa';
+  citePage.value = '';
+  renderCitation();
+  citeModal.hidden = false;
+}
+
+function closeCite() {
+  citeModal.hidden = true;
+}
+
+function renderCitation() {
+  if (!state.book) return;
+  const { text, warnings } = formatCitation(state.book, citeStyle.value, citePage.value);
+  citeOutput.textContent = text;
+  citeWarning.hidden = warnings.length === 0;
+  citeWarning.textContent = warnings.join(' ');
+}
+
+async function copyCitation() {
+  const text = citeOutput.textContent || '';
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('Atıf kopyalandı');
+  } catch {
+    const area = document.createElement('textarea');
+    area.value = text;
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand('copy');
+    area.remove();
+    toast('Atıf kopyalandı');
+  }
 }
 
 async function saveEdit(event) {
@@ -216,6 +271,7 @@ async function saveEdit(event) {
     publisher: editPublisher.value.trim(),
     year: editYear.value ? Number(editYear.value) : null,
     subjects: editSubjects.value.split(/[;,]/).map((item) => item.trim()).filter(Boolean),
+    authors: editAuthors.value.trim(),
   };
   if (!payload.title) {
     toast('Başlık boş olamaz');
@@ -288,6 +344,7 @@ async function submitUpload(event) {
   if (uploadYear.value) data.append('year', uploadYear.value);
   if (uploadPublisher.value.trim()) data.append('publisher', uploadPublisher.value.trim());
   if (uploadSubjects.value.trim()) data.append('subjects', uploadSubjects.value.trim());
+  if (uploadAuthors.value.trim()) data.append('authors', uploadAuthors.value.trim());
 
   uploadSubmitButton.disabled = true;
   uploadSubmitButton.textContent = 'Yükleniyor…';
@@ -1353,6 +1410,10 @@ document.addEventListener('keydown', (event) => {
   const typing = target
     && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable);
 
+  if (!citeModal.hidden) {
+    if (event.key === 'Escape') closeCite();
+    return;
+  }
   if (!uploadModal.hidden) {
     if (event.key === 'Escape') closeUpload();
     return;
@@ -1463,6 +1524,15 @@ pageInput.addEventListener('keydown', (event) => {
 });
 pageInput.addEventListener('change', () => goToPage(pageInput.value));
 bookmarkBtn.addEventListener('click', toggleBookmark);
+$('citeBook').addEventListener('click', openCite);
+$('closeCite').addEventListener('click', closeCite);
+$('closeCite2').addEventListener('click', closeCite);
+$('copyCite').addEventListener('click', copyCitation);
+citeStyle.addEventListener('change', renderCitation);
+citePage.addEventListener('input', renderCitation);
+citeModal.addEventListener('click', (event) => {
+  if (event.target === citeModal) closeCite();
+});
 exportMd.addEventListener('click', () => exportAnnotations('md'));
 exportJson.addEventListener('click', () => exportAnnotations('json'));
 $('prevPage').addEventListener('click', () => changePage(-1));

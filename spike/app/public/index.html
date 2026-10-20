@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=13" />
+  <link rel="stylesheet" href="/styles.css?v=15" />
 </head>
 <body>
   <header class="topbar">
@@ -49,6 +49,7 @@
         <input type="hidden" id="editId" />
         <label>Başlık<input id="editTitle" required maxlength="300" /></label>
         <label>Alt başlık<input id="editSubtitle" maxlength="300" /></label>
+        <label>Yazarlar (; ile ayırın; "Soyad, Ad")<input id="editAuthors" placeholder="Yılmaz, Ayşe; Kaya, Mehmet" /></label>
         <div class="form-row">
           <label>Dil
             <select id="editLanguage">
@@ -78,6 +79,7 @@
         <label>PDF dosyası<input id="uploadFile" type="file" accept="application/pdf,.pdf" required /></label>
         <label>Başlık (boşsa dosya adı)<input id="uploadTitle" maxlength="300" /></label>
         <label>Alt başlık<input id="uploadSubtitle" maxlength="300" /></label>
+        <label>Yazarlar (; ile ayırın; "Soyad, Ad")<input id="uploadAuthors" placeholder="Yılmaz, Ayşe; Kaya, Mehmet" /></label>
         <div class="form-row">
           <label>Dil
             <select id="uploadLanguage">
@@ -94,6 +96,31 @@
           <button class="primary" id="submitUpload" type="submit">Yükle</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div class="modal" id="citeModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="citeHeading">
+      <div class="modal-head">
+        <strong id="citeHeading">Atıf</strong>
+        <button class="icon-btn" id="closeCite" type="button" aria-label="Kapat">✕</button>
+      </div>
+      <label>Stil
+        <select id="citeStyle">
+          <option value="apa">APA 7</option>
+          <option value="mla">MLA 9</option>
+          <option value="chicago">Chicago 17</option>
+          <option value="ieee">IEEE</option>
+          <option value="bibtex">BibTeX</option>
+        </select>
+      </label>
+      <label>Sayfa (opsiyonel, örn. 42 veya 42-45)<input id="citePage" maxlength="30" /></label>
+      <div class="cite-warning" id="citeWarning" hidden></div>
+      <pre class="cite-output" id="citeOutput"></pre>
+      <div class="modal-actions">
+        <button class="ghost-btn" id="copyCite" type="button">Kopyala</button>
+        <button class="primary" id="closeCite2" type="button">Kapat</button>
+      </div>
     </div>
   </div>
 
@@ -114,6 +141,7 @@
         <span class="zoom" id="zoomLabel">100%</span>
         <button class="icon-btn" id="zoomIn" aria-label="Yakınlaştır">+</button>
         <button class="ghost-btn" id="bookmarkBtn" type="button" title="Yer imi" aria-label="Yer imi">☆</button>
+        <button class="ghost-btn" id="citeBook" type="button" title="Atıf">Atıf</button>
         <button class="ghost-btn" id="toggleNotes">Notlar <span id="noteCount">0</span></button>
       </div>
     </div>
@@ -183,6 +211,6 @@
 
   <div class="toast" id="toast" hidden></div>
 
-  <script type="module" src="/app.js?v=20"></script>
+  <script type="module" src="/app.js?v=22"></script>
 </body>
 </html>

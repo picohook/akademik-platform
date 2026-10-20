@@ -6,7 +6,8 @@
   "description": "Spike harness for the academic e-book platform (PDF.js + Postgres FTS + anchor model)",
   "scripts": {
     "start": "node server.mjs",
-    "dev": "node --watch server.mjs"
+    "dev": "node --watch server.mjs",
+    "test:citations": "node test/citations.test.mjs"
   },
   "engines": {
     "node": ">=22"
