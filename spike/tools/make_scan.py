@@ -7,11 +7,13 @@ hOCR and highlight-alignment paths before a real scanned book is available.
 
 Usage:
   python make_scan.py --pages 20 --dpi 200 --out ../fixtures/synthetic-scan.pdf
+  python make_scan.py --pages 3 --dpi 250 --images-dir ../fixtures/scan-pages --truth ../fixtures/scan-truth.json
 """
 from __future__ import annotations
 
 import argparse
 import io
+import json
 import random
 import textwrap
 from pathlib import Path
@@ -92,7 +94,7 @@ def wrap(draw: ImageDraw.ImageDraw, text: str, fnt: ImageFont.FreeTypeFont, widt
     return lines
 
 
-def make_page(index: int, total: int, dpi: int) -> Image.Image:
+def make_page(index: int, total: int, dpi: int) -> tuple[Image.Image, str]:
     width = int(8.27 * dpi)
     height = int(11.69 * dpi)
     margin = int(0.9 * dpi)
@@ -113,6 +115,7 @@ def make_page(index: int, total: int, dpi: int) -> Image.Image:
     y += int(0.18 * dpi)
 
     section, paragraph = SECTIONS[index % len(SECTIONS)]
+    page_text_parts = [TITLE, SUBTITLE, section, paragraph]
     draw.text((margin, y), section, font=section_font, fill=(20, 20, 20))
     y += int(0.24 * dpi)
 
@@ -122,6 +125,7 @@ def make_page(index: int, total: int, dpi: int) -> Image.Image:
 
     if index == 0:
         y += int(0.12 * dpi)
+        page_text_parts.extend(["Abstract", ABSTRACT_EN])
         draw.text((margin, y), "Abstract", font=section_font, fill=(20, 20, 20))
         y += int(0.22 * dpi)
         for line in wrap(draw, ABSTRACT_EN, body_font, width - 2 * margin):
@@ -165,7 +169,7 @@ def make_page(index: int, total: int, dpi: int) -> Image.Image:
     buffer = io.BytesIO()
     image.save(buffer, format="JPEG", quality=82, optimize=True)
     buffer.seek(0)
-    return Image.open(buffer).convert("RGB")
+    return Image.open(buffer).convert("RGB"), "\n".join(page_text_parts)
 
 
 def main() -> None:
@@ -173,10 +177,27 @@ def main() -> None:
     parser.add_argument("--pages", type=int, default=20)
     parser.add_argument("--dpi", type=int, default=200)
     parser.add_argument("--out", type=Path, default=Path("../fixtures/synthetic-scan.pdf"))
+    parser.add_argument("--images-dir", type=Path, default=None)
+    parser.add_argument("--truth", type=Path, default=None)
     args = parser.parse_args()
 
     random.seed(42)
-    pages = [make_page(index, args.pages, args.dpi) for index in range(args.pages)]
+    pages = []
+    truth = []
+    for index in range(args.pages):
+        page, text = make_page(index, args.pages, args.dpi)
+        pages.append(page)
+        truth.append({"page": index + 1, "text": text})
+
+    if args.images_dir:
+        args.images_dir.mkdir(parents=True, exist_ok=True)
+        for index, page in enumerate(pages, start=1):
+            page.save(args.images_dir / f"page-{index:03d}.jpg", format="JPEG", quality=92)
+
+    if args.truth:
+        args.truth.parent.mkdir(parents=True, exist_ok=True)
+        args.truth.write_text(json.dumps(truth, ensure_ascii=False, indent=2), encoding="utf-8")
+
     args.out.parent.mkdir(parents=True, exist_ok=True)
     pages[0].save(
         args.out,

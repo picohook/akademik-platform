@@ -1,0 +1,12 @@
+{
+  "name": "akademik-ocr-spike",
+  "private": true,
+  "type": "module",
+  "description": "OCR spike: tesseract.js on synthetic scan pages",
+  "scripts": {
+    "start": "node ocr.mjs"
+  },
+  "dependencies": {
+    "tesseract.js": "^6.0.0"
+  }
+}
