@@ -34,6 +34,7 @@ pnpm-debug.log*
 # Test fixtures (large binaries are added explicitly)
 spike/fixtures/*
 !spike/fixtures/.gitkeep
+!spike/fixtures/README.md
 
 # Local ingest drop folder and uploaded PDFs
 incoming/

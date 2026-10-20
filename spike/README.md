@@ -12,6 +12,8 @@ Full specification: [`../docs/PLATFORM-SPEC.md`](../docs/PLATFORM-SPEC.md) — s
 
 The scaffold can be built with a public-domain PDF. **Measurement does not start until the inputs above exist.**
 
+Until a real scanned book arrives, `spike/tools/make_scan.py` generates an image-only synthetic scan for OCR/hOCR/highlight-alignment correctness. It is not a 300/500 MB performance fixture.
+
 ## Plan
 
 | Day | Work | Output |
