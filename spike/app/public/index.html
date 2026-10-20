@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=23" />
+  <link rel="stylesheet" href="/styles.css?v=24" />
 </head>
 <body>
   <div class="login-screen" id="loginScreen" hidden>
@@ -178,6 +178,7 @@
         <button class="ghost-btn" id="rotateBtn" type="button" title="Döndür">⟳</button>
         <button class="ghost-btn" id="fullscreenBtn" type="button" title="Tam ekran">⛶</button>
         <button class="ghost-btn" id="themeBtn" type="button" title="Tema">☀</button>
+        <button class="ghost-btn" id="spreadBtn" type="button" title="Çift sayfa" aria-pressed="false">▥</button>
         <button class="icon-btn" id="zoomOut" aria-label="Uzaklaştır">−</button>
         <span class="zoom" id="zoomLabel">100%</span>
         <button class="icon-btn" id="zoomIn" aria-label="Yakınlaştır">+</button>
@@ -227,6 +228,11 @@
           <canvas id="canvas"></canvas>
           <div class="textLayer" id="textLayer"></div>
           <div class="highlights" id="highlights"></div>
+        </div>
+        <div class="page-wrap" id="pageWrap2" hidden>
+          <canvas id="canvas2"></canvas>
+          <div class="textLayer" id="textLayer2"></div>
+          <div class="highlights" id="highlights2"></div>
         </div>
         <button class="nav-btn" id="nextPage" aria-label="Sonraki sayfa">›</button>
         <div class="page-loading" id="pageLoading" hidden>
@@ -285,6 +291,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=42"></script>
+  <script type="module" src="/app.js?v=43"></script>
 </body>
 </html>

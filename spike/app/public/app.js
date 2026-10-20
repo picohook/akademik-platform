@@ -38,6 +38,9 @@ const state = {
   initialFit: true,
   rotation: 0,
   theme: 'light',
+  twoPage: false,
+  secondPage: null,
+  secondViewport: null,
   viewport: null,
   annotations: [],
   noteQuery: '',
@@ -54,6 +57,7 @@ const state = {
   ocrCache: new Map(),
   ocrManifest: new Map(),
   renderTask: null,
+  secondRenderTask: null,
   pending: null,
 };
 
@@ -83,10 +87,14 @@ const passwordError = $('passwordError');
 
 const reader = $('reader');
 const canvas = $('canvas');
+const canvas2 = $('canvas2');
 const pageLoading = $('pageLoading');
 const pageWrap = $('pageWrap');
+const pageWrap2 = $('pageWrap2');
 const textLayerEl = $('textLayer');
+const textLayer2 = $('textLayer2');
 const highlightsEl = $('highlights');
+const highlights2 = $('highlights2');
 const pageLabel = $('pageLabel');
 const readerTitle = $('readerTitle');
 const readerMeta = $('readerMeta');
@@ -107,6 +115,7 @@ const pageInput = $('pageInput');
 const pageTotal = $('pageTotal');
 const fitToggle = $('fitToggle');
 const themeBtn = $('themeBtn');
+const spreadBtn = $('spreadBtn');
 const bookmarkBtn = $('bookmarkBtn');
 const tabToc = $('tabToc');
 const tabSearch = $('tabSearch');
@@ -585,15 +594,15 @@ function updateZoomLabel() {
   zoomLabel.textContent = `${Math.round(state.scale * 100)}%`;
 }
 
-function fitScale(baseViewport) {
+function fitScale(baseViewport, columns = 1) {
   const area = document.querySelector('.page-area');
-  const available = Math.max(320, area.clientWidth - 120);
+  const available = Math.max(320, (area.clientWidth - 120 - (columns - 1) * 10) / columns);
   return Math.min(2, Math.max(0.6, available / baseViewport.width));
 }
 
-function fitPageScale(baseViewport) {
+function fitPageScale(baseViewport, columns = 1) {
   const area = document.querySelector('.page-area');
-  const width = Math.max(240, area.clientWidth - 120);
+  const width = Math.max(240, (area.clientWidth - 120 - (columns - 1) * 10) / columns);
   const height = Math.max(240, area.clientHeight - 80);
   return Math.min(2, Math.max(0.5, Math.min(width / baseViewport.width, height / baseViewport.height)));
 }
@@ -771,7 +780,9 @@ function updatePageUi() {
   pageInput.max = String(state.numPages || 1);
   pageInput.value = String(state.page || 1);
   pageTotal.textContent = `/ ${state.numPages || 1}`;
-  pageLabel.textContent = `${state.page} / ${state.numPages}`;
+  pageLabel.textContent = state.twoPage && state.secondPage
+    ? `${state.page}-${state.secondPage} / ${state.numPages}`
+    : `${state.page} / ${state.numPages}`;
   updateBookmarkUi();
 }
 
@@ -1039,11 +1050,11 @@ async function runSearch(rawQuery) {
   }
 }
 
-function applySearchHighlight() {
-  textLayerEl.querySelectorAll('.search-hit').forEach((span) => span.classList.remove('search-hit'));
+function applySearchHighlight(container = textLayerEl) {
+  container.querySelectorAll('.search-hit').forEach((span) => span.classList.remove('search-hit'));
   const query = normalizeSearch(state.activeQuery);
   if (!query) return;
-  textLayerEl.querySelectorAll('span').forEach((span) => {
+  container.querySelectorAll('span').forEach((span) => {
     if (normalizeSearch(span.textContent).includes(query)) span.classList.add('search-hit');
   });
 }
@@ -1064,14 +1075,14 @@ async function getOcrPages(assetId) {
   return pages;
 }
 
-async function renderOcrLayer(viewport) {
+async function renderOcrLayer(viewport, pageNumber = state.page, container = textLayerEl) {
   const assetId = state.book?.asset_id;
   if (!assetId) return false;
 
   const ocrPages = await getOcrPages(assetId);
-  if (!ocrPages.has(state.page)) return false;
+  if (!ocrPages.has(pageNumber)) return false;
 
-  const page = String(state.page).padStart(3, '0');
+  const page = String(pageNumber).padStart(3, '0');
   const key = `${assetId}:${page}`;
   let hocr = state.ocrCache.get(key);
   if (hocr === undefined) {
@@ -1130,7 +1141,7 @@ async function renderOcrLayer(viewport) {
     fragment.appendChild(document.createTextNode(' '));
   }
   if (!fragment.childNodes.length) return false;
-  textLayerEl.appendChild(fragment);
+  container.appendChild(fragment);
   return true;
 }
 
@@ -1198,65 +1209,45 @@ async function stressPages(count = 20) {
   return result;
 }
 
-async function renderPage() {
-  if (!state.pdf) return;
-  const perfStart = performance.now();
-  const firstRender = !state.perf || state.perf.firstPageMs === null;
-  pageLoading.hidden = !firstRender;
-  if (state.renderTask) {
-    try { state.renderTask.cancel(); } catch { /* noop */ }
-    state.renderTask = null;
-  }
-  const page = await state.pdf.getPage(state.page);
-  const base = page.getViewport({ scale: 1 });
-  if (!state.scale || state.scale <= 0) {
-    const fitted = state.fitMode === 'page' ? fitPageScale(base) : fitScale(base);
-    state.scale = state.initialFit ? Math.min(1.3, fitted) : fitted;
-    state.initialFit = false;
-  }
-  const rotation = (page.rotate + state.rotation) % 360;
-  const viewport = page.getViewport({ scale: state.scale, rotation });
-  state.viewport = viewport;
-
+async function renderPagePane(pageNumber, pane, scale, rotation, isPrimary) {
+  const page = await state.pdf.getPage(pageNumber);
+  const viewport = page.getViewport({ scale, rotation });
   const outputScale = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.width = Math.floor(viewport.width * outputScale);
-  canvas.height = Math.floor(viewport.height * outputScale);
-  canvas.style.width = `${Math.floor(viewport.width)}px`;
-  canvas.style.height = `${Math.floor(viewport.height)}px`;
-  pageWrap.style.width = `${Math.floor(viewport.width)}px`;
-  pageWrap.style.height = `${Math.floor(viewport.height)}px`;
-  textLayerEl.style.width = `${Math.floor(viewport.width)}px`;
-  textLayerEl.style.height = `${Math.floor(viewport.height)}px`;
-  textLayerEl.style.setProperty('--scale-factor', String(viewport.scale));
-  textLayerEl.style.setProperty('--total-scale-factor', String(viewport.scale));
+  pane.canvas.width = Math.floor(viewport.width * outputScale);
+  pane.canvas.height = Math.floor(viewport.height * outputScale);
+  pane.canvas.style.width = `${Math.floor(viewport.width)}px`;
+  pane.canvas.style.height = `${Math.floor(viewport.height)}px`;
+  pane.pageWrap.style.width = `${Math.floor(viewport.width)}px`;
+  pane.pageWrap.style.height = `${Math.floor(viewport.height)}px`;
+  pane.textLayer.style.width = `${Math.floor(viewport.width)}px`;
+  pane.textLayer.style.height = `${Math.floor(viewport.height)}px`;
+  pane.textLayer.style.setProperty('--scale-factor', String(viewport.scale));
+  pane.textLayer.style.setProperty('--total-scale-factor', String(viewport.scale));
 
-  const context = canvas.getContext('2d', { alpha: false });
+  const context = pane.canvas.getContext('2d', { alpha: false });
   const task = page.render({
     canvasContext: context,
     viewport,
     transform: outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null,
   });
-  state.renderTask = task;
+  if (isPrimary) state.renderTask = task;
+  else state.secondRenderTask = task;
   try {
     await task.promise;
   } catch (error) {
-    if (error?.name === 'RenderingCancelledException') {
-      pageLoading.hidden = true;
-      return;
-    }
-    pageLoading.hidden = true;
+    if (error?.name === 'RenderingCancelledException') return null;
     throw error;
   }
   const canvasEnd = performance.now();
 
-  textLayerEl.replaceChildren();
-  const usedOcr = await renderOcrLayer(viewport);
+  pane.textLayer.replaceChildren();
+  const usedOcr = await renderOcrLayer(viewport, pageNumber, pane.textLayer);
   if (!usedOcr) {
     try {
       const textContent = await page.getTextContent();
       const textLayer = new pdfjsLib.TextLayer({
         textContentSource: textContent,
-        container: textLayerEl,
+        container: pane.textLayer,
         viewport,
       });
       await textLayer.render();
@@ -1264,8 +1255,55 @@ async function renderPage() {
       console.warn('text layer failed', error);
     }
   }
-  applySearchHighlight();
-  const textEnd = performance.now();
+  applySearchHighlight(pane.textLayer);
+  return { page, viewport, canvasEnd, textEnd: performance.now() };
+}
+
+async function renderPage() {
+  if (!state.pdf) return;
+  const perfStart = performance.now();
+  const firstRender = !state.perf || state.perf.firstPageMs === null;
+  pageLoading.hidden = !firstRender;
+  for (const task of [state.renderTask, state.secondRenderTask]) {
+    if (task) {
+      try { task.cancel(); } catch { /* noop */ }
+    }
+  }
+  state.renderTask = null;
+  state.secondRenderTask = null;
+
+  const columns = state.twoPage && state.page < state.numPages ? 2 : 1;
+  const firstPage = await state.pdf.getPage(state.page);
+  const base = firstPage.getViewport({ scale: 1 });
+  if (!state.scale || state.scale <= 0) {
+    const fitted = state.fitMode === 'page' ? fitPageScale(base, columns) : fitScale(base, columns);
+    state.scale = state.initialFit ? Math.min(1.3, fitted) : fitted;
+    state.initialFit = false;
+  }
+  const rotation = (firstPage.rotate + state.rotation) % 360;
+
+  state.secondPage = state.twoPage && state.page < state.numPages ? state.page + 1 : null;
+  pageWrap2.hidden = !state.secondPage;
+  if (!state.secondPage) {
+    textLayer2.replaceChildren();
+    highlights2.replaceChildren();
+  }
+
+  const primaryPane = { pageWrap, canvas, textLayer: textLayerEl, highlights: highlightsEl };
+  const secondaryPane = { pageWrap: pageWrap2, canvas: canvas2, textLayer: textLayer2, highlights: highlights2 };
+  const primary = await renderPagePane(state.page, primaryPane, state.scale, rotation, true);
+  if (!primary) {
+    pageLoading.hidden = true;
+    return;
+  }
+  state.viewport = primary.viewport;
+  let secondary = null;
+  if (state.secondPage) {
+    secondary = await renderPagePane(state.secondPage, secondaryPane, state.scale, rotation, false);
+    state.secondViewport = secondary?.viewport || null;
+  } else {
+    state.secondViewport = null;
+  }
 
   updatePageUi();
   updateZoomLabel();
@@ -1275,23 +1313,20 @@ async function renderPage() {
   saveProgress();
   updateUrl();
   pageLoading.hidden = true;
-  recordRender(textEnd - perfStart, {
-    canvas: Math.round(canvasEnd - perfStart),
-    text: Math.round(textEnd - canvasEnd),
+  recordRender(primary.textEnd - perfStart, {
+    canvas: Math.round(primary.canvasEnd - perfStart),
+    text: Math.round(primary.textEnd - primary.canvasEnd),
   });
-  try {
-    page.cleanup();
-  } catch {
-    // Page cleanup is best-effort; a later getPage() will rehydrate it.
+  try { firstPage.cleanup(); } catch { /* noop */ }
+  if (secondary) {
+    try { secondary.page.cleanup(); } catch { /* noop */ }
   }
 }
 
-function renderHighlights() {
-  highlightsEl.replaceChildren();
-  if (!state.viewport) return;
-  const scale = state.viewport.scale;
+function renderHighlightsFor(pageNumber, scale, container) {
+  container.replaceChildren();
   state.annotations
-    .filter((annotation) => Number(annotation.anchor?.page) === state.page)
+    .filter((annotation) => Number(annotation.anchor?.page) === pageNumber)
     .forEach((annotation) => {
       const rects = Array.isArray(annotation.anchor?.rects) ? annotation.anchor.rects : [];
       rects.forEach((rect) => {
@@ -1301,9 +1336,16 @@ function renderHighlights() {
         box.style.top = `${rect[1] * scale}px`;
         box.style.width = `${rect[2] * scale}px`;
         box.style.height = `${rect[3] * scale}px`;
-        highlightsEl.appendChild(box);
+        container.appendChild(box);
       });
     });
+}
+
+function renderHighlights() {
+  if (state.viewport) renderHighlightsFor(state.page, state.viewport.scale, highlightsEl);
+  if (state.secondPage && state.secondViewport) {
+    renderHighlightsFor(state.secondPage, state.secondViewport.scale, highlights2);
+  }
 }
 
 function mergeRects(raw) {
@@ -1330,8 +1372,8 @@ function mergeRects(raw) {
   return lines.map((line) => [line.x, line.y, line.w, line.h]);
 }
 
-function clearPending() {
-  highlightsEl.querySelectorAll('.pending').forEach((element) => element.remove());
+function clearPending(container = highlightsEl) {
+  container.querySelectorAll('.pending').forEach((element) => element.remove());
 }
 
 function setHighlightColor(color) {
@@ -1341,10 +1383,9 @@ function setHighlightColor(color) {
   });
 }
 
-function renderPending(rects) {
-  clearPending();
-  if (!state.viewport) return;
-  const scale = state.viewport.scale;
+function renderPending(rects, container = highlightsEl, scale = state.viewport?.scale || 1) {
+  clearPending(highlightsEl);
+  clearPending(highlights2);
   rects.forEach((rect) => {
     const box = document.createElement('div');
     box.className = `hl ${state.highlightColor} pending`;
@@ -1352,7 +1393,7 @@ function renderPending(rects) {
     box.style.top = `${rect[1] * scale}px`;
     box.style.width = `${rect[2] * scale}px`;
     box.style.height = `${rect[3] * scale}px`;
-    highlightsEl.appendChild(box);
+    container.appendChild(box);
   });
 }
 
@@ -1626,6 +1667,14 @@ async function openBook(book) {
   state.fitMode = 'width';
   state.initialFit = true;
   state.rotation = 0;
+  state.twoPage = false;
+  state.secondPage = null;
+  state.secondViewport = null;
+  pageWrap2.hidden = true;
+  spreadBtn.setAttribute('aria-pressed', 'false');
+  spreadBtn.classList.remove('active');
+  textLayer2.replaceChildren();
+  highlights2.replaceChildren();
   updateViewControls();
   let savedTheme = 'light';
   try { savedTheme = localStorage.getItem('readerTheme') || 'light'; } catch { /* noop */ }
@@ -1711,10 +1760,16 @@ async function closeReader() {
   if (state.renderTask) {
     try { state.renderTask.cancel(); } catch { /* noop */ }
   }
+  if (state.secondRenderTask) {
+    try { state.secondRenderTask.cancel(); } catch { /* noop */ }
+  }
   const pdf = state.pdf;
   state.renderTask = null;
+  state.secondRenderTask = null;
   state.pdf = null;
   state.book = null;
+  state.secondPage = null;
+  state.secondViewport = null;
   reader.hidden = true;
   document.body.style.overflow = '';
   hlBar.hidden = true;
@@ -1733,9 +1788,15 @@ async function closeReader() {
   thumbGrid.dataset.book = '';
   canvas.width = 0;
   canvas.height = 0;
-  clearPending();
+  canvas2.width = 0;
+  canvas2.height = 0;
+  pageWrap2.hidden = true;
+  clearPending(highlightsEl);
+  clearPending(highlights2);
   textLayerEl.replaceChildren();
+  textLayer2.replaceChildren();
   highlightsEl.replaceChildren();
+  highlights2.replaceChildren();
   if (pdf) {
     try { await pdf.destroy(); } catch { /* noop */ }
   }
@@ -1749,30 +1810,32 @@ function updateSelectionBar(rect) {
   hlBar.style.top = `${top}px`;
 }
 
-function selectedOcrSpans(selection) {
+function selectedOcrSpans(selection, container = textLayerEl) {
   const range = selection.rangeCount ? selection.getRangeAt(0) : null;
-  return [...textLayerEl.querySelectorAll('.ocr-word')]
+  return [...container.querySelectorAll('.ocr-word')]
     .filter((span) => (range ? range.intersectsNode(span) : selection.containsNode(span, true)));
 }
 
-function ocrSelectionText(selection) {
-  const words = selectedOcrSpans(selection)
+function ocrSelectionText(selection, container = textLayerEl) {
+  const words = selectedOcrSpans(selection, container)
     .map((span) => span.textContent.trim())
     .filter(Boolean);
   return words.length ? words.join(' ') : selection.toString().trim();
 }
 
-function buildSelection(selection) {
+function buildSelection(selection, pane = {}) {
   if (!state.book || !selection || selection.isCollapsed || !selection.rangeCount) return null;
+  const textLayer = pane.textLayer || textLayerEl;
+  const pageWrapEl = pane.pageWrap || pageWrap;
   const range = selection.getRangeAt(0);
-  if (!textLayerEl.contains(range.commonAncestorContainer)) return null;
+  if (!textLayer.contains(range.commonAncestorContainer)) return null;
 
-  const ocrSpans = selectedOcrSpans(selection);
-  const text = ocrSelectionText(selection);
+  const ocrSpans = selectedOcrSpans(selection, textLayer);
+  const text = ocrSelectionText(selection, textLayer);
   if (!text) return null;
 
-  const pageRect = pageWrap.getBoundingClientRect();
-  const scale = state.viewport?.scale || 1;
+  const pageRect = pageWrapEl.getBoundingClientRect();
+  const scale = pane.viewport?.scale || state.viewport?.scale || 1;
   const toPageRect = (rect) => [
     Math.max(0, (rect.left - pageRect.left) / scale),
     Math.max(0, (rect.top - pageRect.top) / scale),
@@ -1782,38 +1845,34 @@ function buildSelection(selection) {
 
   let rects;
   if (ocrSpans.length) {
-    // Highlight the full OCR word boxes, not the partial browser range, so the
-    // saved text and the yellow boxes always cover the same words.
     rects = ocrSpans
       .map((span) => toPageRect(span.getBoundingClientRect()))
       .filter((rect) => rect[2] > 1 && rect[3] > 1);
   } else {
-    // PDF.js returns a rectangle per glyph/fragment; merge them per line.
     rects = mergeRects([...range.getClientRects()].map(toPageRect));
   }
-
   if (!rects.length) return null;
 
   const last = ocrSpans.length
     ? ocrSpans[ocrSpans.length - 1].getBoundingClientRect()
     : (range.getClientRects()[range.getClientRects().length - 1] || pageRect);
 
-  return { text, ocrSpans, range, rects, last };
+  return { text, ocrSpans, range, rects, last, pane };
 }
 
-function onSelection() {
+function onSelection(pane = {}) {
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed) return;
-  const built = buildSelection(selection);
+  const built = buildSelection(selection, pane);
   if (!built) return;
 
-  renderPending(built.rects);
+  renderPending(built.rects, pane.highlights || highlightsEl, pane.viewport?.scale || state.viewport?.scale || 1);
   state.pending = {
     text: built.text,
     anchor: {
       asset_version_id: state.book.asset_id,
       type: 'pdf',
-      page: state.page,
+      page: pane.pageNumber || state.page,
       rects: built.rects,
       text_quote: { prefix: '', exact: built.text, suffix: '' },
       text_position: { start: 0, end: built.text.length },
@@ -1823,6 +1882,34 @@ function onSelection() {
   updateSelectionBar(built.last);
   hlBar.hidden = false;
   hlNote.focus();
+}
+
+function primaryPaneRef() {
+  return {
+    pageWrap,
+    canvas,
+    textLayer: textLayerEl,
+    highlights: highlightsEl,
+    pageNumber: state.page,
+    viewport: state.viewport,
+  };
+}
+
+function secondaryPaneRef() {
+  return {
+    pageWrap: pageWrap2,
+    canvas: canvas2,
+    textLayer: textLayer2,
+    highlights: highlights2,
+    pageNumber: state.secondPage,
+    viewport: state.secondViewport,
+  };
+}
+
+function paneForNode(node) {
+  if (!node) return primaryPaneRef();
+  if (textLayer2.contains(node)) return secondaryPaneRef();
+  return primaryPaneRef();
 }
 
 async function saveHighlight() {
@@ -1870,7 +1957,7 @@ async function deleteAnnotation(id, options = {}) {
 }
 
 function changePage(delta) {
-  goToPage(state.page + delta);
+  goToPage(state.page + delta * (state.twoPage ? 2 : 1));
 }
 
 search.addEventListener('input', () => {
@@ -2080,6 +2167,14 @@ themeBtn.addEventListener('click', () => {
   const order = ['light', 'sepia', 'dark'];
   applyTheme(order[(order.indexOf(state.theme) + 1) % order.length]);
 });
+spreadBtn.addEventListener('click', () => {
+  state.twoPage = !state.twoPage;
+  state.initialFit = false;
+  state.scale = 0;
+  spreadBtn.setAttribute('aria-pressed', state.twoPage ? 'true' : 'false');
+  spreadBtn.classList.toggle('active', state.twoPage);
+  renderPage();
+});
 $('toggleNotes').addEventListener('click', () => {
   notesPanel.hidden = !notesPanel.hidden;
   if (!notesPanel.hidden && window.innerWidth < 820) tocPanel.hidden = true;
@@ -2092,7 +2187,8 @@ hlColors.addEventListener('click', (event) => {
 $('hlCancel').addEventListener('click', () => {
   state.pending = null;
   hlBar.hidden = true;
-  clearPending();
+  clearPending(highlightsEl);
+  clearPending(highlights2);
   window.getSelection()?.removeAllRanges();
 });
 hlNote.addEventListener('keydown', (event) => {
@@ -2100,11 +2196,13 @@ hlNote.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     state.pending = null;
     hlBar.hidden = true;
-    clearPending();
+    clearPending(highlightsEl);
+  clearPending(highlights2);
   }
 });
 
-textLayerEl.addEventListener('mouseup', () => setTimeout(onSelection, 0));
+textLayerEl.addEventListener('mouseup', () => setTimeout(() => onSelection(primaryPaneRef()), 0));
+textLayer2.addEventListener('mouseup', () => setTimeout(() => onSelection(secondaryPaneRef()), 0));
 
 let selectionFrame = null;
 function updateLiveSelection() {
@@ -2112,16 +2210,19 @@ function updateLiveSelection() {
   if (reader.hidden) return;
   if (state.pending && !hlBar.hidden) return;
   const selection = window.getSelection();
-  if (!selection || selection.isCollapsed) {
-    clearPending();
+  if (!selection || selection.isCollapsed || !selection.anchorNode) {
+    clearPending(highlightsEl);
+    clearPending(highlights2);
     return;
   }
-  const built = buildSelection(selection);
+  const pane = paneForNode(selection.anchorNode);
+  const built = buildSelection(selection, pane);
   if (!built) {
-    clearPending();
+    clearPending(highlightsEl);
+    clearPending(highlights2);
     return;
   }
-  renderPending(built.rects);
+  renderPending(built.rects, pane.highlights, pane.viewport?.scale || 1);
 }
 
 document.addEventListener('selectionchange', () => {
@@ -2131,9 +2232,12 @@ document.addEventListener('selectionchange', () => {
 
 document.addEventListener('copy', (event) => {
   const selection = window.getSelection();
-  if (!selection || selection.isCollapsed) return;
-  if (!selection.anchorNode || !textLayerEl.contains(selection.anchorNode)) return;
-  const words = selectedOcrSpans(selection)
+  if (!selection || selection.isCollapsed || !selection.anchorNode) return;
+  const inPrimary = textLayerEl.contains(selection.anchorNode);
+  const inSecondary = textLayer2.contains(selection.anchorNode);
+  if (!inPrimary && !inSecondary) return;
+  const pane = inSecondary ? secondaryPaneRef() : primaryPaneRef();
+  const words = selectedOcrSpans(selection, pane.textLayer)
     .map((span) => span.textContent.trim())
     .filter(Boolean);
   if (!words.length || !event.clipboardData) return;
@@ -2145,7 +2249,8 @@ document.addEventListener('mousedown', (event) => {
   if (!hlBar.hidden && !hlBar.contains(event.target)) {
     hlBar.hidden = true;
     state.pending = null;
-    clearPending();
+    clearPending(highlightsEl);
+  clearPending(highlights2);
   }
 });
 
