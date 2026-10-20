@@ -85,6 +85,17 @@ npm run test:citations
 
 Covers six records × APA/MLA/Chicago/IEEE/BibTeX, including Turkish characters, editors, editions, DOI, and missing metadata.
 
+### Reader performance
+
+Open the reader with `?perf=1` to show the small perf panel (`PDF yükleme`, first page, average/max render, JS heap). From the console:
+
+```js
+__readerPerf()          // current metrics
+await __readerStress(20) // render 20 consecutive pages and return metrics
+```
+
+Use the 697-page Oral Radiology and 1,164-page Nursing Research records. This panel is diagnostic; it is not part of the normal UI.
+
 ### In-book search index
 The reader searches the per-page text index. On an existing database, apply the migration and build the index once:
 

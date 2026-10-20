@@ -20,6 +20,7 @@ const state = {
   searchRun: 0,
   activeQuery: '',
   highlightColor: 'yellow',
+  perf: null,
   ocrCache: new Map(),
   ocrManifest: new Map(),
   renderTask: null,
@@ -75,6 +76,8 @@ const hlBar = $('hlBar');
 const hlColors = $('hlColors');
 const hlNote = $('hlNote');
 const toastEl = $('toast');
+const perfPanel = $('perfPanel');
+const perfBody = $('perfBody');
 
 const editModal = $('editModal');
 const editForm = $('editForm');
@@ -904,8 +907,68 @@ async function renderOcrLayer(viewport) {
   return true;
 }
 
+function readerPerf() {
+  const renders = state.perf?.renders || [];
+  const average = renders.length
+    ? renders.reduce((sum, value) => sum + value, 0) / renders.length
+    : null;
+  return {
+    book: state.book?.title || null,
+    pages: state.numPages,
+    page: state.page,
+    pdfLoadMs: state.perf?.pdfLoadMs ?? null,
+    firstPageMs: state.perf?.firstPageMs ?? null,
+    renders: renders.length,
+    averageRenderMs: average === null ? null : Math.round(average),
+    maxRenderMs: renders.length ? Math.round(Math.max(...renders)) : null,
+    heapMB: performance.memory
+      ? Math.round(performance.memory.usedJSHeapSize / 1048576)
+      : null,
+    scale: state.scale,
+  };
+}
+
+function updatePerfPanel() {
+  if (!perfPanel || perfPanel.hidden) return;
+  const perf = readerPerf();
+  const format = (value) => (value === null || value === undefined ? '—' : value);
+  perfBody.textContent = [
+    `Kitap: ${perf.book || '—'}`,
+    `Sayfa: ${perf.page} / ${perf.pages || '—'}`,
+    `PDF yükleme: ${format(perf.pdfLoadMs && Math.round(perf.pdfLoadMs))} ms`,
+    `İlk sayfa: ${format(perf.firstPageMs && Math.round(perf.firstPageMs))} ms`,
+    `Render: ${perf.renders} · ort. ${format(perf.averageRenderMs)} ms · max ${format(perf.maxRenderMs)} ms`,
+    `Heap: ${format(perf.heapMB)} MB`,
+    `Zoom: ${Math.round((perf.scale || 0) * 100)}%`,
+  ].join('\n');
+}
+
+function recordRender(milliseconds) {
+  if (!state.perf) return;
+  state.perf.renders.push(milliseconds);
+  if (state.perf.firstPageMs === null) {
+    state.perf.firstPageMs = performance.now() - state.perf.openedAt;
+  }
+  updatePerfPanel();
+}
+
+async function stressPages(count = 20) {
+  if (!state.pdf) return null;
+  const start = state.page;
+  for (let index = 0; index < count; index += 1) {
+    const target = Math.min(state.numPages, start + index);
+    if (target !== state.page) await goToPage(target);
+    await new Promise((resolve) => setTimeout(resolve, 120));
+  }
+  const result = readerPerf();
+  console.info('[reader perf]', result);
+  updatePerfPanel();
+  return result;
+}
+
 async function renderPage() {
   if (!state.pdf) return;
+  const perfStart = performance.now();
   if (state.renderTask) {
     try { state.renderTask.cancel(); } catch { /* noop */ }
     state.renderTask = null;
@@ -965,6 +1028,7 @@ async function renderPage() {
   if (!tocPanel.hidden) renderToc();
   saveProgress();
   updateUrl();
+  recordRender(performance.now() - perfStart);
 }
 
 function renderHighlights() {
@@ -1267,6 +1331,7 @@ async function openBook(book) {
   state.pageText = new Map();
   state.searchRun += 1;
   state.activeQuery = '';
+  state.perf = { openedAt: performance.now(), pdfLoadMs: null, firstPageMs: null, renders: [] };
   setHighlightColor('yellow');
   bookSearch.value = '';
   searchResults.replaceChildren();
@@ -1297,6 +1362,7 @@ async function openBook(book) {
       standardFontDataUrl: '/vendor/pdfjs/standard_fonts/',
     });
     state.pdf = await task.promise;
+    state.perf.pdfLoadMs = performance.now() - state.perf.openedAt;
     state.numPages = state.pdf.numPages;
 
     const params = new URLSearchParams(window.location.search);
@@ -1623,6 +1689,13 @@ citeModal.addEventListener('click', (event) => {
 });
 exportMd.addEventListener('click', () => exportAnnotations('md'));
 exportJson.addEventListener('click', () => exportAnnotations('json'));
+$('perfClose').addEventListener('click', () => { perfPanel.hidden = true; });
+$('perfStress').addEventListener('click', () => {
+  stressPages(20).catch((error) => {
+    console.error(error);
+    toast('Performans testi tamamlanamadı');
+  });
+});
 $('prevPage').addEventListener('click', () => changePage(-1));
 $('nextPage').addEventListener('click', () => changePage(1));
 $('zoomIn').addEventListener('click', () => {
@@ -1711,6 +1784,9 @@ window.addEventListener('resize', () => {
   }, 220);
 });
 
+window.__readerPerf = readerPerf;
+window.__readerStress = stressPages;
+
 (async function init() {
   try {
     const health = await fetch('/api/health').then((response) => response.json());
@@ -1718,6 +1794,10 @@ window.addEventListener('resize', () => {
     mode.classList.toggle('db', health.mode === 'db');
   } catch {
     mode.textContent = 'bağlantı yok';
+  }
+  if (new URLSearchParams(window.location.search).get('perf') === '1') {
+    perfPanel.hidden = false;
+    updatePerfPanel();
   }
   try {
     const me = await fetch('/api/me');

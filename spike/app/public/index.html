@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=17" />
+  <link rel="stylesheet" href="/styles.css?v=18" />
 </head>
 <body>
   <div class="login-screen" id="loginScreen" hidden>
@@ -226,8 +226,17 @@
     <button class="icon-btn" id="hlCancel" aria-label="İptal">✕</button>
   </div>
 
+  <aside class="perf-panel" id="perfPanel" hidden>
+    <div class="perf-head">
+      <strong>Reader perf</strong>
+      <button class="icon-btn" id="perfClose" type="button" aria-label="Kapat">✕</button>
+    </div>
+    <pre id="perfBody"></pre>
+    <button class="ghost-btn" id="perfStress" type="button">20 sayfa test</button>
+  </aside>
+
   <div class="toast" id="toast" hidden></div>
 
-  <script type="module" src="/app.js?v=24"></script>
+  <script type="module" src="/app.js?v=25"></script>
 </body>
 </html>
