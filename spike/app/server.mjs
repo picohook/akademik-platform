@@ -3,7 +3,7 @@ import path from 'node:path';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { mkdir, open, readFile, readdir, stat, unlink } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { createHash, createHmac, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
 import Busboy from 'busboy';
 import { PDFDocument } from 'pdf-lib';
 import { indexAsset } from './indexer.mjs';
@@ -16,7 +16,11 @@ const TENANT_ID = process.env.DEMO_TENANT_ID || '11111111-1111-1111-1111-1111111
 const USER_ID = process.env.DEMO_USER_ID || '22222222-2222-2222-2222-222222222222';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-only-session-secret-change-me';
 const SESSION_COOKIE = 'akademik_session';
+const CSRF_COOKIE = 'akademik_csrf';
 const SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
+const LOGIN_WINDOW = 15 * 60 * 1000;
+const LOGIN_MAX_ATTEMPTS = 8;
+const loginAttempts = new Map();
 const DEMO_EMAIL = process.env.DEMO_EMAIL || 'reader@example.edu.tr';
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'demo1234';
 
@@ -125,6 +129,47 @@ function parseCookies(header) {
   return cookies;
 }
 
+function clientIp(req) {
+  const forwarded = req.headers['x-forwarded-for'];
+  return String(forwarded ? forwarded.split(',')[0] : req.socket.remoteAddress || 'unknown').trim();
+}
+
+function isSecureRequest(req) {
+  return req.headers['x-forwarded-proto'] === 'https' || Boolean(req.socket.encrypted);
+}
+
+function loginRateStatus(ip) {
+  const now = Date.now();
+  const entry = loginAttempts.get(ip);
+  if (!entry) return 0;
+  if (entry.reset <= now) {
+    loginAttempts.delete(ip);
+    return 0;
+  }
+  return entry.count >= LOGIN_MAX_ATTEMPTS ? Math.ceil((entry.reset - now) / 1000) : 0;
+}
+
+function recordLoginFailure(ip) {
+  const now = Date.now();
+  const entry = loginAttempts.get(ip);
+  if (!entry || entry.reset <= now) {
+    loginAttempts.set(ip, { count: 1, reset: now + LOGIN_WINDOW });
+    return;
+  }
+  entry.count += 1;
+  if (entry.count >= LOGIN_MAX_ATTEMPTS) entry.reset = now + LOGIN_WINDOW;
+}
+
+function clearLoginFailures(ip) {
+  loginAttempts.delete(ip);
+}
+
+function requireCsrf(req, auth) {
+  const header = req.headers['x-csrf-token'];
+  const cookie = parseCookies(req.headers.cookie)[CSRF_COOKIE];
+  return Boolean(auth.csrf && header && cookie && header === auth.csrf && cookie === auth.csrf);
+}
+
 function signSession(user) {
   const payload = {
     sub: user.id,
@@ -132,6 +177,7 @@ function signSession(user) {
     email: user.email,
     name: user.display_name || user.email,
     role: user.role || 'reader',
+    csrf: user.csrf,
     exp: Date.now() + SESSION_TTL,
   };
   const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
@@ -156,21 +202,29 @@ function readSession(req) {
       email: payload.email,
       displayName: payload.name,
       role: payload.role,
+      csrf: payload.csrf,
     };
   } catch {
     return null;
   }
 }
 
-function setSessionCookie(res, user) {
-  res.setHeader(
-    'set-cookie',
-    `${SESSION_COOKIE}=${encodeURIComponent(signSession(user))}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${Math.floor(SESSION_TTL / 1000)}`,
-  );
+function setSessionCookie(res, user, secure = false) {
+  const maxAge = Math.floor(SESSION_TTL / 1000);
+  const secureFlag = secure ? ' Secure;' : '';
+  const session = encodeURIComponent(signSession(user));
+  res.setHeader('set-cookie', [
+    `${SESSION_COOKIE}=${session}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge};${secureFlag}`,
+    `${CSRF_COOKIE}=${encodeURIComponent(user.csrf)}; SameSite=Lax; Path=/; Max-Age=${maxAge};${secureFlag}`,
+  ]);
 }
 
-function clearSessionCookie(res) {
-  res.setHeader('set-cookie', `${SESSION_COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`);
+function clearSessionCookie(res, secure = false) {
+  const secureFlag = secure ? ' Secure;' : '';
+  res.setHeader('set-cookie', [
+    `${SESSION_COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0;${secureFlag}`,
+    `${CSRF_COOKIE}=; SameSite=Lax; Path=/; Max-Age=0;${secureFlag}`,
+  ]);
 }
 
 function verifyPassword(password, stored) {
@@ -838,19 +892,42 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const pathname = decodeURIComponent(url.pathname);
 
+  res.setHeader('x-content-type-options', 'nosniff');
+  res.setHeader('x-frame-options', 'DENY');
+  res.setHeader('referrer-policy', 'strict-origin-when-cross-origin');
+  res.setHeader('permissions-policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('cross-origin-opener-policy', 'same-origin');
+  res.setHeader(
+    'content-security-policy',
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+    + "img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; "
+    + "worker-src 'self' blob:; object-src 'none'; base-uri 'self'; "
+    + "form-action 'self'; frame-ancestors 'none'",
+  );
+
   try {
     if (pathname === '/api/health') {
       json(res, 200, { ok: true, mode: pool ? 'db' : 'demo', tenantId: TENANT_ID });
       return;
     }
     if (pathname === '/api/login' && req.method === 'POST') {
+      const ip = clientIp(req);
+      const retryAfter = loginRateStatus(ip);
+      if (retryAfter > 0) {
+        res.setHeader('retry-after', String(retryAfter));
+        json(res, 429, { error: 'too many attempts', retryAfter });
+        return;
+      }
       const body = await readJson(req);
       const user = await loginUser(body.email, body.password);
       if (!user) {
+        recordLoginFailure(ip);
         json(res, 401, { error: 'invalid credentials' });
         return;
       }
-      setSessionCookie(res, user);
+      clearLoginFailures(ip);
+      const csrf = randomBytes(18).toString('base64url');
+      setSessionCookie(res, { ...user, csrf }, isSecureRequest(req));
       json(res, 200, {
         id: user.id,
         email: user.email,
@@ -860,7 +937,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname === '/api/logout' && req.method === 'POST') {
-      clearSessionCookie(res);
+      clearSessionCookie(res, isSecureRequest(req));
       json(res, 200, { ok: true });
       return;
     }
@@ -882,6 +959,10 @@ const server = http.createServer(async (req, res) => {
     const auth = readSession(req);
     if (pathname.startsWith('/api/') && !auth) {
       json(res, 401, { error: 'authentication required' });
+      return;
+    }
+    if (auth && ['POST', 'PATCH', 'DELETE', 'PUT'].includes(req.method) && !requireCsrf(req, auth)) {
+      json(res, 403, { error: 'csrf token missing or invalid' });
       return;
     }
     if (pathname.startsWith('/api/ocr/') && req.method === 'GET') {

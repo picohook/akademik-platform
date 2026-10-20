@@ -3,6 +3,27 @@ import { formatCitation } from '/citations.mjs';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.mjs';
 
+function readCookie(name) {
+  const prefix = `${name}=`;
+  const entry = document.cookie.split(';').map((part) => part.trim()).find((part) => part.startsWith(prefix));
+  return entry ? decodeURIComponent(entry.slice(prefix.length)) : '';
+}
+
+// Double-submit CSRF: the server sets a readable cookie; mutating requests echo it.
+const nativeFetch = window.fetch.bind(window);
+window.fetch = (input, init = {}) => {
+  const method = String(init.method || 'GET').toUpperCase();
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    const token = readCookie('akademik_csrf');
+    if (token) {
+      const headers = new Headers(init.headers || {});
+      if (!headers.has('x-csrf-token')) headers.set('x-csrf-token', token);
+      init = { ...init, headers };
+    }
+  }
+  return nativeFetch(input, init);
+};
+
 const state = {
   books: [],
   filter: 'all',
@@ -1383,6 +1404,7 @@ async function openBook(book) {
       cMapUrl: '/vendor/pdfjs/cmaps/',
       cMapPacked: true,
       standardFontDataUrl: '/vendor/pdfjs/standard_fonts/',
+      isEvalSupported: false,
     });
     state.pdf = await task.promise;
     state.perf.pdfLoadMs = performance.now() - state.perf.openedAt;

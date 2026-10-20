@@ -20,6 +20,8 @@ The reader is behind a session cookie. Demo credentials: `reader@example.edu.tr`
 
 For an existing database, apply `db/migrations/002-users-password.sql` and `db/migrations/003-librarian-user.sql`; fresh volumes get both users from `seed.sql`.
 
+Auth hardening: login is limited to 8 failures per IP / 15 minutes; mutating requests use a double-submit CSRF token (`akademik_csrf`); responses set CSP, `X-Frame-Options`, `nosniff`, and related headers. Sessions created before the CSRF change must log in again. Session revocation, MFA/SSO, and password change are still open.
+
 ## Plan
 
 | Day | Work | Output |
