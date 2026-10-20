@@ -23,6 +23,8 @@ const LOGIN_MAX_ATTEMPTS = 8;
 const loginAttempts = new Map();
 const DEMO_EMAIL = process.env.DEMO_EMAIL || 'reader@example.edu.tr';
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'demo1234';
+const BRAND_NAME = process.env.BRAND_NAME || 'Akademik Platform';
+const BRAND_TAGLINE = process.env.BRAND_TAGLINE || 'spike';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -965,6 +967,14 @@ const server = http.createServer(async (req, res) => {
   try {
     if (pathname === '/api/health') {
       json(res, 200, { ok: true, mode: pool ? 'db' : 'demo', tenantId: TENANT_ID });
+      return;
+    }
+    if (pathname === '/api/config' && req.method === 'GET') {
+      json(res, 200, {
+        brandName: BRAND_NAME,
+        brandTagline: BRAND_TAGLINE,
+        mode: pool ? 'db' : 'demo',
+      });
       return;
     }
     if (pathname === '/api/login' && req.method === 'POST') {

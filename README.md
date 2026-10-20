@@ -2,11 +2,12 @@
 
 An academic e-book reading and library platform: multi-tenant catalog, PDF/EPUB reader, annotations, collections, and institutional access.
 
-> **Status:** specification v1.9 + working spike scaffold. The scaffold proves the PDF viewer, anchor model, catalog, search, and seeding paths; it is **not production-ready**.
+> **Status:** specification v2.0 + working spike scaffold. The scaffold proves the PDF viewer, search index, annotations, citations, login/roles, and seeding paths; it is **not production-ready**.
 
 - Product & technical specification (Turkish): [`docs/PLATFORM-SPEC.md`](docs/PLATFORM-SPEC.md)
 - Architecture decisions: [`docs/adr/`](docs/adr/)
 - Spike plan, run instructions & acceptance criteria: [`spike/README.md`](spike/README.md)
+- Pilot setup, backups, go-live checklist: [`docs/PILOT.md`](docs/PILOT.md)
 - Measurements to fill: [`spike/measurement.md`](spike/measurement.md)
 
 ## Quick start
@@ -27,6 +28,10 @@ cp .env.example .env
 docker compose up --build
 # http://localhost:8080
 ```
+
+Login: `reader@example.edu.tr` or `librarian@example.edu.tr` / `demo1234`. Existing volumes need the migrations in `db/migrations/`.
+
+Production pilot: see [`docs/PILOT.md`](docs/PILOT.md).
 
 ## Scope
 

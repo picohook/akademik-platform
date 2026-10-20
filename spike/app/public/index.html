@@ -10,7 +10,7 @@
   <div class="login-screen" id="loginScreen" hidden>
     <form class="login-card" id="loginForm">
       <span class="brand-mark">A</span>
-      <h2>Akademik Platform</h2>
+      <h2 id="loginBrand">Akademik Platform</h2>
       <p class="login-hint">
         Okuyucu: <code>reader@example.edu.tr</code> · Kütüphaneci: <code>librarian@example.edu.tr</code><br />
         Parola: <code>demo1234</code>
@@ -25,7 +25,7 @@
   <header class="topbar">
     <a class="brand" href="/">
       <span class="brand-mark">A</span>
-      <span class="brand-text">Akademik Platform <em>spike</em></span>
+      <span class="brand-text"><span id="brandName">Akademik Platform</span> <em id="brandTag">spike</em></span>
     </a>
     <div class="search">
       <input id="search" type="search" placeholder="Başlık, konu veya tam metin ara…" autocomplete="off" />
@@ -261,6 +261,6 @@
 
   <div class="toast" id="toast" hidden></div>
 
-  <script type="module" src="/app.js?v=37"></script>
+  <script type="module" src="/app.js?v=38"></script>
 </body>
 </html>

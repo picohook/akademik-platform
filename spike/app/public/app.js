@@ -55,6 +55,9 @@ const filters = $('filters');
 const count = $('count');
 const search = $('search');
 const mode = $('mode');
+const brandName = $('brandName');
+const brandTag = $('brandTag');
+const loginBrand = $('loginBrand');
 const loginScreen = $('loginScreen');
 const loginForm = $('loginForm');
 const loginEmail = $('loginEmail');
@@ -411,6 +414,16 @@ async function submitUpload(event) {
     uploadSubmitButton.disabled = false;
     uploadSubmitButton.textContent = 'Yükle';
   }
+}
+
+function applyBrand(name, tagline) {
+  const title = String(name || 'Akademik Platform').trim();
+  const tag = String(tagline || '').trim();
+  brandName.textContent = title;
+  brandTag.textContent = tag;
+  brandTag.hidden = !tag;
+  loginBrand.textContent = title;
+  document.title = `${title} — Katalog`;
 }
 
 function canManage() {
@@ -1921,9 +1934,16 @@ window.__readerStress = stressPages;
 
 (async function init() {
   try {
-    const health = await fetch('/api/health').then((response) => response.json());
-    mode.textContent = health.mode === 'db' ? 'DB modu' : 'Demo modu';
-    mode.classList.toggle('db', health.mode === 'db');
+    const config = await fetch('/api/config').then((response) => (response.ok ? response.json() : null));
+    if (config) {
+      applyBrand(config.brandName, config.brandTagline);
+      mode.textContent = config.mode === 'db' ? 'DB modu' : 'Demo modu';
+      mode.classList.toggle('db', config.mode === 'db');
+    } else {
+      const health = await fetch('/api/health').then((response) => response.json());
+      mode.textContent = health.mode === 'db' ? 'DB modu' : 'Demo modu';
+      mode.classList.toggle('db', health.mode === 'db');
+    }
   } catch {
     mode.textContent = 'bağlantı yok';
   }
