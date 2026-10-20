@@ -392,6 +392,49 @@ function renderHighlights() {
     });
 }
 
+function mergeRects(raw) {
+  const items = raw
+    .filter((rect) => rect[2] >= 3 && rect[3] >= 3 && rect.every(Number.isFinite))
+    .map(([x, y, w, h]) => ({ x, y, w, h }))
+    .sort((a, b) => a.y - b.y || a.x - b.x);
+
+  const lines = [];
+  for (const rect of items) {
+    const line = lines.find((candidate) =>
+      Math.abs(candidate.y - rect.y) <= Math.max(2, rect.h * 0.4)
+      && rect.x <= candidate.x + candidate.w + 14);
+    if (line) {
+      const right = Math.max(line.x + line.w, rect.x + rect.w);
+      line.x = Math.min(line.x, rect.x);
+      line.w = right - line.x;
+      line.h = Math.max(line.h, rect.h);
+      line.y = Math.min(line.y, rect.y);
+    } else {
+      lines.push({ ...rect });
+    }
+  }
+  return lines.map((line) => [line.x, line.y, line.w, line.h]);
+}
+
+function clearPending() {
+  highlightsEl.querySelectorAll('.pending').forEach((element) => element.remove());
+}
+
+function renderPending(rects) {
+  clearPending();
+  if (!state.viewport) return;
+  const scale = state.viewport.scale;
+  rects.forEach((rect) => {
+    const box = document.createElement('div');
+    box.className = 'hl pending';
+    box.style.left = `${rect[0] * scale}px`;
+    box.style.top = `${rect[1] * scale}px`;
+    box.style.width = `${rect[2] * scale}px`;
+    box.style.height = `${rect[3] * scale}px`;
+    highlightsEl.appendChild(box);
+  });
+}
+
 function renderNotes() {
   notesList.replaceChildren();
   noteCount.textContent = String(state.annotations.length);
@@ -506,6 +549,7 @@ async function closeReader() {
   reader.hidden = true;
   document.body.style.overflow = '';
   hlBar.hidden = true;
+  clearPending();
   textLayerEl.replaceChildren();
   highlightsEl.replaceChildren();
 }
@@ -557,12 +601,12 @@ function onSelection() {
       .map((span) => toPageRect(span.getBoundingClientRect()))
       .filter((rect) => rect[2] > 1 && rect[3] > 1);
   } else {
-    rects = [...range.getClientRects()]
-      .filter((rect) => rect.width > 1 && rect.height > 1)
-      .map(toPageRect);
+    // PDF.js returns a rectangle per glyph/fragment; merge them per line.
+    rects = mergeRects([...range.getClientRects()].map(toPageRect));
   }
 
   if (!rects.length) return;
+  renderPending(rects);
 
   const last = ocrSpans.length
     ? ocrSpans[ocrSpans.length - 1].getBoundingClientRect()
@@ -684,6 +728,7 @@ $('hlSave').addEventListener('click', saveHighlight);
 $('hlCancel').addEventListener('click', () => {
   state.pending = null;
   hlBar.hidden = true;
+  clearPending();
   window.getSelection()?.removeAllRanges();
 });
 hlNote.addEventListener('keydown', (event) => {
@@ -712,6 +757,7 @@ document.addEventListener('mousedown', (event) => {
   if (!hlBar.hidden && !hlBar.contains(event.target)) {
     hlBar.hidden = true;
     state.pending = null;
+    clearPending();
   }
 });
 
