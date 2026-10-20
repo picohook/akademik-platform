@@ -12,6 +12,7 @@ Docker only runs `schema.sql`/`seed.sql` when the volume is first created. For a
 docker compose exec db psql -U akademik -d akademik -f /migrations/001-asset-pages.sql
 docker compose exec db psql -U akademik -d akademik -f /migrations/002-users-password.sql
 docker compose exec db psql -U akademik -d akademik -f /migrations/003-librarian-user.sql
+docker compose exec db psql -U akademik -d akademik -f /migrations/004-session-version.sql
 ```
 
 Demo login: `reader@example.edu.tr` (reader) or `librarian@example.edu.tr` (upload/edit) / `demo1234`.

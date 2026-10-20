@@ -62,6 +62,12 @@ const loginPassword = $('loginPassword');
 const loginError = $('loginError');
 const userChip = $('userChip');
 const logoutBtn = $('logoutBtn');
+const passwordBtn = $('passwordBtn');
+const passwordModal = $('passwordModal');
+const passwordForm = $('passwordForm');
+const passwordCurrent = $('passwordCurrent');
+const passwordNew = $('passwordNew');
+const passwordError = $('passwordError');
 
 const reader = $('reader');
 const canvas = $('canvas');
@@ -420,6 +426,7 @@ function setUser(user) {
   userChip.textContent = user ? `${user.displayName || user.email} · ${user.role || 'reader'}` : '';
   userChip.hidden = !user;
   logoutBtn.hidden = !user;
+  passwordBtn.hidden = !user;
   applyRoleUi();
 }
 
@@ -461,6 +468,62 @@ async function handleLogin(event) {
     console.error(error);
     showLogin('Giriş yapılamadı.');
   }
+}
+
+function openPassword() {
+  passwordForm.reset();
+  passwordError.hidden = true;
+  passwordModal.hidden = false;
+  setTimeout(() => passwordCurrent.focus(), 0);
+}
+
+function closePassword() {
+  passwordModal.hidden = true;
+}
+
+async function submitPassword(event) {
+  event.preventDefault();
+  passwordError.hidden = true;
+  try {
+    const response = await fetch('/api/password', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        currentPassword: passwordCurrent.value,
+        newPassword: passwordNew.value,
+      }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      passwordError.hidden = false;
+      passwordError.textContent = payload.error === 'current password is incorrect'
+        ? 'Mevcut parola hatalı.'
+        : payload.error === 'password too short'
+          ? 'Yeni parola en az 8 karakter olmalı.'
+          : payload.error === 'password change requires database mode'
+            ? 'Demo modunda parola değiştirilemez.'
+            : 'Parola değiştirilemedi.';
+      return;
+    }
+    closePassword();
+    toast('Parola değiştirildi; yeniden giriş yapın.');
+    await logout();
+  } catch (error) {
+    console.error(error);
+    passwordError.hidden = false;
+    passwordError.textContent = 'Parola değiştirilemedi.';
+  }
+}
+
+async function logoutAll() {
+  if (!window.confirm('Tüm cihazlardaki oturumlar kapatılsın mı?')) return;
+  try {
+    await fetch('/api/logout-all', { method: 'POST' });
+  } catch {
+    // The local cookie is cleared regardless.
+  }
+  closePassword();
+  await logout();
 }
 
 async function logout() {
@@ -1619,6 +1682,10 @@ document.addEventListener('keydown', (event) => {
   const typing = target
     && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable);
 
+  if (!passwordModal.hidden) {
+    if (event.key === 'Escape') closePassword();
+    return;
+  }
   if (!citeModal.hidden) {
     if (event.key === 'Escape') closeCite();
     return;
@@ -1689,6 +1756,14 @@ document.addEventListener('keydown', (event) => {
 $('openUpload').addEventListener('click', openUpload);
 loginForm.addEventListener('submit', handleLogin);
 logoutBtn.addEventListener('click', logout);
+passwordBtn.addEventListener('click', openPassword);
+passwordForm.addEventListener('submit', submitPassword);
+$('closePassword').addEventListener('click', closePassword);
+$('cancelPassword').addEventListener('click', closePassword);
+$('logoutAllBtn').addEventListener('click', logoutAll);
+passwordModal.addEventListener('click', (event) => {
+  if (event.target === passwordModal) closePassword();
+});
 uploadForm.addEventListener('submit', submitUpload);
 $('closeUpload').addEventListener('click', closeUpload);
 $('cancelUpload').addEventListener('click', closeUpload);

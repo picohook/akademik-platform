@@ -19,6 +19,7 @@ create table if not exists users (
   display_name text not null,
   role text not null default 'reader' check (role in ('admin','librarian','publisher','reader')),
   password_hash text,
+  session_version int not null default 0,
   created_at timestamptz not null default now(),
   unique (tenant_id, email)
 );

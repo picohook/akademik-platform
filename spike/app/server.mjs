@@ -177,6 +177,7 @@ function signSession(user) {
     email: user.email,
     name: user.display_name || user.email,
     role: user.role || 'reader',
+    ver: Number(user.session_version || 0),
     csrf: user.csrf,
     exp: Date.now() + SESSION_TTL,
   };
@@ -202,6 +203,7 @@ function readSession(req) {
       email: payload.email,
       displayName: payload.name,
       role: payload.role,
+      sessionVersion: Number(payload.ver || 0),
       csrf: payload.csrf,
     };
   } catch {
@@ -236,6 +238,22 @@ function verifyPassword(password, stored) {
   return candidate.length === expected.length && timingSafeEqual(candidate, expected);
 }
 
+async function sessionIsValid(auth) {
+  if (!pool) return true;
+  try {
+    return await withTenant(async (client) => {
+      const { rows } = await client.query(
+        'select session_version from users where id = $1 limit 1',
+        [auth.userId],
+      );
+      return Boolean(rows[0]) && Number(rows[0].session_version) === auth.sessionVersion;
+    });
+  } catch (error) {
+    console.warn('[auth] session version check failed:', error.message);
+    return true;
+  }
+}
+
 async function loginUser(emailValue, passwordValue) {
   const email = String(emailValue || '').trim().toLocaleLowerCase('tr');
   const password = String(passwordValue || '');
@@ -250,6 +268,7 @@ async function loginUser(emailValue, passwordValue) {
         email,
         display_name: isLibrarian ? 'Demo Kütüphaneci' : 'Demo Okuyucu',
         role: isLibrarian ? 'librarian' : 'reader',
+        session_version: 0,
       };
     }
     return null;
@@ -257,7 +276,7 @@ async function loginUser(emailValue, passwordValue) {
 
   return withTenant(async (client) => {
     const { rows } = await client.query(
-      `select id, tenant_id, email, display_name, role, password_hash
+      `select id, tenant_id, email, display_name, role, password_hash, session_version
          from users
         where tenant_id = $1 and lower(email) = lower($2)
         limit 1`,
@@ -271,10 +290,48 @@ async function loginUser(emailValue, passwordValue) {
       email: row.email,
       display_name: row.display_name,
       role: row.role,
+      session_version: row.session_version,
     };
   });
 }
 
+
+function hashPassword(password) {
+  const salt = randomBytes(16).toString('hex');
+  const hash = scryptSync(String(password), salt, 64).toString('hex');
+  return `scrypt$${salt}$${hash}`;
+}
+
+async function changePassword(userId, currentPassword, newPassword) {
+  if (String(newPassword || '').length < 8) throw new Error('password too short');
+  if (!pool) {
+    if (String(currentPassword || '') !== DEMO_PASSWORD) return false;
+    return true;
+  }
+  return withTenant(async (client) => {
+    const { rows } = await client.query(
+      'select password_hash from users where id = $1 limit 1',
+      [userId],
+    );
+    if (!rows[0] || !verifyPassword(currentPassword, rows[0].password_hash)) return false;
+    await client.query(
+      'update users set password_hash = $1, session_version = session_version + 1 where id = $2',
+      [hashPassword(newPassword), userId],
+    );
+    return true;
+  });
+}
+
+async function revokeAllSessions(userId) {
+  if (!pool) return true;
+  return withTenant(async (client) => {
+    await client.query(
+      'update users set session_version = session_version + 1 where id = $1',
+      [userId],
+    );
+    return true;
+  });
+}
 
 async function readJson(req, limit = 1_000_000) {
   let size = 0;
@@ -943,7 +1000,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (pathname === '/api/me' && req.method === 'GET') {
       const session = readSession(req);
-      if (!session) {
+      if (!session || !(await sessionIsValid(session))) {
         json(res, 401, { error: 'authentication required' });
         return;
       }
@@ -959,6 +1016,11 @@ const server = http.createServer(async (req, res) => {
     const auth = readSession(req);
     if (pathname.startsWith('/api/') && !auth) {
       json(res, 401, { error: 'authentication required' });
+      return;
+    }
+    if (auth && !(await sessionIsValid(auth))) {
+      clearSessionCookie(res, isSecureRequest(req));
+      json(res, 401, { error: 'session revoked' });
       return;
     }
     if (auth && ['POST', 'PATCH', 'DELETE', 'PUT'].includes(req.method) && !requireCsrf(req, auth)) {
@@ -1023,6 +1085,35 @@ const server = http.createServer(async (req, res) => {
         console.warn('[search] index unavailable:', error.message);
         json(res, 200, { indexed: false, results: [] });
       }
+      return;
+    }
+    if (pathname === '/api/password' && req.method === 'POST') {
+      if (!pool) {
+        json(res, 501, { error: 'password change requires database mode' });
+        return;
+      }
+      const body = await readJson(req);
+      try {
+        const changed = await changePassword(auth.userId, body.currentPassword, body.newPassword);
+        if (!changed) {
+          json(res, 400, { error: 'current password is incorrect' });
+          return;
+        }
+        clearSessionCookie(res, isSecureRequest(req));
+        json(res, 200, { ok: true, relogin: true });
+      } catch (error) {
+        json(res, 400, { error: error.message });
+      }
+      return;
+    }
+    if (pathname === '/api/logout-all' && req.method === 'POST') {
+      if (!pool) {
+        json(res, 501, { error: 'session revocation requires database mode' });
+        return;
+      }
+      await revokeAllSessions(auth.userId);
+      clearSessionCookie(res, isSecureRequest(req));
+      json(res, 200, { ok: true });
       return;
     }
     if (pathname === '/api/upload' && req.method === 'POST') {

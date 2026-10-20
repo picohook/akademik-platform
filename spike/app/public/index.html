@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=19" />
+  <link rel="stylesheet" href="/styles.css?v=20" />
 </head>
 <body>
   <div class="login-screen" id="loginScreen" hidden>
@@ -33,6 +33,7 @@
     </div>
     <span class="mode" id="mode">bağlanıyor…</span>
     <span class="user-chip" id="userChip" hidden></span>
+    <button class="ghost-btn" id="passwordBtn" type="button" hidden>Parola</button>
     <button class="ghost-btn" id="logoutBtn" type="button" hidden>Çıkış</button>
   </header>
 
@@ -141,6 +142,25 @@
     </div>
   </div>
 
+  <div class="modal" id="passwordModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="passwordHeading">
+      <div class="modal-head">
+        <strong id="passwordHeading">Parola değiştir</strong>
+        <button class="icon-btn" id="closePassword" type="button" aria-label="Kapat">✕</button>
+      </div>
+      <form id="passwordForm">
+        <label>Mevcut parola<input id="passwordCurrent" type="password" autocomplete="current-password" required /></label>
+        <label>Yeni parola (en az 8 karakter)<input id="passwordNew" type="password" autocomplete="new-password" minlength="8" required /></label>
+        <div class="login-error" id="passwordError" hidden></div>
+        <div class="modal-actions">
+          <button class="ghost-btn" id="logoutAllBtn" type="button">Tüm cihazlardan çıkış</button>
+          <button class="ghost-btn" id="cancelPassword" type="button">Vazgeç</button>
+          <button class="primary" type="submit">Kaydet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div class="reader" id="reader" hidden>
     <div class="reader-top">
       <button class="icon-btn" id="closeReader" aria-label="Kapat">✕</button>
@@ -241,6 +261,6 @@
 
   <div class="toast" id="toast" hidden></div>
 
-  <script type="module" src="/app.js?v=35"></script>
+  <script type="module" src="/app.js?v=37"></script>
 </body>
 </html>
