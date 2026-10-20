@@ -575,14 +575,14 @@ function ocrSelectionText(selection) {
   return words.length ? words.join(' ') : selection.toString().trim();
 }
 
-function onSelection() {
-  const selection = window.getSelection();
-  if (!selection || selection.isCollapsed) return;
+function buildSelection(selection) {
+  if (!state.book || !selection || selection.isCollapsed || !selection.rangeCount) return null;
+  const range = selection.getRangeAt(0);
+  if (!textLayerEl.contains(range.commonAncestorContainer)) return null;
+
   const ocrSpans = selectedOcrSpans(selection);
   const text = ocrSelectionText(selection);
-  if (!text) return;
-  const range = selection.getRangeAt(0);
-  if (!textLayerEl.contains(range.commonAncestorContainer)) return;
+  if (!text) return null;
 
   const pageRect = pageWrap.getBoundingClientRect();
   const scale = state.viewport?.scale || 1;
@@ -605,25 +605,35 @@ function onSelection() {
     rects = mergeRects([...range.getClientRects()].map(toPageRect));
   }
 
-  if (!rects.length) return;
-  renderPending(rects);
+  if (!rects.length) return null;
 
   const last = ocrSpans.length
     ? ocrSpans[ocrSpans.length - 1].getBoundingClientRect()
     : (range.getClientRects()[range.getClientRects().length - 1] || pageRect);
+
+  return { text, ocrSpans, range, rects, last };
+}
+
+function onSelection() {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed) return;
+  const built = buildSelection(selection);
+  if (!built) return;
+
+  renderPending(built.rects);
   state.pending = {
-    text,
+    text: built.text,
     anchor: {
       asset_version_id: state.book.asset_id,
       type: 'pdf',
       page: state.page,
-      rects,
-      text_quote: { prefix: '', exact: text, suffix: '' },
-      text_position: { start: 0, end: text.length },
+      rects: built.rects,
+      text_quote: { prefix: '', exact: built.text, suffix: '' },
+      text_position: { start: 0, end: built.text.length },
     },
   };
   hlNote.value = '';
-  updateSelectionBar(last);
+  updateSelectionBar(built.last);
   hlBar.hidden = false;
   hlNote.focus();
 }
@@ -740,6 +750,29 @@ hlNote.addEventListener('keydown', (event) => {
 });
 
 textLayerEl.addEventListener('mouseup', () => setTimeout(onSelection, 0));
+
+let selectionFrame = null;
+function updateLiveSelection() {
+  selectionFrame = null;
+  if (reader.hidden) return;
+  if (state.pending && !hlBar.hidden) return;
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed) {
+    clearPending();
+    return;
+  }
+  const built = buildSelection(selection);
+  if (!built) {
+    clearPending();
+    return;
+  }
+  renderPending(built.rects);
+}
+
+document.addEventListener('selectionchange', () => {
+  if (selectionFrame) return;
+  selectionFrame = requestAnimationFrame(updateLiveSelection);
+});
 
 document.addEventListener('copy', (event) => {
   const selection = window.getSelection();
