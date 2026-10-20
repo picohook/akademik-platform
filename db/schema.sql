@@ -131,6 +131,7 @@ create table if not exists annotations (
   color text not null default 'yellow',
   note text,
   selected_text text,
+  tags text[] not null default '{}',
   status text not null default 'active' check (status in ('active','orphaned')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

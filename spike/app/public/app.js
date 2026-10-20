@@ -36,12 +36,18 @@ const state = {
   scale: 1,
   fitMode: 'width',
   rotation: 0,
+  theme: 'light',
   viewport: null,
   annotations: [],
+  noteQuery: '',
+  noteColor: 'all',
   outline: [],
   pageText: new Map(),
   searchRun: 0,
   activeQuery: '',
+  searchHits: [],
+  searchIndex: -1,
+  searchQuery: '',
   highlightColor: 'yellow',
   perf: null,
   ocrCache: new Map(),
@@ -88,6 +94,8 @@ const noteCount = $('noteCount');
 const notesList = $('notesList');
 const notesEmpty = $('notesEmpty');
 const notesPanel = $('notesPanel');
+const noteFilter = $('noteFilter');
+const noteColorFilter = $('noteColorFilter');
 const exportMd = $('exportMd');
 const exportJson = $('exportJson');
 const tocPanel = $('tocPanel');
@@ -97,6 +105,7 @@ const tocFilter = $('tocFilter');
 const pageInput = $('pageInput');
 const pageTotal = $('pageTotal');
 const fitToggle = $('fitToggle');
+const themeBtn = $('themeBtn');
 const bookmarkBtn = $('bookmarkBtn');
 const tabToc = $('tabToc');
 const tabSearch = $('tabSearch');
@@ -109,6 +118,9 @@ const bookSearch = $('bookSearch');
 const searchStatus = $('searchStatus');
 const searchResults = $('searchResults');
 const searchEmpty = $('searchEmpty');
+const searchPrev = $('searchPrev');
+const searchNext = $('searchNext');
+const searchPosition = $('searchPosition');
 const hlBar = $('hlBar');
 const hlColors = $('hlColors');
 const hlNote = $('hlNote');
@@ -589,7 +601,21 @@ function updateViewControls() {
   const fitPage = state.fitMode === 'page';
   fitToggle.textContent = fitPage ? '⤢' : '↔';
   fitToggle.title = fitPage ? 'Sayfaya sığdır' : 'Genişliğe sığdır';
+  fitToggle.setAttribute('aria-pressed', fitPage ? 'true' : 'false');
   fitToggle.classList.toggle('active', fitPage);
+}
+
+function applyTheme(theme) {
+  const next = ['light', 'sepia', 'dark'].includes(theme) ? theme : 'light';
+  state.theme = next;
+  reader.dataset.theme = next;
+  themeBtn.textContent = next === 'dark' ? '☾' : next === 'sepia' ? '◐' : '☀';
+  themeBtn.title = next === 'dark' ? 'Koyu tema' : next === 'sepia' ? 'Sepia tema' : 'Açık tema';
+  try {
+    localStorage.setItem('readerTheme', next);
+  } catch {
+    // Private mode may block storage.
+  }
 }
 
 async function resolveDest(dest) {
@@ -766,6 +792,7 @@ function updateBookmarkUi() {
   const hasBookmark = Boolean(bookmarkForPage());
   bookmarkBtn.textContent = hasBookmark ? '★' : '☆';
   bookmarkBtn.classList.toggle('active', hasBookmark);
+  bookmarkBtn.setAttribute('aria-pressed', hasBookmark ? 'true' : 'false');
   bookmarkBtn.title = hasBookmark ? 'Yer imini kaldır' : 'Yer imi ekle';
 }
 
@@ -879,31 +906,46 @@ async function getPageText(pageNumber) {
   return text;
 }
 
+function updateSearchNav() {
+  const total = state.searchHits.length;
+  searchPosition.textContent = total
+    ? `${state.searchIndex >= 0 ? state.searchIndex + 1 : 0} / ${total}`
+    : '0 / 0';
+  searchPrev.disabled = total === 0;
+  searchNext.disabled = total === 0;
+}
+
+async function focusSearchResult(index) {
+  if (!state.searchHits.length) return;
+  const total = state.searchHits.length;
+  const normalized = ((index % total) + total) % total;
+  state.searchIndex = normalized;
+  const hit = state.searchHits[normalized];
+  state.activeQuery = hit.query;
+  await goToPage(hit.page);
+  searchResults.querySelectorAll('.search-item').forEach((item) => {
+    item.classList.toggle('active', Number(item.dataset.index) === normalized);
+  });
+  const active = searchResults.querySelector(`.search-item[data-index="${normalized}"]`);
+  active?.scrollIntoView({ block: 'nearest' });
+  updateSearchNav();
+  if (window.innerWidth < 820) toggleToc(false);
+}
+
 function addSearchResult(pageNumber, text, index, queryLength, query) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'toc-item search-item';
-  const label = document.createElement('span');
-  label.textContent = `Sayfa ${pageNumber}`;
-  const snippet = document.createElement('span');
-  snippet.className = 'search-snippet';
   const start = Math.max(0, index - 45);
   const end = Math.min(text.length, index + queryLength + 45);
-  snippet.textContent = `${start > 0 ? '…' : ''}${text.slice(start, end)}${end < text.length ? '…' : ''}`;
-  button.appendChild(label);
-  button.appendChild(snippet);
-  button.addEventListener('click', async () => {
-    state.activeQuery = query;
-    await goToPage(pageNumber);
-    if (window.innerWidth < 820) toggleToc(false);
-  });
-  searchResults.appendChild(button);
+  const snippetText = `${start > 0 ? '…' : ''}${text.slice(start, end)}${end < text.length ? '…' : ''}`;
+  addSearchResultSnippet(pageNumber, snippetText, query);
 }
 
 function addSearchResultSnippet(pageNumber, snippetText, query) {
+  const hitIndex = state.searchHits.length;
+  state.searchHits.push({ page: pageNumber, snippet: snippetText, query });
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'toc-item search-item';
+  button.dataset.index = String(hitIndex);
   const label = document.createElement('span');
   label.textContent = `Sayfa ${pageNumber}`;
   const snippet = document.createElement('span');
@@ -911,12 +953,9 @@ function addSearchResultSnippet(pageNumber, snippetText, query) {
   snippet.textContent = snippetText;
   button.appendChild(label);
   button.appendChild(snippet);
-  button.addEventListener('click', async () => {
-    state.activeQuery = query;
-    await goToPage(pageNumber);
-    if (window.innerWidth < 820) toggleToc(false);
-  });
+  button.addEventListener('click', () => focusSearchResult(hitIndex));
   searchResults.appendChild(button);
+  updateSearchNav();
 }
 
 let searchTimer = null;
@@ -925,6 +964,10 @@ async function runSearch(rawQuery) {
   const normalized = normalizeSearch(query);
   const run = ++state.searchRun;
   state.activeQuery = query;
+  state.searchHits = [];
+  state.searchIndex = -1;
+  state.searchQuery = query;
+  updateSearchNav();
   applySearchHighlight();
   searchResults.replaceChildren();
   searchEmpty.hidden = true;
@@ -1410,6 +1453,12 @@ function startEditNote(annotation, item) {
   textarea.value = annotation.note || '';
   textarea.rows = 3;
   textarea.maxLength = 1000;
+  const tagsInput = document.createElement('input');
+  tagsInput.type = 'text';
+  tagsInput.className = 'note-tags-input';
+  tagsInput.placeholder = 'Etiketler (; ile ayırın)';
+  tagsInput.maxLength = 200;
+  tagsInput.value = (Array.isArray(annotation.tags) ? annotation.tags : []).join('; ');
   const actions = document.createElement('div');
   actions.className = 'note-edit-actions';
   const save = document.createElement('button');
@@ -1421,11 +1470,14 @@ function startEditNote(annotation, item) {
   cancel.className = 'ghost-btn';
   cancel.textContent = 'Vazgeç';
   actions.append(save, cancel);
-  editor.append(textarea, actions);
+  editor.append(textarea, tagsInput, actions);
   editor.addEventListener('click', (event) => event.stopPropagation());
   save.addEventListener('click', async () => {
     try {
-      await updateAnnotation(annotation.id, { note: textarea.value.trim() });
+      await updateAnnotation(annotation.id, {
+        note: textarea.value.trim(),
+        tags: tagsInput.value,
+      });
       toast('Not güncellendi');
     } catch {
       toast('Not güncellenemedi');
@@ -1449,9 +1501,25 @@ async function cycleAnnotationColor(annotation) {
 
 function renderNotes() {
   notesList.replaceChildren();
-  noteCount.textContent = String(state.annotations.length);
-  notesEmpty.hidden = state.annotations.length !== 0;
-  state.annotations.forEach((annotation) => {
+  const query = String(noteFilter.value || '').toLocaleLowerCase('tr').trim();
+  const colorFilter = noteColorFilter.value;
+  const visible = state.annotations.filter((annotation) => {
+    const haystack = [
+      annotation.note,
+      annotation.selected_text,
+      ...(Array.isArray(annotation.tags) ? annotation.tags : []),
+    ].join(' ').toLocaleLowerCase('tr');
+    return (!query || haystack.includes(query))
+      && (colorFilter === 'all' || annotation.color === colorFilter);
+  });
+  noteCount.textContent = visible.length === state.annotations.length
+    ? String(state.annotations.length)
+    : `${visible.length}/${state.annotations.length}`;
+  notesEmpty.hidden = visible.length !== 0;
+  notesEmpty.textContent = state.annotations.length
+    ? 'Filtreye uygun not yok.'
+    : 'Metin seçip Vurgula ile başlayın.';
+  visible.forEach((annotation) => {
     const isBookmark = annotation.color === 'bookmark';
     const item = document.createElement('div');
     item.className = 'note-item';
@@ -1482,6 +1550,23 @@ function renderNotes() {
       body.className = 'note-body';
       body.textContent = annotation.note;
       item.appendChild(body);
+    }
+    if (Array.isArray(annotation.tags) && annotation.tags.length) {
+      const tags = document.createElement('div');
+      tags.className = 'note-tags';
+      annotation.tags.forEach((tag) => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'note-tag';
+        chip.textContent = tag;
+        chip.addEventListener('click', (event) => {
+          event.stopPropagation();
+          noteFilter.value = tag;
+          renderNotes();
+        });
+        tags.appendChild(chip);
+      });
+      item.appendChild(tags);
     }
     const remove = document.createElement('button');
     remove.type = 'button';
@@ -1540,12 +1625,17 @@ async function openBook(book) {
   state.fitMode = 'width';
   state.rotation = 0;
   updateViewControls();
+  let savedTheme = 'light';
+  try { savedTheme = localStorage.getItem('readerTheme') || 'light'; } catch { /* noop */ }
+  applyTheme(savedTheme);
   state.annotations = [];
   state.outline = [];
   state.pageText = new Map();
   state.searchRun += 1;
   state.activeQuery = '';
   state.perf = { openedAt: performance.now(), pdfLoadMs: null, firstPageMs: null, renders: [], phases: [] };
+  noteFilter.value = '';
+  noteColorFilter.value = 'all';
   if (thumbObserver) thumbObserver.disconnect();
   thumbGrid.replaceChildren();
   thumbGrid.dataset.book = '';
@@ -1912,9 +2002,16 @@ bookSearch.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') {
     event.preventDefault();
     clearTimeout(searchTimer);
-    runSearch(bookSearch.value);
+    const query = bookSearch.value.trim();
+    if (state.searchHits.length && state.searchQuery === query) {
+      focusSearchResult(state.searchIndex + (event.shiftKey ? -1 : 1));
+    } else {
+      runSearch(query);
+    }
   }
 });
+searchPrev.addEventListener('click', () => focusSearchResult(state.searchIndex - 1));
+searchNext.addEventListener('click', () => focusSearchResult(state.searchIndex + 1));
 pageInput.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') {
     event.preventDefault();
@@ -1935,6 +2032,8 @@ citeModal.addEventListener('click', (event) => {
 });
 exportMd.addEventListener('click', () => exportAnnotations('md'));
 exportJson.addEventListener('click', () => exportAnnotations('json'));
+noteFilter.addEventListener('input', renderNotes);
+noteColorFilter.addEventListener('change', renderNotes);
 $('perfClose').addEventListener('click', () => { perfPanel.hidden = true; });
 $('perfStress').addEventListener('click', () => {
   stressPages(20).catch((error) => {
@@ -1970,6 +2069,10 @@ $('fullscreenBtn').addEventListener('click', async () => {
   } catch {
     toast('Tam ekran başlatılamadı');
   }
+});
+themeBtn.addEventListener('click', () => {
+  const order = ['light', 'sepia', 'dark'];
+  applyTheme(order[(order.indexOf(state.theme) + 1) % order.length]);
 });
 $('toggleNotes').addEventListener('click', () => {
   notesPanel.hidden = !notesPanel.hidden;

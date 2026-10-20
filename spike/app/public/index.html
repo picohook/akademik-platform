@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=21" />
+  <link rel="stylesheet" href="/styles.css?v=23" />
 </head>
 <body>
   <div class="login-screen" id="loginScreen" hidden>
@@ -17,7 +17,7 @@
       </p>
       <label>E-posta<input id="loginEmail" type="email" autocomplete="username" value="librarian@example.edu.tr" required /></label>
       <label>Parola<input id="loginPassword" type="password" autocomplete="current-password" required /></label>
-      <div class="login-error" id="loginError" hidden></div>
+      <div class="login-error" id="loginError" role="alert" hidden></div>
       <button class="primary" type="submit">Giriş yap</button>
     </form>
   </div>
@@ -174,13 +174,14 @@
           <input id="pageInput" type="number" min="1" value="1" aria-label="Sayfa numarası" />
           <span id="pageTotal">/ 1</span>
         </div>
-        <button class="ghost-btn" id="fitToggle" type="button" title="Genişliğe sığdır">↔</button>
+        <button class="ghost-btn" id="fitToggle" type="button" title="Genişliğe sığdır" aria-pressed="false">↔</button>
         <button class="ghost-btn" id="rotateBtn" type="button" title="Döndür">⟳</button>
         <button class="ghost-btn" id="fullscreenBtn" type="button" title="Tam ekran">⛶</button>
+        <button class="ghost-btn" id="themeBtn" type="button" title="Tema">☀</button>
         <button class="icon-btn" id="zoomOut" aria-label="Uzaklaştır">−</button>
         <span class="zoom" id="zoomLabel">100%</span>
         <button class="icon-btn" id="zoomIn" aria-label="Yakınlaştır">+</button>
-        <button class="ghost-btn" id="bookmarkBtn" type="button" title="Yer imi" aria-label="Yer imi">☆</button>
+        <button class="ghost-btn" id="bookmarkBtn" type="button" title="Yer imi" aria-label="Yer imi" aria-pressed="false">☆</button>
         <button class="ghost-btn" id="citeBook" type="button" title="Atıf">Atıf</button>
         <button class="ghost-btn" id="toggleNotes">Notlar <span id="noteCount">0</span></button>
       </div>
@@ -207,7 +208,12 @@
           <div class="toc-filter">
             <input id="bookSearch" type="search" placeholder="Kitabın içinde ara…" />
           </div>
-          <div class="search-status" id="searchStatus"></div>
+          <div class="search-status" id="searchStatus" aria-live="polite"></div>
+          <div class="search-nav">
+            <button class="mini-btn" id="searchPrev" type="button" aria-label="Önceki sonuç">↑</button>
+            <span id="searchPosition">0 / 0</span>
+            <button class="mini-btn" id="searchNext" type="button" aria-label="Sonraki sonuç">↓</button>
+          </div>
           <div class="toc-list" id="searchResults"></div>
           <div class="toc-empty" id="searchEmpty" hidden></div>
         </div>
@@ -236,6 +242,17 @@
             <button class="mini-btn" id="exportMd" type="button" title="Markdown olarak indir">MD</button>
             <button class="mini-btn" id="exportJson" type="button" title="JSON olarak indir">JSON</button>
           </div>
+        </div>
+        <div class="notes-filter">
+          <input id="noteFilter" type="search" placeholder="Notlarda ara…" />
+          <select id="noteColorFilter">
+            <option value="all">Tüm renkler</option>
+            <option value="yellow">Sarı</option>
+            <option value="green">Yeşil</option>
+            <option value="blue">Mavi</option>
+            <option value="pink">Pembe</option>
+            <option value="bookmark">Yer imi</option>
+          </select>
         </div>
         <div class="notes-list" id="notesList"></div>
         <div class="notes-empty" id="notesEmpty">
@@ -266,8 +283,8 @@
     <button class="ghost-btn" id="perfStress" type="button">20 sayfa test</button>
   </aside>
 
-  <div class="toast" id="toast" hidden></div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=39"></script>
+  <script type="module" src="/app.js?v=41"></script>
 </body>
 </html>

@@ -102,8 +102,7 @@ function canManage(role) {
 }
 
 function parseAuthors(value) {
-  const items = Array.isArray(value) ? value : String(value || '').split(';');
-  return items.map((item) => {
+  const items = Array.isArray(value) ? value : String(value || '').split(';');  return items.map((item) => {
     if (item && typeof item === 'object') {
       return {
         family: String(item.family || item.last || '').trim(),
@@ -335,6 +334,11 @@ async function revokeAllSessions(userId) {
   });
 }
 
+function normalizeTags(value) {
+  const items = Array.isArray(value) ? value : String(value || '').split(/[;,]/);
+  return [...new Set(items.map((item) => String(item || '').trim()).filter(Boolean))].slice(0, 20);
+}
+
 async function readJson(req, limit = 1_000_000) {
   let size = 0;
   const chunks = [];
@@ -528,7 +532,7 @@ async function listAnnotations(assetId, userId) {
   if (!pool) return demoAnnotations.filter((item) => item.asset_id === assetId);
   return withTenant(async (client) => {
     const { rows } = await client.query(
-      `select id, asset_id, anchor, color, note, selected_text, status, created_at
+      `select id, asset_id, anchor, color, note, selected_text, tags, status, created_at
          from annotations
         where asset_id = $1 and user_id = $2
         order by created_at asc`,
@@ -550,6 +554,7 @@ async function createAnnotation(body, userId) {
       color: body.color || 'yellow',
       note: body.note || null,
       selected_text: body.selectedText || null,
+      tags: normalizeTags(body.tags),
       status: 'active',
       created_at: new Date().toISOString(),
     };
@@ -558,10 +563,10 @@ async function createAnnotation(body, userId) {
   }
   return withTenant(async (client) => {
     const { rows } = await client.query(
-      `insert into annotations (tenant_id, user_id, asset_id, anchor, color, note, selected_text)
-       values ($1, $2, $3, $4::jsonb, $5, $6, $7)
-       returning id, asset_id, anchor, color, note, selected_text, status, created_at`,
-      [TENANT_ID, userId, body.assetId, JSON.stringify(anchor), body.color || 'yellow', body.note || null, body.selectedText || null],
+      `insert into annotations (tenant_id, user_id, asset_id, anchor, color, note, selected_text, tags)
+       values ($1, $2, $3, $4::jsonb, $5, $6, $7, $8)
+       returning id, asset_id, anchor, color, note, selected_text, tags, status, created_at`,
+      [TENANT_ID, userId, body.assetId, JSON.stringify(anchor), body.color || 'yellow', body.note || null, body.selectedText || null, normalizeTags(body.tags)],
     );
     return rows[0];
   });
@@ -571,7 +576,8 @@ async function updateAnnotation(id, body, userId) {
   const colors = ['yellow', 'green', 'blue', 'pink', 'bookmark'];
   const hasNote = Object.prototype.hasOwnProperty.call(body, 'note');
   const hasColor = Object.prototype.hasOwnProperty.call(body, 'color');
-  if (!hasNote && !hasColor) throw new Error('note or color is required');
+  const hasTags = Object.prototype.hasOwnProperty.call(body, 'tags');
+  if (!hasNote && !hasColor && !hasTags) throw new Error('note, color or tags is required');
   if (hasColor && !colors.includes(body.color)) throw new Error('invalid color');
 
   if (!pool) {
@@ -579,6 +585,7 @@ async function updateAnnotation(id, body, userId) {
     if (!row) return null;
     if (hasNote) row.note = body.note ? String(body.note).trim() || null : null;
     if (hasColor) row.color = body.color;
+    if (hasTags) row.tags = normalizeTags(body.tags);
     return row;
   }
 
@@ -593,12 +600,16 @@ async function updateAnnotation(id, body, userId) {
       params.push(body.color);
       sets.push(`color = $${params.length}`);
     }
+    if (hasTags) {
+      params.push(normalizeTags(body.tags));
+      sets.push(`tags = $${params.length}`);
+    }
     params.push(id, userId);
     const { rows } = await client.query(
       `update annotations
           set ${sets.join(', ')}, updated_at = now()
         where id = $${params.length - 1} and user_id = $${params.length}
-        returning id, asset_id, anchor, color, note, selected_text, status, created_at`,
+        returning id, asset_id, anchor, color, note, selected_text, tags, status, created_at`,
       params,
     );
     return rows[0] || null;
