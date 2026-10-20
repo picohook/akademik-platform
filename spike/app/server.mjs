@@ -310,10 +310,11 @@ async function serveStatic(req, res, pathname) {
     return;
   }
   const ext = path.extname(filePath).toLowerCase();
+  const noCache = ['.html', '.js', '.mjs', '.css'].includes(ext);
   res.writeHead(200, {
     'content-type': MIME[ext] || 'application/octet-stream',
     'content-length': info.size,
-    'cache-control': ext === '.pdf' ? 'private, max-age=0' : 'public, max-age=3600',
+    'cache-control': ext === '.pdf' ? 'private, max-age=0' : (noCache ? 'no-cache' : 'public, max-age=3600'),
   });
   createReadStream(filePath).pipe(res);
 }

@@ -203,7 +203,10 @@ async function renderOcrLayer(viewport) {
     if (width <= 0 || height <= 0) continue;
     const span = document.createElement('span');
     span.className = 'ocr-word';
-    span.textContent = text;
+    // hOCR words are separate spans; without a trailing space the browser
+    // concatenates the selection ("DişHekimliğinde"). The space stays in the
+    // DOM text even when overflow clips it visually.
+    span.textContent = `${text} `;
     span.style.position = 'absolute';
     span.style.left = `${x0 * scale}px`;
     span.style.top = `${y0 * scale}px`;
