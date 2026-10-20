@@ -666,7 +666,12 @@ const server = http.createServer(async (req, res) => {
     }
     const searchMatch = pathname.match(/^\/api\/books\/([^/]+)\/search$/);
     if (searchMatch && req.method === 'GET') {
-      const book = await getBook(decodeURIComponent(searchMatch[1]));
+      const bookId = decodeURIComponent(searchMatch[1]);
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookId)) {
+        json(res, 400, { error: 'invalid book id' });
+        return;
+      }
+      const book = await getBook(bookId);
       if (!book) {
         json(res, 404, { error: 'book not found' });
         return;

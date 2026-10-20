@@ -16,6 +16,7 @@ Then build the per-page text index used by in-book search:
 
 ```bash
 docker compose exec web node index-text.mjs --all
+docker compose exec web node index-text.mjs --status
 # or a single asset:
 docker compose exec web node index-text.mjs --asset <asset-id>
 ```
