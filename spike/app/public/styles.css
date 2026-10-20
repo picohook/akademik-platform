@@ -227,6 +227,19 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
   flex: 0 0 auto; align-self: flex-start;
 }
 .page-wrap[hidden] { display: none; }
+.scroll-pages {
+  width: 100%; display: flex; flex-direction: column; align-items: center;
+  gap: 18px; padding: 18px 0;
+}
+.scroll-pages[hidden] { display: none; }
+.scroll-page { cursor: default; }
+.reader.scroll-mode .nav-btn,
+.reader.scroll-mode #fitToggle,
+.reader.scroll-mode #rotateBtn,
+.reader.scroll-mode #spreadBtn,
+.reader.scroll-mode #zoomOut,
+.reader.scroll-mode #zoomIn,
+.reader.scroll-mode #zoomLabel { display: none; }
 .page-wrap canvas { display: block; }
 .page-loading {
   position: absolute; inset: 0; z-index: 4;

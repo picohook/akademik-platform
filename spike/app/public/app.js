@@ -41,6 +41,10 @@ const state = {
   twoPage: false,
   secondPage: null,
   secondViewport: null,
+  scrollMode: false,
+  scrollPanes: [],
+  scrollObserver: null,
+  scrollToken: 0,
   viewport: null,
   annotations: [],
   noteQuery: '',
@@ -86,6 +90,7 @@ const passwordNew = $('passwordNew');
 const passwordError = $('passwordError');
 
 const reader = $('reader');
+const pageArea = document.querySelector('.page-area');
 const canvas = $('canvas');
 const canvas2 = $('canvas2');
 const pageLoading = $('pageLoading');
@@ -95,6 +100,7 @@ const textLayerEl = $('textLayer');
 const textLayer2 = $('textLayer2');
 const highlightsEl = $('highlights');
 const highlights2 = $('highlights2');
+const scrollPages = $('scrollPages');
 const pageLabel = $('pageLabel');
 const readerTitle = $('readerTitle');
 const readerMeta = $('readerMeta');
@@ -116,6 +122,7 @@ const pageTotal = $('pageTotal');
 const fitToggle = $('fitToggle');
 const themeBtn = $('themeBtn');
 const spreadBtn = $('spreadBtn');
+const scrollBtn = $('scrollBtn');
 const bookmarkBtn = $('bookmarkBtn');
 const tabToc = $('tabToc');
 const tabSearch = $('tabSearch');
@@ -818,6 +825,10 @@ async function goToPage(value) {
   }
   const target = Math.min(state.numPages, Math.max(1, Math.trunc(requested)));
   if (target !== requested) toast('Sayfa aralığı dışında');
+  if (state.scrollMode) {
+    scrollToPage(target);
+    return;
+  }
   state.page = target;
   await renderPage();
 }
@@ -980,7 +991,7 @@ async function runSearch(rawQuery) {
   state.searchIndex = -1;
   state.searchQuery = query;
   updateSearchNav();
-  applySearchHighlight();
+  refreshSearchHighlights();
   searchResults.replaceChildren();
   searchEmpty.hidden = true;
 
@@ -1048,6 +1059,12 @@ async function runSearch(rawQuery) {
     searchEmpty.hidden = false;
     searchEmpty.textContent = 'Sonuç bulunamadı.';
   }
+}
+
+function refreshSearchHighlights() {
+  applySearchHighlight(textLayerEl);
+  applySearchHighlight(textLayer2);
+  state.scrollPanes.forEach((pane) => applySearchHighlight(pane.textLayer));
 }
 
 function applySearchHighlight(container = textLayerEl) {
@@ -1209,9 +1226,128 @@ async function stressPages(count = 20) {
   return result;
 }
 
-async function renderPagePane(pageNumber, pane, scale, rotation, isPrimary) {
+function createScrollPane(pageNumber, width, height) {
+  const wrap = document.createElement('div');
+  wrap.className = 'page-wrap scroll-page';
+  wrap.style.width = `${Math.floor(width)}px`;
+  wrap.style.height = `${Math.floor(height)}px`;
+  const canvas = document.createElement('canvas');
+  const textLayer = document.createElement('div');
+  textLayer.className = 'textLayer';
+  const highlights = document.createElement('div');
+  highlights.className = 'highlights';
+  wrap.append(canvas, textLayer, highlights);
+  const pane = {
+    pageWrap: wrap,
+    canvas,
+    textLayer,
+    highlights,
+    pageNumber,
+    viewport: null,
+    rendered: false,
+    rendering: false,
+  };
+  wrap.__pane = pane;
+  textLayer.addEventListener('mouseup', () => setTimeout(() => onSelection(pane), 0));
+  return pane;
+}
+
+async function renderScrollPane(pane) {
+  if (!state.scrollMode || pane.rendered || pane.rendering) return;
+  pane.rendering = true;
+  const token = state.scrollToken;
+  try {
+    const result = await renderPagePane(pane.pageNumber, pane, state.scale, state.rotation, false);
+    if (!result || token !== state.scrollToken) return;
+    pane.viewport = result.viewport;
+    renderHighlightsFor(pane.pageNumber, result.viewport.scale, pane.highlights);
+    pane.rendered = true;
+    try { result.page.cleanup(); } catch { /* noop */ }
+  } catch (error) {
+    console.warn('scroll page failed', pane.pageNumber, error.message);
+  } finally {
+    pane.rendering = false;
+  }
+}
+
+function scrollToPage(pageNumber) {
+  const pane = state.scrollPanes[pageNumber - 1];
+  if (!pane) return;
+  state.page = pageNumber;
+  updatePageUi();
+  updateUrl();
+  saveProgress();
+  pane.pageWrap.scrollIntoView({ block: 'start' });
+}
+
+async function startScrollMode() {
+  if (!state.pdf || state.scrollMode) return;
+  const current = await state.pdf.getPage(state.page);
+  const base = current.getViewport({ scale: 1 });
+  try { current.cleanup(); } catch { /* noop */ }
+  const scale = Math.min(1.3, fitScale(base, 1));
+  const width = Math.floor(base.width * scale);
+  const height = Math.floor(base.height * scale);
+  state.scale = scale;
+  state.initialFit = false;
+  state.twoPage = false;
+  state.secondPage = null;
+  state.secondViewport = null;
+  state.scrollMode = true;
+  state.scrollToken += 1;
+  scrollPages.replaceChildren();
+  state.scrollPanes = [];
+  for (let pageNumber = 1; pageNumber <= state.numPages; pageNumber += 1) {
+    const pane = createScrollPane(pageNumber, width, height);
+    state.scrollPanes.push(pane);
+    scrollPages.appendChild(pane.pageWrap);
+  }
+  state.scrollObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      const pane = entry.target.__pane;
+      if (pane) renderScrollPane(pane);
+    });
+  }, { root: pageArea, rootMargin: '700px 0px' });
+  state.scrollPanes.forEach((pane) => state.scrollObserver.observe(pane.pageWrap));
+
+  pageWrap.hidden = true;
+  pageWrap2.hidden = true;
+  scrollPages.hidden = false;
+  pageLoading.hidden = true;
+  reader.classList.add('scroll-mode');
+  scrollBtn.classList.add('active');
+  scrollBtn.setAttribute('aria-pressed', 'true');
+  updatePageUi();
+  updateUrl();
+  setTimeout(() => scrollToPage(state.page), 0);
+}
+
+function stopScrollMode(renderAfter = true) {
+  if (!state.scrollMode) return;
+  state.scrollMode = false;
+  state.scrollToken += 1;
+  if (state.scrollObserver) state.scrollObserver.disconnect();
+  state.scrollObserver = null;
+  state.scrollPanes = [];
+  scrollPages.replaceChildren();
+  scrollPages.hidden = true;
+  pageWrap.hidden = false;
+  pageWrap2.hidden = !state.twoPage;
+  reader.classList.remove('scroll-mode');
+  scrollBtn.classList.remove('active');
+  scrollBtn.setAttribute('aria-pressed', 'false');
+  if (renderAfter) {
+    state.scale = 0;
+    state.initialFit = true;
+    state.secondPage = state.twoPage && state.page < state.numPages ? state.page + 1 : null;
+    renderPage();
+  }
+}
+
+async function renderPagePane(pageNumber, pane, scale, rotationOffset, isPrimary) {
   const page = await state.pdf.getPage(pageNumber);
-  const viewport = page.getViewport({ scale, rotation });
+  const viewport = page.getViewport({ scale, rotation: (page.rotate + rotationOffset) % 360 });
   const outputScale = Math.min(window.devicePixelRatio || 1, 2);
   pane.canvas.width = Math.floor(viewport.width * outputScale);
   pane.canvas.height = Math.floor(viewport.height * outputScale);
@@ -1260,7 +1396,7 @@ async function renderPagePane(pageNumber, pane, scale, rotation, isPrimary) {
 }
 
 async function renderPage() {
-  if (!state.pdf) return;
+  if (!state.pdf || state.scrollMode) return;
   const perfStart = performance.now();
   const firstRender = !state.perf || state.perf.firstPageMs === null;
   pageLoading.hidden = !firstRender;
@@ -1280,8 +1416,8 @@ async function renderPage() {
     state.scale = state.initialFit ? Math.min(1.3, fitted) : fitted;
     state.initialFit = false;
   }
-  const rotation = (firstPage.rotate + state.rotation) % 360;
-
+  const primaryPane = { pageWrap, canvas, textLayer: textLayerEl, highlights: highlightsEl };
+  const secondaryPane = { pageWrap: pageWrap2, canvas: canvas2, textLayer: textLayer2, highlights: highlights2 };
   state.secondPage = state.twoPage && state.page < state.numPages ? state.page + 1 : null;
   pageWrap2.hidden = !state.secondPage;
   if (!state.secondPage) {
@@ -1289,9 +1425,7 @@ async function renderPage() {
     highlights2.replaceChildren();
   }
 
-  const primaryPane = { pageWrap, canvas, textLayer: textLayerEl, highlights: highlightsEl };
-  const secondaryPane = { pageWrap: pageWrap2, canvas: canvas2, textLayer: textLayer2, highlights: highlights2 };
-  const primary = await renderPagePane(state.page, primaryPane, state.scale, rotation, true);
+  const primary = await renderPagePane(state.page, primaryPane, state.scale, state.rotation, true);
   if (!primary) {
     pageLoading.hidden = true;
     return;
@@ -1299,7 +1433,7 @@ async function renderPage() {
   state.viewport = primary.viewport;
   let secondary = null;
   if (state.secondPage) {
-    secondary = await renderPagePane(state.secondPage, secondaryPane, state.scale, rotation, false);
+    secondary = await renderPagePane(state.secondPage, secondaryPane, state.scale, state.rotation, false);
     state.secondViewport = secondary?.viewport || null;
   } else {
     state.secondViewport = null;
@@ -1342,6 +1476,12 @@ function renderHighlightsFor(pageNumber, scale, container) {
 }
 
 function renderHighlights() {
+  if (state.scrollMode) {
+    state.scrollPanes.forEach((pane) => {
+      if (pane.viewport) renderHighlightsFor(pane.pageNumber, pane.viewport.scale, pane.highlights);
+    });
+    return;
+  }
   if (state.viewport) renderHighlightsFor(state.page, state.viewport.scale, highlightsEl);
   if (state.secondPage && state.secondViewport) {
     renderHighlightsFor(state.secondPage, state.secondViewport.scale, highlights2);
@@ -1386,6 +1526,7 @@ function setHighlightColor(color) {
 function renderPending(rects, container = highlightsEl, scale = state.viewport?.scale || 1) {
   clearPending(highlightsEl);
   clearPending(highlights2);
+  state.scrollPanes.forEach((pane) => clearPending(pane.highlights));
   rects.forEach((rect) => {
     const box = document.createElement('div');
     box.className = `hl ${state.highlightColor} pending`;
@@ -1670,7 +1811,15 @@ async function openBook(book) {
   state.twoPage = false;
   state.secondPage = null;
   state.secondViewport = null;
+  if (state.scrollMode) stopScrollMode(false);
+  state.scrollMode = false;
+  scrollPages.hidden = true;
+  scrollPages.replaceChildren();
+  pageWrap.hidden = false;
   pageWrap2.hidden = true;
+  reader.classList.remove('scroll-mode');
+  scrollBtn.classList.remove('active');
+  scrollBtn.setAttribute('aria-pressed', 'false');
   spreadBtn.setAttribute('aria-pressed', 'false');
   spreadBtn.classList.remove('active');
   textLayer2.replaceChildren();
@@ -1757,6 +1906,7 @@ async function openBook(book) {
 }
 
 async function closeReader() {
+  if (state.scrollMode) stopScrollMode(false);
   if (state.renderTask) {
     try { state.renderTask.cancel(); } catch { /* noop */ }
   }
@@ -1908,6 +2058,8 @@ function secondaryPaneRef() {
 
 function paneForNode(node) {
   if (!node) return primaryPaneRef();
+  const scrollWrap = node.parentElement?.closest('.scroll-page');
+  if (scrollWrap?.__pane) return scrollWrap.__pane;
   if (textLayer2.contains(node)) return secondaryPaneRef();
   return primaryPaneRef();
 }
@@ -1957,7 +2109,7 @@ async function deleteAnnotation(id, options = {}) {
 }
 
 function changePage(delta) {
-  goToPage(state.page + delta * (state.twoPage ? 2 : 1));
+  goToPage(state.page + delta * (state.scrollMode ? 1 : state.twoPage ? 2 : 1));
 }
 
 search.addEventListener('input', () => {
@@ -2175,6 +2327,13 @@ spreadBtn.addEventListener('click', () => {
   spreadBtn.classList.toggle('active', state.twoPage);
   renderPage();
 });
+scrollBtn.addEventListener('click', () => {
+  if (state.scrollMode) stopScrollMode();
+  else startScrollMode().catch((error) => {
+    console.error(error);
+    toast('Sürekli kaydırma açılamadı');
+  });
+});
 $('toggleNotes').addEventListener('click', () => {
   notesPanel.hidden = !notesPanel.hidden;
   if (!notesPanel.hidden && window.innerWidth < 820) tocPanel.hidden = true;
@@ -2252,6 +2411,38 @@ document.addEventListener('mousedown', (event) => {
     clearPending(highlightsEl);
   clearPending(highlights2);
   }
+});
+
+let scrollTick = null;
+function updateScrollPageFromViewport() {
+  if (!state.scrollMode) return;
+  const area = pageArea.getBoundingClientRect();
+  const center = area.top + area.height / 2;
+  let best = null;
+  let bestDistance = Infinity;
+  state.scrollPanes.forEach((pane) => {
+    const rect = pane.pageWrap.getBoundingClientRect();
+    if (rect.bottom < area.top || rect.top > area.bottom) return;
+    const distance = Math.abs((rect.top + rect.bottom) / 2 - center);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = pane.pageNumber;
+    }
+  });
+  if (best && best !== state.page) {
+    state.page = best;
+    updatePageUi();
+    updateUrl();
+    saveProgress();
+  }
+}
+
+pageArea.addEventListener('scroll', () => {
+  if (!state.scrollMode || scrollTick) return;
+  scrollTick = requestAnimationFrame(() => {
+    scrollTick = null;
+    updateScrollPageFromViewport();
+  });
 });
 
 window.addEventListener('resize', () => {
