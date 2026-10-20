@@ -10,7 +10,10 @@ Docker only runs `schema.sql`/`seed.sql` when the volume is first created. For a
 
 ```bash
 docker compose exec db psql -U akademik -d akademik -f /migrations/001-asset-pages.sql
+docker compose exec db psql -U akademik -d akademik -f /migrations/002-users-password.sql
 ```
+
+Demo login after migration: `reader@example.edu.tr` / `demo1234`.
 
 Then build the per-page text index used by in-book search:
 

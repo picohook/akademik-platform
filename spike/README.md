@@ -14,6 +14,12 @@ The scaffold can be built with a public-domain PDF. **Measurement does not start
 
 Until a real scanned book arrives, `spike/tools/make_scan.py` generates an image-only synthetic scan for OCR/hOCR/highlight-alignment correctness. It is not a 300/500 MB performance fixture. OCR is in [`ocr/`](ocr/README.md).
 
+## Login
+
+The reader is behind a session cookie. Demo credentials: `reader@example.edu.tr` / `demo1234`. Set a real `SESSION_SECRET` before deployment; the compose default is dev-only.
+
+For an existing database, apply `db/migrations/002-users-password.sql`; fresh volumes get the password hash from `seed.sql`.
+
 ## Plan
 
 | Day | Work | Output |

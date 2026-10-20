@@ -3,7 +3,7 @@ import path from 'node:path';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { mkdir, open, readFile, readdir, stat, unlink } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, createHmac, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
 import Busboy from 'busboy';
 import { PDFDocument } from 'pdf-lib';
 import { indexAsset } from './indexer.mjs';
@@ -14,6 +14,11 @@ const UPLOAD_DIR = path.join(PUBLIC_DIR, 'uploads');
 const PORT = Number(process.env.PORT || 3000);
 const TENANT_ID = process.env.DEMO_TENANT_ID || '11111111-1111-1111-1111-111111111111';
 const USER_ID = process.env.DEMO_USER_ID || '22222222-2222-2222-2222-222222222222';
+const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-only-session-secret-change-me';
+const SESSION_COOKIE = 'akademik_session';
+const SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
+const DEMO_EMAIL = process.env.DEMO_EMAIL || 'reader@example.edu.tr';
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'demo1234';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -105,6 +110,112 @@ function parseAuthors(value) {
     return { family: parts.pop(), given: parts.join(' ') };
   }).filter((author) => author && author.family);
 }
+
+function parseCookies(header) {
+  const cookies = {};
+  String(header || '').split(';').forEach((part) => {
+    const index = part.indexOf('=');
+    if (index < 0) return;
+    cookies[part.slice(0, index).trim()] = decodeURIComponent(part.slice(index + 1).trim());
+  });
+  return cookies;
+}
+
+function signSession(user) {
+  const payload = {
+    sub: user.id,
+    tenant: user.tenant_id || TENANT_ID,
+    email: user.email,
+    name: user.display_name || user.email,
+    role: user.role || 'reader',
+    exp: Date.now() + SESSION_TTL,
+  };
+  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const signature = createHmac('sha256', SESSION_SECRET).update(body).digest('base64url');
+  return `${body}.${signature}`;
+}
+
+function readSession(req) {
+  const token = parseCookies(req.headers.cookie)[SESSION_COOKIE];
+  if (!token) return null;
+  const [body, signature] = token.split('.');
+  if (!body || !signature) return null;
+  const expected = createHmac('sha256', SESSION_SECRET).update(body).digest('base64url');
+  if (signature.length !== expected.length
+    || !timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
+    if (!payload.sub || !payload.exp || payload.exp < Date.now()) return null;
+    return {
+      userId: payload.sub,
+      tenantId: payload.tenant,
+      email: payload.email,
+      displayName: payload.name,
+      role: payload.role,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function setSessionCookie(res, user) {
+  res.setHeader(
+    'set-cookie',
+    `${SESSION_COOKIE}=${encodeURIComponent(signSession(user))}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${Math.floor(SESSION_TTL / 1000)}`,
+  );
+}
+
+function clearSessionCookie(res) {
+  res.setHeader('set-cookie', `${SESSION_COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`);
+}
+
+function verifyPassword(password, stored) {
+  if (!stored) return false;
+  const [scheme, salt, hash] = String(stored).split('$');
+  if (scheme !== 'scrypt' || !salt || !hash) return false;
+  const expected = Buffer.from(hash, 'hex');
+  const candidate = scryptSync(String(password), salt, expected.length);
+  return candidate.length === expected.length && timingSafeEqual(candidate, expected);
+}
+
+async function loginUser(emailValue, passwordValue) {
+  const email = String(emailValue || '').trim().toLocaleLowerCase('tr');
+  const password = String(passwordValue || '');
+  if (!email || !password) return null;
+
+  if (!pool) {
+    if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
+      return {
+        id: USER_ID,
+        tenant_id: TENANT_ID,
+        email: DEMO_EMAIL,
+        display_name: 'Demo Okuyucu',
+        role: 'reader',
+      };
+    }
+    return null;
+  }
+
+  return withTenant(async (client) => {
+    const { rows } = await client.query(
+      `select id, tenant_id, email, display_name, role, password_hash
+         from users
+        where tenant_id = $1 and lower(email) = lower($2)
+        limit 1`,
+      [TENANT_ID, email],
+    );
+    const row = rows[0];
+    if (!row || !verifyPassword(password, row.password_hash)) return null;
+    return {
+      id: row.id,
+      tenant_id: row.tenant_id,
+      email: row.email,
+      display_name: row.display_name,
+      role: row.role,
+    };
+  });
+}
+
 
 async function readJson(req, limit = 1_000_000) {
   let size = 0;
@@ -246,7 +357,7 @@ async function updateBook(id, body) {
   });
 }
 
-async function deleteAnnotation(id) {
+async function deleteAnnotation(id, userId) {
   if (!pool) {
     const index = demoAnnotations.findIndex((item) => item.id === id);
     if (index >= 0) demoAnnotations.splice(index, 1);
@@ -255,7 +366,7 @@ async function deleteAnnotation(id) {
   return withTenant(async (client) => {
     const result = await client.query(
       'delete from annotations where id = $1 and user_id = $2 returning id',
-      [id, USER_ID],
+      [id, userId],
     );
     return result.rowCount > 0;
   });
@@ -295,7 +406,7 @@ async function searchBooks(query) {  const q = String(query || '').trim();
   });
 }
 
-async function listAnnotations(assetId) {
+async function listAnnotations(assetId, userId) {
   if (!pool) return demoAnnotations.filter((item) => item.asset_id === assetId);
   return withTenant(async (client) => {
     const { rows } = await client.query(
@@ -303,13 +414,13 @@ async function listAnnotations(assetId) {
          from annotations
         where asset_id = $1 and user_id = $2
         order by created_at asc`,
-      [assetId, USER_ID],
+      [assetId, userId],
     );
     return rows;
   });
 }
 
-async function createAnnotation(body) {
+async function createAnnotation(body, userId) {
   const anchor = body.anchor;
   if (!anchor || typeof anchor !== 'object') throw new Error('anchor is required');
   if (!body.assetId) throw new Error('assetId is required');
@@ -332,13 +443,13 @@ async function createAnnotation(body) {
       `insert into annotations (tenant_id, user_id, asset_id, anchor, color, note, selected_text)
        values ($1, $2, $3, $4::jsonb, $5, $6, $7)
        returning id, asset_id, anchor, color, note, selected_text, status, created_at`,
-      [TENANT_ID, USER_ID, body.assetId, JSON.stringify(anchor), body.color || 'yellow', body.note || null, body.selectedText || null],
+      [TENANT_ID, userId, body.assetId, JSON.stringify(anchor), body.color || 'yellow', body.note || null, body.selectedText || null],
     );
     return rows[0];
   });
 }
 
-async function updateAnnotation(id, body) {
+async function updateAnnotation(id, body, userId) {
   const colors = ['yellow', 'green', 'blue', 'pink', 'bookmark'];
   const hasNote = Object.prototype.hasOwnProperty.call(body, 'note');
   const hasColor = Object.prototype.hasOwnProperty.call(body, 'color');
@@ -364,7 +475,7 @@ async function updateAnnotation(id, body) {
       params.push(body.color);
       sets.push(`color = $${params.length}`);
     }
-    params.push(id, USER_ID);
+    params.push(id, userId);
     const { rows } = await client.query(
       `update annotations
           set ${sets.join(', ')}, updated_at = now()
@@ -376,20 +487,20 @@ async function updateAnnotation(id, body) {
   });
 }
 
-async function getProgress(assetId) {
+async function getProgress(assetId, userId) {
   if (!pool) return demoProgress.get(assetId) || null;
   return withTenant(async (client) => {
     const { rows } = await client.query(
       `select asset_id, anchor, percent, updated_at
          from reading_progress
         where asset_id = $1 and user_id = $2`,
-      [assetId, USER_ID],
+      [assetId, userId],
     );
     return rows[0] || null;
   });
 }
 
-async function saveProgress(body) {
+async function saveProgress(body, userId) {
   if (!body.assetId || !body.anchor) throw new Error('assetId and anchor are required');
   const row = {
     asset_id: body.assetId,
@@ -408,7 +519,7 @@ async function saveProgress(body) {
        on conflict (user_id, asset_id)
        do update set anchor = excluded.anchor, percent = excluded.percent, updated_at = now()
        returning asset_id, anchor, percent, updated_at`,
-      [TENANT_ID, USER_ID, body.assetId, JSON.stringify(body.anchor), Number(body.percent || 0)],
+      [TENANT_ID, userId, body.assetId, JSON.stringify(body.anchor), Number(body.percent || 0)],
     );
     return rows[0];
   });
@@ -727,6 +838,47 @@ const server = http.createServer(async (req, res) => {
       json(res, 200, { ok: true, mode: pool ? 'db' : 'demo', tenantId: TENANT_ID });
       return;
     }
+    if (pathname === '/api/login' && req.method === 'POST') {
+      const body = await readJson(req);
+      const user = await loginUser(body.email, body.password);
+      if (!user) {
+        json(res, 401, { error: 'invalid credentials' });
+        return;
+      }
+      setSessionCookie(res, user);
+      json(res, 200, {
+        id: user.id,
+        email: user.email,
+        displayName: user.display_name || user.email,
+        role: user.role,
+      });
+      return;
+    }
+    if (pathname === '/api/logout' && req.method === 'POST') {
+      clearSessionCookie(res);
+      json(res, 200, { ok: true });
+      return;
+    }
+    if (pathname === '/api/me' && req.method === 'GET') {
+      const session = readSession(req);
+      if (!session) {
+        json(res, 401, { error: 'authentication required' });
+        return;
+      }
+      json(res, 200, {
+        id: session.userId,
+        email: session.email,
+        displayName: session.displayName,
+        role: session.role,
+      });
+      return;
+    }
+
+    const auth = readSession(req);
+    if (pathname.startsWith('/api/') && !auth) {
+      json(res, 401, { error: 'authentication required' });
+      return;
+    }
     if (pathname.startsWith('/api/ocr/') && req.method === 'GET') {
       const assetId = pathname.slice('/api/ocr/'.length);
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(assetId)) {
@@ -821,11 +973,11 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname === '/api/annotations' && req.method === 'GET') {
-      json(res, 200, await listAnnotations(url.searchParams.get('assetId')));
+      json(res, 200, await listAnnotations(url.searchParams.get('assetId'), auth.userId));
       return;
     }
     if (pathname === '/api/annotations' && req.method === 'POST') {
-      json(res, 201, await createAnnotation(await readJson(req)));
+      json(res, 201, await createAnnotation(await readJson(req), auth.userId));
       return;
     }
     if (pathname.startsWith('/api/annotations/') && req.method === 'PATCH') {
@@ -834,22 +986,22 @@ const server = http.createServer(async (req, res) => {
         json(res, 400, { error: 'invalid annotation id' });
         return;
       }
-      const updated = await updateAnnotation(id, await readJson(req));
+      const updated = await updateAnnotation(id, await readJson(req), auth.userId);
       json(res, updated ? 200 : 404, updated || { error: 'annotation not found' });
       return;
     }
     if (pathname.startsWith('/api/annotations/') && req.method === 'DELETE') {
       const id = pathname.slice('/api/annotations/'.length);
-      const removed = await deleteAnnotation(id);
+      const removed = await deleteAnnotation(id, auth.userId);
       json(res, removed ? 200 : 404, { ok: removed });
       return;
     }
     if (pathname === '/api/progress' && req.method === 'GET') {
-      json(res, 200, await getProgress(url.searchParams.get('assetId')));
+      json(res, 200, await getProgress(url.searchParams.get('assetId'), auth.userId));
       return;
     }
     if (pathname === '/api/progress' && req.method === 'POST') {
-      json(res, 200, await saveProgress(await readJson(req)));
+      json(res, 200, await saveProgress(await readJson(req), auth.userId));
       return;
     }
     if (pathname.startsWith('/api/')) {

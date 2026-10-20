@@ -7,6 +7,7 @@ const state = {
   books: [],
   filter: 'all',
   query: '',
+  user: null,
   book: null,
   pdf: null,
   page: 1,
@@ -32,6 +33,13 @@ const filters = $('filters');
 const count = $('count');
 const search = $('search');
 const mode = $('mode');
+const loginScreen = $('loginScreen');
+const loginForm = $('loginForm');
+const loginEmail = $('loginEmail');
+const loginPassword = $('loginPassword');
+const loginError = $('loginError');
+const userChip = $('userChip');
+const logoutBtn = $('logoutBtn');
 
 const reader = $('reader');
 const canvas = $('canvas');
@@ -366,9 +374,70 @@ async function submitUpload(event) {
   }
 }
 
+function setUser(user) {
+  state.user = user;
+  userChip.textContent = user ? `${user.displayName || user.email} · ${user.role || 'reader'}` : '';
+  userChip.hidden = !user;
+  logoutBtn.hidden = !user;
+}
+
+function showLogin(message = '') {
+  loginScreen.hidden = false;
+  loginError.hidden = !message;
+  loginError.textContent = message;
+  loginPassword.value = '';
+  setTimeout(() => loginPassword.focus(), 0);
+}
+
+async function bootData() {
+  await loadBooks();
+  const bookId = new URLSearchParams(window.location.search).get('book');
+  if (bookId) {
+    const book = state.books.find((item) => item.id === bookId || item.asset_id === bookId);
+    if (book) await openBook(book);
+  }
+}
+
+async function handleLogin(event) {
+  event.preventDefault();
+  loginError.hidden = true;
+  try {
+    const response = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: loginEmail.value.trim(), password: loginPassword.value }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      showLogin('E-posta veya parola hatalı.');
+      return;
+    }
+    loginScreen.hidden = true;
+    setUser(payload);
+    await bootData();
+  } catch (error) {
+    console.error(error);
+    showLogin('Giriş yapılamadı.');
+  }
+}
+
+async function logout() {
+  try {
+    await fetch('/api/logout', { method: 'POST' });
+  } catch {
+    // Cookie is cleared server-side on the next successful request.
+  }
+  state.user = null;
+  window.location.href = '/';
+}
+
 async function loadBooks(query = '') {
   const url = query ? `/api/search?q=${encodeURIComponent(query)}` : '/api/books';
   const response = await fetch(url);
+  if (response.status === 401) {
+    showLogin('Oturum gerekli.');
+    throw new Error('Oturum gerekli');
+  }
   if (!response.ok) throw new Error('Katalog yüklenemedi');
   state.books = await response.json();
   renderFilters();
@@ -1478,6 +1547,8 @@ document.addEventListener('keydown', (event) => {
 });
 
 $('openUpload').addEventListener('click', openUpload);
+loginForm.addEventListener('submit', handleLogin);
+logoutBtn.addEventListener('click', logout);
 uploadForm.addEventListener('submit', submitUpload);
 $('closeUpload').addEventListener('click', closeUpload);
 $('cancelUpload').addEventListener('click', closeUpload);
@@ -1632,13 +1703,15 @@ window.addEventListener('resize', () => {
     mode.textContent = 'bağlantı yok';
   }
   try {
-    await loadBooks();
-    const bookId = new URLSearchParams(window.location.search).get('book');
-    if (bookId) {
-      const book = state.books.find((item) => item.id === bookId || item.asset_id === bookId);
-      if (book) await openBook(book);
+    const me = await fetch('/api/me');
+    if (!me.ok) {
+      showLogin();
+      return;
     }
+    setUser(await me.json());
+    await bootData();
   } catch (error) {
-    toast(error.message);
+    console.error(error);
+    showLogin('Sunucuya ulaşılamadı.');
   }
 })();

@@ -4,9 +4,21 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=15" />
+  <link rel="stylesheet" href="/styles.css?v=16" />
 </head>
 <body>
+  <div class="login-screen" id="loginScreen" hidden>
+    <form class="login-card" id="loginForm">
+      <span class="brand-mark">A</span>
+      <h2>Akademik Platform</h2>
+      <p class="login-hint">Demo hesabı: <code>reader@example.edu.tr</code> / <code>demo1234</code></p>
+      <label>E-posta<input id="loginEmail" type="email" autocomplete="username" value="reader@example.edu.tr" required /></label>
+      <label>Parola<input id="loginPassword" type="password" autocomplete="current-password" required /></label>
+      <div class="login-error" id="loginError" hidden></div>
+      <button class="primary" type="submit">Giriş yap</button>
+    </form>
+  </div>
+
   <header class="topbar">
     <a class="brand" href="/">
       <span class="brand-mark">A</span>
@@ -17,6 +29,8 @@
       <kbd>/</kbd>
     </div>
     <span class="mode" id="mode">bağlanıyor…</span>
+    <span class="user-chip" id="userChip" hidden></span>
+    <button class="ghost-btn" id="logoutBtn" type="button" hidden>Çıkış</button>
   </header>
 
   <main>
@@ -211,6 +225,6 @@
 
   <div class="toast" id="toast" hidden></div>
 
-  <script type="module" src="/app.js?v=22"></script>
+  <script type="module" src="/app.js?v=23"></script>
 </body>
 </html>
