@@ -35,6 +35,7 @@ const state = {
   numPages: 0,
   scale: 1,
   fitMode: 'width',
+  initialFit: true,
   rotation: 0,
   theme: 'light',
   viewport: null,
@@ -1209,9 +1210,9 @@ async function renderPage() {
   const page = await state.pdf.getPage(state.page);
   const base = page.getViewport({ scale: 1 });
   if (!state.scale || state.scale <= 0) {
-    state.scale = state.fitMode === 'page'
-      ? fitPageScale(base)
-      : Math.min(1.3, fitScale(base));
+    const fitted = state.fitMode === 'page' ? fitPageScale(base) : fitScale(base);
+    state.scale = state.initialFit ? Math.min(1.3, fitted) : fitted;
+    state.initialFit = false;
   }
   const rotation = (page.rotate + state.rotation) % 360;
   const viewport = page.getViewport({ scale: state.scale, rotation });
@@ -1623,6 +1624,7 @@ async function openBook(book) {
   state.page = 1;
   state.scale = 0;
   state.fitMode = 'width';
+  state.initialFit = true;
   state.rotation = 0;
   updateViewControls();
   let savedTheme = 'light';
@@ -2044,21 +2046,25 @@ $('perfStress').addEventListener('click', () => {
 $('prevPage').addEventListener('click', () => changePage(-1));
 $('nextPage').addEventListener('click', () => changePage(1));
 $('zoomIn').addEventListener('click', () => {
+  state.initialFit = false;
   state.scale = Math.min(3, state.scale + 0.2);
   renderPage();
 });
 $('zoomOut').addEventListener('click', () => {
+  state.initialFit = false;
   state.scale = Math.max(0.5, state.scale - 0.2);
   renderPage();
 });
 fitToggle.addEventListener('click', () => {
   state.fitMode = state.fitMode === 'width' ? 'page' : 'width';
+  state.initialFit = false;
   state.scale = 0;
   updateViewControls();
   renderPage();
 });
 $('rotateBtn').addEventListener('click', () => {
   state.rotation = (state.rotation + 90) % 360;
+  state.initialFit = false;
   state.scale = 0;
   renderPage();
 });
