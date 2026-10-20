@@ -14,6 +14,9 @@ const state = {
   viewport: null,
   annotations: [],
   outline: [],
+  pageText: new Map(),
+  searchRun: 0,
+  activeQuery: '',
   ocrCache: new Map(),
   ocrManifest: new Map(),
   renderTask: null,
@@ -48,6 +51,14 @@ const tocFilter = $('tocFilter');
 const pageInput = $('pageInput');
 const pageTotal = $('pageTotal');
 const bookmarkBtn = $('bookmarkBtn');
+const tabToc = $('tabToc');
+const tabSearch = $('tabSearch');
+const tocView = $('tocView');
+const searchView = $('searchView');
+const bookSearch = $('bookSearch');
+const searchStatus = $('searchStatus');
+const searchResults = $('searchResults');
+const searchEmpty = $('searchEmpty');
 const hlBar = $('hlBar');
 const hlNote = $('hlNote');
 const toastEl = $('toast');
@@ -483,7 +494,141 @@ async function toggleBookmark() {
 }
 
 function showShortcuts() {
-  toast('j/k veya ←/→ sayfa · / içindekilerde ara · n notlar · b yer imi · ? yardım · Esc kapat');
+  toast('j/k veya ←/→ sayfa · / kitapta ara · n notlar · b yer imi · ? yardım · Esc kapat');
+}
+
+function showTocTab(tab) {
+  const search = tab === 'search';
+  tabToc.classList.toggle('active', !search);
+  tabSearch.classList.toggle('active', search);
+  tocView.hidden = search;
+  searchView.hidden = !search;
+  if (search) setTimeout(() => bookSearch.focus(), 0);
+}
+
+function normalizeSearch(value) {
+  return String(value || '').toLocaleLowerCase('tr').replace(/\s+/g, ' ').trim();
+}
+
+function nextFrame() {
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+}
+
+async function getPageText(pageNumber) {
+  const key = `${state.book.asset_id}:${pageNumber}`;
+  if (state.pageText.has(key)) return state.pageText.get(key);
+
+  let text = '';
+  const ocrPages = await getOcrPages(state.book.asset_id);
+  if (ocrPages.has(pageNumber)) {
+    try {
+      const response = await fetch(`/ocr/${encodeURIComponent(state.book.asset_id)}/page-${String(pageNumber).padStart(3, '0')}.hocr?v=2`);
+      if (response.ok) {
+        const hocr = await response.text();
+        const doc = new DOMParser().parseFromString(hocr, 'text/html');
+        text = [...doc.querySelectorAll('.ocrx_word')].map((word) => word.textContent).join(' ');
+      }
+    } catch {
+      text = '';
+    }
+  } else {
+    try {
+      const page = await state.pdf.getPage(pageNumber);
+      const content = await page.getTextContent();
+      text = content.items.map((item) => item.str).join(' ');
+    } catch {
+      text = '';
+    }
+  }
+
+  text = text.replace(/\s+/g, ' ').trim();
+  state.pageText.set(key, text);
+  return text;
+}
+
+function addSearchResult(pageNumber, text, index, queryLength, query) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'toc-item search-item';
+  const label = document.createElement('span');
+  label.textContent = `Sayfa ${pageNumber}`;
+  const snippet = document.createElement('span');
+  snippet.className = 'search-snippet';
+  const start = Math.max(0, index - 45);
+  const end = Math.min(text.length, index + queryLength + 45);
+  snippet.textContent = `${start > 0 ? '…' : ''}${text.slice(start, end)}${end < text.length ? '…' : ''}`;
+  button.appendChild(label);
+  button.appendChild(snippet);
+  button.addEventListener('click', async () => {
+    state.activeQuery = query;
+    await goToPage(pageNumber);
+    if (window.innerWidth < 820) toggleToc(false);
+  });
+  searchResults.appendChild(button);
+}
+
+let searchTimer = null;
+async function runSearch(rawQuery) {
+  const query = String(rawQuery || '').trim();
+  const normalized = normalizeSearch(query);
+  const run = ++state.searchRun;
+  state.activeQuery = query;
+  applySearchHighlight();
+  searchResults.replaceChildren();
+  searchEmpty.hidden = true;
+
+  if (!normalized) {
+    searchStatus.textContent = '';
+    return;
+  }
+
+  searchStatus.textContent = `Aranıyor… 0 / ${state.numPages}`;
+  let count = 0;
+
+  // Start from the current page, then scan forward and wrap around. Academic
+  // searches usually target the chapter the reader is in.
+  const order = [];
+  for (let pageNumber = state.page; pageNumber <= state.numPages; pageNumber += 1) order.push(pageNumber);
+  for (let pageNumber = 1; pageNumber < state.page; pageNumber += 1) order.push(pageNumber);
+
+  for (let index = 0; index < order.length; index += 1) {
+    if (state.searchRun !== run) return;
+    const pageNumber = order[index];
+    const text = await getPageText(pageNumber);
+    if (state.searchRun !== run) return;
+    const lower = normalizeSearch(text);
+    let from = 0;
+    let perPage = 0;
+    while (perPage < 3 && count < 200) {
+      const found = lower.indexOf(normalized, from);
+      if (found < 0) break;
+      addSearchResult(pageNumber, text, found, normalized.length, query);
+      count += 1;
+      perPage += 1;
+      from = found + normalized.length;
+    }
+    if (index % 10 === 0 || index === order.length - 1) {
+      searchStatus.textContent = `Aranıyor… ${index + 1} / ${order.length}`;
+    }
+    if (index % 3 === 0) await nextFrame();
+    if (count >= 200) break;
+  }
+
+  if (state.searchRun !== run) return;
+  searchStatus.textContent = count ? `${count}${count >= 200 ? '+' : ''} sonuç` : '0 sonuç';
+  if (!count) {
+    searchEmpty.hidden = false;
+    searchEmpty.textContent = 'Sonuç bulunamadı.';
+  }
+}
+
+function applySearchHighlight() {
+  textLayerEl.querySelectorAll('.search-hit').forEach((span) => span.classList.remove('search-hit'));
+  const query = normalizeSearch(state.activeQuery);
+  if (!query) return;
+  textLayerEl.querySelectorAll('span').forEach((span) => {
+    if (normalizeSearch(span.textContent).includes(query)) span.classList.add('search-hit');
+  });
 }
 
 async function getOcrPages(assetId) {
@@ -625,6 +770,7 @@ async function renderPage() {
       console.warn('text layer failed', error);
     }
   }
+  applySearchHighlight();
 
   updatePageUi();
   updateZoomLabel();
@@ -767,6 +913,14 @@ async function openBook(book) {
   state.scale = 0;
   state.annotations = [];
   state.outline = [];
+  state.pageText = new Map();
+  state.searchRun += 1;
+  state.activeQuery = '';
+  bookSearch.value = '';
+  searchResults.replaceChildren();
+  searchStatus.textContent = '';
+  searchEmpty.hidden = true;
+  showTocTab('toc');
   tocFilter.value = '';
   tocPanel.hidden = true;
   reader.hidden = false;
@@ -837,6 +991,8 @@ async function closeReader() {
   hlBar.hidden = true;
   tocPanel.hidden = true;
   state.outline = [];
+  state.searchRun += 1;
+  state.activeQuery = '';
   clearPending();
   textLayerEl.replaceChildren();
   highlightsEl.replaceChildren();
@@ -1007,7 +1163,8 @@ document.addEventListener('keydown', (event) => {
       search.focus();
     } else {
       toggleToc(true);
-      tocFilter.focus();
+      showTocTab('search');
+      bookSearch.focus();
     }
     return;
   }
@@ -1042,7 +1199,8 @@ document.addEventListener('keydown', (event) => {
       toggleBookmark();
       break;
     case 't':
-      toggleToc();
+      toggleToc(true);
+      showTocTab('toc');
       break;
     default:
       break;
@@ -1074,6 +1232,19 @@ $('closeReader').addEventListener('click', closeReader);
 $('toggleToc').addEventListener('click', () => toggleToc());
 $('closeToc').addEventListener('click', () => toggleToc(false));
 tocFilter.addEventListener('input', renderToc);
+tabToc.addEventListener('click', () => showTocTab('toc'));
+tabSearch.addEventListener('click', () => showTocTab('search'));
+bookSearch.addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => runSearch(bookSearch.value), 300);
+});
+bookSearch.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    clearTimeout(searchTimer);
+    runSearch(bookSearch.value);
+  }
+});
 pageInput.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') {
     event.preventDefault();
