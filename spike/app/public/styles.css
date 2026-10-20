@@ -95,6 +95,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
 .chip:hover { border-color: #c9bfa9; color: var(--ink); }
 .chip.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 .count { color: var(--muted); font-size: 13px; margin-left: auto; }
+.upload-btn { margin-left: 12px; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)); gap: 22px; }
 
@@ -272,6 +273,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
   padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px;
   background: #fff; color: var(--ink); font: inherit;
 }
+.modal-card input[type="file"] { padding: 8px; }
 .modal-card input:focus, .modal-card select:focus {
   outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(31, 92, 74, 0.1);
 }

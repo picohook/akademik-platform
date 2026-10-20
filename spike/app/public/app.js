@@ -53,6 +53,17 @@ const editYear = $('editYear');
 const editPublisher = $('editPublisher');
 const editSubjects = $('editSubjects');
 
+const uploadModal = $('uploadModal');
+const uploadForm = $('uploadForm');
+const uploadFile = $('uploadFile');
+const uploadTitle = $('uploadTitle');
+const uploadSubtitle = $('uploadSubtitle');
+const uploadLanguage = $('uploadLanguage');
+const uploadYear = $('uploadYear');
+const uploadPublisher = $('uploadPublisher');
+const uploadSubjects = $('uploadSubjects');
+const uploadSubmitButton = $('submitUpload');
+
 function toast(message) {
   toastEl.textContent = message;
   toastEl.hidden = false;
@@ -225,6 +236,53 @@ function renderFilters() {
     chip.addEventListener('click', () => { state.filter = subject; renderFilters(); renderBooks(); });
     filters.appendChild(chip);
   });
+}
+
+function openUpload() {
+  uploadForm.reset();
+  uploadModal.hidden = false;
+  setTimeout(() => uploadFile.focus(), 0);
+}
+
+function closeUpload() {
+  uploadModal.hidden = true;
+}
+
+async function submitUpload(event) {
+  event.preventDefault();
+  const file = uploadFile.files && uploadFile.files[0];
+  if (!file) {
+    toast('Önce bir PDF seçin');
+    return;
+  }
+
+  const data = new FormData();
+  data.append('file', file, file.name);
+  if (uploadTitle.value.trim()) data.append('title', uploadTitle.value.trim());
+  if (uploadSubtitle.value.trim()) data.append('subtitle', uploadSubtitle.value.trim());
+  data.append('language', uploadLanguage.value);
+  if (uploadYear.value) data.append('year', uploadYear.value);
+  if (uploadPublisher.value.trim()) data.append('publisher', uploadPublisher.value.trim());
+  if (uploadSubjects.value.trim()) data.append('subjects', uploadSubjects.value.trim());
+
+  uploadSubmitButton.disabled = true;
+  uploadSubmitButton.textContent = 'Yükleniyor…';
+  try {
+    const response = await fetch('/api/upload', { method: 'POST', body: data });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || 'Yüklenemedi');
+    state.books.unshift(payload);
+    renderFilters();
+    renderBooks();
+    closeUpload();
+    toast('Kitap eklendi');
+  } catch (error) {
+    console.error(error);
+    toast(error.message === 'already uploaded' ? 'Bu PDF zaten yüklü' : 'Kitap yüklenemedi');
+  } finally {
+    uploadSubmitButton.disabled = false;
+    uploadSubmitButton.textContent = 'Yükle';
+  }
 }
 
 async function loadBooks(query = '') {
@@ -703,6 +761,10 @@ document.addEventListener('keydown', (event) => {
     event.preventDefault();
     search.focus();
   }
+  if (!uploadModal.hidden) {
+    if (event.key === 'Escape') closeUpload();
+    return;
+  }
   if (!editModal.hidden) {
     if (event.key === 'Escape') closeEdit();
     return;
@@ -711,6 +773,20 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') closeReader();
   if (event.key === 'ArrowLeft') changePage(-1);
   if (event.key === 'ArrowRight') changePage(1);
+});
+
+$('openUpload').addEventListener('click', openUpload);
+uploadForm.addEventListener('submit', submitUpload);
+$('closeUpload').addEventListener('click', closeUpload);
+$('cancelUpload').addEventListener('click', closeUpload);
+uploadModal.addEventListener('click', (event) => {
+  if (event.target === uploadModal) closeUpload();
+});
+uploadFile.addEventListener('change', () => {
+  const file = uploadFile.files && uploadFile.files[0];
+  if (file && !uploadTitle.value.trim()) {
+    uploadTitle.value = file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();
+  }
 });
 
 editForm.addEventListener('submit', saveEdit);

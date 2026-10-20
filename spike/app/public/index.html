@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=7" />
+  <link rel="stylesheet" href="/styles.css?v=8" />
 </head>
 <body>
   <header class="topbar">
@@ -32,6 +32,7 @@
     <section class="toolbar">
       <div class="chips" id="filters"></div>
       <span class="count" id="count"></span>
+      <button class="primary upload-btn" id="openUpload" type="button">+ Kitap ekle</button>
     </section>
 
     <section class="grid" id="grid" aria-live="polite"></section>
@@ -62,6 +63,35 @@
         <div class="modal-actions">
           <button class="ghost-btn" id="cancelEdit" type="button">Vazgeç</button>
           <button class="primary" type="submit">Kaydet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="uploadModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="uploadHeading">
+      <div class="modal-head">
+        <strong id="uploadHeading">Kitap ekle</strong>
+        <button class="icon-btn" id="closeUpload" type="button" aria-label="Kapat">✕</button>
+      </div>
+      <form id="uploadForm">
+        <label>PDF dosyası<input id="uploadFile" type="file" accept="application/pdf,.pdf" required /></label>
+        <label>Başlık (boşsa dosya adı)<input id="uploadTitle" maxlength="300" /></label>
+        <label>Alt başlık<input id="uploadSubtitle" maxlength="300" /></label>
+        <div class="form-row">
+          <label>Dil
+            <select id="uploadLanguage">
+              <option value="tr">Türkçe</option>
+              <option value="en">English</option>
+            </select>
+          </label>
+          <label>Yıl<input id="uploadYear" type="number" min="1800" max="2100" /></label>
+        </div>
+        <label>Yayıncı<input id="uploadPublisher" maxlength="200" /></label>
+        <label>Konular (; ile ayırın)<input id="uploadSubjects" placeholder="Diş Hekimliği;Implantoloji" /></label>
+        <div class="modal-actions">
+          <button class="ghost-btn" id="cancelUpload" type="button">Vazgeç</button>
+          <button class="primary" id="submitUpload" type="submit">Yükle</button>
         </div>
       </form>
     </div>
@@ -112,6 +142,6 @@
 
   <div class="toast" id="toast" hidden></div>
 
-  <script type="module" src="/app.js?v=11"></script>
+  <script type="module" src="/app.js?v=12"></script>
 </body>
 </html>

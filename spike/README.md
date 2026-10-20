@@ -72,6 +72,10 @@ This mode runs the same app with `DATABASE_URL`, applies `db/schema.sql` and `db
 
 ### Add your own PDFs
 
+**From the browser:** open `http://localhost:8080`, click **+ Kitap ekle**, choose a PDF and fill in title/language/publisher/subjects. The file is copied to `data/uploads/` and the catalog refreshes.
+
+**Bulk/CLI:**
+
 ```bash
 mkdir -p incoming
 # copy PDFs into incoming/ (do not commit them)
