@@ -44,6 +44,7 @@ const logoutBtn = $('logoutBtn');
 
 const reader = $('reader');
 const canvas = $('canvas');
+const pageLoading = $('pageLoading');
 const pageWrap = $('pageWrap');
 const textLayerEl = $('textLayer');
 const highlightsEl = $('highlights');
@@ -974,6 +975,8 @@ async function stressPages(count = 20) {
 async function renderPage() {
   if (!state.pdf) return;
   const perfStart = performance.now();
+  const firstRender = !state.perf || state.perf.firstPageMs === null;
+  pageLoading.hidden = !firstRender;
   if (state.renderTask) {
     try { state.renderTask.cancel(); } catch { /* noop */ }
     state.renderTask = null;
@@ -1006,7 +1009,11 @@ async function renderPage() {
   try {
     await task.promise;
   } catch (error) {
-    if (error?.name === 'RenderingCancelledException') return;
+    if (error?.name === 'RenderingCancelledException') {
+      pageLoading.hidden = true;
+      return;
+    }
+    pageLoading.hidden = true;
     throw error;
   }
   const canvasEnd = performance.now();
@@ -1035,6 +1042,7 @@ async function renderPage() {
   if (!tocPanel.hidden) renderToc();
   saveProgress();
   updateUrl();
+  pageLoading.hidden = true;
   recordRender(textEnd - perfStart, {
     canvas: Math.round(canvasEnd - perfStart),
     text: Math.round(textEnd - canvasEnd),
@@ -1423,6 +1431,7 @@ async function closeReader() {
   reader.hidden = true;
   document.body.style.overflow = '';
   hlBar.hidden = true;
+  pageLoading.hidden = true;
   tocPanel.hidden = true;
   state.outline = [];
   state.searchRun += 1;

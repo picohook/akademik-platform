@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=18" />
+  <link rel="stylesheet" href="/styles.css?v=19" />
 </head>
 <body>
   <div class="login-screen" id="loginScreen" hidden>
@@ -196,6 +196,10 @@
           <div class="highlights" id="highlights"></div>
         </div>
         <button class="nav-btn" id="nextPage" aria-label="Sonraki sayfa">›</button>
+        <div class="page-loading" id="pageLoading" hidden>
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Sayfa hazırlanıyor…</span>
+        </div>
       </div>
       <aside class="notes" id="notesPanel">
         <div class="notes-head">
@@ -237,6 +241,6 @@
 
   <div class="toast" id="toast" hidden></div>
 
-  <script type="module" src="/app.js?v=28"></script>
+  <script type="module" src="/app.js?v=29"></script>
 </body>
 </html>
