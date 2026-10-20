@@ -93,6 +93,17 @@ docker compose exec web node ingest.mjs /app/incoming --dry-run
 
 Files are copied to `data/uploads/` on the host and served by the app. The `incoming/` and `data/` folders are gitignored.
 
+### Fix metadata
+
+Ingest uses the filename as the title and defaults to `tr`. Correct it with the work id from `/api/books`:
+
+```bash
+docker compose exec web node edit.mjs <work-id> \
+  --title "Oral Radiology: Principles and Interpretation" \
+  --subtitle "7th edition" --language en --publisher "Mosby" --year 2013 --pages 697 \
+  --subjects "Radiology;Dentistry"
+```
+
 ## Rules
 
 - A passing scaffold is **not** a passing spike.
