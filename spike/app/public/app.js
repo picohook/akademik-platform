@@ -86,6 +86,7 @@ function makeCard(book) {
 
   const kicker = document.createElement('span');
   kicker.className = 'kicker';
+  kicker.lang = book.language === 'en' ? 'en' : 'tr';
   kicker.textContent = (book.subjects && book.subjects[0]) || 'Akademik';
   cover.appendChild(kicker);
 
@@ -515,22 +516,23 @@ function updateSelectionBar(rect) {
   hlBar.style.top = `${top}px`;
 }
 
-function selectedOcrWords(selection) {
+function selectedOcrSpans(selection) {
   const range = selection.rangeCount ? selection.getRangeAt(0) : null;
   return [...textLayerEl.querySelectorAll('.ocr-word')]
-    .filter((span) => (range ? range.intersectsNode(span) : selection.containsNode(span, true)))
-    .map((span) => span.textContent.trim())
-    .filter(Boolean);
+    .filter((span) => (range ? range.intersectsNode(span) : selection.containsNode(span, true)));
 }
 
 function ocrSelectionText(selection) {
-  const words = selectedOcrWords(selection);
+  const words = selectedOcrSpans(selection)
+    .map((span) => span.textContent.trim())
+    .filter(Boolean);
   return words.length ? words.join(' ') : selection.toString().trim();
 }
 
 function onSelection() {
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed) return;
+  const ocrSpans = selectedOcrSpans(selection);
   const text = ocrSelectionText(selection);
   if (!text) return;
   const range = selection.getRangeAt(0);
@@ -538,18 +540,31 @@ function onSelection() {
 
   const pageRect = pageWrap.getBoundingClientRect();
   const scale = state.viewport?.scale || 1;
-  const rects = [...range.getClientRects()]
-    .filter((rect) => rect.width > 1 && rect.height > 1)
-    .map((rect) => [
-      Math.max(0, (rect.left - pageRect.left) / scale),
-      Math.max(0, (rect.top - pageRect.top) / scale),
-      rect.width / scale,
-      rect.height / scale,
-    ]);
+  const toPageRect = (rect) => [
+    Math.max(0, (rect.left - pageRect.left) / scale),
+    Math.max(0, (rect.top - pageRect.top) / scale),
+    rect.width / scale,
+    rect.height / scale,
+  ];
+
+  let rects;
+  if (ocrSpans.length) {
+    // Highlight the full OCR word boxes, not the partial browser range, so the
+    // saved text and the yellow boxes always cover the same words.
+    rects = ocrSpans
+      .map((span) => toPageRect(span.getBoundingClientRect()))
+      .filter((rect) => rect[2] > 1 && rect[3] > 1);
+  } else {
+    rects = [...range.getClientRects()]
+      .filter((rect) => rect.width > 1 && rect.height > 1)
+      .map(toPageRect);
+  }
 
   if (!rects.length) return;
 
-  const last = range.getClientRects()[range.getClientRects().length - 1] || pageRect;
+  const last = ocrSpans.length
+    ? ocrSpans[ocrSpans.length - 1].getBoundingClientRect()
+    : (range.getClientRects()[range.getClientRects().length - 1] || pageRect);
   state.pending = {
     text,
     anchor: {
@@ -683,7 +698,9 @@ document.addEventListener('copy', (event) => {
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed) return;
   if (!selection.anchorNode || !textLayerEl.contains(selection.anchorNode)) return;
-  const words = selectedOcrWords(selection);
+  const words = selectedOcrSpans(selection)
+    .map((span) => span.textContent.trim())
+    .filter(Boolean);
   if (!words.length || !event.clipboardData) return;
   event.clipboardData.setData('text/plain', words.join(' '));
   event.preventDefault();
