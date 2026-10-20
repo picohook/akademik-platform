@@ -980,7 +980,7 @@ async function renderPage() {
   }
   const page = await state.pdf.getPage(state.page);
   const base = page.getViewport({ scale: 1 });
-  if (!state.scale || state.scale <= 0) state.scale = fitScale(base);
+  if (!state.scale || state.scale <= 0) state.scale = Math.min(1.6, fitScale(base));
   const viewport = page.getViewport({ scale: state.scale });
   state.viewport = viewport;
 
