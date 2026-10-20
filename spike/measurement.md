@@ -52,6 +52,8 @@ Not a formal P1/P2/P3 run; localhost, uncontrolled network, no RSS sampling.
 
 **Next optimization:** first-page progressive paint (low-res canvas first, then fit-scale) or a lower initial fit cap for large PDFs. Re-run with the 500 MB fixture before signing off the PDF architecture.
 
+**Progressive-paint attempt (v31, reverted in v32):** low-resolution first paint at 100% took 3,546 ms; full 130% took 3,830 ms. The 284 ms gap is too small to justify the flash. Cold first-page cost is font/document work, not canvas resolution; keep the loading overlay and full render instead.
+
 ## Search queries (Turkish + English)
 
 1. implant komplikasyonları
