@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=20" />
+  <link rel="stylesheet" href="/styles.css?v=21" />
 </head>
 <body>
   <div class="login-screen" id="loginScreen" hidden>
@@ -174,6 +174,9 @@
           <input id="pageInput" type="number" min="1" value="1" aria-label="Sayfa numarası" />
           <span id="pageTotal">/ 1</span>
         </div>
+        <button class="ghost-btn" id="fitToggle" type="button" title="Genişliğe sığdır">↔</button>
+        <button class="ghost-btn" id="rotateBtn" type="button" title="Döndür">⟳</button>
+        <button class="ghost-btn" id="fullscreenBtn" type="button" title="Tam ekran">⛶</button>
         <button class="icon-btn" id="zoomOut" aria-label="Uzaklaştır">−</button>
         <span class="zoom" id="zoomLabel">100%</span>
         <button class="icon-btn" id="zoomIn" aria-label="Yakınlaştır">+</button>
@@ -191,6 +194,7 @@
         <div class="toc-tabs">
           <button class="toc-tab active" id="tabToc" type="button">İçindekiler</button>
           <button class="toc-tab" id="tabSearch" type="button">Ara</button>
+          <button class="toc-tab" id="tabPages" type="button">Sayfalar</button>
         </div>
         <div id="tocView">
           <div class="toc-filter">
@@ -206,6 +210,9 @@
           <div class="search-status" id="searchStatus"></div>
           <div class="toc-list" id="searchResults"></div>
           <div class="toc-empty" id="searchEmpty" hidden></div>
+        </div>
+        <div id="pagesView" hidden>
+          <div class="thumb-grid" id="thumbGrid"></div>
         </div>
       </aside>
       <div class="page-area">
@@ -261,6 +268,6 @@
 
   <div class="toast" id="toast" hidden></div>
 
-  <script type="module" src="/app.js?v=38"></script>
+  <script type="module" src="/app.js?v=39"></script>
 </body>
 </html>

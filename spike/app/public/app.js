@@ -34,6 +34,8 @@ const state = {
   page: 1,
   numPages: 0,
   scale: 1,
+  fitMode: 'width',
+  rotation: 0,
   viewport: null,
   annotations: [],
   outline: [],
@@ -94,11 +96,15 @@ const tocEmpty = $('tocEmpty');
 const tocFilter = $('tocFilter');
 const pageInput = $('pageInput');
 const pageTotal = $('pageTotal');
+const fitToggle = $('fitToggle');
 const bookmarkBtn = $('bookmarkBtn');
 const tabToc = $('tabToc');
 const tabSearch = $('tabSearch');
+const tabPages = $('tabPages');
 const tocView = $('tocView');
 const searchView = $('searchView');
+const pagesView = $('pagesView');
+const thumbGrid = $('thumbGrid');
 const bookSearch = $('bookSearch');
 const searchStatus = $('searchStatus');
 const searchResults = $('searchResults');
@@ -572,6 +578,20 @@ function fitScale(baseViewport) {
   return Math.min(2, Math.max(0.6, available / baseViewport.width));
 }
 
+function fitPageScale(baseViewport) {
+  const area = document.querySelector('.page-area');
+  const width = Math.max(240, area.clientWidth - 120);
+  const height = Math.max(240, area.clientHeight - 80);
+  return Math.min(2, Math.max(0.5, Math.min(width / baseViewport.width, height / baseViewport.height)));
+}
+
+function updateViewControls() {
+  const fitPage = state.fitMode === 'page';
+  fitToggle.textContent = fitPage ? '⤢' : '↔';
+  fitToggle.title = fitPage ? 'Sayfaya sığdır' : 'Genişliğe sığdır';
+  fitToggle.classList.toggle('active', fitPage);
+}
+
 async function resolveDest(dest) {
   try {
     const explicit = typeof dest === 'string' ? await state.pdf.getDestination(dest) : dest;
@@ -648,6 +668,67 @@ function renderToc() {
     fragment.appendChild(button);
   }
   tocList.appendChild(fragment);
+}
+
+let thumbObserver = null;
+
+function updateThumbActive() {
+  thumbGrid.querySelectorAll('.thumb-item').forEach((item) => {
+    item.classList.toggle('active', Number(item.dataset.page) === state.page);
+  });
+}
+
+async function renderThumb(button, pageNumber) {
+  if (button.dataset.rendered || !state.pdf) return;
+  button.dataset.rendered = '1';
+  try {
+    const page = await state.pdf.getPage(pageNumber);
+    const base = page.getViewport({ scale: 1 });
+    const viewport = page.getViewport({ scale: 110 / base.width });
+    const canvas = button.querySelector('canvas');
+    canvas.width = Math.floor(viewport.width);
+    canvas.height = Math.floor(viewport.height);
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+    page.cleanup();
+  } catch (error) {
+    console.warn('thumbnail failed', pageNumber, error.message);
+  }
+}
+
+function renderThumbs() {
+  if (!state.pdf) return;
+  if (thumbGrid.dataset.book === state.book?.asset_id) {
+    updateThumbActive();
+    return;
+  }
+  if (thumbObserver) thumbObserver.disconnect();
+  thumbGrid.replaceChildren();
+  thumbGrid.dataset.book = state.book?.asset_id || '';
+  thumbObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      const button = entry.target;
+      thumbObserver.unobserve(button);
+      renderThumb(button, Number(button.dataset.page));
+    });
+  });
+  const fragment = document.createDocumentFragment();
+  for (let pageNumber = 1; pageNumber <= state.numPages; pageNumber += 1) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `thumb-item${pageNumber === state.page ? ' active' : ''}`;
+    button.dataset.page = String(pageNumber);
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    const label = document.createElement('span');
+    label.textContent = `Sayfa ${pageNumber}`;
+    button.append(canvas, label);
+    button.addEventListener('click', () => goToPage(pageNumber));
+    fragment.appendChild(button);
+    thumbObserver.observe(button);
+  }
+  thumbGrid.appendChild(fragment);
 }
 
 function toggleToc(show) {
@@ -747,11 +828,15 @@ function showShortcuts() {
 
 function showTocTab(tab) {
   const search = tab === 'search';
-  tabToc.classList.toggle('active', !search);
+  const pages = tab === 'pages';
+  tabToc.classList.toggle('active', !search && !pages);
   tabSearch.classList.toggle('active', search);
-  tocView.hidden = search;
+  tabPages.classList.toggle('active', pages);
+  tocView.hidden = search || pages;
   searchView.hidden = !search;
+  pagesView.hidden = !pages;
   if (search) setTimeout(() => bookSearch.focus(), 0);
+  if (pages) renderThumbs();
 }
 
 function normalizeSearch(value) {
@@ -1080,8 +1165,13 @@ async function renderPage() {
   }
   const page = await state.pdf.getPage(state.page);
   const base = page.getViewport({ scale: 1 });
-  if (!state.scale || state.scale <= 0) state.scale = Math.min(1.3, fitScale(base));
-  const viewport = page.getViewport({ scale: state.scale });
+  if (!state.scale || state.scale <= 0) {
+    state.scale = state.fitMode === 'page'
+      ? fitPageScale(base)
+      : Math.min(1.3, fitScale(base));
+  }
+  const rotation = (page.rotate + state.rotation) % 360;
+  const viewport = page.getViewport({ scale: state.scale, rotation });
   state.viewport = viewport;
 
   const outputScale = Math.min(window.devicePixelRatio || 1, 2);
@@ -1136,7 +1226,8 @@ async function renderPage() {
   updatePageUi();
   updateZoomLabel();
   renderHighlights();
-  if (!tocPanel.hidden) renderToc();
+  if (!tocPanel.hidden && !tocView.hidden) renderToc();
+  if (!pagesView.hidden) updateThumbActive();
   saveProgress();
   updateUrl();
   pageLoading.hidden = true;
@@ -1446,12 +1537,18 @@ async function openBook(book) {
   state.book = book;
   state.page = 1;
   state.scale = 0;
+  state.fitMode = 'width';
+  state.rotation = 0;
+  updateViewControls();
   state.annotations = [];
   state.outline = [];
   state.pageText = new Map();
   state.searchRun += 1;
   state.activeQuery = '';
   state.perf = { openedAt: performance.now(), pdfLoadMs: null, firstPageMs: null, renders: [], phases: [] };
+  if (thumbObserver) thumbObserver.disconnect();
+  thumbGrid.replaceChildren();
+  thumbGrid.dataset.book = '';
   setHighlightColor('yellow');
   bookSearch.value = '';
   searchResults.replaceChildren();
@@ -1539,6 +1636,9 @@ async function closeReader() {
   state.ocrManifest.clear();
   state.annotations = [];
   state.viewport = null;
+  if (thumbObserver) thumbObserver.disconnect();
+  thumbGrid.replaceChildren();
+  thumbGrid.dataset.book = '';
   canvas.width = 0;
   canvas.height = 0;
   clearPending();
@@ -1803,6 +1903,7 @@ $('closeToc').addEventListener('click', () => toggleToc(false));
 tocFilter.addEventListener('input', renderToc);
 tabToc.addEventListener('click', () => showTocTab('toc'));
 tabSearch.addEventListener('click', () => showTocTab('search'));
+tabPages.addEventListener('click', () => showTocTab('pages'));
 bookSearch.addEventListener('input', () => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => runSearch(bookSearch.value), 300);
@@ -1850,6 +1951,25 @@ $('zoomIn').addEventListener('click', () => {
 $('zoomOut').addEventListener('click', () => {
   state.scale = Math.max(0.5, state.scale - 0.2);
   renderPage();
+});
+fitToggle.addEventListener('click', () => {
+  state.fitMode = state.fitMode === 'width' ? 'page' : 'width';
+  state.scale = 0;
+  updateViewControls();
+  renderPage();
+});
+$('rotateBtn').addEventListener('click', () => {
+  state.rotation = (state.rotation + 90) % 360;
+  state.scale = 0;
+  renderPage();
+});
+$('fullscreenBtn').addEventListener('click', async () => {
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await reader.requestFullscreen();
+  } catch {
+    toast('Tam ekran başlatılamadı');
+  }
 });
 $('toggleNotes').addEventListener('click', () => {
   notesPanel.hidden = !notesPanel.hidden;
