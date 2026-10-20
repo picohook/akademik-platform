@@ -1,0 +1,516 @@
+import * as pdfjsLib from '/vendor/pdfjs/pdf.mjs';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.mjs';
+
+const state = {
+  books: [],
+  filter: 'all',
+  query: '',
+  book: null,
+  pdf: null,
+  page: 1,
+  numPages: 0,
+  scale: 1,
+  viewport: null,
+  annotations: [],
+  renderTask: null,
+  pending: null,
+};
+
+const $ = (id) => document.getElementById(id);
+const grid = $('grid');
+const empty = $('empty');
+const filters = $('filters');
+const count = $('count');
+const search = $('search');
+const mode = $('mode');
+
+const reader = $('reader');
+const canvas = $('canvas');
+const pageWrap = $('pageWrap');
+const textLayerEl = $('textLayer');
+const highlightsEl = $('highlights');
+const pageLabel = $('pageLabel');
+const readerTitle = $('readerTitle');
+const readerMeta = $('readerMeta');
+const zoomLabel = $('zoomLabel');
+const noteCount = $('noteCount');
+const notesList = $('notesList');
+const notesEmpty = $('notesEmpty');
+const notesPanel = $('notesPanel');
+const hlBar = $('hlBar');
+const hlNote = $('hlNote');
+const toastEl = $('toast');
+
+function toast(message) {
+  toastEl.textContent = message;
+  toastEl.hidden = false;
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => { toastEl.hidden = true; }, 2600);
+}
+
+function hue(text) {
+  let hash = 0;
+  for (let i = 0; i < text.length; i += 1) hash = (hash * 31 + text.charCodeAt(i)) % 360;
+  return hash;
+}
+
+function makeCard(book) {
+  const card = document.createElement('button');
+  card.className = 'card';
+  card.type = 'button';
+  card.addEventListener('click', () => openBook(book));
+
+  const cover = document.createElement('div');
+  cover.className = 'cover';
+  const h = hue(book.title || 'x');
+  cover.style.background = `linear-gradient(145deg, hsl(${h} 36% 26%), hsl(${(h + 38) % 360} 42% 16%))`;
+
+  const kicker = document.createElement('span');
+  kicker.className = 'kicker';
+  kicker.textContent = (book.subjects && book.subjects[0]) || 'Akademik';
+  cover.appendChild(kicker);
+
+  const initial = document.createElement('span');
+  initial.className = 'initial';
+  initial.textContent = (book.title || 'A').trim().charAt(0).toLocaleUpperCase('tr');
+  cover.appendChild(initial);
+
+  const title = document.createElement('div');
+  title.className = 'title';
+  title.textContent = book.title;
+  cover.appendChild(title);
+
+  const author = document.createElement('div');
+  author.className = 'author';
+  author.textContent = book.publisher || '';
+  cover.appendChild(author);
+
+  const meta = document.createElement('div');
+  meta.className = 'card-meta';
+  const cardTitle = document.createElement('p');
+  cardTitle.className = 'card-title';
+  cardTitle.textContent = book.subtitle || book.title;
+  meta.appendChild(cardTitle);
+
+  const sub = document.createElement('p');
+  sub.className = 'card-sub';
+  sub.textContent = `${book.language ? book.language.toUpperCase() : '—'} · ${book.publication_year || '—'}`;
+  meta.appendChild(sub);
+
+  const badges = document.createElement('div');
+  badges.className = 'badges';
+  (book.subjects || []).slice(0, 2).forEach((subject) => {
+    const badge = document.createElement('span');
+    badge.className = 'badge';
+    badge.textContent = subject;
+    badges.appendChild(badge);
+  });
+  meta.appendChild(badges);
+
+  card.appendChild(cover);
+  card.appendChild(meta);
+  return card;
+}
+
+function renderBooks() {
+  grid.replaceChildren();
+  const visible = state.books.filter((book) => {
+    if (state.filter === 'all') return true;
+    return (book.subjects || []).includes(state.filter);
+  });
+  visible.forEach((book) => grid.appendChild(makeCard(book)));
+  count.textContent = `${visible.length} başlık`;
+  empty.hidden = visible.length !== 0;
+}
+
+function renderFilters() {
+  const subjects = new Set();
+  state.books.forEach((book) => (book.subjects || []).forEach((s) => subjects.add(s)));
+  filters.replaceChildren();
+  const all = document.createElement('button');
+  all.className = `chip${state.filter === 'all' ? ' active' : ''}`;
+  all.textContent = 'Tümü';
+  all.addEventListener('click', () => { state.filter = 'all'; renderFilters(); renderBooks(); });
+  filters.appendChild(all);
+  [...subjects].sort((a, b) => a.localeCompare(b, 'tr')).forEach((subject) => {
+    const chip = document.createElement('button');
+    chip.className = `chip${state.filter === subject ? ' active' : ''}`;
+    chip.textContent = subject;
+    chip.addEventListener('click', () => { state.filter = subject; renderFilters(); renderBooks(); });
+    filters.appendChild(chip);
+  });
+}
+
+async function loadBooks(query = '') {
+  const url = query ? `/api/search?q=${encodeURIComponent(query)}` : '/api/books';
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Katalog yüklenemedi');
+  state.books = await response.json();
+  renderFilters();
+  renderBooks();
+}
+
+function updateZoomLabel() {
+  zoomLabel.textContent = `${Math.round(state.scale * 100)}%`;
+}
+
+function fitScale(baseViewport) {
+  const area = document.querySelector('.page-area');
+  const available = Math.max(320, area.clientWidth - 120);
+  return Math.min(2, Math.max(0.6, available / baseViewport.width));
+}
+
+async function renderPage() {
+  if (!state.pdf) return;
+  if (state.renderTask) {
+    try { state.renderTask.cancel(); } catch { /* noop */ }
+    state.renderTask = null;
+  }
+  const page = await state.pdf.getPage(state.page);
+  const base = page.getViewport({ scale: 1 });
+  if (!state.scale || state.scale <= 0) state.scale = fitScale(base);
+  const viewport = page.getViewport({ scale: state.scale });
+  state.viewport = viewport;
+
+  const outputScale = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.floor(viewport.width * outputScale);
+  canvas.height = Math.floor(viewport.height * outputScale);
+  canvas.style.width = `${Math.floor(viewport.width)}px`;
+  canvas.style.height = `${Math.floor(viewport.height)}px`;
+  pageWrap.style.width = `${Math.floor(viewport.width)}px`;
+  pageWrap.style.height = `${Math.floor(viewport.height)}px`;
+  textLayerEl.style.width = `${Math.floor(viewport.width)}px`;
+  textLayerEl.style.height = `${Math.floor(viewport.height)}px`;
+  textLayerEl.style.setProperty('--scale-factor', String(viewport.scale));
+  textLayerEl.style.setProperty('--total-scale-factor', String(viewport.scale));
+
+  const context = canvas.getContext('2d', { alpha: false });
+  const task = page.render({
+    canvasContext: context,
+    viewport,
+    transform: outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null,
+  });
+  state.renderTask = task;
+  try {
+    await task.promise;
+  } catch (error) {
+    if (error?.name === 'RenderingCancelledException') return;
+    throw error;
+  }
+
+  textLayerEl.replaceChildren();
+  try {
+    const textContent = await page.getTextContent();
+    const textLayer = new pdfjsLib.TextLayer({
+      textContentSource: textContent,
+      container: textLayerEl,
+      viewport,
+    });
+    await textLayer.render();
+  } catch (error) {
+    console.warn('text layer failed', error);
+  }
+
+  pageLabel.textContent = `${state.page} / ${state.numPages}`;
+  updateZoomLabel();
+  renderHighlights();
+  saveProgress();
+}
+
+function renderHighlights() {
+  highlightsEl.replaceChildren();
+  if (!state.viewport) return;
+  const scale = state.viewport.scale;
+  state.annotations
+    .filter((annotation) => Number(annotation.anchor?.page) === state.page)
+    .forEach((annotation) => {
+      const rects = Array.isArray(annotation.anchor?.rects) ? annotation.anchor.rects : [];
+      rects.forEach((rect) => {
+        const box = document.createElement('div');
+        box.className = `hl ${annotation.color || 'yellow'}`;
+        box.style.left = `${rect[0] * scale}px`;
+        box.style.top = `${rect[1] * scale}px`;
+        box.style.width = `${rect[2] * scale}px`;
+        box.style.height = `${rect[3] * scale}px`;
+        highlightsEl.appendChild(box);
+      });
+    });
+}
+
+function renderNotes() {
+  notesList.replaceChildren();
+  noteCount.textContent = String(state.annotations.length);
+  notesEmpty.hidden = state.annotations.length !== 0;
+  state.annotations.forEach((annotation) => {
+    const item = document.createElement('div');
+    item.className = 'note-item';
+    const page = document.createElement('div');
+    page.className = 'note-page';
+    page.textContent = `Sayfa ${annotation.anchor?.page || '—'}`;
+    item.appendChild(page);
+    if (annotation.selected_text) {
+      const text = document.createElement('p');
+      text.className = 'note-text';
+      text.textContent = annotation.selected_text.length > 120
+        ? `${annotation.selected_text.slice(0, 120)}…`
+        : annotation.selected_text;
+      item.appendChild(text);
+    }
+    if (annotation.note) {
+      const body = document.createElement('p');
+      body.className = 'note-body';
+      body.textContent = annotation.note;
+      item.appendChild(body);
+    }
+    item.addEventListener('click', async () => {
+      const target = Number(annotation.anchor?.page) || 1;
+      if (target !== state.page) {
+        state.page = target;
+        await renderPage();
+      }
+      notesPanel.hidden = true;
+    });
+    notesList.appendChild(item);
+  });
+}
+
+async function saveProgress() {
+  if (!state.book) return;
+  try {
+    await fetch('/api/progress', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        assetId: state.book.asset_id,
+        anchor: { asset_version_id: state.book.asset_id, type: 'pdf', page: state.page, rects: [] },
+        percent: state.numPages ? Math.round((state.page / state.numPages) * 100) : 0,
+      }),
+    });
+  } catch (error) {
+    console.warn('progress save failed', error);
+  }
+}
+
+async function openBook(book) {
+  state.book = book;
+  state.page = 1;
+  state.scale = 0;
+  state.annotations = [];
+  reader.hidden = false;
+  document.body.style.overflow = 'hidden';
+  readerTitle.textContent = book.title;
+  readerMeta.textContent = `${book.publisher || ''}${book.publication_year ? ` · ${book.publication_year}` : ''}`;
+  notesPanel.hidden = window.innerWidth < 820;
+  pageLabel.textContent = '…';
+
+  try {
+    const [progressResponse, annotationsResponse] = await Promise.all([
+      fetch(`/api/progress?assetId=${encodeURIComponent(book.asset_id)}`),
+      fetch(`/api/annotations?assetId=${encodeURIComponent(book.asset_id)}`),
+    ]);
+    const progress = progressResponse.ok ? await progressResponse.json() : null;
+    state.annotations = annotationsResponse.ok ? await annotationsResponse.json() : [];
+
+    const task = pdfjsLib.getDocument({
+      url: `/api/books/${encodeURIComponent(book.id)}/file`,
+      cMapUrl: '/vendor/pdfjs/cmaps/',
+      cMapPacked: true,
+      standardFontDataUrl: '/vendor/pdfjs/standard_fonts/',
+    });
+    state.pdf = await task.promise;
+    state.numPages = state.pdf.numPages;
+    const savedPage = Number(progress?.anchor?.page);
+    state.page = Number.isFinite(savedPage) && savedPage > 0 ? Math.min(savedPage, state.numPages) : 1;
+    renderNotes();
+    await renderPage();
+  } catch (error) {
+    console.error(error);
+    toast('PDF yüklenemedi. Sunucu ve dosya yolunu kontrol edin.');
+    closeReader();
+  }
+}
+
+async function closeReader() {
+  if (state.renderTask) {
+    try { state.renderTask.cancel(); } catch { /* noop */ }
+  }
+  state.renderTask = null;
+  state.pdf = null;
+  state.book = null;
+  reader.hidden = true;
+  document.body.style.overflow = '';
+  hlBar.hidden = true;
+  textLayerEl.replaceChildren();
+  highlightsEl.replaceChildren();
+}
+
+function updateSelectionBar(rect) {
+  const barWidth = 320;
+  const left = Math.min(Math.max(12, rect.left + rect.width / 2 - barWidth / 2), window.innerWidth - barWidth - 12);
+  const top = Math.max(12, rect.top - 58);
+  hlBar.style.left = `${left}px`;
+  hlBar.style.top = `${top}px`;
+}
+
+function onSelection() {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed) return;
+  const text = selection.toString().trim();
+  if (!text) return;
+  const range = selection.getRangeAt(0);
+  if (!textLayerEl.contains(range.commonAncestorContainer)) return;
+
+  const pageRect = pageWrap.getBoundingClientRect();
+  const scale = state.viewport?.scale || 1;
+  const rects = [...range.getClientRects()]
+    .filter((rect) => rect.width > 1 && rect.height > 1)
+    .map((rect) => [
+      Math.max(0, (rect.left - pageRect.left) / scale),
+      Math.max(0, (rect.top - pageRect.top) / scale),
+      rect.width / scale,
+      rect.height / scale,
+    ]);
+
+  if (!rects.length) return;
+
+  const last = range.getClientRects()[range.getClientRects().length - 1] || pageRect;
+  state.pending = {
+    text,
+    anchor: {
+      asset_version_id: state.book.asset_id,
+      type: 'pdf',
+      page: state.page,
+      rects,
+      text_quote: { prefix: '', exact: text, suffix: '' },
+      text_position: { start: 0, end: text.length },
+    },
+  };
+  hlNote.value = '';
+  updateSelectionBar(last);
+  hlBar.hidden = false;
+  hlNote.focus();
+}
+
+async function saveHighlight() {
+  if (!state.pending || !state.book) return;
+  const pending = state.pending;
+  state.pending = null;
+  hlBar.hidden = true;
+  try {
+    const response = await fetch('/api/annotations', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        assetId: state.book.asset_id,
+        anchor: pending.anchor,
+        color: 'yellow',
+        note: hlNote.value.trim() || null,
+        selectedText: pending.text,
+      }),
+    });
+    if (!response.ok) throw new Error('annotation failed');
+    const saved = await response.json();
+    state.annotations.push({ ...saved, selected_text: saved.selected_text || pending.text });
+    renderNotes();
+    renderHighlights();
+    toast('Vurgu kaydedildi');
+    window.getSelection()?.removeAllRanges();
+  } catch (error) {
+    console.error(error);
+    toast('Vurgu kaydedilemedi');
+  }
+}
+
+function changePage(delta) {
+  const next = state.page + delta;
+  if (next < 1 || next > state.numPages) return;
+  state.page = next;
+  renderPage();
+}
+
+search.addEventListener('input', () => {
+  const query = search.value.trim();
+  clearTimeout(search._timer);
+  search._timer = setTimeout(() => {
+    state.query = query;
+    loadBooks(query).catch((error) => toast(error.message));
+  }, 220);
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === '/' && document.activeElement !== search) {
+    event.preventDefault();
+    search.focus();
+  }
+  if (reader.hidden) return;
+  if (event.key === 'Escape') closeReader();
+  if (event.key === 'ArrowLeft') changePage(-1);
+  if (event.key === 'ArrowRight') changePage(1);
+});
+
+$('closeReader').addEventListener('click', closeReader);
+$('prevPage').addEventListener('click', () => changePage(-1));
+$('nextPage').addEventListener('click', () => changePage(1));
+$('zoomIn').addEventListener('click', () => {
+  state.scale = Math.min(3, state.scale + 0.2);
+  renderPage();
+});
+$('zoomOut').addEventListener('click', () => {
+  state.scale = Math.max(0.5, state.scale - 0.2);
+  renderPage();
+});
+$('toggleNotes').addEventListener('click', () => {
+  notesPanel.hidden = !notesPanel.hidden;
+});
+$('hlSave').addEventListener('click', saveHighlight);
+$('hlCancel').addEventListener('click', () => {
+  state.pending = null;
+  hlBar.hidden = true;
+  window.getSelection()?.removeAllRanges();
+});
+hlNote.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') saveHighlight();
+  if (event.key === 'Escape') {
+    state.pending = null;
+    hlBar.hidden = true;
+  }
+});
+
+textLayerEl.addEventListener('mouseup', () => setTimeout(onSelection, 0));
+
+document.addEventListener('mousedown', (event) => {
+  if (!hlBar.hidden && !hlBar.contains(event.target)) {
+    hlBar.hidden = true;
+    state.pending = null;
+  }
+});
+
+window.addEventListener('resize', () => {
+  if (reader.hidden || !state.pdf) return;
+  clearTimeout(window._resizeTimer);
+  window._resizeTimer = setTimeout(() => {
+    state.scale = 0;
+    renderPage();
+  }, 220);
+});
+
+(async function init() {
+  try {
+    const health = await fetch('/api/health').then((response) => response.json());
+    mode.textContent = health.mode === 'db' ? 'DB modu' : 'Demo modu';
+    mode.classList.toggle('db', health.mode === 'db');
+  } catch {
+    mode.textContent = 'bağlantı yok';
+  }
+  try {
+    await loadBooks();
+    const bookId = new URLSearchParams(window.location.search).get('book');
+    if (bookId) {
+      const book = state.books.find((item) => item.id === bookId || item.asset_id === bookId);
+      if (book) await openBook(book);
+    }
+  } catch (error) {
+    toast(error.message);
+  }
+})();

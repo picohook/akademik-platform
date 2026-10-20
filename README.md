@@ -2,11 +2,31 @@
 
 An academic e-book reading and library platform: multi-tenant catalog, PDF/EPUB reader, annotations, collections, and institutional access.
 
-> **Status:** specification stage (v1.9). A 2-week technical spike is next. This repository is **not production-ready**.
+> **Status:** specification v1.9 + working spike scaffold. The scaffold proves the PDF viewer, anchor model, catalog, search, and seeding paths; it is **not production-ready**.
 
 - Product & technical specification (Turkish): [`docs/PLATFORM-SPEC.md`](docs/PLATFORM-SPEC.md)
 - Architecture decisions: [`docs/adr/`](docs/adr/)
-- Spike plan & acceptance criteria: [`spike/README.md`](spike/README.md)
+- Spike plan, run instructions & acceptance criteria: [`spike/README.md`](spike/README.md)
+- Measurements to fill: [`spike/measurement.md`](spike/measurement.md)
+
+## Quick start
+
+Demo mode (no database, in-memory data):
+
+```bash
+cd spike/app
+npm install
+node server.mjs
+# http://localhost:3000
+```
+
+Full scaffold (Postgres + MinIO + Caddy):
+
+```bash
+cp .env.example .env
+docker compose up --build
+# http://localhost:8080
+```
 
 ## Scope
 
@@ -32,10 +52,13 @@ Out of scope for this repository: payments, invoicing, publisher procurement, ro
 
 ```
 docs/        specification and ADRs
-spike/       spike plan, fixtures, measurement notes
-apps/        web and API (coming with the spike)
-packages/    shared domain packages (coming)
-infra/       compose, deployment, backup (coming)
+db/          PostgreSQL schema and demo seed
+infra/       Caddyfile
+docker-compose.yml  Postgres + MinIO + web + Caddy
+spike/       spike plan, measurements, fixtures
+spike/app/   working harness (Node + PDF.js)
+apps/        production web/API (after the spike)
+packages/    shared domain packages (after the spike)
 ```
 
 ## Security

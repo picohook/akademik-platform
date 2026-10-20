@@ -41,6 +41,33 @@ The scaffold can be built with a public-domain PDF. **Measurement does not start
 | Search precision@10 (10 queries) | ≥ 0.70 | Turkish stemmer fallback plan |
 | 50 concurrent readers | No errors; p95 < 2 s | Scale note + capacity plan |
 
+## Run
+
+### Demo mode (no database)
+
+```bash
+cd spike/app
+npm install
+node server.mjs
+# http://localhost:3000
+```
+
+Without `DATABASE_URL`, the server uses in-memory demo data (one sample work). Catalog, reader, search, annotations, and progress work; nothing persists.
+
+### Docker (Postgres + MinIO + Caddy)
+
+```bash
+cp .env.example .env        # change passwords
+docker compose up --build
+# http://localhost:8080
+```
+
+This mode runs the same app with `DATABASE_URL`, applies `db/schema.sql` and `db/seed.sql`, and stores the database in the `pgdata` volume. MinIO is provisioned but not used by the app yet.
+
+### Deep link
+
+`/?book=33333333-3333-3333-3333-333333333333` opens the sample book directly.
+
 ## Rules
 
 - A passing scaffold is **not** a passing spike.

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Akademik Platform — Spike</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">
+      <span class="brand-mark">A</span>
+      <span class="brand-text">Akademik Platform <em>spike</em></span>
+    </a>
+    <div class="search">
+      <input id="search" type="search" placeholder="Başlık, konu veya tam metin ara…" autocomplete="off" />
+      <kbd>/</kbd>
+    </div>
+    <span class="mode" id="mode">bağlanıyor…</span>
+  </header>
+
+  <main>
+    <section class="hero">
+      <p class="eyebrow">Okuma katmanı · 14 günlük spike</p>
+      <h1>Katalog, okuyucu, not ve arama.<br />Tek çalışan dilim.</h1>
+      <p class="lede">
+        Bu ekran ürün değil; PDF.js, <code>anchor</code> modeli ve Postgres aramasını
+        ölçmek için kurulmuş bir iskelet. Örnek içerik kamu malı test PDF'idir.
+      </p>
+    </section>
+
+    <section class="toolbar">
+      <div class="chips" id="filters"></div>
+      <span class="count" id="count"></span>
+    </section>
+
+    <section class="grid" id="grid" aria-live="polite"></section>
+    <p class="empty" id="empty" hidden>Sonuç yok. Arama terimini değiştirin.</p>
+  </main>
+
+  <div class="reader" id="reader" hidden>
+    <div class="reader-top">
+      <button class="icon-btn" id="closeReader" aria-label="Kapat">✕</button>
+      <div class="reader-title">
+        <strong id="readerTitle"></strong>
+        <span id="readerMeta"></span>
+      </div>
+      <div class="reader-actions">
+        <button class="icon-btn" id="zoomOut" aria-label="Uzaklaştır">−</button>
+        <span class="zoom" id="zoomLabel">100%</span>
+        <button class="icon-btn" id="zoomIn" aria-label="Yakınlaştır">+</button>
+        <button class="ghost-btn" id="toggleNotes">Notlar <span id="noteCount">0</span></button>
+      </div>
+    </div>
+    <div class="reader-body">
+      <div class="page-area">
+        <button class="nav-btn" id="prevPage" aria-label="Önceki sayfa">‹</button>
+        <div class="page-wrap" id="pageWrap">
+          <canvas id="canvas"></canvas>
+          <div class="textLayer" id="textLayer"></div>
+          <div class="highlights" id="highlights"></div>
+        </div>
+        <button class="nav-btn" id="nextPage" aria-label="Sonraki sayfa">›</button>
+      </div>
+      <aside class="notes" id="notesPanel">
+        <div class="notes-head">
+          <strong>Notlar ve vurgular</strong>
+          <span id="pageLabel">1 / 1</span>
+        </div>
+        <div class="notes-list" id="notesList"></div>
+        <div class="notes-empty" id="notesEmpty">
+          Metin seçip <strong>Vurgula</strong> ile başlayın.
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="hl-bar" id="hlBar" hidden>
+    <input id="hlNote" type="text" placeholder="Not (opsiyonel)" maxlength="280" />
+    <button class="primary" id="hlSave">Vurgula</button>
+    <button class="icon-btn" id="hlCancel" aria-label="İptal">✕</button>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+name: akademik-platform
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-akademik}
+      POSTGRES_USER: ${POSTGRES_USER:-akademik}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-in-production}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-akademik} -d ${POSTGRES_DB:-akademik}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  storage:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-akademik}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-in-production}
+    volumes:
+      - miniodata:/data
+    ports:
+      - "9001:9001"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./spike/app
+    environment:
+      # Scaffold-only app role created in db/schema.sql; rotate before deployment.
+      DATABASE_URL: postgres://akademik_app:akademik_app_dev@db:5432/${POSTGRES_DB:-akademik}
+      DEMO_TENANT_ID: ${DEMO_TENANT_ID:-11111111-1111-1111-1111-111111111111}
+      DEMO_USER_ID: ${DEMO_USER_ID:-22222222-2222-2222-2222-222222222222}
+      PORT: 3000
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "3000"
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    depends_on:
+      - web
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  miniodata:
+  caddydata:
+  caddyconfig:

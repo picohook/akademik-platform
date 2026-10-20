@@ -1,0 +1,17 @@
+{
+  "name": "akademik-spike",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Spike harness for the academic e-book platform (PDF.js + Postgres FTS + anchor model)",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "pg": "^8.13.1"
+  }
+}
