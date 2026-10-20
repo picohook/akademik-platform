@@ -1,6 +1,6 @@
 # Akademik E-Kitap Platformu — Ürün ve Teknik Şartname
 
-**Sürüm:** 1.9 — spike planı, dondurma istisnası ve kabul kriterleri
+**Sürüm:** 2.0 — okuyucu planı ve öncelik düzeltmeleri
 **Kapsam:** Platform (ticari akışlar hariç)
 **Öncelik etiketleri:** `[M]` MVP (24–28 hafta) · `[V1]` V1a 3–4 ay + V1b 3–4 ay (toplam 6–8 ay) · `[V2]` 9–12+ ay · `[X]` kapsam dışı
 
@@ -21,6 +21,8 @@
 > **v1.8 değişiklik özeti (üçüncü inceleme):** Anotasyon/ilerleme **çapa modeli** (text quote + range + CFI) eklendi; arama/faset/öneri izolasyon testi; audit ↔ KVKK silme uzlaşması; OPS taklit yönetişimi; grant cache TTL + atomik kontenjan; kota eşikleri; embedding yaşam döngüsü ve TDM; OCR maliyet modeli; PDF erişilebilirlik beyanı; on-prem lisans kenar durumları; preview alt sınırı; RLS CI testi; bounce/complaint; depolama büyüme modeli. `FieldOverride` MVP'den V1b'ye alındı; 2 haftalık kalibrasyon spike'ı eklendi.
 >
 > **v1.9 değişiklik özeti (spike planı):** Dondurma istisnası (PDF mimarisi, `text_quote` algoritması, EPUB motoru) eklendi; `text_quote` eşleşme algoritması (normalize + Levenshtein ≤ %20 + yetim adayı) tanımlandı; spike girdileri (3 POC PDF + 2 hedef kitap + izin) ve scaffold/measurement ayrımı yazıldı; Ek 28.8 spike kabul kriterleri eklendi; EPUB motoru kararı V1a'ya taşındı.
+>
+> **v2.0 değişiklik özeti (okuyucu planı):** Yer imi ve not dışa aktarma MVP'ye çekildi; cihazlar arası senkron, küçük resim ve çift sayfa V1'e alındı; atıf işi CSL motoru kararına bağlı ayrı iş paketine bölündü; TOC null fallback, arama sayfa-metni cache'i, `?page=` derin bağlantısı ve mobil drawer kabul kriterleri eklendi; okuyucu eforu 5–7 güne güncellendi (Bölüm 32).
 
 ---
 
@@ -299,12 +301,13 @@ yükleme → virüs tarama → arşiv/format doğrulama → metadata çıkarma
 
 ### 6.2 PDF okuyucu `[M]`
 
-- Sürekli ve sayfa modu; zoom %50–400; sığdır/döndür.
-- Küçük resim, içindekiler, sayfaya git.
-- Metin seçimi, kopyalama (izin varsa), vurgu.
-- Kitap içi arama, sonuçtan sayfaya atlama.
-- Masaüstünde çift sayfa; mobilde pinch-zoom.
-- 500 MB / 2.000 sayfa hedefi; bellek taşması yok.
+- `[M]` Sürekli ve sayfa modu; zoom %50–400; sığdır/döndür.
+- `[M]` İçindekiler, sayfaya git; TOC yoksa sayfa listesi + "TOC yok" mesajı.
+- `[V1]` Küçük resimler.
+- `[M]` Metin seçimi, kopyalama (izin varsa), vurgu.
+- `[M]` Kitap içi arama, sonuçtan sayfaya atlama.
+- `[V1]` Masaüstünde çift sayfa; `[M]` mobilde pinch-zoom.
+- `[M]` 500 MB / 2.000 sayfa hedefi; bellek taşması yok.
 
 ### 6.3 EPUB okuyucu
 
@@ -335,14 +338,15 @@ Asset yeni sürüme geçtiğinde çapa, `text_quote` eşleşmesiyle yeniden konu
 
 ### 6.5 Atıf `[M]`
 
-- APA 7, MLA 9, Chicago 17, IEEE; BibTeX/RIS `[V1]`.
-- Sayfa aralığı; dil bazlı yerelleştirme; eksik alanda uyarı.
+- `[M]` APA 7, MLA 9, Chicago 17, IEEE; BibTeX `[M]`, RIS `[V1]`.
+- `[M]` Sayfa aralığı; dil bazlı yerelleştirme; eksik alanda uyarı.
+- `[M]` Ara model **CSL-JSON**; renderer manuel; CSL motoruna geçiş ADR-011.
 
 ### 6.6 İlerleme `[M]`
 
-- PDF sayfa + kaydırma oranı; EPUB CFI; yüzde; son okuma.
-- "Okumaya devam et" rafı; cihazlar arası senkron.
-- Çakışmada en son konum kazanır; kullanıcıya bildirilir.
+- `[M]` PDF sayfa + kaydırma oranı; EPUB CFI; yüzde; son okuma.
+- `[M]` "Okumaya devam et" rafı (yerel); `[V1]` cihazlar arası senkron.
+- `[V1]` Çakışmada en son konum kazanır; kullanıcıya bildirilir.
 
 ### 6.7 İzinler
 
@@ -1040,6 +1044,7 @@ FieldOverride *─1 (Work|Edition|Asset)   (V1b; field_name bazlı, kaynak check
 | ADR-008 | Adli filigran V2/değerlendirme | Kabul |
 | ADR-009 | Anotasyon çapası: text_quote + range + CFI; yetim işaretleme | Kabul |
 | ADR-010 | FieldOverride MVP'de değil, V1b'de DSpace/OAI ile | Kabul |
+| ADR-011 | Atıf: ara model **CSL-JSON**, renderer manuel 4 stil (APA/MLA/Chicago/IEEE); BibTeX `[M]`, RIS `[V1]`; CSL motoruna geçiş yalnızca renderer değişimi | Kabul |
 
 Her ADR: bağlam, karar, alternatifler, sonuç ve tarih içerir; `docs/adr/` altında saklanır.
 
@@ -1339,3 +1344,52 @@ Cevap "çekirdek" ise, istek V1/V2'ye yazılır ve üç vaka birikmeden uygulanm
 - Veritabanı: ileri yönlü migration + geri alma planı.
 - Adapter sözleşme testleri; flag'li kademeli çıkış.
 - Şema değişikliklerinde önce yaz, sonra oku, en son eskisini kaldır.
+
+---
+
+## 32. Okuyucu planı (v2.0)
+
+### 32.1 İlkeler
+
+- Okuyucu **PDF editörü değildir**: gezinme, arama, not, atıf.
+- Sol panel üç sekme: **İçindekiler · Ara · Notlar**. Mobilde drawer/bottom sheet.
+- Klavye seti: `j/k` ve `←/→` sayfa, `/` arama, `n` not paneli, `b` yer imi, `?` yardım, `Esc` kapat; odak görünür.
+- Mobil: pinch-zoom, tek dokunuş seçim, uzun basış not.
+
+### 32.2 İş paketleri
+
+| İş | Kapsam | Efor |
+|---|---|---|
+| **1. TOC + sayfa + yer imi + deep link** | PDF outline; null ise sayfa listesi; sayfa numarası; `?page=42`; yer imi ekle/kaldır; klavye | 1–1,5 gün |
+| **2. Kitap içi arama** | Sayfa metni cache/indeks; hOCR metni; bağlamlı sonuç; iptal edilebilir sorgu; tıkla→sayfa | 2–3 gün |
+| **3a. Renk + not + dışa aktarma** | 4 renk, PATCH, not düzenleme, Markdown/JSON dışa aktarma | 1–1,5 gün |
+| **4. Atıf** | CSL-JSON ara model; APA/MLA/Chicago/IEEE + BibTeX; seçim ve kitap düzeyi; eksik metadata uyarısı; ADR-011 | 1–1,5 gün |
+
+**Toplam:** 5–7 gün (önceki 2,5–4 gün tahmini iyimserdi).
+
+### 32.3 Done kriterleri
+
+**İş 1:** TOC varsa doğru sayfaya gider; yoksa "TOC yok" + sayfa listesi; geçersiz/aralık dışı `?page=` clamp + uyarı; `?page=42` doğrudan açar; `?page=42&annotation=` URL şeması bugün sabitlenir; yayında olmayan içerik sayfa sızdırmaz; yer imi reload sonrası korunur ve panelde görünür; 7 kısayol (`j/k`, `←/→`, `/`, `n`, `b`, `?`, `Esc`) çalışır.
+
+**İş 2:** 2.000 sayfada cache'li ilk sonuç < 1 sn; sorgu iptal edilebilir; sonuç bağlamı ve eşleşme vurgusu; hOCR sayfasında aranır; 0 sonuç mesajı; UI donmaz.
+
+**İş 3a:** 4 renk persist; PATCH idempotent; not düzenleme; boş not → silme onayı; Markdown/JSON (tek/tümü); yetim anotasyon silinmez.
+
+**İş 4:** CSL-JSON ara model; 4 stil + BibTeX; sayfa aralıklı ve kitap düzeyi atıf; eksik metadata alanı atlanır + uyarı; TR/EN yerelleştirme; 6 örnek kayıt × 4 stil snapshot testi (3+ yazar, editör-yazar, çevirmen, baskı, seri/cilt, DOI, Türkçe karakter).
+
+### 32.4 Gizli riskler
+
+- **Arama performansı:** her sorguda `getTextContent()` çağırmak 2.000 sayfada p95'i bozar. Sayfa metni yükleme sırasında çıkarılıp saklanmalı; iş 2'nin ilk adımı budur.
+- **Boş/bozuk TOC:** `getOutline()` sık sık `null` döner; fallback sayfa listesi + mesaj. İlk gün bu edge case test edilir.
+- **hOCR hizalaması:** overlay çalışıyor ama §28.8'deki ±3 px kabulü ölçülmedi; "✅" demeden önce ölçülmeli.
+- **Atıf metadata'sı:** eksik `authors/year/publisher` yanlış atıf üretir; alan atlama + uyarı kabul kriteri.
+- **Mobil panel:** üç sekmeli sol panel masaüstünde iyi; mobilde drawer gerekir.
+- **Deep link:** `?book=` var, `?page=` yok. İş 1'e eklenmeli; `?page=42&annotation=` şeması bugün sabitlenmeli. Aralık dışı clamp + mesaj; yayında olmayan/embargo içerik sayfa sızdırmadan "yayında değil" döner.
+
+### 32.5 Şartname düzeltmeleri
+
+- 6.2: küçük resim ve çift sayfa `[V1]`; TOC null fallback `[M]`.
+- 6.4: yer imi ve not dışa aktarma `[M]`; CSV `[V1]`, Markdown/JSON `[M]`.
+- 6.5: CSL-JSON ara model `[M]`; manuel 4 stil + BibTeX `[M]`; CSL motoru ADR-011.
+- 6.6: cihazlar arası senkron `[V1]`; yerel "okumaya devam et" `[M]`.
+- Okuyucu eforu 5–7 gün.

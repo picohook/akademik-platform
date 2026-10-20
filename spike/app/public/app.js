@@ -13,6 +13,7 @@ const state = {
   scale: 1,
   viewport: null,
   annotations: [],
+  outline: [],
   ocrCache: new Map(),
   ocrManifest: new Map(),
   renderTask: null,
@@ -40,6 +41,13 @@ const noteCount = $('noteCount');
 const notesList = $('notesList');
 const notesEmpty = $('notesEmpty');
 const notesPanel = $('notesPanel');
+const tocPanel = $('tocPanel');
+const tocList = $('tocList');
+const tocEmpty = $('tocEmpty');
+const tocFilter = $('tocFilter');
+const pageInput = $('pageInput');
+const pageTotal = $('pageTotal');
+const bookmarkBtn = $('bookmarkBtn');
 const hlBar = $('hlBar');
 const hlNote = $('hlNote');
 const toastEl = $('toast');
@@ -305,6 +313,179 @@ function fitScale(baseViewport) {
   return Math.min(2, Math.max(0.6, available / baseViewport.width));
 }
 
+async function resolveDest(dest) {
+  try {
+    const explicit = typeof dest === 'string' ? await state.pdf.getDestination(dest) : dest;
+    if (!explicit || !explicit[0]) return null;
+    const index = await state.pdf.getPageIndex(explicit[0]);
+    return index + 1;
+  } catch {
+    return null;
+  }
+}
+
+async function loadOutline() {
+  state.outline = [];
+  if (!state.pdf) return;
+  try {
+    const outline = await state.pdf.getOutline();
+    if (!outline || !outline.length) return;
+    const walk = async (nodes, depth) => {
+      for (const node of nodes) {
+        const page = await resolveDest(node.dest);
+        if (page) state.outline.push({ title: node.title || 'Başlıksız', page, depth });
+        if (node.items && node.items.length) await walk(node.items, depth + 1);
+      }
+    };
+    await walk(outline, 0);
+  } catch (error) {
+    console.warn('outline failed', error);
+  }
+}
+
+function renderToc() {
+  const query = tocFilter.value.trim().toLocaleLowerCase('tr');
+  tocList.replaceChildren();
+  tocEmpty.hidden = true;
+
+  if (state.outline.length) {
+    const items = state.outline.filter((item) => item.title.toLocaleLowerCase('tr').includes(query));
+    if (!items.length) {
+      tocEmpty.hidden = false;
+      tocEmpty.textContent = 'Eşleşen bölüm yok.';
+      return;
+    }
+    const fragment = document.createDocumentFragment();
+    for (const item of items) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `toc-item${item.page === state.page ? ' active' : ''}`;
+      button.style.paddingLeft = `${9 + item.depth * 12}px`;
+      button.textContent = item.title;
+      const page = document.createElement('span');
+      page.className = 'toc-page';
+      page.textContent = String(item.page);
+      button.appendChild(page);
+      button.addEventListener('click', () => goToPage(item.page));
+      fragment.appendChild(button);
+    }
+    tocList.appendChild(fragment);
+    return;
+  }
+
+  tocEmpty.hidden = false;
+  tocEmpty.textContent = 'Bu PDF\'te içindekiler bulunamadı. Sayfa numarası girerek veya aşağıdaki listeden gidebilirsiniz.';
+  if (query) {
+    tocEmpty.textContent = 'Bu PDF\'te içindekiler bulunamadı.';
+    return;
+  }
+  const fragment = document.createDocumentFragment();
+  for (let pageNumber = 1; pageNumber <= state.numPages; pageNumber += 1) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `toc-item${pageNumber === state.page ? ' active' : ''}`;
+    button.textContent = `Sayfa ${pageNumber}`;
+    button.addEventListener('click', () => goToPage(pageNumber));
+    fragment.appendChild(button);
+  }
+  tocList.appendChild(fragment);
+}
+
+function toggleToc(show) {
+  const next = typeof show === 'boolean' ? show : tocPanel.hidden;
+  tocPanel.hidden = !next;
+  if (next) {
+    renderToc();
+    if (window.innerWidth < 820) notesPanel.hidden = true;
+  }
+}
+
+function updatePageUi() {
+  pageInput.max = String(state.numPages || 1);
+  pageInput.value = String(state.page || 1);
+  pageTotal.textContent = `/ ${state.numPages || 1}`;
+  pageLabel.textContent = `${state.page} / ${state.numPages}`;
+  updateBookmarkUi();
+}
+
+function updateUrl() {
+  if (!state.book) return;
+  const url = new URL(window.location.href);
+  url.searchParams.set('book', state.book.id);
+  url.searchParams.set('page', String(state.page));
+  history.replaceState(null, '', url);
+}
+
+function bookmarkForPage() {
+  return state.annotations.find(
+    (annotation) => annotation.color === 'bookmark' && Number(annotation.anchor?.page) === state.page,
+  );
+}
+
+function updateBookmarkUi() {
+  const hasBookmark = Boolean(bookmarkForPage());
+  bookmarkBtn.textContent = hasBookmark ? '★' : '☆';
+  bookmarkBtn.classList.toggle('active', hasBookmark);
+  bookmarkBtn.title = hasBookmark ? 'Yer imini kaldır' : 'Yer imi ekle';
+}
+
+async function goToPage(value) {
+  if (!state.pdf) return;
+  const requested = Number(value);
+  if (!Number.isFinite(requested) || requested < 1) {
+    toast('Geçersiz sayfa numarası');
+    updatePageUi();
+    return;
+  }
+  const target = Math.min(state.numPages, Math.max(1, Math.trunc(requested)));
+  if (target !== requested) toast('Sayfa aralığı dışında');
+  state.page = target;
+  await renderPage();
+}
+
+async function toggleBookmark() {
+  if (!state.book || !state.pdf) return;
+  const existing = bookmarkForPage();
+  if (existing) {
+    await deleteAnnotation(existing.id, { silent: true });
+    toast('Yer imi kaldırıldı');
+    return;
+  }
+  try {
+    const response = await fetch('/api/annotations', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        assetId: state.book.asset_id,
+        anchor: {
+          asset_version_id: state.book.asset_id,
+          type: 'pdf',
+          page: state.page,
+          rects: [],
+          text_quote: { prefix: '', exact: '', suffix: '' },
+          text_position: { start: 0, end: 0 },
+        },
+        color: 'bookmark',
+        note: 'Yer imi',
+        selectedText: null,
+      }),
+    });
+    if (!response.ok) throw new Error('bookmark failed');
+    const saved = await response.json();
+    state.annotations.push(saved);
+    renderNotes();
+    updateBookmarkUi();
+    toast('Yer imi eklendi');
+  } catch (error) {
+    console.error(error);
+    toast('Yer imi eklenemedi');
+  }
+}
+
+function showShortcuts() {
+  toast('j/k veya ←/→ sayfa · / içindekilerde ara · n notlar · b yer imi · ? yardım · Esc kapat');
+}
+
 async function getOcrPages(assetId) {
   if (state.ocrManifest.has(assetId)) return state.ocrManifest.get(assetId);
   let pages = new Set();
@@ -445,10 +626,12 @@ async function renderPage() {
     }
   }
 
-  pageLabel.textContent = `${state.page} / ${state.numPages}`;
+  updatePageUi();
   updateZoomLabel();
   renderHighlights();
+  if (!tocPanel.hidden) renderToc();
   saveProgress();
+  updateUrl();
 }
 
 function renderHighlights() {
@@ -519,13 +702,14 @@ function renderNotes() {
   noteCount.textContent = String(state.annotations.length);
   notesEmpty.hidden = state.annotations.length !== 0;
   state.annotations.forEach((annotation) => {
+    const isBookmark = annotation.color === 'bookmark';
     const item = document.createElement('div');
     item.className = 'note-item';
     const page = document.createElement('div');
     page.className = 'note-page';
-    page.textContent = `Sayfa ${annotation.anchor?.page || '—'}`;
+    page.textContent = `Sayfa ${annotation.anchor?.page || '—'}${isBookmark ? ' · Yer imi' : ''}`;
     item.appendChild(page);
-    if (annotation.selected_text) {
+    if (!isBookmark && annotation.selected_text) {
       const text = document.createElement('p');
       text.className = 'note-text';
       text.textContent = annotation.selected_text.length > 120
@@ -533,7 +717,7 @@ function renderNotes() {
         : annotation.selected_text;
       item.appendChild(text);
     }
-    if (annotation.note) {
+    if (!isBookmark && annotation.note) {
       const body = document.createElement('p');
       body.className = 'note-body';
       body.textContent = annotation.note;
@@ -542,7 +726,7 @@ function renderNotes() {
     const remove = document.createElement('button');
     remove.type = 'button';
     remove.className = 'note-delete';
-    remove.title = 'Notu sil';
+    remove.title = 'Sil';
     remove.textContent = '×';
     remove.addEventListener('click', async (event) => {
       event.stopPropagation();
@@ -552,14 +736,12 @@ function renderNotes() {
 
     item.addEventListener('click', async () => {
       const target = Number(annotation.anchor?.page) || 1;
-      if (target !== state.page) {
-        state.page = target;
-        await renderPage();
-      }
+      await goToPage(target);
       notesPanel.hidden = true;
     });
     notesList.appendChild(item);
   });
+  updateBookmarkUi();
 }
 
 async function saveProgress() {
@@ -584,6 +766,9 @@ async function openBook(book) {
   state.page = 1;
   state.scale = 0;
   state.annotations = [];
+  state.outline = [];
+  tocFilter.value = '';
+  tocPanel.hidden = true;
   reader.hidden = false;
   document.body.style.overflow = 'hidden';
   readerTitle.textContent = book.title;
@@ -607,9 +792,31 @@ async function openBook(book) {
     });
     state.pdf = await task.promise;
     state.numPages = state.pdf.numPages;
-    const savedPage = Number(progress?.anchor?.page);
-    state.page = Number.isFinite(savedPage) && savedPage > 0 ? Math.min(savedPage, state.numPages) : 1;
+
+    const params = new URLSearchParams(window.location.search);
+    const rawPage = params.get('book') === book.id ? params.get('page') : null;
+    if (rawPage !== null) {
+      const requested = Number(rawPage);
+      if (!Number.isInteger(requested) || requested < 1) {
+        toast('Geçersiz sayfa numarası');
+        state.page = 1;
+      } else if (requested > state.numPages) {
+        toast('Sayfa aralığı dışında');
+        state.page = state.numPages;
+      } else {
+        state.page = requested;
+      }
+    } else {
+      const savedPage = Number(progress?.anchor?.page);
+      state.page = Number.isFinite(savedPage) && savedPage > 0
+        ? Math.min(savedPage, state.numPages)
+        : 1;
+    }
+
+    await loadOutline();
+    renderToc();
     renderNotes();
+    updatePageUi();
     await renderPage();
   } catch (error) {
     console.error(error);
@@ -628,6 +835,8 @@ async function closeReader() {
   reader.hidden = true;
   document.body.style.overflow = '';
   hlBar.hidden = true;
+  tocPanel.hidden = true;
+  state.outline = [];
   clearPending();
   textLayerEl.replaceChildren();
   highlightsEl.replaceChildren();
@@ -747,14 +956,14 @@ async function saveHighlight() {
   }
 }
 
-async function deleteAnnotation(id) {
+async function deleteAnnotation(id, options = {}) {
   try {
     const response = await fetch(`/api/annotations/${encodeURIComponent(id)}`, { method: 'DELETE' });
     if (!response.ok) throw new Error('delete failed');
     state.annotations = state.annotations.filter((annotation) => annotation.id !== id);
     renderNotes();
     renderHighlights();
-    toast('Not silindi');
+    if (!options.silent) toast('Not silindi');
   } catch (error) {
     console.error(error);
     toast('Not silinemedi');
@@ -762,10 +971,7 @@ async function deleteAnnotation(id) {
 }
 
 function changePage(delta) {
-  const next = state.page + delta;
-  if (next < 1 || next > state.numPages) return;
-  state.page = next;
-  renderPage();
+  goToPage(state.page + delta);
 }
 
 search.addEventListener('input', () => {
@@ -778,10 +984,10 @@ search.addEventListener('input', () => {
 });
 
 document.addEventListener('keydown', (event) => {
-  if (event.key === '/' && document.activeElement !== search) {
-    event.preventDefault();
-    search.focus();
-  }
+  const target = event.target;
+  const typing = target
+    && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable);
+
   if (!uploadModal.hidden) {
     if (event.key === 'Escape') closeUpload();
     return;
@@ -790,10 +996,57 @@ document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') closeEdit();
     return;
   }
+  if (event.key === '?' && !typing) {
+    event.preventDefault();
+    showShortcuts();
+    return;
+  }
+  if (event.key === '/' && !typing) {
+    event.preventDefault();
+    if (reader.hidden) {
+      search.focus();
+    } else {
+      toggleToc(true);
+      tocFilter.focus();
+    }
+    return;
+  }
+  if (typing) {
+    if (event.key === 'Escape') {
+      event.target.blur();
+      if (!tocPanel.hidden) toggleToc(false);
+    }
+    return;
+  }
   if (reader.hidden) return;
-  if (event.key === 'Escape') closeReader();
-  if (event.key === 'ArrowLeft') changePage(-1);
-  if (event.key === 'ArrowRight') changePage(1);
+
+  switch (event.key) {
+    case 'Escape':
+      if (!tocPanel.hidden) toggleToc(false);
+      else if (!notesPanel.hidden) notesPanel.hidden = true;
+      else closeReader();
+      break;
+    case 'ArrowLeft':
+    case 'k':
+      changePage(-1);
+      break;
+    case 'ArrowRight':
+    case 'j':
+      changePage(1);
+      break;
+    case 'n':
+      notesPanel.hidden = !notesPanel.hidden;
+      if (!notesPanel.hidden && window.innerWidth < 820) tocPanel.hidden = true;
+      break;
+    case 'b':
+      toggleBookmark();
+      break;
+    case 't':
+      toggleToc();
+      break;
+    default:
+      break;
+  }
 });
 
 $('openUpload').addEventListener('click', openUpload);
@@ -818,6 +1071,18 @@ editModal.addEventListener('click', (event) => {
 });
 
 $('closeReader').addEventListener('click', closeReader);
+$('toggleToc').addEventListener('click', () => toggleToc());
+$('closeToc').addEventListener('click', () => toggleToc(false));
+tocFilter.addEventListener('input', renderToc);
+pageInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    goToPage(pageInput.value);
+    pageInput.blur();
+  }
+});
+pageInput.addEventListener('change', () => goToPage(pageInput.value));
+bookmarkBtn.addEventListener('click', toggleBookmark);
 $('prevPage').addEventListener('click', () => changePage(-1));
 $('nextPage').addEventListener('click', () => changePage(1));
 $('zoomIn').addEventListener('click', () => {
@@ -830,6 +1095,7 @@ $('zoomOut').addEventListener('click', () => {
 });
 $('toggleNotes').addEventListener('click', () => {
   notesPanel.hidden = !notesPanel.hidden;
+  if (!notesPanel.hidden && window.innerWidth < 820) tocPanel.hidden = true;
 });
 $('hlSave').addEventListener('click', saveHighlight);
 $('hlCancel').addEventListener('click', () => {
@@ -843,6 +1109,7 @@ hlNote.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     state.pending = null;
     hlBar.hidden = true;
+    clearPending();
   }
 });
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=8" />
+  <link rel="stylesheet" href="/styles.css?v=10" />
 </head>
 <body>
   <header class="topbar">
@@ -105,13 +105,30 @@
         <span id="readerMeta"></span>
       </div>
       <div class="reader-actions">
+        <button class="ghost-btn" id="toggleToc" type="button" title="İçindekiler" aria-label="İçindekiler">☰</button>
+        <div class="page-jump">
+          <input id="pageInput" type="number" min="1" value="1" aria-label="Sayfa numarası" />
+          <span id="pageTotal">/ 1</span>
+        </div>
         <button class="icon-btn" id="zoomOut" aria-label="Uzaklaştır">−</button>
         <span class="zoom" id="zoomLabel">100%</span>
         <button class="icon-btn" id="zoomIn" aria-label="Yakınlaştır">+</button>
+        <button class="ghost-btn" id="bookmarkBtn" type="button" title="Yer imi" aria-label="Yer imi">☆</button>
         <button class="ghost-btn" id="toggleNotes">Notlar <span id="noteCount">0</span></button>
       </div>
     </div>
     <div class="reader-body">
+      <aside class="toc" id="tocPanel" hidden>
+        <div class="toc-head">
+          <strong>İçindekiler</strong>
+          <button class="icon-btn" id="closeToc" type="button" aria-label="Kapat">✕</button>
+        </div>
+        <div class="toc-filter">
+          <input id="tocFilter" type="search" placeholder="Bölüm başlığında ara…" />
+        </div>
+        <div class="toc-list" id="tocList"></div>
+        <div class="toc-empty" id="tocEmpty" hidden></div>
+      </aside>
       <div class="page-area">
         <button class="nav-btn" id="prevPage" aria-label="Önceki sayfa">‹</button>
         <div class="page-wrap" id="pageWrap">
@@ -142,6 +159,6 @@
 
   <div class="toast" id="toast" hidden></div>
 
-  <script type="module" src="/app.js?v=13"></script>
+  <script type="module" src="/app.js?v=16"></script>
 </body>
 </html>
