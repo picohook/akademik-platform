@@ -28,6 +28,30 @@ The repository ships only `sample.pdf` (public test file) until real files arriv
 | 50 concurrent, error rate | 0 | | | | | |
 | 50 concurrent, p95 (s) | < 2 | | | | | |
 
+## Scaffold measurement — 2026-10-20
+
+Not a formal P1/P2/P3 run; localhost, uncontrolled network, no RSS sampling.
+
+- **File:** Oral Radiology: Principles and Interpretation, 63.6 MB, 697 pages, text layer.
+- **Browser:** Chrome on Windows (devicePixelRatio not recorded).
+- **Zoom:** initial fit 160%; later 73% during the 100-page run.
+- **Cache:** not controlled; PDF.js document load 330–965 ms across runs.
+
+| Metric | Result | Threshold | Status |
+|---|---|---|---|
+| Cold first page | 3.1–3.6 s | < 2 s | **Fail** |
+| PDF document load | 330–965 ms | — | — |
+| Page render average (100 pages) | 179 ms | p95 < 300 ms | p95 not measured; average passes |
+| Page render max | 924 ms | — | cold page |
+| Last page canvas / text | 113 / 94 ms | — | — |
+| JS heap after 100 pages | 308 MB | RSS < 500 MB | heap, not RSS; stable from 286 MB at 20 pages |
+| Heap after 20 pages | 22–286 MB | — | `performance.memory` varies with GC timing |
+| Highlight alignment | not measured | ±3 px | open |
+
+**Conclusion:** page-turn cost and memory are acceptable for a 63 MB / 697-page book; **cold first page misses the <2 s target**. The 100-page heap is essentially flat (286 → 308 MB), so no page-cache leak was observed.
+
+**Next optimization:** first-page progressive paint (low-res canvas first, then fit-scale) or a lower initial fit cap for large PDFs. Re-run with the 500 MB fixture before signing off the PDF architecture.
+
 ## Search queries (Turkish + English)
 
 1. implant komplikasyonları
