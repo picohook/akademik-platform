@@ -422,7 +422,7 @@ async function serveStatic(req, res, pathname) {
     return;
   }
   const ext = path.extname(filePath).toLowerCase();
-  const noCache = ['.html', '.js', '.mjs', '.css'].includes(ext);
+  const noCache = ['.html', '.js', '.mjs', '.css', '.hocr'].includes(ext);
   res.writeHead(200, {
     'content-type': MIME[ext] || 'application/octet-stream',
     'content-length': info.size,

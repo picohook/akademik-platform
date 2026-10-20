@@ -4,7 +4,7 @@
  *
  * Usage:
  *   node ocr.mjs --images ../fixtures/scan-pages --truth ../fixtures/scan-truth.json \
- *                --lang tur+eng --out ../fixtures/ocr-output.json [--hocr-dir ../fixtures/hocr]
+ *                --lang tur --out ../fixtures/ocr-output.json [--hocr-dir ../fixtures/hocr]
  *
  * The first run downloads the requested traineddata files; this can take a minute.
  */
@@ -16,7 +16,7 @@ const argv = process.argv.slice(2);
 const options = {
   images: '../fixtures/scan-pages',
   truth: '../fixtures/scan-truth.json',
-  lang: 'tur+eng',
+  lang: 'tur',
   out: '../fixtures/ocr-output.json',
   hocrDir: null,
   limit: 0,

@@ -7,13 +7,17 @@ npm install --ignore-scripts     # --ignore-scripts avoids the opencollective po
 node ocr.mjs \
   --images ../fixtures/scan-pages \
   --truth ../fixtures/scan-truth.json \
-  --lang tur+eng \
+  --lang tur \
   --out ../fixtures/ocr-output.json \
   --hocr-dir ../fixtures/hocr \
   --limit 3
 ```
 
 The first run downloads `tur` / `eng` traineddata; later runs are offline.
+
+## Language choice
+
+Use **one language per book**: `--lang tur` for Turkish titles, `--lang eng` for English. Do **not** use `tur+eng` for Turkish titles: Tesseract's English model wins on bold Latin-looking words and ASCII-fies them (`Diş` → `Dis`, `Hekimliğinde` → `Hekimliginde`). Test the title line after any language change.
 
 ## Output
 

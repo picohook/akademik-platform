@@ -251,7 +251,7 @@ async function renderOcrLayer(viewport) {
   let hocr = state.ocrCache.get(key);
   if (hocr === undefined) {
     try {
-      const response = await fetch(`/ocr/${encodeURIComponent(assetId)}/page-${page}.hocr`);
+      const response = await fetch(`/ocr/${encodeURIComponent(assetId)}/page-${page}.hocr?v=2`);
       hocr = response.ok ? await response.text() : null;
     } catch {
       hocr = null;
