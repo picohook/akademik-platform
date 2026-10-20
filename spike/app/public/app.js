@@ -87,7 +87,9 @@ function makeCard(book) {
   const kicker = document.createElement('span');
   kicker.className = 'kicker';
   kicker.lang = book.language === 'en' ? 'en' : 'tr';
-  kicker.textContent = (book.subjects && book.subjects[0]) || 'Akademik';
+  const subject = (book.subjects && book.subjects[0]) || 'Akademik';
+  // Locale-aware uppercase: English "Nursing" -> NURSING (I), Turkish "Diş" -> DİŞ (İ).
+  kicker.textContent = String(subject).toLocaleUpperCase(kicker.lang);
   cover.appendChild(kicker);
 
   const initial = document.createElement('span');
