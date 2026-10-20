@@ -17,6 +17,7 @@ const state = {
   pageText: new Map(),
   searchRun: 0,
   activeQuery: '',
+  highlightColor: 'yellow',
   ocrCache: new Map(),
   ocrManifest: new Map(),
   renderTask: null,
@@ -44,6 +45,8 @@ const noteCount = $('noteCount');
 const notesList = $('notesList');
 const notesEmpty = $('notesEmpty');
 const notesPanel = $('notesPanel');
+const exportMd = $('exportMd');
+const exportJson = $('exportJson');
 const tocPanel = $('tocPanel');
 const tocList = $('tocList');
 const tocEmpty = $('tocEmpty');
@@ -60,6 +63,7 @@ const searchStatus = $('searchStatus');
 const searchResults = $('searchResults');
 const searchEmpty = $('searchEmpty');
 const hlBar = $('hlBar');
+const hlColors = $('hlColors');
 const hlNote = $('hlNote');
 const toastEl = $('toast');
 
@@ -868,19 +872,161 @@ function clearPending() {
   highlightsEl.querySelectorAll('.pending').forEach((element) => element.remove());
 }
 
+function setHighlightColor(color) {
+  state.highlightColor = ['yellow', 'green', 'blue', 'pink'].includes(color) ? color : 'yellow';
+  hlColors.querySelectorAll('.hl-color').forEach((button) => {
+    button.classList.toggle('active', button.dataset.color === state.highlightColor);
+  });
+}
+
 function renderPending(rects) {
   clearPending();
   if (!state.viewport) return;
   const scale = state.viewport.scale;
   rects.forEach((rect) => {
     const box = document.createElement('div');
-    box.className = 'hl pending';
+    box.className = `hl ${state.highlightColor} pending`;
     box.style.left = `${rect[0] * scale}px`;
     box.style.top = `${rect[1] * scale}px`;
     box.style.width = `${rect[2] * scale}px`;
     box.style.height = `${rect[3] * scale}px`;
     highlightsEl.appendChild(box);
   });
+}
+
+const COLOR_ORDER = ['yellow', 'green', 'blue', 'pink'];
+const COLOR_LABELS = { yellow: 'Sarı', green: 'Yeşil', blue: 'Mavi', pink: 'Pembe', bookmark: 'Yer imi' };
+
+async function updateAnnotation(id, changes) {
+  const response = await fetch(`/api/annotations/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(changes),
+  });
+  if (!response.ok) throw new Error('annotation update failed');
+  const updated = await response.json();
+  const index = state.annotations.findIndex((annotation) => annotation.id === id);
+  if (index >= 0) state.annotations[index] = updated;
+  renderNotes();
+  renderHighlights();
+  return updated;
+}
+
+function downloadFile(filename, content, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function exportAnnotations(format) {
+  if (!state.book || !state.annotations.length) {
+    toast('Dışa aktarılacak not yok');
+    return;
+  }
+  const book = state.book;
+  const annotations = [...state.annotations].sort(
+    (a, b) => Number(a.anchor?.page || 0) - Number(b.anchor?.page || 0),
+  );
+  const slug = book.title
+    .toLocaleLowerCase('tr')
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60) || 'kitap';
+
+  if (format === 'json') {
+    const payload = {
+      exported_at: new Date().toISOString(),
+      book: {
+        id: book.id,
+        title: book.title,
+        subtitle: book.subtitle || null,
+        publisher: book.publisher || null,
+        publication_year: book.publication_year || null,
+        asset_id: book.asset_id,
+      },
+      annotations,
+    };
+    downloadFile(`${slug}-notlar.json`, JSON.stringify(payload, null, 2), 'application/json');
+    toast('JSON indirildi');
+    return;
+  }
+
+  const lines = [
+    `# ${book.title}`,
+    '',
+    [book.publisher, book.publication_year].filter(Boolean).join(' · '),
+    '',
+    `Dışa aktarma: ${new Date().toLocaleString('tr-TR')}`,
+    '',
+    '---',
+    '',
+  ];
+  annotations.forEach((annotation) => {
+    const page = annotation.anchor?.page || '—';
+    lines.push(`## Sayfa ${page}`, '');
+    if (annotation.color === 'bookmark') {
+      lines.push('*Yer imi*', '');
+    } else {
+      if (annotation.selected_text) lines.push(`> ${annotation.selected_text.replace(/\n/g, '\n> ')}`, '');
+      if (annotation.note) lines.push(annotation.note, '');
+      lines.push(`*Renk: ${COLOR_LABELS[annotation.color] || annotation.color || 'Sarı'}*`, '');
+    }
+    lines.push('---', '');
+  });
+  downloadFile(`${slug}-notlar.md`, lines.join('\n'), 'text/markdown;charset=utf-8');
+  toast('Markdown indirildi');
+}
+
+function startEditNote(annotation, item) {
+  if (item.querySelector('.note-edit')) return;
+  item.classList.add('editing');
+  const editor = document.createElement('div');
+  editor.className = 'note-edit';
+  const textarea = document.createElement('textarea');
+  textarea.value = annotation.note || '';
+  textarea.rows = 3;
+  textarea.maxLength = 1000;
+  const actions = document.createElement('div');
+  actions.className = 'note-edit-actions';
+  const save = document.createElement('button');
+  save.type = 'button';
+  save.className = 'primary';
+  save.textContent = 'Kaydet';
+  const cancel = document.createElement('button');
+  cancel.type = 'button';
+  cancel.className = 'ghost-btn';
+  cancel.textContent = 'Vazgeç';
+  actions.append(save, cancel);
+  editor.append(textarea, actions);
+  editor.addEventListener('click', (event) => event.stopPropagation());
+  save.addEventListener('click', async () => {
+    try {
+      await updateAnnotation(annotation.id, { note: textarea.value.trim() });
+      toast('Not güncellendi');
+    } catch {
+      toast('Not güncellenemedi');
+    }
+  });
+  cancel.addEventListener('click', () => renderNotes());
+  item.appendChild(editor);
+  textarea.focus();
+}
+
+async function cycleAnnotationColor(annotation) {
+  if (annotation.color === 'bookmark') return;
+  const current = COLOR_ORDER.indexOf(annotation.color);
+  const next = COLOR_ORDER[(current + 1) % COLOR_ORDER.length];
+  try {
+    await updateAnnotation(annotation.id, { color: next });
+  } catch {
+    toast('Renk değiştirilemedi');
+  }
 }
 
 function renderNotes() {
@@ -891,6 +1037,16 @@ function renderNotes() {
     const isBookmark = annotation.color === 'bookmark';
     const item = document.createElement('div');
     item.className = 'note-item';
+    const color = document.createElement('button');
+    color.type = 'button';
+    color.className = `note-color ${annotation.color || 'yellow'}`;
+    color.title = 'Rengi değiştir';
+    color.setAttribute('aria-label', 'Rengi değiştir');
+    color.addEventListener('click', async (event) => {
+      event.stopPropagation();
+      await cycleAnnotationColor(annotation);
+    });
+    item.appendChild(color);
     const page = document.createElement('div');
     page.className = 'note-page';
     page.textContent = `Sayfa ${annotation.anchor?.page || '—'}${isBookmark ? ' · Yer imi' : ''}`;
@@ -919,6 +1075,18 @@ function renderNotes() {
       await deleteAnnotation(annotation.id);
     });
     item.appendChild(remove);
+    if (!isBookmark) {
+      const edit = document.createElement('button');
+      edit.type = 'button';
+      edit.className = 'note-edit-btn';
+      edit.title = 'Notu düzenle';
+      edit.textContent = '✎';
+      edit.addEventListener('click', (event) => {
+        event.stopPropagation();
+        startEditNote(annotation, item);
+      });
+      item.appendChild(edit);
+    }
 
     item.addEventListener('click', async () => {
       const target = Number(annotation.anchor?.page) || 1;
@@ -956,6 +1124,7 @@ async function openBook(book) {
   state.pageText = new Map();
   state.searchRun += 1;
   state.activeQuery = '';
+  setHighlightColor('yellow');
   bookSearch.value = '';
   searchResults.replaceChildren();
   searchStatus.textContent = '';
@@ -1134,7 +1303,7 @@ async function saveHighlight() {
       body: JSON.stringify({
         assetId: state.book.asset_id,
         anchor: pending.anchor,
-        color: 'yellow',
+        color: state.highlightColor,
         note: hlNote.value.trim() || null,
         selectedText: pending.text,
       }),
@@ -1294,6 +1463,8 @@ pageInput.addEventListener('keydown', (event) => {
 });
 pageInput.addEventListener('change', () => goToPage(pageInput.value));
 bookmarkBtn.addEventListener('click', toggleBookmark);
+exportMd.addEventListener('click', () => exportAnnotations('md'));
+exportJson.addEventListener('click', () => exportAnnotations('json'));
 $('prevPage').addEventListener('click', () => changePage(-1));
 $('nextPage').addEventListener('click', () => changePage(1));
 $('zoomIn').addEventListener('click', () => {
@@ -1309,6 +1480,10 @@ $('toggleNotes').addEventListener('click', () => {
   if (!notesPanel.hidden && window.innerWidth < 820) tocPanel.hidden = true;
 });
 $('hlSave').addEventListener('click', saveHighlight);
+hlColors.addEventListener('click', (event) => {
+  const button = event.target.closest('.hl-color');
+  if (button) setHighlightColor(button.dataset.color);
+});
 $('hlCancel').addEventListener('click', () => {
   state.pending = null;
   hlBar.hidden = true;

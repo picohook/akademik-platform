@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=12" />
+  <link rel="stylesheet" href="/styles.css?v=13" />
 </head>
 <body>
   <header class="topbar">
@@ -155,7 +155,11 @@
       <aside class="notes" id="notesPanel">
         <div class="notes-head">
           <strong>Notlar ve vurgular</strong>
-          <span id="pageLabel">1 / 1</span>
+          <div class="notes-head-right">
+            <span id="pageLabel">1 / 1</span>
+            <button class="mini-btn" id="exportMd" type="button" title="Markdown olarak indir">MD</button>
+            <button class="mini-btn" id="exportJson" type="button" title="JSON olarak indir">JSON</button>
+          </div>
         </div>
         <div class="notes-list" id="notesList"></div>
         <div class="notes-empty" id="notesEmpty">
@@ -166,6 +170,12 @@
   </div>
 
   <div class="hl-bar" id="hlBar" hidden>
+    <div class="hl-colors" id="hlColors" role="group" aria-label="Vurgu rengi">
+      <button class="hl-color yellow active" data-color="yellow" type="button" aria-label="Sarı"></button>
+      <button class="hl-color green" data-color="green" type="button" aria-label="Yeşil"></button>
+      <button class="hl-color blue" data-color="blue" type="button" aria-label="Mavi"></button>
+      <button class="hl-color pink" data-color="pink" type="button" aria-label="Pembe"></button>
+    </div>
     <input id="hlNote" type="text" placeholder="Not (opsiyonel)" maxlength="280" />
     <button class="primary" id="hlSave">Vurgula</button>
     <button class="icon-btn" id="hlCancel" aria-label="İptal">✕</button>
@@ -173,6 +183,6 @@
 
   <div class="toast" id="toast" hidden></div>
 
-  <script type="module" src="/app.js?v=19"></script>
+  <script type="module" src="/app.js?v=20"></script>
 </body>
 </html>

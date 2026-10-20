@@ -306,6 +306,44 @@ async function createAnnotation(body) {
   });
 }
 
+async function updateAnnotation(id, body) {
+  const colors = ['yellow', 'green', 'blue', 'pink', 'bookmark'];
+  const hasNote = Object.prototype.hasOwnProperty.call(body, 'note');
+  const hasColor = Object.prototype.hasOwnProperty.call(body, 'color');
+  if (!hasNote && !hasColor) throw new Error('note or color is required');
+  if (hasColor && !colors.includes(body.color)) throw new Error('invalid color');
+
+  if (!pool) {
+    const row = demoAnnotations.find((item) => item.id === id);
+    if (!row) return null;
+    if (hasNote) row.note = body.note ? String(body.note).trim() || null : null;
+    if (hasColor) row.color = body.color;
+    return row;
+  }
+
+  return withTenant(async (client) => {
+    const sets = [];
+    const params = [];
+    if (hasNote) {
+      params.push(body.note ? String(body.note).trim() || null : null);
+      sets.push(`note = $${params.length}`);
+    }
+    if (hasColor) {
+      params.push(body.color);
+      sets.push(`color = $${params.length}`);
+    }
+    params.push(id, USER_ID);
+    const { rows } = await client.query(
+      `update annotations
+          set ${sets.join(', ')}, updated_at = now()
+        where id = $${params.length - 1} and user_id = $${params.length}
+        returning id, asset_id, anchor, color, note, selected_text, status, created_at`,
+      params,
+    );
+    return rows[0] || null;
+  });
+}
+
 async function getProgress(assetId) {
   if (!pool) return demoProgress.get(assetId) || null;
   return withTenant(async (client) => {
@@ -754,6 +792,16 @@ const server = http.createServer(async (req, res) => {
     }
     if (pathname === '/api/annotations' && req.method === 'POST') {
       json(res, 201, await createAnnotation(await readJson(req)));
+      return;
+    }
+    if (pathname.startsWith('/api/annotations/') && req.method === 'PATCH') {
+      const id = pathname.slice('/api/annotations/'.length);
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        json(res, 400, { error: 'invalid annotation id' });
+        return;
+      }
+      const updated = await updateAnnotation(id, await readJson(req));
+      json(res, updated ? 200 : 404, updated || { error: 'annotation not found' });
       return;
     }
     if (pathname.startsWith('/api/annotations/') && req.method === 'DELETE') {
