@@ -1,7 +1,7 @@
 import http from 'node:http';
 import path from 'node:path';
 import { createReadStream, createWriteStream } from 'node:fs';
-import { mkdir, open, readFile, stat, unlink } from 'node:fs/promises';
+import { mkdir, open, readFile, readdir, stat, unlink } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createHash, randomUUID } from 'node:crypto';
 import Busboy from 'busboy';
@@ -360,6 +360,20 @@ async function resolveStorageKey(id) {
   });
 }
 
+async function listOcrPages(assetId) {
+  const dir = path.join(PUBLIC_DIR, 'ocr', assetId);
+  try {
+    const files = await readdir(dir);
+    return files
+      .map((name) => /^page-(\d{3})\.hocr$/.exec(name))
+      .filter(Boolean)
+      .map((match) => Number(match[1]))
+      .sort((a, b) => a - b);
+  } catch {
+    return [];
+  }
+}
+
 async function handleUpload(req) {
   const MAX_BYTES = 1024 * 1024 * 1024;
   const fields = {};
@@ -627,6 +641,15 @@ const server = http.createServer(async (req, res) => {
   try {
     if (pathname === '/api/health') {
       json(res, 200, { ok: true, mode: pool ? 'db' : 'demo', tenantId: TENANT_ID });
+      return;
+    }
+    if (pathname.startsWith('/api/ocr/') && req.method === 'GET') {
+      const assetId = pathname.slice('/api/ocr/'.length);
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(assetId)) {
+        json(res, 400, { error: 'invalid asset id' });
+        return;
+      }
+      json(res, 200, { assetId, pages: await listOcrPages(assetId) });
       return;
     }
     if (pathname === '/api/upload' && req.method === 'POST') {

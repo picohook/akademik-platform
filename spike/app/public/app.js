@@ -14,6 +14,7 @@ const state = {
   viewport: null,
   annotations: [],
   ocrCache: new Map(),
+  ocrManifest: new Map(),
   renderTask: null,
   pending: null,
 };
@@ -304,9 +305,29 @@ function fitScale(baseViewport) {
   return Math.min(2, Math.max(0.6, available / baseViewport.width));
 }
 
+async function getOcrPages(assetId) {
+  if (state.ocrManifest.has(assetId)) return state.ocrManifest.get(assetId);
+  let pages = new Set();
+  try {
+    const response = await fetch(`/api/ocr/${encodeURIComponent(assetId)}`);
+    if (response.ok) {
+      const data = await response.json();
+      pages = new Set((data.pages || []).map(Number));
+    }
+  } catch {
+    // No OCR manifest: fall back to the PDF text layer.
+  }
+  state.ocrManifest.set(assetId, pages);
+  return pages;
+}
+
 async function renderOcrLayer(viewport) {
   const assetId = state.book?.asset_id;
   if (!assetId) return false;
+
+  const ocrPages = await getOcrPages(assetId);
+  if (!ocrPages.has(state.page)) return false;
+
   const page = String(state.page).padStart(3, '0');
   const key = `${assetId}:${page}`;
   let hocr = state.ocrCache.get(key);
