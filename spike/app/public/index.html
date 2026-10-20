@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/styles.css?v=5" />
 </head>
 <body>
   <header class="topbar">
@@ -37,6 +37,35 @@
     <section class="grid" id="grid" aria-live="polite"></section>
     <p class="empty" id="empty" hidden>Sonuç yok. Arama terimini değiştirin.</p>
   </main>
+
+  <div class="modal" id="editModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editHeading">
+      <div class="modal-head">
+        <strong id="editHeading">Kitabı düzenle</strong>
+        <button class="icon-btn" id="closeEdit" type="button" aria-label="Kapat">✕</button>
+      </div>
+      <form id="editForm">
+        <input type="hidden" id="editId" />
+        <label>Başlık<input id="editTitle" required maxlength="300" /></label>
+        <label>Alt başlık<input id="editSubtitle" maxlength="300" /></label>
+        <div class="form-row">
+          <label>Dil
+            <select id="editLanguage">
+              <option value="tr">Türkçe</option>
+              <option value="en">English</option>
+            </select>
+          </label>
+          <label>Yıl<input id="editYear" type="number" min="1800" max="2100" /></label>
+        </div>
+        <label>Yayıncı<input id="editPublisher" maxlength="200" /></label>
+        <label>Konular (; ile ayırın)<input id="editSubjects" placeholder="Diş Hekimliği;Implantoloji" /></label>
+        <div class="modal-actions">
+          <button class="ghost-btn" id="cancelEdit" type="button">Vazgeç</button>
+          <button class="primary" type="submit">Kaydet</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <div class="reader" id="reader" hidden>
     <div class="reader-top">
@@ -83,6 +112,6 @@
 
   <div class="toast" id="toast" hidden></div>
 
-  <script type="module" src="/app.js"></script>
+  <script type="module" src="/app.js?v=6"></script>
 </body>
 </html>

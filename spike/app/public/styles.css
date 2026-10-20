@@ -132,6 +132,20 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
 .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 7px; }
 .badge { font-size: 10.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 7px; background: var(--paper); }
 
+.edit-btn {
+  margin-top: 8px;
+  display: inline-block;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--muted);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.edit-btn:hover { color: var(--ink); border-color: #c9bfa9; }
+
 .empty { color: var(--muted); text-align: center; padding: 60px 0; }
 
 /* Reader */
@@ -212,9 +226,17 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
 .notes-head span { color: var(--muted); font-size: 12px; }
 .notes-list { overflow: auto; padding: 8px; }
 .note-item {
+  position: relative;
   border: 1px solid var(--line); border-radius: 9px; padding: 10px; margin-bottom: 8px;
   cursor: pointer; background: #fffdf8;
 }
+.note-delete {
+  position: absolute; top: 6px; right: 6px;
+  width: 22px; height: 22px; display: grid; place-items: center;
+  border: 0; border-radius: 6px; background: transparent; color: var(--muted);
+  font: inherit; font-size: 14px; cursor: pointer;
+}
+.note-delete:hover { background: #f2ede1; color: var(--ink); }
 .note-item:hover { border-color: #c9bfa9; }
 .note-item .note-page { font-size: 10.5px; color: var(--accent-2); text-transform: uppercase; letter-spacing: 0.08em; }
 .note-item .note-text { font-size: 12.5px; margin: 4px 0 0; }
@@ -228,6 +250,33 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
 .hl-bar[hidden] { display: none; }
 .hl-bar input { width: 180px; border: 0; border-radius: 6px; padding: 7px 9px; font: inherit; font-size: 12.5px; outline: none; }
 .hl-bar .icon-btn { background: transparent; color: #fff; border-color: rgba(255,255,255,0.22); }
+
+.modal {
+  position: fixed; inset: 0; z-index: 70;
+  display: grid; place-items: center;
+  background: rgba(20, 18, 14, 0.45);
+  padding: 20px;
+}
+.modal[hidden] { display: none; }
+.modal-card {
+  width: min(520px, 100%);
+  background: var(--paper);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+.modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.modal-card label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+.modal-card input, .modal-card select {
+  display: block; width: 100%; margin-top: 4px;
+  padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px;
+  background: #fff; color: var(--ink); font: inherit;
+}
+.modal-card input:focus, .modal-card select:focus {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(31, 92, 74, 0.1);
+}
+.form-row { display: grid; grid-template-columns: 1fr 120px; gap: 10px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
 
 .toast {
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);

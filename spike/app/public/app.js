@@ -43,6 +43,16 @@ const hlBar = $('hlBar');
 const hlNote = $('hlNote');
 const toastEl = $('toast');
 
+const editModal = $('editModal');
+const editForm = $('editForm');
+const editId = $('editId');
+const editTitle = $('editTitle');
+const editSubtitle = $('editSubtitle');
+const editLanguage = $('editLanguage');
+const editYear = $('editYear');
+const editPublisher = $('editPublisher');
+const editSubjects = $('editSubjects');
+
 function toast(message) {
   toastEl.textContent = message;
   toastEl.hidden = false;
@@ -57,10 +67,17 @@ function hue(text) {
 }
 
 function makeCard(book) {
-  const card = document.createElement('button');
+  const card = document.createElement('div');
   card.className = 'card';
-  card.type = 'button';
+  card.tabIndex = 0;
+  card.setAttribute('role', 'button');
   card.addEventListener('click', () => openBook(book));
+  card.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openBook(book);
+    }
+  });
 
   const cover = document.createElement('div');
   cover.className = 'cover';
@@ -109,6 +126,16 @@ function makeCard(book) {
   });
   meta.appendChild(badges);
 
+  const edit = document.createElement('button');
+  edit.type = 'button';
+  edit.className = 'edit-btn';
+  edit.textContent = 'Düzenle';
+  edit.addEventListener('click', (event) => {
+    event.stopPropagation();
+    openEdit(book);
+  });
+  meta.appendChild(edit);
+
   card.appendChild(cover);
   card.appendChild(meta);
   return card;
@@ -123,6 +150,60 @@ function renderBooks() {
   visible.forEach((book) => grid.appendChild(makeCard(book)));
   count.textContent = `${visible.length} başlık`;
   empty.hidden = visible.length !== 0;
+}
+
+function openEdit(book) {
+  editId.value = book.id;
+  editTitle.value = book.title || '';
+  editSubtitle.value = book.subtitle || '';
+  editLanguage.value = book.language === 'en' ? 'en' : 'tr';
+  editYear.value = book.publication_year || '';
+  editPublisher.value = book.publisher || '';
+  editSubjects.value = (book.subjects || []).join('; ');
+  editModal.hidden = false;
+  setTimeout(() => editTitle.focus(), 0);
+}
+
+function closeEdit() {
+  editModal.hidden = true;
+}
+
+async function saveEdit(event) {
+  event.preventDefault();
+  const id = editId.value;
+  const payload = {
+    title: editTitle.value.trim(),
+    subtitle: editSubtitle.value.trim(),
+    language: editLanguage.value,
+    publisher: editPublisher.value.trim(),
+    year: editYear.value ? Number(editYear.value) : null,
+    subjects: editSubjects.value.split(/[;,]/).map((item) => item.trim()).filter(Boolean),
+  };
+  if (!payload.title) {
+    toast('Başlık boş olamaz');
+    return;
+  }
+  try {
+    const response = await fetch(`/api/books/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error('Kaydedilemedi');
+    const updated = await response.json();
+    state.books = state.books.map((book) => (book.id === updated.id ? updated : book));
+    if (state.book?.id === updated.id) {
+      readerTitle.textContent = updated.title;
+      readerMeta.textContent = `${updated.publisher || ''}${updated.publication_year ? ` · ${updated.publication_year}` : ''}`;
+    }
+    renderFilters();
+    renderBooks();
+    closeEdit();
+    toast('Künye güncellendi');
+  } catch (error) {
+    console.error(error);
+    toast('Künye güncellenemedi');
+  }
 }
 
 function renderFilters() {
@@ -219,6 +300,9 @@ async function renderOcrLayer(viewport) {
     span.style.color = 'transparent';
     span.style.transformOrigin = '0 0';
     fragment.appendChild(span);
+    // A real whitespace text node between absolutely positioned word spans is
+    // what makes the browser's native selection include spaces.
+    fragment.appendChild(document.createTextNode(' '));
   }
   if (!fragment.childNodes.length) return false;
   textLayerEl.appendChild(fragment);
@@ -330,6 +414,17 @@ function renderNotes() {
       body.textContent = annotation.note;
       item.appendChild(body);
     }
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'note-delete';
+    remove.title = 'Notu sil';
+    remove.textContent = '×';
+    remove.addEventListener('click', async (event) => {
+      event.stopPropagation();
+      await deleteAnnotation(annotation.id);
+    });
+    item.appendChild(remove);
+
     item.addEventListener('click', async () => {
       const target = Number(annotation.anchor?.page) || 1;
       if (target !== state.page) {
@@ -420,11 +515,16 @@ function updateSelectionBar(rect) {
   hlBar.style.top = `${top}px`;
 }
 
-function ocrSelectionText(selection) {
-  const words = [...textLayerEl.querySelectorAll('.ocr-word')]
-    .filter((span) => selection.containsNode(span, true))
+function selectedOcrWords(selection) {
+  const range = selection.rangeCount ? selection.getRangeAt(0) : null;
+  return [...textLayerEl.querySelectorAll('.ocr-word')]
+    .filter((span) => (range ? range.intersectsNode(span) : selection.containsNode(span, true)))
     .map((span) => span.textContent.trim())
     .filter(Boolean);
+}
+
+function ocrSelectionText(selection) {
+  const words = selectedOcrWords(selection);
   return words.length ? words.join(' ') : selection.toString().trim();
 }
 
@@ -497,6 +597,20 @@ async function saveHighlight() {
   }
 }
 
+async function deleteAnnotation(id) {
+  try {
+    const response = await fetch(`/api/annotations/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!response.ok) throw new Error('delete failed');
+    state.annotations = state.annotations.filter((annotation) => annotation.id !== id);
+    renderNotes();
+    renderHighlights();
+    toast('Not silindi');
+  } catch (error) {
+    console.error(error);
+    toast('Not silinemedi');
+  }
+}
+
 function changePage(delta) {
   const next = state.page + delta;
   if (next < 1 || next > state.numPages) return;
@@ -518,10 +632,21 @@ document.addEventListener('keydown', (event) => {
     event.preventDefault();
     search.focus();
   }
+  if (!editModal.hidden) {
+    if (event.key === 'Escape') closeEdit();
+    return;
+  }
   if (reader.hidden) return;
   if (event.key === 'Escape') closeReader();
   if (event.key === 'ArrowLeft') changePage(-1);
   if (event.key === 'ArrowRight') changePage(1);
+});
+
+editForm.addEventListener('submit', saveEdit);
+$('closeEdit').addEventListener('click', closeEdit);
+$('cancelEdit').addEventListener('click', closeEdit);
+editModal.addEventListener('click', (event) => {
+  if (event.target === editModal) closeEdit();
 });
 
 $('closeReader').addEventListener('click', closeReader);
@@ -554,13 +679,11 @@ hlNote.addEventListener('keydown', (event) => {
 
 textLayerEl.addEventListener('mouseup', () => setTimeout(onSelection, 0));
 
-textLayerEl.addEventListener('copy', (event) => {
+document.addEventListener('copy', (event) => {
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed) return;
-  const words = [...textLayerEl.querySelectorAll('.ocr-word')]
-    .filter((span) => selection.containsNode(span, true))
-    .map((span) => span.textContent.trim())
-    .filter(Boolean);
+  if (!selection.anchorNode || !textLayerEl.contains(selection.anchorNode)) return;
+  const words = selectedOcrWords(selection);
   if (!words.length || !event.clipboardData) return;
   event.clipboardData.setData('text/plain', words.join(' '));
   event.preventDefault();

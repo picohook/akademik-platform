@@ -107,8 +107,120 @@ async function listBooks() {
   });
 }
 
-async function searchBooks(query) {
-  const q = String(query || '').trim();
+async function getBook(id) {
+  if (!pool) return findBook(id) || null;
+  return withTenant(async (client) => {
+    const { rows } = await client.query(
+      `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects,
+              e.publisher, e.publication_year,
+              a.id as asset_id, a.storage_key, a.page_count
+         from works w
+         join editions e on e.work_id = w.id
+         join assets a on a.edition_id = e.id
+        where (w.id = $1 or a.id = $1)
+          and (w.tenant_id is null or w.tenant_id = $2)
+        limit 1`,
+      [id, TENANT_ID],
+    );
+    return rows[0] || null;
+  });
+}
+
+async function updateBook(id, body) {
+  if (!pool) {
+    const book = findBook(id);
+    if (!book) return null;
+    if (body.title !== undefined) book.title = String(body.title).trim();
+    if (body.subtitle !== undefined) book.subtitle = body.subtitle ? String(body.subtitle).trim() : null;
+    if (body.language !== undefined) book.language = String(body.language).toLowerCase();
+    if (body.publisher !== undefined) book.publisher = body.publisher || null;
+    if (body.year !== undefined) book.publication_year = Number(body.year);
+    if (body.subjects !== undefined) book.subjects = Array.isArray(body.subjects) ? body.subjects : [];
+    return book;
+  }
+
+  return withTenant(async (client) => {
+    const workSets = [];
+    const workValues = [];
+    let workIndex = 1;
+    const addWork = (column, value) => {
+      workSets.push(`${column} = $${workIndex}`);
+      workValues.push(value);
+      workIndex += 1;
+    };
+
+    if (body.title !== undefined) addWork('title', String(body.title).trim());
+    if (body.subtitle !== undefined) addWork('subtitle', body.subtitle ? String(body.subtitle).trim() : null);
+    if (body.language !== undefined) addWork('language', String(body.language).toLowerCase());
+    if (body.subjects !== undefined) {
+      addWork('subjects', Array.isArray(body.subjects)
+        ? body.subjects
+        : String(body.subjects).split(/[;,]/).map((item) => item.trim()).filter(Boolean));
+    }
+
+    if (workSets.length) {
+      workValues.push(id, TENANT_ID);
+      await client.query(
+        `update works set ${workSets.join(', ')}
+          where id = $${workIndex} and tenant_id = $${workIndex + 1}`,
+        workValues,
+      );
+    }
+
+    const editionSets = [];
+    const editionValues = [];
+    let editionIndex = 1;
+    if (body.publisher !== undefined) {
+      editionSets.push(`publisher = $${editionIndex}`);
+      editionValues.push(body.publisher || null);
+      editionIndex += 1;
+    }
+    if (body.year !== undefined) {
+      editionSets.push(`publication_year = $${editionIndex}`);
+      editionValues.push(Number(body.year));
+      editionIndex += 1;
+    }
+    if (editionSets.length) {
+      editionValues.push(id, TENANT_ID);
+      await client.query(
+        `update editions set ${editionSets.join(', ')}
+          where work_id = $${editionIndex} and tenant_id = $${editionIndex + 1}`,
+        editionValues,
+      );
+    }
+
+    const { rows } = await client.query(
+      `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects,
+              e.publisher, e.publication_year,
+              a.id as asset_id, a.storage_key, a.page_count
+         from works w
+         join editions e on e.work_id = w.id
+         join assets a on a.edition_id = e.id
+        where (w.id = $1 or a.id = $1)
+          and (w.tenant_id is null or w.tenant_id = $2)
+        limit 1`,
+      [id, TENANT_ID],
+    );
+    return rows[0] || null;
+  });
+}
+
+async function deleteAnnotation(id) {
+  if (!pool) {
+    const index = demoAnnotations.findIndex((item) => item.id === id);
+    if (index >= 0) demoAnnotations.splice(index, 1);
+    return index >= 0;
+  }
+  return withTenant(async (client) => {
+    const result = await client.query(
+      'delete from annotations where id = $1 and user_id = $2 returning id',
+      [id, USER_ID],
+    );
+    return result.rowCount > 0;
+  });
+}
+
+async function searchBooks(query) {  const q = String(query || '').trim();
   if (!q) return listBooks();
   if (!pool) {
     const lower = q.toLocaleLowerCase('tr');
@@ -332,6 +444,16 @@ const server = http.createServer(async (req, res) => {
       json(res, 200, await listBooks());
       return;
     }
+    if (pathname.startsWith('/api/books/') && req.method === 'PATCH') {
+      const id = pathname.slice('/api/books/'.length);
+      const book = await updateBook(id, await readJson(req));
+      if (!book) {
+        json(res, 404, { error: 'book not found' });
+        return;
+      }
+      json(res, 200, book);
+      return;
+    }
     if (pathname === '/api/search' && req.method === 'GET') {
       json(res, 200, await searchBooks(url.searchParams.get('q')));
       return;
@@ -352,6 +474,12 @@ const server = http.createServer(async (req, res) => {
     }
     if (pathname === '/api/annotations' && req.method === 'POST') {
       json(res, 201, await createAnnotation(await readJson(req)));
+      return;
+    }
+    if (pathname.startsWith('/api/annotations/') && req.method === 'DELETE') {
+      const id = pathname.slice('/api/annotations/'.length);
+      const removed = await deleteAnnotation(id);
+      json(res, removed ? 200 : 404, { ok: removed });
       return;
     }
     if (pathname === '/api/progress' && req.method === 'GET') {
