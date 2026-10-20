@@ -91,6 +91,10 @@ function normalizeText(value) {
   return String(value || '').toLocaleLowerCase('tr').replace(/\s+/g, ' ').trim();
 }
 
+function canManage(role) {
+  return role === 'admin' || role === 'librarian' || role === 'publisher';
+}
+
 function parseAuthors(value) {
   const items = Array.isArray(value) ? value : String(value || '').split(';');
   return items.map((item) => {
@@ -184,13 +188,14 @@ async function loginUser(emailValue, passwordValue) {
   if (!email || !password) return null;
 
   if (!pool) {
-    if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
+    const isLibrarian = email === 'librarian@example.edu.tr';
+    if (password === DEMO_PASSWORD && (email === DEMO_EMAIL || isLibrarian)) {
       return {
-        id: USER_ID,
+        id: isLibrarian ? '44444444-4444-4444-4444-444444444444' : USER_ID,
         tenant_id: TENANT_ID,
-        email: DEMO_EMAIL,
-        display_name: 'Demo Okuyucu',
-        role: 'reader',
+        email,
+        display_name: isLibrarian ? 'Demo Kütüphaneci' : 'Demo Okuyucu',
+        role: isLibrarian ? 'librarian' : 'reader',
       };
     }
     return null;
@@ -940,6 +945,10 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname === '/api/upload' && req.method === 'POST') {
+      if (!canManage(auth.role)) {
+        json(res, 403, { error: 'yetkiniz yok' });
+        return;
+      }
       const book = await handleUpload(req);
       json(res, 201, book);
       return;
@@ -949,6 +958,10 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname.startsWith('/api/books/') && req.method === 'PATCH') {
+      if (!canManage(auth.role)) {
+        json(res, 403, { error: 'yetkiniz yok' });
+        return;
+      }
       const id = pathname.slice('/api/books/'.length);
       const book = await updateBook(id, await readJson(req));
       if (!book) {

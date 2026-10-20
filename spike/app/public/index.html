@@ -4,15 +4,18 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=16" />
+  <link rel="stylesheet" href="/styles.css?v=17" />
 </head>
 <body>
   <div class="login-screen" id="loginScreen" hidden>
     <form class="login-card" id="loginForm">
       <span class="brand-mark">A</span>
       <h2>Akademik Platform</h2>
-      <p class="login-hint">Demo hesabı: <code>reader@example.edu.tr</code> / <code>demo1234</code></p>
-      <label>E-posta<input id="loginEmail" type="email" autocomplete="username" value="reader@example.edu.tr" required /></label>
+      <p class="login-hint">
+        Okuyucu: <code>reader@example.edu.tr</code> · Kütüphaneci: <code>librarian@example.edu.tr</code><br />
+        Parola: <code>demo1234</code>
+      </p>
+      <label>E-posta<input id="loginEmail" type="email" autocomplete="username" value="librarian@example.edu.tr" required /></label>
       <label>Parola<input id="loginPassword" type="password" autocomplete="current-password" required /></label>
       <div class="login-error" id="loginError" hidden></div>
       <button class="primary" type="submit">Giriş yap</button>
@@ -225,6 +228,6 @@
 
   <div class="toast" id="toast" hidden></div>
 
-  <script type="module" src="/app.js?v=23"></script>
+  <script type="module" src="/app.js?v=24"></script>
 </body>
 </html>

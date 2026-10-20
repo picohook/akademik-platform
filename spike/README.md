@@ -16,9 +16,9 @@ Until a real scanned book arrives, `spike/tools/make_scan.py` generates an image
 
 ## Login
 
-The reader is behind a session cookie. Demo credentials: `reader@example.edu.tr` / `demo1234`. Set a real `SESSION_SECRET` before deployment; the compose default is dev-only.
+The reader is behind a session cookie. Demo credentials: `reader@example.edu.tr` (read-only) or `librarian@example.edu.tr` (upload/edit) / `demo1234`. Set a real `SESSION_SECRET` before deployment; the compose default is dev-only.
 
-For an existing database, apply `db/migrations/002-users-password.sql`; fresh volumes get the password hash from `seed.sql`.
+For an existing database, apply `db/migrations/002-users-password.sql` and `db/migrations/003-librarian-user.sql`; fresh volumes get both users from `seed.sql`.
 
 ## Plan
 

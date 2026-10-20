@@ -181,15 +181,17 @@ function makeCard(book) {
   });
   meta.appendChild(badges);
 
-  const edit = document.createElement('button');
-  edit.type = 'button';
-  edit.className = 'edit-btn';
-  edit.textContent = 'Düzenle';
-  edit.addEventListener('click', (event) => {
-    event.stopPropagation();
-    openEdit(book);
-  });
-  meta.appendChild(edit);
+  if (canManage()) {
+    const edit = document.createElement('button');
+    edit.type = 'button';
+    edit.className = 'edit-btn';
+    edit.textContent = 'Düzenle';
+    edit.addEventListener('click', (event) => {
+      event.stopPropagation();
+      openEdit(book);
+    });
+    meta.appendChild(edit);
+  }
 
   card.appendChild(cover);
   card.appendChild(meta);
@@ -291,7 +293,10 @@ async function saveEdit(event) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    if (!response.ok) throw new Error('Kaydedilemedi');
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || 'Kaydedilemedi');
+    }
     const updated = await response.json();
     state.books = state.books.map((book) => (book.id === updated.id ? updated : book));
     if (state.book?.id === updated.id) {
@@ -304,7 +309,7 @@ async function saveEdit(event) {
     toast('Künye güncellendi');
   } catch (error) {
     console.error(error);
-    toast('Künye güncellenemedi');
+    toast(error.message === 'yetkiniz yok' ? 'Bu işlem için yetkiniz yok' : 'Künye güncellenemedi');
   }
 }
 
@@ -367,11 +372,22 @@ async function submitUpload(event) {
     toast('Kitap eklendi');
   } catch (error) {
     console.error(error);
-    toast(error.message === 'already uploaded' ? 'Bu PDF zaten yüklü' : 'Kitap yüklenemedi');
+    const message = error.message === 'already uploaded' ? 'Bu PDF zaten yüklü'
+      : error.message === 'yetkiniz yok' ? 'Bu işlem için yetkiniz yok'
+        : 'Kitap yüklenemedi';
+    toast(message);
   } finally {
     uploadSubmitButton.disabled = false;
     uploadSubmitButton.textContent = 'Yükle';
   }
+}
+
+function canManage() {
+  return ['admin', 'librarian', 'publisher'].includes(state.user?.role);
+}
+
+function applyRoleUi() {
+  $('openUpload').hidden = !canManage();
 }
 
 function setUser(user) {
@@ -379,6 +395,7 @@ function setUser(user) {
   userChip.textContent = user ? `${user.displayName || user.email} · ${user.role || 'reader'}` : '';
   userChip.hidden = !user;
   logoutBtn.hidden = !user;
+  applyRoleUi();
 }
 
 function showLogin(message = '') {

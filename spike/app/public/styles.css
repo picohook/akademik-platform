@@ -122,6 +122,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
 .chip.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 .count { color: var(--muted); font-size: 13px; margin-left: auto; }
 .upload-btn { margin-left: 12px; }
+.upload-btn[hidden] { display: none; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)); gap: 22px; }
 
