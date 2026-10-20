@@ -909,6 +909,7 @@ async function renderOcrLayer(viewport) {
 
 function readerPerf() {
   const renders = state.perf?.renders || [];
+  const lastPhase = state.perf?.phases?.at(-1) || null;
   const average = renders.length
     ? renders.reduce((sum, value) => sum + value, 0) / renders.length
     : null;
@@ -921,6 +922,8 @@ function readerPerf() {
     renders: renders.length,
     averageRenderMs: average === null ? null : Math.round(average),
     maxRenderMs: renders.length ? Math.round(Math.max(...renders)) : null,
+    lastCanvasMs: lastPhase?.canvas ?? null,
+    lastTextMs: lastPhase?.text ?? null,
     heapMB: performance.memory
       ? Math.round(performance.memory.usedJSHeapSize / 1048576)
       : null,
@@ -938,14 +941,16 @@ function updatePerfPanel() {
     `PDF yükleme: ${format(perf.pdfLoadMs && Math.round(perf.pdfLoadMs))} ms`,
     `İlk sayfa: ${format(perf.firstPageMs && Math.round(perf.firstPageMs))} ms`,
     `Render: ${perf.renders} · ort. ${format(perf.averageRenderMs)} ms · max ${format(perf.maxRenderMs)} ms`,
+    `Son: canvas ${format(perf.lastCanvasMs)} ms · text/OCR ${format(perf.lastTextMs)} ms`,
     `Heap: ${format(perf.heapMB)} MB`,
     `Zoom: ${Math.round((perf.scale || 0) * 100)}%`,
   ].join('\n');
 }
 
-function recordRender(milliseconds) {
+function recordRender(milliseconds, phase = null) {
   if (!state.perf) return;
   state.perf.renders.push(milliseconds);
+  if (phase) state.perf.phases.push(phase);
   if (state.perf.firstPageMs === null) {
     state.perf.firstPageMs = performance.now() - state.perf.openedAt;
   }
@@ -1004,6 +1009,7 @@ async function renderPage() {
     if (error?.name === 'RenderingCancelledException') return;
     throw error;
   }
+  const canvasEnd = performance.now();
 
   textLayerEl.replaceChildren();
   const usedOcr = await renderOcrLayer(viewport);
@@ -1021,6 +1027,7 @@ async function renderPage() {
     }
   }
   applySearchHighlight();
+  const textEnd = performance.now();
 
   updatePageUi();
   updateZoomLabel();
@@ -1028,7 +1035,10 @@ async function renderPage() {
   if (!tocPanel.hidden) renderToc();
   saveProgress();
   updateUrl();
-  recordRender(performance.now() - perfStart);
+  recordRender(textEnd - perfStart, {
+    canvas: Math.round(canvasEnd - perfStart),
+    text: Math.round(textEnd - canvasEnd),
+  });
 }
 
 function renderHighlights() {
@@ -1331,7 +1341,7 @@ async function openBook(book) {
   state.pageText = new Map();
   state.searchRun += 1;
   state.activeQuery = '';
-  state.perf = { openedAt: performance.now(), pdfLoadMs: null, firstPageMs: null, renders: [] };
+  state.perf = { openedAt: performance.now(), pdfLoadMs: null, firstPageMs: null, renders: [], phases: [] };
   setHighlightColor('yellow');
   bookSearch.value = '';
   searchResults.replaceChildren();
