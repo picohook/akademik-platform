@@ -54,6 +54,8 @@ Not a formal P1/P2/P3 run; localhost, uncontrolled network, no RSS sampling.
 
 **Progressive-paint attempt (v31, reverted in v32):** low-resolution first paint at 100% took 3,546 ms; full 130% took 3,830 ms. The 284 ms gap is too small to justify the flash. Cold first-page cost is font/document work, not canvas resolution; keep the loading overlay and full render instead.
 
+**`disableFontFace` attempt (v33, removed in v34):** first page 4,070 ms, 20-page average 686 ms, last canvas 1,313 ms. Font paths made rendering substantially worse, not better; rejected.
+
 ## Search queries (Turkish + English)
 
 1. implant komplikasyonları
