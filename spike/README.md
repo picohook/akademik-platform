@@ -70,6 +70,17 @@ This mode runs the same app with `DATABASE_URL`, applies `db/schema.sql` and `db
 
 `/?book=33333333-3333-3333-3333-333333333333` opens the sample book directly.
 
+### In-book search index
+
+The reader searches the per-page text index. On an existing database, apply the migration and build the index once:
+
+```bash
+docker compose exec db psql -U akademik -d akademik -f /migrations/001-asset-pages.sql
+docker compose exec web node index-text.mjs --all
+```
+
+New uploads are indexed in the background. If the API reports `indexed: false`, the browser falls back to the slower client-side page cache.
+
 ### Add your own PDFs
 
 **From the browser:** open `http://localhost:8080`, click **+ Kitap ekle**, choose a PDF and fill in title/language/publisher/subjects. The file is copied to `data/uploads/` and the catalog refreshes.

@@ -567,6 +567,25 @@ function addSearchResult(pageNumber, text, index, queryLength, query) {
   searchResults.appendChild(button);
 }
 
+function addSearchResultSnippet(pageNumber, snippetText, query) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'toc-item search-item';
+  const label = document.createElement('span');
+  label.textContent = `Sayfa ${pageNumber}`;
+  const snippet = document.createElement('span');
+  snippet.className = 'search-snippet';
+  snippet.textContent = snippetText;
+  button.appendChild(label);
+  button.appendChild(snippet);
+  button.addEventListener('click', async () => {
+    state.activeQuery = query;
+    await goToPage(pageNumber);
+    if (window.innerWidth < 820) toggleToc(false);
+  });
+  searchResults.appendChild(button);
+}
+
 let searchTimer = null;
 async function runSearch(rawQuery) {
   const query = String(rawQuery || '').trim();
@@ -580,6 +599,27 @@ async function runSearch(rawQuery) {
   if (!normalized) {
     searchStatus.textContent = '';
     return;
+  }
+
+  searchStatus.textContent = 'Aranıyor…';
+  try {
+    const response = await fetch(`/api/books/${encodeURIComponent(state.book.id)}/search?q=${encodeURIComponent(query)}`);
+    if (state.searchRun !== run) return;
+    if (response.ok) {
+      const data = await response.json();
+      if (data.indexed) {
+        const results = Array.isArray(data.results) ? data.results : [];
+        results.forEach((result) => addSearchResultSnippet(result.page, result.snippet, query));
+        searchStatus.textContent = results.length ? `${results.length}${results.length >= 100 ? '+' : ''} sonuç` : '0 sonuç';
+        if (!results.length) {
+          searchEmpty.hidden = false;
+          searchEmpty.textContent = 'Sonuç bulunamadı.';
+        }
+        return;
+      }
+    }
+  } catch {
+    // Fall back to the browser-side cache when the server index is unavailable.
   }
 
   searchStatus.textContent = `Aranıyor… 0 / ${state.numPages}`;

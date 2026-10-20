@@ -2,6 +2,25 @@
 
 - `schema.sql` — tables, indexes, RLS policies, and the scaffold app role.
 - `seed.sql` — one demo tenant, user, work, asset, collection, and grant.
+- `migrations/` — incremental migrations for an existing volume (not re-run on init).
+
+## Applying a migration to an existing volume
+
+Docker only runs `schema.sql`/`seed.sql` when the volume is first created. For an existing database, apply migrations explicitly:
+
+```bash
+docker compose exec db psql -U akademik -d akademik -f /migrations/001-asset-pages.sql
+```
+
+Then build the per-page text index used by in-book search:
+
+```bash
+docker compose exec web node index-text.mjs --all
+# or a single asset:
+docker compose exec web node index-text.mjs --asset <asset-id>
+```
+
+New uploads are indexed in the background; `--all` covers books uploaded before the index existed. The indexer skips PDFs larger than 300 MB.
 
 ## Roles and RLS
 

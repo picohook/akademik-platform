@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash, randomUUID } from 'node:crypto';
 import Busboy from 'busboy';
 import { PDFDocument } from 'pdf-lib';
+import { indexAsset } from './indexer.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -79,6 +80,10 @@ function json(res, status, body) {
     'cache-control': 'no-store',
   });
   res.end(payload);
+}
+
+function normalizeText(value) {
+  return String(value || '').toLocaleLowerCase('tr').replace(/\s+/g, ' ').trim();
 }
 
 async function readJson(req, limit = 1_000_000) {
@@ -550,6 +555,13 @@ async function handleUpload(req) {
 
     const saved = await getBook(book.workId);
     if (!saved) throw new Error('book insert failed');
+    void indexAsset({
+      pool,
+      tenantId: TENANT_ID,
+      assetId: saved.asset_id,
+      storageKey: fileMeta.storageKey,
+      publicDir: PUBLIC_DIR,
+    }).catch((error) => console.warn('[index] upload indexing failed:', error.message));
     return saved;
   } catch (error) {
     await unlink(fileMeta.destination).catch(() => {});
@@ -650,6 +662,52 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       json(res, 200, { assetId, pages: await listOcrPages(assetId) });
+      return;
+    }
+    const searchMatch = pathname.match(/^\/api\/books\/([^/]+)\/search$/);
+    if (searchMatch && req.method === 'GET') {
+      const book = await getBook(decodeURIComponent(searchMatch[1]));
+      if (!book) {
+        json(res, 404, { error: 'book not found' });
+        return;
+      }
+      const query = normalizeText(url.searchParams.get('q') || '');
+      if (!pool || !query) {
+        json(res, 200, { indexed: false, results: [] });
+        return;
+      }
+      try {
+        const data = await withTenant(async (client) => {
+          const { rows } = await client.query(
+            `select page_no, text_content, text_search, source
+               from asset_pages
+              where asset_id = $1 and position($2 in text_search) > 0
+              order by page_no
+              limit 100`,
+            [book.asset_id, query],
+          );
+          const indexed = rows.length > 0 || (await client.query(
+            'select exists(select 1 from asset_pages where asset_id = $1) as present',
+            [book.asset_id],
+          )).rows[0].present;
+          return { indexed, rows };
+        });
+
+        const results = data.rows.map((row) => {
+          const index = row.text_search.indexOf(query);
+          const start = Math.max(0, index - 45);
+          const end = Math.min(row.text_content.length, index + query.length + 45);
+          return {
+            page: row.page_no,
+            snippet: `${start > 0 ? '…' : ''}${row.text_content.slice(start, end)}${end < row.text_content.length ? '…' : ''}`,
+            source: row.source,
+          };
+        });
+        json(res, 200, { indexed: data.indexed, results });
+      } catch (error) {
+        console.warn('[search] index unavailable:', error.message);
+        json(res, 200, { indexed: false, results: [] });
+      }
       return;
     }
     if (pathname === '/api/upload' && req.method === 'POST') {

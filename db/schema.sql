@@ -75,6 +75,18 @@ create table if not exists assets (
 create index if not exists assets_search_gin on assets using gin (search_vector);
 create unique index if not exists assets_source_unique on assets (source_system, source_id) where source_system is not null and source_id is not null;
 
+create table if not exists asset_pages (
+  asset_id uuid not null references assets(id) on delete cascade,
+  tenant_id uuid references tenants(id) on delete cascade,
+  page_no int not null check (page_no > 0),
+  text_content text not null default '',
+  text_search text not null default '',
+  source text not null default 'pdf' check (source in ('pdf','ocr')),
+  updated_at timestamptz not null default now(),
+  primary key (asset_id, page_no)
+);
+create index if not exists asset_pages_search_trgm on asset_pages using gin (text_search gin_trgm_ops);
+
 create table if not exists collections (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid references tenants(id) on delete cascade,
@@ -160,6 +172,7 @@ create table if not exists audit_events (
 alter table works enable row level security;
 alter table editions enable row level security;
 alter table assets enable row level security;
+alter table asset_pages enable row level security;
 alter table collections enable row level security;
 alter table grants enable row level security;
 alter table annotations enable row level security;
@@ -171,6 +184,7 @@ alter table users enable row level security;
 alter table works force row level security;
 alter table editions force row level security;
 alter table assets force row level security;
+alter table asset_pages force row level security;
 alter table collections force row level security;
 alter table grants force row level security;
 alter table annotations force row level security;
@@ -183,6 +197,8 @@ create policy works_tenant on works
 create policy editions_tenant on editions
   using (tenant_id is null or tenant_id = current_setting('app.tenant_id', true)::uuid);
 create policy assets_tenant on assets
+  using (tenant_id is null or tenant_id = current_setting('app.tenant_id', true)::uuid);
+create policy asset_pages_tenant on asset_pages
   using (tenant_id is null or tenant_id = current_setting('app.tenant_id', true)::uuid);
 create policy collections_tenant on collections
   using (tenant_id is null or tenant_id = current_setting('app.tenant_id', true)::uuid);
