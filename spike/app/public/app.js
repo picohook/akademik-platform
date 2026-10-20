@@ -919,6 +919,7 @@ function readerPerf() {
     pages: state.numPages,
     page: state.page,
     pdfLoadMs: state.perf?.pdfLoadMs ?? null,
+    firstPaintMs: state.perf?.firstPaintMs ?? null,
     firstPageMs: state.perf?.firstPageMs ?? null,
     renders: renders.length,
     averageRenderMs: average === null ? null : Math.round(average),
@@ -940,7 +941,8 @@ function updatePerfPanel() {
     `Kitap: ${perf.book || '—'}`,
     `Sayfa: ${perf.page} / ${perf.pages || '—'}`,
     `PDF yükleme: ${format(perf.pdfLoadMs && Math.round(perf.pdfLoadMs))} ms`,
-    `İlk sayfa: ${format(perf.firstPageMs && Math.round(perf.firstPageMs))} ms`,
+    `İlk boya: ${format(perf.firstPaintMs && Math.round(perf.firstPaintMs))} ms`,
+    `İlk tam sayfa: ${format(perf.firstPageMs && Math.round(perf.firstPageMs))} ms`,
     `Render: ${perf.renders} · ort. ${format(perf.averageRenderMs)} ms · max ${format(perf.maxRenderMs)} ms`,
     `Son: canvas ${format(perf.lastCanvasMs)} ms · text/OCR ${format(perf.lastTextMs)} ms`,
     `Heap: ${format(perf.heapMB)} MB`,
@@ -954,7 +956,14 @@ function recordRender(milliseconds, phase = null) {
   if (phase) state.perf.phases.push(phase);
   if (state.perf.firstPageMs === null) {
     state.perf.firstPageMs = performance.now() - state.perf.openedAt;
+    if (state.perf.firstPaintMs === null) state.perf.firstPaintMs = state.perf.firstPageMs;
   }
+  updatePerfPanel();
+}
+
+function recordPaint(milliseconds) {
+  if (!state.perf) return;
+  state.perf.firstPaintMs = milliseconds;
   updatePerfPanel();
 }
 
@@ -976,7 +985,7 @@ async function renderPage() {
   if (!state.pdf) return;
   const perfStart = performance.now();
   const firstRender = !state.perf || state.perf.firstPageMs === null;
-  pageLoading.hidden = !firstRender;
+  pageLoading.hidden = !(firstRender && !state.perf.firstPaintMs);
   if (state.renderTask) {
     try { state.renderTask.cancel(); } catch { /* noop */ }
     state.renderTask = null;
@@ -984,7 +993,9 @@ async function renderPage() {
   const page = await state.pdf.getPage(state.page);
   const base = page.getViewport({ scale: 1 });
   if (!state.scale || state.scale <= 0) state.scale = Math.min(1.3, fitScale(base));
-  const viewport = page.getViewport({ scale: state.scale });
+  const lowResFirstPaint = firstRender && !state.perf.firstPaintMs && state.scale > 1.05;
+  const renderScale = lowResFirstPaint ? 1 : state.scale;
+  const viewport = page.getViewport({ scale: renderScale });
   state.viewport = viewport;
 
   const outputScale = Math.min(window.devicePixelRatio || 1, 2);
@@ -1043,15 +1054,24 @@ async function renderPage() {
   saveProgress();
   updateUrl();
   pageLoading.hidden = true;
-  recordRender(textEnd - perfStart, {
-    canvas: Math.round(canvasEnd - perfStart),
-    text: Math.round(textEnd - canvasEnd),
-  });
   try {
     page.cleanup();
   } catch {
     // Page cleanup is best-effort; a later getPage() will rehydrate it.
   }
+  if (lowResFirstPaint) {
+    recordPaint(performance.now() - state.perf.openedAt);
+    setTimeout(() => {
+      if (state.pdf && state.book) {
+        renderPage().catch((error) => console.warn('full render failed', error));
+      }
+    }, 30);
+    return;
+  }
+  recordRender(textEnd - perfStart, {
+    canvas: Math.round(canvasEnd - perfStart),
+    text: Math.round(textEnd - canvasEnd),
+  });
 }
 
 function renderHighlights() {
@@ -1354,7 +1374,7 @@ async function openBook(book) {
   state.pageText = new Map();
   state.searchRun += 1;
   state.activeQuery = '';
-  state.perf = { openedAt: performance.now(), pdfLoadMs: null, firstPageMs: null, renders: [], phases: [] };
+  state.perf = { openedAt: performance.now(), pdfLoadMs: null, firstPaintMs: null, firstPageMs: null, renders: [], phases: [] };
   setHighlightColor('yellow');
   bookSearch.value = '';
   searchResults.replaceChildren();
