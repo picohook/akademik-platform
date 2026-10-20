@@ -35,6 +35,10 @@ pnpm-debug.log*
 spike/fixtures/*
 !spike/fixtures/.gitkeep
 
+# Local ingest drop folder and uploaded PDFs
+incoming/
+spike/app/public/uploads/
+
 # OS / editor
 .DS_Store
 Thumbs.db

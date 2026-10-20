@@ -68,6 +68,31 @@ This mode runs the same app with `DATABASE_URL`, applies `db/schema.sql` and `db
 
 `/?book=33333333-3333-3333-3333-333333333333` opens the sample book directly.
 
+### Add your own PDFs
+
+```bash
+mkdir -p incoming
+# copy PDFs into incoming/ (do not commit them)
+docker compose up -d --build
+docker compose exec web node ingest.mjs /app/incoming --publisher "Yayıncı" --subjects "Diş Hekimliği;Implantoloji"
+```
+
+Single file with metadata:
+
+```bash
+docker compose exec web node ingest.mjs /app/incoming/kitap.pdf \
+  --title "Kitap Adı" --publisher "Yayıncı" --year 2026 --language tr \
+  --subjects "Hukuk;Kamu Hukuku"
+```
+
+Dry run (reads PDFs, prints size/pages/hash; no database, no writes):
+
+```bash
+docker compose exec web node ingest.mjs /app/incoming --dry-run
+```
+
+Files are copied to `data/uploads/` on the host and served by the app. The `incoming/` and `data/` folders are gitignored.
+
 ## Rules
 
 - A passing scaffold is **not** a passing spike.
