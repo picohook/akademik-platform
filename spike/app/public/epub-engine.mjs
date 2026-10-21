@@ -50,7 +50,7 @@ export class EpubEngine {
       width,
       height,
       flow: 'paginated',
-      spread: 'auto',
+      spread: 'none',
       allowScriptedContent: false,
     });
     this.resizeHandler = () => {
@@ -83,6 +83,10 @@ export class EpubEngine {
 
   getToc() {
     return this.toc;
+  }
+
+  getSpineCount() {
+    return this.book?.spine?.spineItems?.length || this.book?.spine?.length || 0;
   }
 
   async goToCfi(cfi) {

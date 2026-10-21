@@ -2151,6 +2151,7 @@ async function openEpubBook(book) {
     }
     state.epubProgress = engine.getProgress();
     pageLabel.textContent = `${state.epubProgress.percent}%`;
+    readerMeta.textContent = `${book.publisher || ''}${book.publication_year ? ` · ${book.publication_year}` : ''} · EPUB · ${engine.getSpineCount()} bölüm`;
     const savedTheme = (() => {
       try { return localStorage.getItem('readerTheme') || 'light'; } catch { return 'light'; }
     })();

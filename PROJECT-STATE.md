@@ -4,7 +4,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web: **v57** (`spike/app/public/index.html`), stiller **v35**
+- Web: **v58** (`spike/app/public/index.html`), stiller **v35**
 - DB migration: **001–008** (`db/migrations/`)
 - Prod: **v52 + 008** deploy edildi (2026-10-21) — Caddy HTTPS, smoke **16/16**; kök/tam kelime/bulanık prod'da doğrulandı.
 - Son commit: dil düzeltmesi (bu commit)
@@ -37,7 +37,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - Seat limiti aynı tarayıcı sekmelerinde artmaz; ayrı profil/tarayıcı gerekir.
 - Demo modunda parola değiştirme/oturum iptali 501.
 - OCR otomasyonu yok; hOCR manuel/CLI.
-- EPUB okuyucu tarayıcıda otomatik test edilmedi; not/vurgu oluşturma ve EPUB metin indeksi yok. EPUB indirme 501. “İçi boş” için v57’de iframe ölçüsü/boş içerik kontrolü eklendi; hâlâ boşsa tarayıcı konsolundaki `EPUB yüklenemedi: ...` satırı gerekli.
+- EPUB okuyucu tarayıcıda otomatik test edilmedi; not/vurgu oluşturma ve EPUB metin indeksi yok. EPUB indirme 501. “İçi boş/tek sayfa” için v57 iframe ölçüsü, v58 tek-sayfa spread (`spread:none`) ve bölüm sayısı eklendi; hâlâ olursa konsol + `#epubView iframe` çıktısı gerekli.
 - Erişilebilirlik: modal odak tuzağı, tab/aria-current, skip link, `aria-busy`, reduced-motion eklendi; **tam WCAG 2.2 AA denetimi yapılmadı**.
 - Prod'daki mayenit kitabı 2026-10-21'de `language='en'` yapıldı (İngilizce sözlükle kök arama çalışıyor). Ingest `--language` verilmezse sessizce `tr` yazar; İngilizce kitaplar için `--language en` şart.
 - İçerik hakları ve gerçek yayıncı kitapları hâlâ yok.
