@@ -1293,20 +1293,8 @@ function scrollToPage(pageNumber) {
   pane.pageWrap.scrollIntoView({ block: 'start' });
 }
 
-async function startScrollMode() {
-  if (!state.pdf || state.scrollMode) return;
-  const current = await state.pdf.getPage(state.page);
-  const base = current.getViewport({ scale: 1 });
-  try { current.cleanup(); } catch { /* noop */ }
-  const scale = Math.min(1.3, fitScale(base, 1));
-  const width = Math.floor(base.width * scale);
-  const height = Math.floor(base.height * scale);
-  state.scale = scale;
-  state.initialFit = false;
-  state.twoPage = false;
-  state.secondPage = null;
-  state.secondViewport = null;
-  state.scrollMode = true;
+function buildScrollPanes(width, height) {
+  if (state.scrollObserver) state.scrollObserver.disconnect();
   state.scrollToken += 1;
   scrollPages.replaceChildren();
   state.scrollPanes = [];
@@ -1323,6 +1311,21 @@ async function startScrollMode() {
     });
   }, { root: pageArea, rootMargin: '700px 0px' });
   state.scrollPanes.forEach((pane) => state.scrollObserver.observe(pane.pageWrap));
+}
+
+async function startScrollMode(forcedScale = null) {
+  if (!state.pdf || state.scrollMode) return;
+  const current = await state.pdf.getPage(state.page);
+  const base = current.getViewport({ scale: 1, rotation: state.rotation });
+  try { current.cleanup(); } catch { /* noop */ }
+  const scale = forcedScale || Math.min(1.3, fitScale(base, 1));
+  state.scale = scale;
+  state.initialFit = false;
+  state.twoPage = false;
+  state.secondPage = null;
+  state.secondViewport = null;
+  state.scrollMode = true;
+  buildScrollPanes(Math.floor(base.width * scale), Math.floor(base.height * scale));
 
   pageWrap.hidden = true;
   pageWrap2.hidden = true;
@@ -1332,8 +1335,19 @@ async function startScrollMode() {
   scrollBtn.classList.add('active');
   scrollBtn.setAttribute('aria-pressed', 'true');
   updatePageUi();
+  updateZoomLabel();
   updateUrl();
   setTimeout(() => scrollToPage(state.page), 0);
+}
+
+async function rebuildScrollMode() {
+  if (!state.scrollMode || !state.pdf) return;
+  const current = await state.pdf.getPage(state.page);
+  const base = current.getViewport({ scale: 1, rotation: state.rotation });
+  try { current.cleanup(); } catch { /* noop */ }
+  buildScrollPanes(Math.floor(base.width * state.scale), Math.floor(base.height * state.scale));
+  updateZoomLabel();
+  scrollToPage(state.page);
 }
 
 function stopScrollMode(renderAfter = true) {
@@ -2356,23 +2370,45 @@ $('nextPage').addEventListener('click', () => changePage(1));
 $('zoomIn').addEventListener('click', () => {
   state.initialFit = false;
   state.scale = Math.min(3, state.scale + 0.2);
-  renderPage();
+  updateZoomLabel();
+  if (state.scrollMode) rebuildScrollMode();
+  else renderPage();
 });
 $('zoomOut').addEventListener('click', () => {
   state.initialFit = false;
   state.scale = Math.max(0.5, state.scale - 0.2);
-  renderPage();
+  updateZoomLabel();
+  if (state.scrollMode) rebuildScrollMode();
+  else renderPage();
 });
-fitToggle.addEventListener('click', () => {
+fitToggle.addEventListener('click', async () => {
   state.fitMode = state.fitMode === 'width' ? 'page' : 'width';
   state.initialFit = false;
-  state.scale = 0;
   updateViewControls();
+  if (state.scrollMode && state.pdf) {
+    const page = await state.pdf.getPage(state.page);
+    const base = page.getViewport({ scale: 1, rotation: state.rotation });
+    state.scale = state.fitMode === 'page' ? fitPageScale(base, 1) : fitScale(base, 1);
+    try { page.cleanup(); } catch { /* noop */ }
+    updateZoomLabel();
+    rebuildScrollMode();
+    return;
+  }
+  state.scale = 0;
   renderPage();
 });
-$('rotateBtn').addEventListener('click', () => {
+$('rotateBtn').addEventListener('click', async () => {
   state.rotation = (state.rotation + 90) % 360;
   state.initialFit = false;
+  if (state.scrollMode && state.pdf) {
+    const page = await state.pdf.getPage(state.page);
+    const base = page.getViewport({ scale: 1, rotation: state.rotation });
+    state.scale = state.fitMode === 'page' ? fitPageScale(base, 1) : fitScale(base, 1);
+    try { page.cleanup(); } catch { /* noop */ }
+    updateZoomLabel();
+    rebuildScrollMode();
+    return;
+  }
   state.scale = 0;
   renderPage();
 });
@@ -2389,6 +2425,7 @@ themeBtn.addEventListener('click', () => {
   applyTheme(order[(order.indexOf(state.theme) + 1) % order.length]);
 });
 spreadBtn.addEventListener('click', () => {
+  if (state.scrollMode) stopScrollMode(false);
   state.twoPage = !state.twoPage;
   state.initialFit = false;
   state.scale = 0;
