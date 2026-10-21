@@ -4,9 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=30" />
+  <link rel="stylesheet" href="/styles.css?v=31" />
 </head>
 <body>
+  <a class="skip-link" href="#mainContent">İçeriğe atla</a>
   <div class="login-screen" id="loginScreen" hidden>
     <form class="login-card" id="loginForm">
       <span class="brand-mark">A</span>
@@ -37,7 +38,7 @@
     <button class="ghost-btn" id="logoutBtn" type="button" hidden>Çıkış</button>
   </header>
 
-  <main>
+  <main id="mainContent">
     <section class="hero">
       <p class="eyebrow">Okuma katmanı · 14 günlük spike</p>
       <h1>Katalog, okuyucu, not ve arama.<br />Tek çalışan dilim.</h1>
@@ -196,24 +197,24 @@
       </div>
     </div>
     <div class="reader-body">
-      <aside class="toc" id="tocPanel" hidden>
+      <aside class="toc" id="tocPanel" aria-label="Gezinme paneli" hidden>
         <div class="toc-head">
           <strong>Gezinme</strong>
           <button class="icon-btn" id="closeToc" type="button" aria-label="Kapat">✕</button>
         </div>
-        <div class="toc-tabs">
-          <button class="toc-tab active" id="tabToc" type="button">İçindekiler</button>
-          <button class="toc-tab" id="tabSearch" type="button">Ara</button>
-          <button class="toc-tab" id="tabPages" type="button">Sayfalar</button>
+        <div class="toc-tabs" role="tablist" aria-label="Okuyucu panelleri">
+          <button class="toc-tab active" id="tabToc" type="button" role="tab" aria-selected="true" aria-controls="tocView">İçindekiler</button>
+          <button class="toc-tab" id="tabSearch" type="button" role="tab" aria-selected="false" aria-controls="searchView">Ara</button>
+          <button class="toc-tab" id="tabPages" type="button" role="tab" aria-selected="false" aria-controls="pagesView">Sayfalar</button>
         </div>
-        <div id="tocView">
+        <div id="tocView" role="tabpanel" aria-labelledby="tabToc">
           <div class="toc-filter">
             <input id="tocFilter" type="search" placeholder="Bölüm başlığında ara…" />
           </div>
           <div class="toc-list" id="tocList"></div>
           <div class="toc-empty" id="tocEmpty" hidden></div>
         </div>
-        <div id="searchView" hidden>
+        <div id="searchView" hidden role="tabpanel" aria-labelledby="tabSearch">
           <div class="toc-filter">
             <input id="bookSearch" type="search" placeholder="Kitabın içinde ara…" />
           </div>
@@ -234,7 +235,7 @@
           <div class="toc-list" id="searchResults"></div>
           <div class="toc-empty" id="searchEmpty" hidden></div>
         </div>
-        <div id="pagesView" hidden>
+        <div id="pagesView" hidden role="tabpanel" aria-labelledby="tabPages">
           <div class="thumb-grid" id="thumbGrid"></div>
         </div>
       </aside>
@@ -257,11 +258,11 @@
           <span>Sayfa hazırlanıyor…</span>
         </div>
       </div>
-      <aside class="notes" id="notesPanel">
+      <aside class="notes" id="notesPanel" aria-label="Notlar paneli">
         <div class="notes-head">
           <strong>Notlar ve vurgular</strong>
           <div class="notes-head-right">
-            <span id="pageLabel">1 / 1</span>
+            <span id="pageLabel" aria-live="polite">1 / 1</span>
             <button class="mini-btn" id="exportMd" type="button" title="Markdown olarak indir">MD</button>
             <button class="mini-btn" id="exportJson" type="button" title="JSON olarak indir">JSON</button>
           </div>
@@ -308,6 +309,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=52"></script>
+  <script type="module" src="/app.js?v=53"></script>
 </body>
 </html>

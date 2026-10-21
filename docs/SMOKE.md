@@ -49,6 +49,15 @@ Run in Chrome and Edge; repeat mobile width once.
 - [ ] Spread → scroll (≣): lazy pages, active page/URL updates, TOC/search/note jump into the scroll view.
 - [ ] Exit scroll → single page restores normally.
 
+### Accessibility
+
+- [ ] Login: Tab reaches email/password/submit; focus ring visible; app behind is inert.
+- [ ] Open Düzenle/Atıf/Parola: Tab cycles inside the dialog; Shift+Tab wraps; Esc closes and focus returns to the trigger.
+- [ ] TOC tabs support ←/→ and `aria-selected` updates.
+- [ ] TOC/thumbnail active item has `aria-current`.
+- [ ] Skip link appears on first Tab and moves to `#mainContent`.
+- [ ] Page changes announce through `pageLabel` (screen reader).
+
 ### Regression checks
 
 - [ ] `/api/health` is `db`, `/api/config` has the expected brand.

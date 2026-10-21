@@ -4,7 +4,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web: **v52** (`spike/app/public/index.html`), stiller **v30**
+- Web: **v53** (`spike/app/public/index.html`), stiller **v31**
 - DB migration: **001–008** (`db/migrations/`)
 - Prod: **v52 + 008** deploy edildi (2026-10-21) — Caddy HTTPS, smoke **16/16**; kök/tam kelime/bulanık prod'da doğrulandı.
 - Son commit: dil düzeltmesi (bu commit)
@@ -21,8 +21,8 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Açık işler (sırayla)
 
-1. **Erişilebilirlik:** WCAG 2.2 AA, odak tuzağı, ekran okuyucu.
-2. **EPUB katalog entegrasyonu:** `EpubEngine`'i ana okuyucuya bağla; format=epub kitaplar, not/atıf/arama, CFI.
+1. **EPUB katalog entegrasyonu:** `EpubEngine`'i ana okuyucuya bağla; format=epub kitaplar, not/atıf/arama, CFI.
+2. **WCAG 2.2 AA denetimi:** odak tuzağı/klavye/aria temel olarak eklendi; ekran okuyucu ve kontrast denetimi kaldı.
 3. **Grant/entitlement:** koleksiyon/yayıncı görünürlüğü + seat limit entegrasyonu.
 4. **500 MB / 2.000 sayfa:** fixture gelince performans; sürekli kaydırma belleği.
 5. **Interop:** MARC21/OPDS/OAI-PMH/COUNTER.
@@ -37,6 +37,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - Demo modunda parola değiştirme/oturum iptali 501.
 - OCR otomasyonu yok; hOCR manuel/CLI.
 - EPUB spike (`/epub-spike.html`) tarayıcıda otomatik test edilmedi; epub.js 0.3.93 pinli, bakımı durgun (ADR-012). Katalog entegrasyonu yok.
+- Erişilebilirlik: modal odak tuzağı, tab/aria-current, skip link, `aria-busy`, reduced-motion eklendi; **tam WCAG 2.2 AA denetimi yapılmadı**.
 - Prod'daki mayenit kitabı 2026-10-21'de `language='en'` yapıldı (İngilizce sözlükle kök arama çalışıyor). Ingest `--language` verilmezse sessizce `tr` yazar; İngilizce kitaplar için `--language en` şart.
 - İçerik hakları ve gerçek yayıncı kitapları hâlâ yok.
 

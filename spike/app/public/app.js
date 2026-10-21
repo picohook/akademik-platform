@@ -64,6 +64,7 @@ const state = {
   renderTask: null,
   secondRenderTask: null,
   pending: null,
+  readerReturnFocus: null,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -295,6 +296,44 @@ function authorsToText(authors) {
   }).filter(Boolean).join('; ');
 }
 
+let modalReturnFocus = null;
+
+function openModal(modal, focusElement) {
+  modalReturnFocus = document.activeElement;
+  modal.hidden = false;
+  setTimeout(() => focusElement?.focus(), 0);
+}
+
+function closeModal(modal) {
+  modal.hidden = true;
+  const previous = modalReturnFocus;
+  modalReturnFocus = null;
+  if (previous && previous.isConnected) previous.focus();
+}
+
+function trapModalFocus(event) {
+  if (event.key !== 'Tab') return false;
+  const modal = [...document.querySelectorAll('.modal')].find((item) => !item.hidden);
+  if (!modal) return false;
+  const focusable = [...modal.querySelectorAll(
+    'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+  )].filter((element) => element.offsetParent !== null);
+  if (!focusable.length) {
+    event.preventDefault();
+    return true;
+  }
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+  return true;
+}
+
 function openEdit(book) {
   editId.value = book.id;
   editTitle.value = book.title || '';
@@ -308,12 +347,11 @@ function openEdit(book) {
   editAllowDownload.checked = book.allow_download !== false;
   editAllowPrint.checked = book.allow_print !== false;
   editWatermark.checked = book.watermark !== false;
-  editModal.hidden = false;
-  setTimeout(() => editTitle.focus(), 0);
+  openModal(editModal, editTitle);
 }
 
 function closeEdit() {
-  editModal.hidden = true;
+  closeModal(editModal);
 }
 
 function openCite() {
@@ -321,11 +359,11 @@ function openCite() {
   citeStyle.value = 'apa';
   citePage.value = '';
   renderCitation();
-  citeModal.hidden = false;
+  openModal(citeModal, citeStyle);
 }
 
 function closeCite() {
-  citeModal.hidden = true;
+  closeModal(citeModal);
 }
 
 function renderCitation() {
@@ -418,12 +456,11 @@ function renderFilters() {
 
 function openUpload() {
   uploadForm.reset();
-  uploadModal.hidden = false;
-  setTimeout(() => uploadFile.focus(), 0);
+  openModal(uploadModal, uploadFile);
 }
 
 function closeUpload() {
-  uploadModal.hidden = true;
+  closeModal(uploadModal);
 }
 
 async function submitUpload(event) {
@@ -485,8 +522,18 @@ function applyRoleUi() {
   $('openUpload').hidden = !canManage();
 }
 
+function setAppInert(inert) {
+  const topbar = document.querySelector('.topbar');
+  const main = document.getElementById('mainContent');
+  const skip = document.querySelector('.skip-link');
+  if (topbar) topbar.inert = inert;
+  if (main) main.inert = inert;
+  if (skip) skip.inert = inert;
+}
+
 function setUser(user) {
   state.user = user;
+  setAppInert(!user);
   userChip.textContent = user ? `${user.displayName || user.email} · ${user.role || 'reader'}` : '';
   userChip.hidden = !user;
   logoutBtn.hidden = !user;
@@ -495,6 +542,7 @@ function setUser(user) {
 }
 
 function showLogin(message = '') {
+  setAppInert(true);
   loginScreen.hidden = false;
   loginError.hidden = !message;
   loginError.textContent = message;
@@ -530,6 +578,7 @@ async function handleLogin(event) {
     loginScreen.hidden = true;
     setUser(payload);
     await bootData();
+    search.focus();
   } catch (error) {
     console.error(error);
     showLogin('Giriş yapılamadı.');
@@ -539,12 +588,11 @@ async function handleLogin(event) {
 function openPassword() {
   passwordForm.reset();
   passwordError.hidden = true;
-  passwordModal.hidden = false;
-  setTimeout(() => passwordCurrent.focus(), 0);
+  openModal(passwordModal, passwordCurrent);
 }
 
 function closePassword() {
-  passwordModal.hidden = true;
+  closeModal(passwordModal);
 }
 
 async function submitPassword(event) {
@@ -700,6 +748,7 @@ function renderToc() {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = `toc-item${item.page === state.page ? ' active' : ''}`;
+      if (item.page === state.page) button.setAttribute('aria-current', 'location');
       button.style.paddingLeft = `${9 + item.depth * 12}px`;
       button.textContent = item.title;
       const page = document.createElement('span');
@@ -724,6 +773,7 @@ function renderToc() {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `toc-item${pageNumber === state.page ? ' active' : ''}`;
+    if (pageNumber === state.page) button.setAttribute('aria-current', 'location');
     button.textContent = `Sayfa ${pageNumber}`;
     button.addEventListener('click', () => goToPage(pageNumber));
     fragment.appendChild(button);
@@ -735,7 +785,10 @@ let thumbObserver = null;
 
 function updateThumbActive() {
   thumbGrid.querySelectorAll('.thumb-item').forEach((item) => {
-    item.classList.toggle('active', Number(item.dataset.page) === state.page);
+    const active = Number(item.dataset.page) === state.page;
+    item.classList.toggle('active', active);
+    if (active) item.setAttribute('aria-current', 'page');
+    else item.removeAttribute('aria-current');
   });
 }
 
@@ -778,6 +831,7 @@ function renderThumbs() {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `thumb-item${pageNumber === state.page ? ' active' : ''}`;
+    if (pageNumber === state.page) button.setAttribute('aria-current', 'page');
     button.dataset.page = String(pageNumber);
     const canvas = document.createElement('canvas');
     canvas.width = 1;
@@ -900,6 +954,12 @@ function showTocTab(tab) {
   tabToc.classList.toggle('active', !search && !pages);
   tabSearch.classList.toggle('active', search);
   tabPages.classList.toggle('active', pages);
+  tabToc.setAttribute('aria-selected', !search && !pages ? 'true' : 'false');
+  tabSearch.setAttribute('aria-selected', search ? 'true' : 'false');
+  tabPages.setAttribute('aria-selected', pages ? 'true' : 'false');
+  tabToc.tabIndex = !search && !pages ? 0 : -1;
+  tabSearch.tabIndex = search ? 0 : -1;
+  tabPages.tabIndex = pages ? 0 : -1;
   tocView.hidden = search || pages;
   searchView.hidden = !search;
   pagesView.hidden = !pages;
@@ -1463,6 +1523,7 @@ async function renderPagePane(pageNumber, pane, scale, rotationOffset, isPrimary
 
 async function renderPage() {
   if (!state.pdf || state.scrollMode) return;
+  reader.setAttribute('aria-busy', 'true');
   const perfStart = performance.now();
   const firstRender = !state.perf || state.perf.firstPageMs === null;
   pageLoading.hidden = !firstRender;
@@ -1494,6 +1555,7 @@ async function renderPage() {
   const primary = await renderPagePane(state.page, primaryPane, state.scale, state.rotation, true);
   if (!primary) {
     pageLoading.hidden = true;
+    reader.setAttribute('aria-busy', 'false');
     return;
   }
   state.viewport = primary.viewport;
@@ -1521,6 +1583,7 @@ async function renderPage() {
   if (secondary) {
     try { secondary.page.cleanup(); } catch { /* noop */ }
   }
+  reader.setAttribute('aria-busy', 'false');
 }
 
 function renderHighlightsFor(pageNumber, scale, container) {
@@ -1892,6 +1955,7 @@ async function saveProgress() {
 
 async function openBook(book) {
   state.book = book;
+  state.readerReturnFocus = document.activeElement;
   state.page = 1;
   state.scale = 0;
   state.fitMode = 'width';
@@ -1989,6 +2053,7 @@ async function openBook(book) {
     renderNotes();
     updatePageUi();
     await renderPage();
+    $('closeReader').focus();
   } catch (error) {
     console.error(error);
     toast('PDF yüklenemedi. Sunucu ve dosya yolunu kontrol edin.');
@@ -2012,6 +2077,7 @@ async function closeReader() {
   state.secondPage = null;
   state.secondViewport = null;
   reader.hidden = true;
+  reader.setAttribute('aria-busy', 'false');
   document.body.style.overflow = '';
   document.body.classList.remove('print-blocked');
   downloadBtn.hidden = true;
@@ -2043,6 +2109,9 @@ async function closeReader() {
   if (pdf) {
     try { await pdf.destroy(); } catch { /* noop */ }
   }
+  const returnFocus = state.readerReturnFocus;
+  state.readerReturnFocus = null;
+  if (returnFocus && returnFocus.isConnected) returnFocus.focus();
 }
 
 function updateSelectionBar(rect) {
@@ -2219,6 +2288,8 @@ document.addEventListener('keydown', (event) => {
   const typing = target
     && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable);
 
+  if (trapModalFocus(event)) return;
+
   if (!passwordModal.hidden) {
     if (event.key === 'Escape') closePassword();
     return;
@@ -2328,6 +2399,16 @@ tocFilter.addEventListener('input', renderToc);
 tabToc.addEventListener('click', () => showTocTab('toc'));
 tabSearch.addEventListener('click', () => showTocTab('search'));
 tabPages.addEventListener('click', () => showTocTab('pages'));
+[[tabToc, 'toc'], [tabSearch, 'search'], [tabPages, 'pages']].forEach(([tab, name], index, list) => {
+  tab.addEventListener('keydown', (event) => {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+    event.preventDefault();
+    const nextIndex = (index + (event.key === 'ArrowRight' ? 1 : -1) + list.length) % list.length;
+    const [nextTab, nextName] = list[nextIndex];
+    showTocTab(nextName);
+    nextTab.focus();
+  });
+});
 bookSearch.addEventListener('input', () => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => runSearch(bookSearch.value), 300);
