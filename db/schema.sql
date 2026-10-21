@@ -20,9 +20,21 @@ create table if not exists users (
   role text not null default 'reader' check (role in ('admin','librarian','publisher','reader')),
   password_hash text,
   session_version int not null default 0,
+  max_sessions int not null default 3,
   created_at timestamptz not null default now(),
   unique (tenant_id, email)
 );
+
+create table if not exists user_sessions (
+  id uuid primary key,
+  user_id uuid not null references users(id) on delete cascade,
+  tenant_id uuid references tenants(id) on delete cascade,
+  ip text,
+  user_agent text,
+  created_at timestamptz not null default now(),
+  last_seen_at timestamptz not null default now()
+);
+create index if not exists user_sessions_user on user_sessions (user_id, last_seen_at);
 
 create table if not exists works (
   id uuid primary key default gen_random_uuid(),
@@ -186,6 +198,7 @@ alter table annotations enable row level security;
 alter table reading_progress enable row level security;
 alter table tenants enable row level security;
 alter table users enable row level security;
+alter table user_sessions enable row level security;
 
 -- The application connects as the table owner; without FORCE, the owner bypasses RLS.
 alter table works force row level security;
@@ -198,6 +211,7 @@ alter table annotations force row level security;
 alter table reading_progress force row level security;
 alter table tenants force row level security;
 alter table users force row level security;
+alter table user_sessions force row level security;
 
 create policy works_tenant on works
   using (tenant_id is null or tenant_id = current_setting('app.tenant_id', true)::uuid);
@@ -218,6 +232,8 @@ create policy progress_tenant on reading_progress
 create policy tenants_self on tenants
   using (id = current_setting('app.tenant_id', true)::uuid);
 create policy users_tenant on users
+  using (tenant_id = current_setting('app.tenant_id', true)::uuid);
+create policy user_sessions_tenant on user_sessions
   using (tenant_id = current_setting('app.tenant_id', true)::uuid);
 
 -- The app must not connect as the table owner or a superuser, otherwise RLS is bypassed.

@@ -21,6 +21,7 @@ const SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
 const LOGIN_WINDOW = 15 * 60 * 1000;
 const LOGIN_MAX_ATTEMPTS = 8;
 const loginAttempts = new Map();
+const demoSessions = new Map();
 const DEMO_EMAIL = process.env.DEMO_EMAIL || 'reader@example.edu.tr';
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'demo1234';
 const BRAND_NAME = process.env.BRAND_NAME || 'Akademik Platform';
@@ -179,6 +180,7 @@ function signSession(user) {
     name: user.display_name || user.email,
     role: user.role || 'reader',
     ver: Number(user.session_version || 0),
+    sid: user.session_id,
     csrf: user.csrf,
     exp: Date.now() + SESSION_TTL,
   };
@@ -205,6 +207,7 @@ function readSession(req) {
       displayName: payload.name,
       role: payload.role,
       sessionVersion: Number(payload.ver || 0),
+      sessionId: payload.sid,
       csrf: payload.csrf,
     };
   } catch {
@@ -239,19 +242,90 @@ function verifyPassword(password, stored) {
   return candidate.length === expected.length && timingSafeEqual(candidate, expected);
 }
 
+function sessionLimitError(max) {
+  const error = new Error('session limit reached');
+  error.code = 'SESSION_LIMIT';
+  error.limit = max;
+  return error;
+}
+
+async function createSession(user, req) {
+  const max = Number(user.max_sessions || 3);
+  const id = randomUUID();
+  if (!pool) {
+    const sessions = demoSessions.get(user.id) || [];
+    if (sessions.length >= max) throw sessionLimitError(max);
+    sessions.push(id);
+    demoSessions.set(user.id, sessions);
+    return id;
+  }
+  return withTenant(async (client) => {
+    await client.query(
+      "delete from user_sessions where user_id = $1 and last_seen_at < now() - interval '7 days'",
+      [user.id],
+    );
+    const { rows } = await client.query(
+      'select count(*)::int as count from user_sessions where user_id = $1',
+      [user.id],
+    );
+    if (rows[0].count >= max) throw sessionLimitError(max);
+    await client.query(
+      `insert into user_sessions (id, user_id, tenant_id, ip, user_agent)
+       values ($1, $2, $3, $4, $5)`,
+      [id, user.id, user.tenant_id || TENANT_ID, clientIp(req), String(req.headers['user-agent'] || '').slice(0, 300)],
+    );
+    return id;
+  });
+}
+
+async function deleteSession(sessionId, userId) {
+  if (!sessionId) return;
+  if (!pool) {
+    const sessions = demoSessions.get(userId) || [];
+    demoSessions.set(userId, sessions.filter((id) => id !== sessionId));
+    return;
+  }
+  await withTenant(async (client) => {
+    await client.query(
+      'delete from user_sessions where id = $1 and user_id = $2',
+      [sessionId, userId],
+    );
+  });
+}
+
+async function deleteAllSessions(userId) {
+  if (!pool) {
+    demoSessions.delete(userId);
+    return;
+  }
+  await withTenant(async (client) => {
+    await client.query('delete from user_sessions where user_id = $1', [userId]);
+  });
+}
+
 async function sessionIsValid(auth) {
-  if (!pool) return true;
+  if (!auth.sessionId) return false;
+  if (!pool) return (demoSessions.get(auth.userId) || []).includes(auth.sessionId);
   try {
     return await withTenant(async (client) => {
       const { rows } = await client.query(
-        'select session_version from users where id = $1 limit 1',
-        [auth.userId],
+        `select u.session_version, s.id
+           from users u
+           join user_sessions s on s.id = $2 and s.user_id = u.id
+          where u.id = $1
+          limit 1`,
+        [auth.userId, auth.sessionId],
       );
-      return Boolean(rows[0]) && Number(rows[0].session_version) === auth.sessionVersion;
+      if (!rows[0] || Number(rows[0].session_version) !== auth.sessionVersion) return false;
+      await client.query(
+        'update user_sessions set last_seen_at = now() where id = $1',
+        [auth.sessionId],
+      );
+      return true;
     });
   } catch (error) {
-    console.warn('[auth] session version check failed:', error.message);
-    return true;
+    console.warn('[auth] session check failed:', error.message);
+    return false;
   }
 }
 
@@ -270,6 +344,7 @@ async function loginUser(emailValue, passwordValue) {
         display_name: isLibrarian ? 'Demo Kütüphaneci' : 'Demo Okuyucu',
         role: isLibrarian ? 'librarian' : 'reader',
         session_version: 0,
+        max_sessions: 3,
       };
     }
     return null;
@@ -277,7 +352,7 @@ async function loginUser(emailValue, passwordValue) {
 
   return withTenant(async (client) => {
     const { rows } = await client.query(
-      `select id, tenant_id, email, display_name, role, password_hash, session_version
+      `select id, tenant_id, email, display_name, role, password_hash, session_version, max_sessions
          from users
         where tenant_id = $1 and lower(email) = lower($2)
         limit 1`,
@@ -292,6 +367,7 @@ async function loginUser(emailValue, passwordValue) {
       display_name: row.display_name,
       role: row.role,
       session_version: row.session_version,
+      max_sessions: row.max_sessions,
     };
   });
 }
@@ -307,6 +383,7 @@ async function changePassword(userId, currentPassword, newPassword) {
   if (String(newPassword || '').length < 8) throw new Error('password too short');
   if (!pool) {
     if (String(currentPassword || '') !== DEMO_PASSWORD) return false;
+    demoSessions.delete(userId);
     return true;
   }
   return withTenant(async (client) => {
@@ -319,17 +396,22 @@ async function changePassword(userId, currentPassword, newPassword) {
       'update users set password_hash = $1, session_version = session_version + 1 where id = $2',
       [hashPassword(newPassword), userId],
     );
+    await client.query('delete from user_sessions where user_id = $1', [userId]);
     return true;
   });
 }
 
 async function revokeAllSessions(userId) {
-  if (!pool) return true;
+  if (!pool) {
+    demoSessions.delete(userId);
+    return true;
+  }
   return withTenant(async (client) => {
     await client.query(
       'update users set session_version = session_version + 1 where id = $1',
       [userId],
     );
+    await client.query('delete from user_sessions where user_id = $1', [userId]);
     return true;
   });
 }
@@ -1042,8 +1124,18 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       clearLoginFailures(ip);
+      let sessionId;
+      try {
+        sessionId = await createSession(user, req);
+      } catch (error) {
+        if (error.code === 'SESSION_LIMIT') {
+          json(res, 429, { error: 'session limit reached', limit: error.limit });
+          return;
+        }
+        throw error;
+      }
       const csrf = randomBytes(18).toString('base64url');
-      setSessionCookie(res, { ...user, csrf }, isSecureRequest(req));
+      setSessionCookie(res, { ...user, session_id: sessionId, csrf }, isSecureRequest(req));
       json(res, 200, {
         id: user.id,
         email: user.email,
@@ -1053,6 +1145,8 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname === '/api/logout' && req.method === 'POST') {
+      const session = readSession(req);
+      if (session?.sessionId) await deleteSession(session.sessionId, session.userId);
       clearSessionCookie(res, isSecureRequest(req));
       json(res, 200, { ok: true });
       return;

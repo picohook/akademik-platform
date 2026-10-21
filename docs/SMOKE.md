@@ -29,6 +29,7 @@ Run in Chrome and Edge; repeat mobile width once.
 - [ ] Reader sees no **+ Kitap ekle** / **Düzenle**.
 - [ ] Librarian sees both.
 - [ ] Logout returns to login; reload keeps session.
+- [ ] Open the same account in 3 browser profiles, then a 4th login shows the seat-limit message; log one out and retry.
 
 ### Reader
 

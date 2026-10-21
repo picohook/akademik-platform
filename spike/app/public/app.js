@@ -519,7 +519,9 @@ async function handleLogin(event) {
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-      showLogin('E-posta veya parola hatalı.');
+      showLogin(payload.error === 'session limit reached'
+        ? `Aynı anda en fazla ${payload.limit || 3} oturum açılabilir. Önce bir cihazdan çıkış yapın.`
+        : 'E-posta veya parola hatalı.');
       return;
     }
     loginScreen.hidden = true;
