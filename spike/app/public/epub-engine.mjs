@@ -44,13 +44,22 @@ export class EpubEngine {
     if (typeof factory !== 'function') throw new Error('epub.js is not loaded');
     this.book = factory(url);
     await this.book.ready;
+    const width = Math.max(320, Math.floor(this.container.clientWidth || this.container.parentElement?.clientWidth || window.innerWidth));
+    const height = Math.max(420, Math.floor(this.container.clientHeight || window.innerHeight - 90));
     this.rendition = this.book.renderTo(this.container, {
-      width: '100%',
-      height: '100%',
+      width,
+      height,
       flow: 'paginated',
       spread: 'auto',
       allowScriptedContent: false,
     });
+    this.resizeHandler = () => {
+      if (!this.rendition) return;
+      const nextWidth = Math.max(320, Math.floor(this.container.clientWidth || window.innerWidth));
+      const nextHeight = Math.max(420, Math.floor(this.container.clientHeight || window.innerHeight - 90));
+      this.rendition.resize(nextWidth, nextHeight);
+    };
+    window.addEventListener('resize', this.resizeHandler);
     this.rendition.on('relocated', (location) => {
       this.currentCfi = location?.start?.cfi || this.currentCfi;
       this.currentHref = location?.start?.href || this.currentHref;
@@ -65,6 +74,7 @@ export class EpubEngine {
 
   destroy() {
     this.disposed = true;
+    if (this.resizeHandler) window.removeEventListener('resize', this.resizeHandler);
     try { this.rendition?.destroy(); } catch { /* noop */ }
     try { this.book?.destroy(); } catch { /* noop */ }
     this.rendition = null;

@@ -2139,6 +2139,16 @@ async function openEpubBook(book) {
     });
     state.epubEngine = engine;
     await engine.open(`/api/books/${encodeURIComponent(book.id)}/file`, initialCfi || undefined);
+    const frame = epubView.querySelector('iframe');
+    const frameRect = frame?.getBoundingClientRect();
+    if (!frame || !frameRect || frameRect.height < 20) {
+      throw new Error('EPUB görünümü oluşmadı (iframe boyutu 0)');
+    }
+    let frameBody = null;
+    try { frameBody = frame.contentDocument?.body || null; } catch { /* cross-origin */ }
+    if (frameBody && !frameBody.textContent.trim() && !frameBody.querySelector('img, svg, canvas')) {
+      throw new Error('EPUB içeriği boş');
+    }
     state.epubProgress = engine.getProgress();
     pageLabel.textContent = `${state.epubProgress.percent}%`;
     const savedTheme = (() => {
@@ -2152,7 +2162,7 @@ async function openEpubBook(book) {
     $('closeReader').focus();
   } catch (error) {
     console.error(error);
-    toast('EPUB yüklenemedi. Konsol ayrıntısına bakın.');
+    toast(`EPUB yüklenemedi: ${error.message}`);
     closeReader();
   }
 }

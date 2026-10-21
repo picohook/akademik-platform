@@ -243,7 +243,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
 .scroll-pages[hidden] { display: none; }
 .scroll-page { cursor: default; }
 .epub-view {
-  width: 100%; flex: 1; min-width: 0; align-self: stretch;
+  width: 100%; flex: 1; min-width: 0; min-height: 420px; align-self: stretch;
   height: 100%; background: var(--paper);
 }
 .epub-view[hidden] { display: none; }
