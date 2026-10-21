@@ -1541,6 +1541,17 @@ function renderPending(rects, container = highlightsEl, scale = state.viewport?.
 const COLOR_ORDER = ['yellow', 'green', 'blue', 'pink'];
 const COLOR_LABELS = { yellow: 'Sarı', green: 'Yeşil', blue: 'Mavi', pink: 'Pembe', bookmark: 'Yer imi' };
 
+function formatNoteDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const age = Date.now() - date.getTime();
+  if (age < 60 * 1000) return 'az önce';
+  if (age < 60 * 60 * 1000) return `${Math.floor(age / 60000)} dk önce`;
+  if (age < 24 * 60 * 60 * 1000) return `${Math.floor(age / 3600000)} sa önce`;
+  if (age < 7 * 24 * 60 * 60 * 1000) return `${Math.floor(age / 86400000)} gün önce`;
+  return new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+}
+
 async function updateAnnotation(id, changes) {
   const response = await fetch(`/api/annotations/${encodeURIComponent(id)}`, {
     method: 'PATCH',
@@ -1720,6 +1731,18 @@ function renderNotes() {
     page.className = 'note-page';
     page.textContent = `Sayfa ${annotation.anchor?.page || '—'}${isBookmark ? ' · Yer imi' : ''}`;
     item.appendChild(page);
+    const createdAt = annotation.created_at ? new Date(annotation.created_at) : null;
+    const updatedAt = annotation.updated_at ? new Date(annotation.updated_at) : null;
+    if (createdAt && !Number.isNaN(createdAt.getTime())) {
+      const edited = updatedAt && updatedAt.getTime() - createdAt.getTime() > 60000;
+      const date = document.createElement('div');
+      date.className = 'note-date';
+      date.textContent = `${formatNoteDate(createdAt)}${edited ? ' · düzenlendi' : ''}`;
+      date.title = edited
+        ? `Oluşturuldu: ${createdAt.toLocaleString('tr-TR')} · Düzenlendi: ${updatedAt.toLocaleString('tr-TR')}`
+        : `Oluşturuldu: ${createdAt.toLocaleString('tr-TR')}`;
+      item.appendChild(date);
+    }
     if (!isBookmark && annotation.selected_text) {
       const text = document.createElement('p');
       text.className = 'note-text';

@@ -532,7 +532,7 @@ async function listAnnotations(assetId, userId) {
   if (!pool) return demoAnnotations.filter((item) => item.asset_id === assetId);
   return withTenant(async (client) => {
     const { rows } = await client.query(
-      `select id, asset_id, anchor, color, note, selected_text, tags, status, created_at
+      `select id, asset_id, anchor, color, note, selected_text, tags, status, created_at, updated_at
          from annotations
         where asset_id = $1 and user_id = $2
         order by created_at asc`,
@@ -557,6 +557,7 @@ async function createAnnotation(body, userId) {
       tags: normalizeTags(body.tags),
       status: 'active',
       created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
     demoAnnotations.push(row);
     return row;
@@ -565,7 +566,7 @@ async function createAnnotation(body, userId) {
     const { rows } = await client.query(
       `insert into annotations (tenant_id, user_id, asset_id, anchor, color, note, selected_text, tags)
        values ($1, $2, $3, $4::jsonb, $5, $6, $7, $8)
-       returning id, asset_id, anchor, color, note, selected_text, tags, status, created_at`,
+       returning id, asset_id, anchor, color, note, selected_text, tags, status, created_at, updated_at`,
       [TENANT_ID, userId, body.assetId, JSON.stringify(anchor), body.color || 'yellow', body.note || null, body.selectedText || null, normalizeTags(body.tags)],
     );
     return rows[0];
@@ -586,6 +587,7 @@ async function updateAnnotation(id, body, userId) {
     if (hasNote) row.note = body.note ? String(body.note).trim() || null : null;
     if (hasColor) row.color = body.color;
     if (hasTags) row.tags = normalizeTags(body.tags);
+    row.updated_at = new Date().toISOString();
     return row;
   }
 
@@ -609,7 +611,7 @@ async function updateAnnotation(id, body, userId) {
       `update annotations
           set ${sets.join(', ')}, updated_at = now()
         where id = $${params.length - 1} and user_id = $${params.length}
-        returning id, asset_id, anchor, color, note, selected_text, tags, status, created_at`,
+        returning id, asset_id, anchor, color, note, selected_text, tags, status, created_at, updated_at`,
       params,
     );
     return rows[0] || null;
