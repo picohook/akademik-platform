@@ -99,7 +99,7 @@ async function withTenantSearch(fn) {
   try {
     await client.query("select set_config('app.tenant_id', $1, false)", [TENANT_ID]);
     await client.query('begin');
-    await client.query("select set_config('pg_trgm.word_similarity_threshold', '0.45', true)");
+    await client.query("select set_config('pg_trgm.word_similarity_threshold', '0.35', true)");
     const result = await fn(client);
     await client.query('commit');
     return result;
