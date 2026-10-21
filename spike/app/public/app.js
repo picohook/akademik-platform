@@ -1082,12 +1082,37 @@ function refreshSearchHighlights() {
   state.scrollPanes.forEach((pane) => applySearchHighlight(pane.textLayer));
 }
 
+function clearSearchMarks(container) {
+  container.querySelectorAll('mark.search-hit').forEach((mark) => {
+    const parent = mark.parentNode;
+    mark.replaceWith(...mark.childNodes);
+    if (parent) parent.normalize();
+  });
+}
+
 function applySearchHighlight(container = textLayerEl) {
-  container.querySelectorAll('.search-hit').forEach((span) => span.classList.remove('search-hit'));
+  clearSearchMarks(container);
   const query = normalizeSearch(state.activeQuery);
   if (!query) return;
   container.querySelectorAll('span').forEach((span) => {
-    if (normalizeSearch(span.textContent).includes(query)) span.classList.add('search-hit');
+    const text = span.textContent;
+    if (!text || span.querySelector('span, mark')) return;
+    const lower = text.toLocaleLowerCase('tr');
+    let cursor = 0;
+    let index = lower.indexOf(query, cursor);
+    if (index < 0) return;
+    const fragment = document.createDocumentFragment();
+    while (index >= 0) {
+      if (index > cursor) fragment.appendChild(document.createTextNode(text.slice(cursor, index)));
+      const mark = document.createElement('mark');
+      mark.className = 'search-hit';
+      mark.textContent = text.slice(index, index + query.length);
+      fragment.appendChild(mark);
+      cursor = index + query.length;
+      index = lower.indexOf(query, cursor);
+    }
+    if (cursor < text.length) fragment.appendChild(document.createTextNode(text.slice(cursor)));
+    span.replaceChildren(fragment);
   });
 }
 
