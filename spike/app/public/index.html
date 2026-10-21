@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=29" />
+  <link rel="stylesheet" href="/styles.css?v=30" />
 </head>
 <body>
   <div class="login-screen" id="loginScreen" hidden>
@@ -217,6 +217,14 @@
           <div class="toc-filter">
             <input id="bookSearch" type="search" placeholder="Kitabın içinde ara…" />
           </div>
+          <div class="search-options">
+            <label class="search-toggle" title="Yalnızca tam kelime eşleşmeleri">
+              <input type="checkbox" id="searchWhole" /> Tam kelime
+            </label>
+            <label class="search-toggle" title="Yazım hatalarına tolerans göster">
+              <input type="checkbox" id="searchFuzzy" /> Bulanık
+            </label>
+          </div>
           <div class="search-status" id="searchStatus" aria-live="polite"></div>
           <div class="search-nav">
             <button class="mini-btn" id="searchPrev" type="button" aria-label="Önceki sonuç">↑</button>
@@ -300,6 +308,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=51"></script>
+  <script type="module" src="/app.js?v=52"></script>
 </body>
 </html>

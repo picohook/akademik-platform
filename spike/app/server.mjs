@@ -7,6 +7,14 @@ import { createHash, createHmac, randomBytes, randomUUID, scryptSync, timingSafe
 import Busboy from 'busboy';
 import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib';
 import { indexAsset } from './indexer.mjs';
+import {
+  buildSnippet,
+  catalogMatches,
+  findSnippetAnchor,
+  foldSearch,
+  foldWords,
+  normalizeSearch,
+} from './public/search.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -85,6 +93,24 @@ async function withTenant(fn) {
   }
 }
 
+// Search needs a transaction so pg_trgm's word-similarity threshold stays local.
+async function withTenantSearch(fn) {
+  const client = await pool.connect();
+  try {
+    await client.query("select set_config('app.tenant_id', $1, false)", [TENANT_ID]);
+    await client.query('begin');
+    await client.query("select set_config('pg_trgm.word_similarity_threshold', '0.45', true)");
+    const result = await fn(client);
+    await client.query('commit');
+    return result;
+  } catch (error) {
+    await client.query('rollback').catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 function json(res, status, body) {
   const payload = JSON.stringify(body);
   res.writeHead(status, {
@@ -92,15 +118,6 @@ function json(res, status, body) {
     'cache-control': 'no-store',
   });
   res.end(payload);
-}
-
-function normalizeText(value) {
-  return String(value || '').toLocaleLowerCase('tr').replace(/\s+/g, ' ').trim();
-}
-
-function foldSearch(value) {
-  const map = { 'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u' };
-  return normalizeText(value).replace(/[çğıöşü]/g, (character) => map[character]);
 }
 
 function canManage(role) {
@@ -626,34 +643,57 @@ async function deleteAnnotation(id, userId) {
   });
 }
 
-async function searchBooks(query) {  const q = String(query || '').trim();
+async function searchBooks(query) {
+  const q = String(query || '').trim();
   if (!q) return listBooks();
   if (!pool) {
-    const lower = q.toLocaleLowerCase('tr');
     return demoBooks.filter((book) =>
-      [book.title, book.subtitle, book.abstract, ...(book.subjects || [])]
-        .join(' ')
-        .toLocaleLowerCase('tr')
-        .includes(lower),
+      catalogMatches([book.title, book.subtitle, book.abstract, ...(book.subjects || [])], q),
     );
   }
   return withTenant(async (client) => {
+    // Language-aware: use the work's own FTS dictionary, fold Turkish
+    // diacritics for substring and trigram matching, and rank stem hits first.
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
               a.id as asset_id, a.storage_key, a.page_count,
               a.allow_copy, a.allow_download, a.allow_print, a.watermark,
-              ts_rank(a.search_vector, websearch_to_tsquery('turkish', $2)) as rank
+              ts_rank(ts.vector, ts.query) as rank,
+              (folded.folded_text like '%' || q.folded || '%') as phrase_hit
          from works w
          join editions e on e.work_id = w.id
          join assets a on a.edition_id = e.id
+         cross join lateral (
+           select case
+                    when lower(coalesce(w.language, 'tr')) like 'en%' then 'english'::regconfig
+                    when lower(coalesce(w.language, 'tr')) like 'tr%' then 'turkish'::regconfig
+                    else 'simple'::regconfig
+                  end as cfg,
+                  concat_ws(' ', w.title, w.subtitle, coalesce(w.abstract, ''),
+                            array_to_string(w.subjects, ' ')) as document
+         ) lang
+         cross join lateral (
+           select to_tsvector(lang.cfg, lang.document) as vector,
+                  websearch_to_tsquery(lang.cfg, $2) as query
+         ) ts
+         cross join lateral (
+           select translate(lower(lang.document), 'çğıöşü', 'cgiosu') as folded_text,
+                  translate(lower(coalesce(w.title, '')), 'çğıöşü', 'cgiosu') as folded_title
+         ) folded
+         cross join lateral (
+           select translate(lower($2), 'çğıöşü', 'cgiosu') as folded
+         ) q
         where (w.tenant_id is null or w.tenant_id = $1)
           and (
-            w.title ilike '%' || $2 || '%'
-            or coalesce(w.abstract, '') ilike '%' || $2 || '%'
-            or a.search_vector @@ websearch_to_tsquery('turkish', $2)
+            folded.folded_text like '%' || q.folded || '%'
+            or ts.vector @@ ts.query
+            or word_similarity(q.folded, folded.folded_title) >= 0.55
           )
-        order by rank desc nulls last, w.created_at desc
+        order by phrase_hit desc,
+                 greatest(ts_rank(ts.vector, ts.query),
+                          word_similarity(q.folded, folded.folded_title)) desc,
+                 w.created_at desc
         limit 50`,
       [TENANT_ID, q],
     );
@@ -1216,54 +1256,135 @@ const server = http.createServer(async (req, res) => {
         json(res, 404, { error: 'book not found' });
         return;
       }
-      const query = normalizeText(url.searchParams.get('q') || '');
+      const query = normalizeSearch(url.searchParams.get('q') || '');
+      const flag = (name) => ['1', 'true', 'on'].includes(
+        String(url.searchParams.get(name) || '').toLocaleLowerCase('tr'),
+      );
+      const whole = flag('whole');
+      const fuzzy = flag('fuzzy');
       if (!pool || !query) {
         json(res, 200, { indexed: false, results: [] });
         return;
       }
       try {
         const foldedQuery = foldSearch(query);
-        const data = await withTenant(async (client) => {
+        const language = String(book.language || 'tr').toLocaleLowerCase('tr');
+        const english = language.startsWith('en');
+        const tsColumnName = english ? 'text_tsv_en' : 'text_tsv';
+        const tsColumn = `p.${tsColumnName}`;
+        const tsConfig = english ? 'english' : 'turkish';
+        const wordQuery = foldWords(query);
+        const data = await withTenantSearch(async (client) => {
+          // Only the top 100 candidate pages get hit counts and text, so large
+          // books do not decompress every page on each search.
+          const wordFilter = whole ? "and text_words like '% ' || $4 || ' %'" : '';
+          const stemBranch = whole ? '' : `union all
+               select page_no, 1 as tier from asset_pages
+                where asset_id = $1 and ${tsColumnName} @@ websearch_to_tsquery('${tsConfig}', $2)`;
           const { rows } = await client.query(
-            `select page_no, text_content, text_search, source, exact_hits, folded_hits
-               from (
-                 select page_no, text_content, text_search, source,
-                        (length(text_search) - length(replace(text_search, $2, '')))
-                          / greatest(length($2), 1) as exact_hits,
-                        (length(folded) - length(replace(folded, $3, '')))
-                          / greatest(length($3), 1) as folded_hits
-                   from (
-                     select page_no, text_content, text_search, source,
-                            translate(text_search, 'çğıöşü', 'cgiosu') as folded
-                       from asset_pages
-                      where asset_id = $1
-                   ) normalized
-               ) hits
-              where exact_hits > 0 or folded_hits > 0
-              order by exact_hits desc, folded_hits desc, page_no
-              limit 100`,
-            [book.asset_id, query, foldedQuery],
+            `with candidates as (
+               select page_no, 0 as tier from asset_pages
+                where asset_id = $1 and text_search like '%' || $2 || '%' ${wordFilter}
+               union all
+               select page_no, 0 as tier from asset_pages
+                where asset_id = $1 and text_fold like '%' || $3 || '%' ${wordFilter}
+               ${stemBranch}
+             ),
+             top as (
+               select page_no, min(tier) as tier
+                 from candidates
+                group by page_no
+                order by min(tier), page_no
+                limit 100
+             )
+             select p.page_no, p.source, top.tier,
+                    (length(p.text_search) - length(replace(p.text_search, $2, '')))
+                      / greatest(length($2), 1) as exact_hits,
+                    (length(p.text_fold) - length(replace(p.text_fold, $3, '')))
+                      / greatest(length($3), 1) as folded_hits,
+                    (length(p.text_words) - length(replace(p.text_words, ' ' || $4 || ' ', ' ')))
+                      / greatest(length($4) + 1, 1) as word_hits,
+                    case when ${tsColumn} @@ websearch_to_tsquery('${tsConfig}', $2)
+                         then 1 else 0 end as stem_hits,
+                    (case when a.anchor > 46 then '…' else '' end) ||
+                    substring(p.text_content from greatest(a.anchor - 45, 1) for 90 + length($2)) ||
+                    (case when a.anchor + 45 + length($2) < length(p.text_content)
+                          then '…' else '' end) as snippet
+               from top
+               join asset_pages p on p.page_no = top.page_no and p.asset_id = $1
+               cross join lateral (
+                 select coalesce(
+                   nullif(strpos(p.text_fold, $3), 0),
+                   nullif(strpos(p.text_fold, left($3, 4)), 0),
+                   1
+                 ) as anchor
+               ) a
+              order by top.tier, p.page_no`,
+            [book.asset_id, query, foldedQuery, wordQuery],
           );
           const indexed = rows.length > 0 || (await client.query(
             'select exists(select 1 from asset_pages where asset_id = $1) as present',
             [book.asset_id],
           )).rows[0].present;
-          return { indexed, rows };
+          // Typo tolerance is a fallback tier: only run it when the indexed
+          // tiers are thin, since word similarity over every page is costly.
+          let fuzzyRows = [];
+          if (fuzzy && rows.length < 20) {
+            ({ rows: fuzzyRows } = await client.query(
+              `select page_no, text_content, source,
+                      word_similarity($2, text_fold) as score
+                 from asset_pages
+                where asset_id = $1 and length($2) >= 4 and text_fold %> $2
+                order by score desc, page_no
+                limit 50`,
+              [book.asset_id, foldedQuery],
+            ));
+          }
+          return { indexed, rows, fuzzyRows };
         });
 
         const results = data.rows.map((row) => {
-          const exactIndex = row.text_search.indexOf(query);
-          const index = exactIndex >= 0 ? exactIndex : 0;
-          const start = Math.max(0, index - 45);
-          const end = Math.min(row.text_content.length, index + query.length + 45);
+          const exactHits = Number(row.exact_hits);
+          const foldedHits = Number(row.folded_hits);
+          const wordHits = Number(row.word_hits);
+          const stemHits = Number(row.stem_hits);
+          const matchType = whole && wordHits > 0
+            ? 'word'
+            : exactHits > 0
+              ? 'exact'
+              : foldedHits > 0
+                ? 'folded'
+                : stemHits > 0
+                  ? 'stem'
+                  : 'fuzzy';
+          const matches = matchType === 'word'
+            ? wordHits
+            : matchType === 'exact'
+              ? exactHits
+              : matchType === 'folded'
+                ? foldedHits
+                : 1;
           return {
             page: row.page_no,
-            snippet: `${start > 0 ? '…' : ''}${row.text_content.slice(start, end)}${end < row.text_content.length ? '…' : ''}`,
+            snippet: row.snippet,
             source: row.source,
-            matches: Math.max(Number(row.exact_hits), Number(row.folded_hits)),
-            matchType: exactIndex >= 0 ? 'exact' : 'folded',
+            matches,
+            matchType,
           };
         });
+        const seenPages = new Set(results.map((item) => item.page));
+        for (const row of data.fuzzyRows) {
+          if (seenPages.has(row.page_no)) continue;
+          const anchor = findSnippetAnchor(row.text_content, query);
+          results.push({
+            page: row.page_no,
+            snippet: buildSnippet(row.text_content, anchor.index, anchor.length),
+            source: row.source,
+            matches: 1,
+            matchType: 'fuzzy',
+            fuzzyScore: Math.round(Number(row.score) * 100) / 100,
+          });
+        }
         json(res, 200, { indexed: data.indexed, results });
       } catch (error) {
         console.warn('[search] index unavailable:', error.message);

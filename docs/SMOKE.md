@@ -42,6 +42,7 @@ Run in Chrome and Edge; repeat mobile width once.
 - [ ] Select text; live highlight appears; save; highlight persists after reload.
 - [ ] Right-click/copy has spaces in OCR pages.
 - [ ] Search finds a phrase; Enter/Shift+Enter and ↑/↓ move between results; all hits are marked.
+- [ ] **Tam kelime** narrows results (no substring hits); **Bulanık** tolerates a typo; stemmed rows show `· kök`.
 - [ ] Notes: text/color filter, tags, date, edit, delete; clicking a note jumps and **keeps the panel open on desktop**.
 - [ ] Citation: APA/MLA/Chicago/IEEE/BibTeX; missing-author warning; copy.
 - [ ] Single → spread (▥): right page selectable; notes land on the right page.

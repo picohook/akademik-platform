@@ -4,10 +4,10 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web: **v51** (`spike/app/public/index.html`), stiller **v29**
-- DB migration: **001–007** (`db/migrations/`)
-- Prod: v51 + 007 doğrulandı (2026-10-21) — Caddy HTTPS, smoke **16/16** (tekrarlanabilir), seat limit 3 profil + 4. login 429; oturumlar temiz.
-- Son commit: prod doğrulama (bu commit)
+- Web: **v52** (`spike/app/public/index.html`), stiller **v30**
+- DB migration: **001–008** (`db/migrations/`)
+- Prod: v51 + 007 doğrulandı (2026-10-21) — v52 + 008 için rebuild + migration bekliyor.
+- Son commit: arama kalitesi (bu commit)
 - EPUB kararı: **ADR-012** — MVP/V1a için epub.js, `EpubEngine` adapter arkasında, pinli; Readium/R2D2BC geçiş eşikleri yazılı.
 
 ## Çalışanlar
@@ -15,18 +15,17 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - PDF okuyucu: tek/çift sayfa/sürekli kaydırma, küçük resimler, TOC, arama, vurgu/not/etiket/tarih, yer imi, atıf, dışa aktarma, temalar.
 - Auth: login, scrypt, CSRF, rate limit, session_version, user_sessions + seat limit (varsayılan 3).
 - Erişim: kopyalama/indirme/yazdırma/filigran; `/api/books/:id/download`.
-- Arama: sunucu sayfa indeksi (`asset_pages`), Türkçe karakter katlama, eşleşme sayısı; eşleşen alt dize `<mark>`.
+- Arama: sunucu sayfa indeksi (`asset_pages`); diakritik katlama, **tam kelime**, **bulanık** (pg_trgm), **kök** eşleşmesi (tr/en FTS, `text_tsv`/`text_tsv_en`); dil-duyarlı katalog araması (`works.language`), eşleşme sayısı + tür etiketi (`exact`/`folded`/`word`/`stem`/`fuzzy`).
 - Pilot: `docker-compose.prod.yml`, Caddy TLS, yedek scriptleri, `docs/PILOT.md`, `docs/SMOKE.md`, `scripts/smoke.mjs`.
 
 ## Açık işler (sırayla)
 
-1. **Arama kalitesi:** stemming/fuzzy/tam kelime; dil-duyarlı katalog araması.
-2. **EPUB adapter + epub.js spike:** ADR-012 sözleşmesi; tek EPUB; CFI/vurgu/TOC/arama.
-3. **Erişilebilirlik:** WCAG 2.2 AA, odak tuzağı, ekran okuyucu.
-4. **Grant/entitlement:** koleksiyon/yayıncı görünürlüğü + seat limit entegrasyonu.
-5. **500 MB / 2.000 sayfa:** fixture gelince performans; sürekli kaydırma belleği.
-6. **Interop:** MARC21/OPDS/OAI-PMH/COUNTER.
-7. **Mobil/PWA/offline**, sonra analitik/AI.
+1. **EPUB adapter + epub.js spike:** ADR-012 sözleşmesi; tek EPUB; CFI/vurgu/TOC/arama.
+2. **Erişilebilirlik:** WCAG 2.2 AA, odak tuzağı, ekran okuyucu.
+3. **Grant/entitlement:** koleksiyon/yayıncı görünürlüğü + seat limit entegrasyonu.
+4. **500 MB / 2.000 sayfa:** fixture gelince performans; sürekli kaydırma belleği.
+5. **Interop:** MARC21/OPDS/OAI-PMH/COUNTER.
+6. **Mobil/PWA/offline**, sonra analitik/AI.
 
 ## Bilinen açıklar / riskler
 
@@ -42,7 +41,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ```powershell
 docker compose up -d --build
-docker compose exec db psql -U akademik -d akademik -f /migrations/007-user-sessions.sql
+docker compose exec db psql -U akademik -d akademik -f /migrations/008-page-search.sql
 node scripts/smoke.mjs http://localhost:8080
 ```
 
@@ -50,7 +49,7 @@ Prod:
 
 ```powershell
 docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
-docker compose -f docker-compose.prod.yml --env-file .env.production exec db psql -U akademik -d akademik -f /migrations/007-user-sessions.sql
+docker compose -f docker-compose.prod.yml --env-file .env.production exec db psql -U akademik -d akademik -f /migrations/008-page-search.sql
 ```
 
 ## Token tasarrufu kuralları

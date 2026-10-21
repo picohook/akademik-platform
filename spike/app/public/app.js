@@ -1,5 +1,6 @@
 import * as pdfjsLib from '/vendor/pdfjs/pdf.mjs';
 import { formatCitation } from '/citations.mjs';
+import { findWholeWord, foldChars, normalizeSearch } from '/search.mjs?v=1';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.mjs';
 
@@ -139,6 +140,8 @@ const searchEmpty = $('searchEmpty');
 const searchPrev = $('searchPrev');
 const searchNext = $('searchNext');
 const searchPosition = $('searchPosition');
+const searchWhole = $('searchWhole');
+const searchFuzzy = $('searchFuzzy');
 const hlBar = $('hlBar');
 const hlColors = $('hlColors');
 const hlNote = $('hlNote');
@@ -904,10 +907,6 @@ function showTocTab(tab) {
   if (pages) renderThumbs();
 }
 
-function normalizeSearch(value) {
-  return String(value || '').toLocaleLowerCase('tr').replace(/\s+/g, ' ').trim();
-}
-
 function nextFrame() {
   return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }
@@ -974,10 +973,10 @@ function addSearchResult(pageNumber, text, index, queryLength, query) {
   const start = Math.max(0, index - 45);
   const end = Math.min(text.length, index + queryLength + 45);
   const snippetText = `${start > 0 ? '…' : ''}${text.slice(start, end)}${end < text.length ? '…' : ''}`;
-  addSearchResultSnippet(pageNumber, snippetText, query, 1);
+  addSearchResultSnippet(pageNumber, snippetText, query, 1, searchWhole.checked ? 'word' : 'exact');
 }
 
-function addSearchResultSnippet(pageNumber, snippetText, query, matches = 0) {
+function addSearchResultSnippet(pageNumber, snippetText, query, matches = 0, matchType = 'exact') {
   const hitIndex = state.searchHits.length;
   state.searchHits.push({ page: pageNumber, snippet: snippetText, query, matches });
   const button = document.createElement('button');
@@ -985,7 +984,11 @@ function addSearchResultSnippet(pageNumber, snippetText, query, matches = 0) {
   button.className = 'toc-item search-item';
   button.dataset.index = String(hitIndex);
   const label = document.createElement('span');
-  label.textContent = `Sayfa ${pageNumber}${matches > 1 ? ` · ${matches} eşleşme` : ''}`;
+  const note = matchType === 'stem' ? ' · kök'
+    : matchType === 'fuzzy' ? ' · yakın'
+      : matchType === 'word' ? ' · tam kelime'
+        : '';
+  label.textContent = `Sayfa ${pageNumber}${matches > 1 ? ` · ${matches} eşleşme` : ''}${note}`;
   const snippet = document.createElement('span');
   snippet.className = 'search-snippet';
   snippet.textContent = snippetText;
@@ -999,7 +1002,7 @@ function addSearchResultSnippet(pageNumber, snippetText, query, matches = 0) {
 let searchTimer = null;
 async function runSearch(rawQuery) {
   const query = String(rawQuery || '').trim();
-  const normalized = normalizeSearch(query);
+  const normalized = foldChars(normalizeSearch(query));
   const run = ++state.searchRun;
   state.activeQuery = query;
   state.searchHits = [];
@@ -1017,13 +1020,18 @@ async function runSearch(rawQuery) {
 
   searchStatus.textContent = 'Aranıyor…';
   try {
-    const response = await fetch(`/api/books/${encodeURIComponent(state.book.id)}/search?q=${encodeURIComponent(query)}`);
+    const params = new URLSearchParams({ q: query });
+    if (searchWhole.checked) params.set('whole', '1');
+    if (searchFuzzy.checked) params.set('fuzzy', '1');
+    const response = await fetch(`/api/books/${encodeURIComponent(state.book.id)}/search?${params}`);
     if (state.searchRun !== run) return;
     if (response.ok) {
       const data = await response.json();
       if (data.indexed) {
         const results = Array.isArray(data.results) ? data.results : [];
-        results.forEach((result) => addSearchResultSnippet(result.page, result.snippet, query, result.matches));
+        results.forEach((result) => addSearchResultSnippet(
+          result.page, result.snippet, query, result.matches, result.matchType,
+        ));
         searchStatus.textContent = results.length ? `${results.length}${results.length >= 100 ? '+' : ''} sonuç` : '0 sonuç';
         if (!results.length) {
           searchEmpty.hidden = false;
@@ -1050,11 +1058,14 @@ async function runSearch(rawQuery) {
     const pageNumber = order[index];
     const text = await getPageText(pageNumber);
     if (state.searchRun !== run) return;
-    const lower = normalizeSearch(text);
+    const lower = foldChars(normalizeSearch(text));
+    const whole = searchWhole.checked;
     let from = 0;
     let perPage = 0;
     while (perPage < 3 && count < 200) {
-      const found = lower.indexOf(normalized, from);
+      const found = whole
+        ? findWholeWord(lower, normalized, from)
+        : lower.indexOf(normalized, from);
       if (found < 0) break;
       addSearchResult(pageNumber, text, found, normalized.length, query);
       count += 1;
@@ -1092,14 +1103,15 @@ function clearSearchMarks(container) {
 
 function applySearchHighlight(container = textLayerEl) {
   clearSearchMarks(container);
-  const query = normalizeSearch(state.activeQuery);
+  const whole = searchWhole.checked;
+  const query = foldChars(state.activeQuery);
   if (!query) return;
   container.querySelectorAll('span').forEach((span) => {
     const text = span.textContent;
     if (!text || span.querySelector('span, mark')) return;
-    const lower = text.toLocaleLowerCase('tr');
+    const lower = foldChars(text);
     let cursor = 0;
-    let index = lower.indexOf(query, cursor);
+    let index = whole ? findWholeWord(lower, query, cursor) : lower.indexOf(query, cursor);
     if (index < 0) return;
     const fragment = document.createDocumentFragment();
     while (index >= 0) {
@@ -1109,7 +1121,7 @@ function applySearchHighlight(container = textLayerEl) {
       mark.textContent = text.slice(index, index + query.length);
       fragment.appendChild(mark);
       cursor = index + query.length;
-      index = lower.indexOf(query, cursor);
+      index = whole ? findWholeWord(lower, query, cursor) : lower.indexOf(query, cursor);
     }
     if (cursor < text.length) fragment.appendChild(document.createTextNode(text.slice(cursor)));
     span.replaceChildren(fragment);
@@ -2320,6 +2332,12 @@ bookSearch.addEventListener('input', () => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => runSearch(bookSearch.value), 300);
 });
+for (const toggle of [searchWhole, searchFuzzy]) {
+  toggle.addEventListener('change', () => {
+    if (bookSearch.value.trim()) runSearch(bookSearch.value);
+    bookSearch.focus();
+  });
+}
 bookSearch.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') {
     event.preventDefault();

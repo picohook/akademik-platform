@@ -101,9 +101,21 @@ create table if not exists asset_pages (
   text_search text not null default '',
   source text not null default 'pdf' check (source in ('pdf','ocr')),
   updated_at timestamptz not null default now(),
+  text_tsv tsvector generated always as (to_tsvector('turkish', coalesce(text_content, ''))) stored,
+  text_tsv_en tsvector generated always as (to_tsvector('english', coalesce(text_content, ''))) stored,
+  text_fold text generated always as (translate(lower(coalesce(text_content, '')), 'çğıöşü', 'cgiosu')) stored,
+  text_words text generated always as (
+    ' ' || regexp_replace(
+      regexp_replace(translate(lower(coalesce(text_content, '')), 'çğıöşü', 'cgiosu'), '[^[:alnum:] ]+', ' ', 'g'),
+      ' +', ' ', 'g'
+    ) || ' '
+  ) stored,
   primary key (asset_id, page_no)
 );
 create index if not exists asset_pages_search_trgm on asset_pages using gin (text_search gin_trgm_ops);
+create index if not exists asset_pages_tsv on asset_pages using gin (text_tsv);
+create index if not exists asset_pages_tsv_en on asset_pages using gin (text_tsv_en);
+create index if not exists asset_pages_fold_trgm on asset_pages using gin (text_fold gin_trgm_ops);
 
 create table if not exists collections (
   id uuid primary key default gen_random_uuid(),
