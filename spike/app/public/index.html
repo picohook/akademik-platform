@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=31" />
+  <link rel="stylesheet" href="/styles.css?v=32" />
 </head>
 <body>
   <a class="skip-link" href="#mainContent">İçeriğe atla</a>
@@ -101,7 +101,7 @@
         <button class="icon-btn" id="closeUpload" type="button" aria-label="Kapat">✕</button>
       </div>
       <form id="uploadForm">
-        <label>PDF dosyası<input id="uploadFile" type="file" accept="application/pdf,.pdf" required /></label>
+        <label>PDF veya EPUB dosyası<input id="uploadFile" type="file" accept=".pdf,.epub,application/pdf,application/epub+zip" required /></label>
         <label>Başlık (boşsa dosya adı)<input id="uploadTitle" maxlength="300" /></label>
         <label>Alt başlık<input id="uploadSubtitle" maxlength="300" /></label>
         <label>Yazarlar (; ile ayırın; "Soyad, Ad")<input id="uploadAuthors" placeholder="Yılmaz, Ayşe; Kaya, Mehmet" /></label>
@@ -309,6 +309,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=53"></script>
+  <script type="module" src="/app.js?v=54"></script>
 </body>
 </html>

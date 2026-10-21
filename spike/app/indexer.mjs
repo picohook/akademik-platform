@@ -57,6 +57,9 @@ async function flushPages(client, assetId, tenantId, pages) {
 }
 
 export async function indexAsset({ pool, tenantId, assetId, storageKey, publicDir }) {
+  if (!String(storageKey).toLowerCase().endsWith('.pdf')) {
+    throw new Error('page index skipped: not a PDF');
+  }
   const filePath = path.join(publicDir, storageKey);
   const buffer = await readFile(filePath);
   if (buffer.length > MAX_INDEX_BYTES) {
@@ -127,9 +130,10 @@ export async function indexAll({ pool, tenantId, publicDir }) {
     ({ rows } = await client.query(
       `select a.id, a.storage_key, a.tenant_id
          from assets a
-        where not exists (select 1 from asset_pages p where p.asset_id = a.id)
+        where a.format = 'pdf'
+          and (not exists (select 1 from asset_pages p where p.asset_id = a.id)
            or (a.page_count is not null
-               and (select count(*) from asset_pages p where p.asset_id = a.id) < a.page_count)
+               and (select count(*) from asset_pages p where p.asset_id = a.id) < a.page_count))
         order by a.created_at`,
     ));
   } finally {

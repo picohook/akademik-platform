@@ -251,6 +251,10 @@ function makeCard(book) {
 
   const badges = document.createElement('div');
   badges.className = 'badges';
+  const formatBadge = document.createElement('span');
+  formatBadge.className = 'badge format-badge';
+  formatBadge.textContent = String(book.format || 'pdf').toUpperCase();
+  badges.appendChild(formatBadge);
   (book.subjects || []).slice(0, 2).forEach((subject) => {
     const badge = document.createElement('span');
     badge.className = 'badge';
@@ -467,7 +471,7 @@ async function submitUpload(event) {
   event.preventDefault();
   const file = uploadFile.files && uploadFile.files[0];
   if (!file) {
-    toast('Önce bir PDF seçin');
+    toast('Önce bir PDF veya EPUB seçin');
     return;
   }
 
@@ -494,7 +498,7 @@ async function submitUpload(event) {
     toast('Kitap eklendi');
   } catch (error) {
     console.error(error);
-    const message = error.message === 'already uploaded' ? 'Bu PDF zaten yüklü'
+    const message = error.message === 'already uploaded' ? 'Bu dosya zaten yüklü'
       : error.message === 'yetkiniz yok' ? 'Bu işlem için yetkiniz yok'
         : 'Kitap yüklenemedi';
     toast(message);
@@ -1954,6 +1958,10 @@ async function saveProgress() {
 }
 
 async function openBook(book) {
+  if (book.format === 'epub') {
+    toast('EPUB yüklendi; okuyucu entegrasyonu henüz bağlı değil');
+    return;
+  }
   state.book = book;
   state.readerReturnFocus = document.activeElement;
   state.page = 1;

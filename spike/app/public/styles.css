@@ -166,6 +166,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
 .card-sub { color: var(--muted); font-size: 12.5px; margin: 0; }
 .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 7px; }
 .badge { font-size: 10.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 7px; background: var(--paper); }
+.badge.format-badge { color: #fff; background: var(--accent); border-color: var(--accent); }
 
 .edit-btn {
   margin-top: 8px;

@@ -1,10 +1,11 @@
 import http from 'node:http';
 import path from 'node:path';
 import { createReadStream, createWriteStream } from 'node:fs';
-import { mkdir, open, readFile, readdir, stat, unlink } from 'node:fs/promises';
+import { mkdir, open, readFile, readdir, rename, stat, unlink } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createHash, createHmac, randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
 import Busboy from 'busboy';
+import JSZip from 'jszip';
 import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib';
 import { indexAsset } from './indexer.mjs';
 import {
@@ -477,7 +478,7 @@ async function listBooks() {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
-              a.id as asset_id, a.storage_key, a.page_count,
+              a.id as asset_id, a.format, a.storage_key, a.page_count,
               a.allow_copy, a.allow_download, a.allow_print, a.watermark
          from works w
          join editions e on e.work_id = w.id
@@ -496,7 +497,7 @@ async function getBook(id) {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
-              a.id as asset_id, a.storage_key, a.page_count,
+              a.id as asset_id, a.format, a.storage_key, a.page_count,
               a.allow_copy, a.allow_download, a.allow_print, a.watermark
          from works w
          join editions e on e.work_id = w.id
@@ -615,7 +616,7 @@ async function updateBook(id, body) {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
-              a.id as asset_id, a.storage_key, a.page_count,
+              a.id as asset_id, a.format, a.storage_key, a.page_count,
               a.allow_copy, a.allow_download, a.allow_print, a.watermark
          from works w
          join editions e on e.work_id = w.id
@@ -658,7 +659,7 @@ async function searchBooks(query) {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
-              a.id as asset_id, a.storage_key, a.page_count,
+              a.id as asset_id, a.format, a.storage_key, a.page_count,
               a.allow_copy, a.allow_download, a.allow_print, a.watermark,
               ts_rank(ts.vector, ts.query) as rank,
               (folded.folded_text like '%' || q.folded || '%') as phrase_hit
@@ -865,6 +866,26 @@ async function listOcrPages(assetId) {
   }
 }
 
+async function detectUploadFormat(destination) {
+  const handle = await open(destination, 'r');
+  const magic = Buffer.alloc(5);
+  await handle.read(magic, 0, 5, 0);
+  await handle.close();
+  if (magic.toString('latin1') === '%PDF-') return 'pdf';
+  if (magic[0] === 0x50 && magic[1] === 0x4b) {
+    try {
+      const zip = await JSZip.loadAsync(await readFile(destination));
+      const mimetype = zip.file('mimetype');
+      if (mimetype && (await mimetype.async('string')).trim() === 'application/epub+zip') {
+        return 'epub';
+      }
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 async function handleUpload(req) {
   const MAX_BYTES = 1024 * 1024 * 1024;
   const fields = {};
@@ -886,7 +907,7 @@ async function handleUpload(req) {
       return;
     }
     const id = randomUUID();
-    const storageKey = `uploads/${id}.pdf`;
+    const storageKey = `uploads/${id}.upload`;
     const destination = path.join(PUBLIC_DIR, storageKey);
     const hash = createHash('sha256');
     let bytes = 0;
@@ -929,7 +950,7 @@ async function handleUpload(req) {
   await parsed;
   if (writePromise) await writePromise;
 
-  if (!fileMeta) throw new Error('PDF file is required');
+  if (!fileMeta) throw new Error('PDF or EPUB file is required');
   if (fileMeta.truncated()) {
     await unlink(fileMeta.destination).catch(() => {});
     throw new Error('file too large');
@@ -939,17 +960,19 @@ async function handleUpload(req) {
     throw new Error('empty file');
   }
 
-  const handle = await open(fileMeta.destination, 'r');
-  const magic = Buffer.alloc(5);
-  await handle.read(magic, 0, 5, 0);
-  await handle.close();
-  if (magic.toString('latin1') !== '%PDF-') {
+  const format = await detectUploadFormat(fileMeta.destination);
+  if (!format) {
     await unlink(fileMeta.destination).catch(() => {});
-    throw new Error('not a PDF');
+    throw new Error('not a PDF or EPUB');
   }
+  const finalKey = `uploads/${fileMeta.id}.${format}`;
+  const finalPath = path.join(PUBLIC_DIR, finalKey);
+  await rename(fileMeta.destination, finalPath);
+  fileMeta.storageKey = finalKey;
+  fileMeta.destination = finalPath;
 
   let pageCount = null;
-  if (fileMeta.size <= 150 * 1024 * 1024) {
+  if (format === 'pdf' && fileMeta.size <= 150 * 1024 * 1024) {
     try {
       const buffer = await readFile(fileMeta.destination);
       const pdf = await PDFDocument.load(buffer, { ignoreEncryption: true, updateMetadata: false });
@@ -989,6 +1012,7 @@ async function handleUpload(req) {
       publication_year: year,
       asset_id: assetId,
       storage_key: fileMeta.storageKey,
+      format,
       page_count: pageCount,
       metadata: { authors },
     };
@@ -1029,9 +1053,9 @@ async function handleUpload(req) {
           `insert into assets
              (tenant_id, edition_id, format, storage_key, page_count, quality_score,
               source_system, source_id, source_checksum, harvested_at, access_status)
-           values ($1, $2, 'pdf', $3, $4, null, 'upload', $5, $5, now(), 'open')
+           values ($1, $2, $3, $4, $5, null, 'upload', $6, $6, now(), 'open')
            returning id`,
-          [TENANT_ID, edition.rows[0].id, fileMeta.storageKey, pageCount, fileMeta.sha256],
+          [TENANT_ID, edition.rows[0].id, format, fileMeta.storageKey, pageCount, fileMeta.sha256],
         );
         await client.query('commit');
         return { workId: work.rows[0].id, assetId: asset.rows[0].id };
@@ -1043,13 +1067,15 @@ async function handleUpload(req) {
 
     const saved = await getBook(book.workId);
     if (!saved) throw new Error('book insert failed');
-    void indexAsset({
-      pool,
-      tenantId: TENANT_ID,
-      assetId: saved.asset_id,
-      storageKey: fileMeta.storageKey,
-      publicDir: PUBLIC_DIR,
-    }).catch((error) => console.warn('[index] upload indexing failed:', error.message));
+    if (format === 'pdf') {
+      void indexAsset({
+        pool,
+        tenantId: TENANT_ID,
+        assetId: saved.asset_id,
+        storageKey: fileMeta.storageKey,
+        publicDir: PUBLIC_DIR,
+      }).catch((error) => console.warn('[index] upload indexing failed:', error.message));
+    }
     return saved;
   } catch (error) {
     await unlink(fileMeta.destination).catch(() => {});
@@ -1467,6 +1493,10 @@ const server = http.createServer(async (req, res) => {
       }
       if (book.allow_download === false) {
         json(res, 403, { error: 'download disabled for this title' });
+        return;
+      }
+      if (book.format === 'epub') {
+        json(res, 501, { error: 'EPUB download is not supported yet' });
         return;
       }
       const safePath = path.resolve(PUBLIC_DIR, book.storage_key);
