@@ -260,21 +260,31 @@ async function createSession(user, req) {
     return id;
   }
   return withTenant(async (client) => {
-    await client.query(
-      "delete from user_sessions where user_id = $1 and last_seen_at < now() - interval '7 days'",
-      [user.id],
-    );
-    const { rows } = await client.query(
-      'select count(*)::int as count from user_sessions where user_id = $1',
-      [user.id],
-    );
-    if (rows[0].count >= max) throw sessionLimitError(max);
-    await client.query(
-      `insert into user_sessions (id, user_id, tenant_id, ip, user_agent)
-       values ($1, $2, $3, $4, $5)`,
-      [id, user.id, user.tenant_id || TENANT_ID, clientIp(req), String(req.headers['user-agent'] || '').slice(0, 300)],
-    );
-    return id;
+    await client.query('begin');
+    try {
+      // Serialize concurrent logins for the same user so two requests cannot
+      // both pass the count check.
+      await client.query('select pg_advisory_xact_lock(hashtext($1::text))', [user.id]);
+      await client.query(
+        "delete from user_sessions where user_id = $1 and last_seen_at < now() - interval '7 days'",
+        [user.id],
+      );
+      const { rows } = await client.query(
+        'select count(*)::int as count from user_sessions where user_id = $1',
+        [user.id],
+      );
+      if (rows[0].count >= max) throw sessionLimitError(max);
+      await client.query(
+        `insert into user_sessions (id, user_id, tenant_id, ip, user_agent)
+         values ($1, $2, $3, $4, $5)`,
+        [id, user.id, user.tenant_id || TENANT_ID, clientIp(req), String(req.headers['user-agent'] || '').slice(0, 300)],
+      );
+      await client.query('commit');
+      return id;
+    } catch (error) {
+      await client.query('rollback').catch(() => {});
+      throw error;
+    }
   });
 }
 
