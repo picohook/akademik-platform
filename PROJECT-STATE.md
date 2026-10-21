@@ -4,7 +4,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web: **v54** (`spike/app/public/index.html`), stiller **v32**
+- Web: **v55** (`spike/app/public/index.html`), stiller **v33**
 - DB migration: **001–008** (`db/migrations/`)
 - Prod: **v52 + 008** deploy edildi (2026-10-21) — Caddy HTTPS, smoke **16/16**; kök/tam kelime/bulanık prod'da doğrulandı.
 - Son commit: dil düzeltmesi (bu commit)
@@ -13,7 +13,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 ## Çalışanlar
 
 - PDF okuyucu: tek/çift sayfa/sürekli kaydırma, küçük resimler, TOC, arama, vurgu/not/etiket/tarih, yer imi, atıf, dışa aktarma, temalar.
-- EPUB spike: `epub-engine.mjs` adapter (ADR-012) + `/epub-spike.html`; epub.js 0.3.93 + JSZip vendored; `seed/sample.epub`. Upload artık `.epub` kabul ediyor (`format=epub`, sayfa sayısı null, katalogda EPUB rozeti); ana reader entegrasyonu ve EPUB indirme yok (501).
+- EPUB: `.epub` upload/format algılama; ana okuyucuda `EpubEngine` ile açılıyor (TOC, tema, ilerleme/CFI, bölüm içi arama). Not/vurgu oluşturma ve CFI arama indeksi henüz yok; EPUB indirme 501.
 - Auth: login, scrypt, CSRF, rate limit, session_version, user_sessions + seat limit (varsayılan 3).
 - Erişim: kopyalama/indirme/yazdırma/filigran; `/api/books/:id/download`.
 - Arama: sunucu sayfa indeksi (`asset_pages`); diakritik katlama, **tam kelime**, **bulanık** (pg_trgm), **kök** eşleşmesi (tr/en FTS, `text_tsv`/`text_tsv_en`); dil-duyarlı katalog araması (`works.language`), eşleşme sayısı + tür etiketi (`exact`/`folded`/`word`/`stem`/`fuzzy`).
@@ -21,7 +21,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Açık işler (sırayla)
 
-1. **EPUB katalog entegrasyonu:** `EpubEngine`'i ana okuyucuya bağla; format=epub kitaplar, not/atıf/arama, CFI.
+1. **EPUB CFI not/vurgu + arama indeksi:** seçimden CFI üret, notu CFI ile sakla, EPUB metnini ayrı indeksle.
 2. **WCAG 2.2 AA denetimi:** odak tuzağı/klavye/aria temel olarak eklendi; ekran okuyucu ve kontrast denetimi kaldı.
 3. **Grant/entitlement:** koleksiyon/yayıncı görünürlüğü + seat limit entegrasyonu.
 4. **500 MB / 2.000 sayfa:** fixture gelince performans; sürekli kaydırma belleği.
@@ -36,7 +36,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - Seat limiti aynı tarayıcı sekmelerinde artmaz; ayrı profil/tarayıcı gerekir.
 - Demo modunda parola değiştirme/oturum iptali 501.
 - OCR otomasyonu yok; hOCR manuel/CLI.
-- EPUB upload edilebilir (`format=epub`) ama katalogdan açınca “okuyucu entegrasyonu henüz bağlı değil” uyarısı verir; `/epub-spike.html` ayrı spike. EPUB indirme 501.
+- EPUB okuyucu tarayıcıda otomatik test edilmedi; not/vurgu oluşturma ve EPUB metin indeksi yok. EPUB indirme 501.
 - Erişilebilirlik: modal odak tuzağı, tab/aria-current, skip link, `aria-busy`, reduced-motion eklendi; **tam WCAG 2.2 AA denetimi yapılmadı**.
 - Prod'daki mayenit kitabı 2026-10-21'de `language='en'` yapıldı (İngilizce sözlükle kök arama çalışıyor). Ingest `--language` verilmezse sessizce `tr` yazar; İngilizce kitaplar için `--language en` şart.
 - İçerik hakları ve gerçek yayıncı kitapları hâlâ yok.

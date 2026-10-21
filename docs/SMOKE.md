@@ -49,6 +49,14 @@ Run in Chrome and Edge; repeat mobile width once.
 - [ ] Spread → scroll (≣): lazy pages, active page/URL updates, TOC/search/note jump into the scroll view.
 - [ ] Exit scroll → single page restores normally.
 
+### EPUB
+
+- [ ] Upload `sample.epub` from `spike/app/public/seed/`; card shows **EPUB** and no page count.
+- [ ] Open it: EPUB renders in the reader; PDF zoom/fit/scroll controls are hidden.
+- [ ] TOC entries jump; theme button changes the EPUB; next/prev works.
+- [ ] Reload the page: progress resumes at the saved CFI.
+- [ ] EPUB download is rejected with 501 for now (watermarking not implemented).
+
 ### Accessibility
 
 - [ ] Login: Tab reaches email/password/submit; focus ring visible; app behind is inert.

@@ -1,5 +1,6 @@
 import * as pdfjsLib from '/vendor/pdfjs/pdf.mjs';
 import { formatCitation } from '/citations.mjs';
+import { EpubEngine } from '/epub-engine.mjs';
 import { findWholeWord, foldChars, normalizeSearch } from '/search.mjs?v=1';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.mjs';
@@ -8,6 +9,28 @@ function readCookie(name) {
   const prefix = `${name}=`;
   const entry = document.cookie.split(';').map((part) => part.trim()).find((part) => part.startsWith(prefix));
   return entry ? decodeURIComponent(entry.slice(prefix.length)) : '';
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const existing = [...document.scripts].find((script) => script.src.endsWith(src));
+    if (existing) {
+      if (existing.dataset.loaded === '1') resolve();
+      else {
+        existing.addEventListener('load', resolve, { once: true });
+        existing.addEventListener('error', reject, { once: true });
+      }
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = src;
+    script.addEventListener('load', () => {
+      script.dataset.loaded = '1';
+      resolve();
+    }, { once: true });
+    script.addEventListener('error', reject, { once: true });
+    document.head.appendChild(script);
+  });
 }
 
 // Double-submit CSRF: the server sets a readable cookie; mutating requests echo it.
@@ -46,6 +69,9 @@ const state = {
   scrollPanes: [],
   scrollObserver: null,
   scrollToken: 0,
+  epubEngine: null,
+  epubMode: false,
+  epubProgress: null,
   viewport: null,
   annotations: [],
   noteQuery: '',
@@ -93,6 +119,7 @@ const passwordError = $('passwordError');
 
 const reader = $('reader');
 const pageArea = document.querySelector('.page-area');
+const epubView = $('epubView');
 const canvas = $('canvas');
 const canvas2 = $('canvas2');
 const pageLoading = $('pageLoading');
@@ -735,10 +762,36 @@ async function loadOutline() {
   }
 }
 
+function renderEpubToc(query) {
+  const items = state.epubEngine.getToc().filter(
+    (item) => (item.label || item.href || '').toLocaleLowerCase('tr').includes(query),
+  );
+  if (!items.length) {
+    tocEmpty.hidden = false;
+    tocEmpty.textContent = state.epubEngine.getToc().length ? 'Eşleşen bölüm yok.' : 'Bu EPUB’ta içindekiler yok.';
+    return;
+  }
+  const fragment = document.createDocumentFragment();
+  for (const item of items) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'toc-item';
+    button.style.paddingLeft = `${9 + item.level * 12}px`;
+    button.textContent = item.label || item.href;
+    button.addEventListener('click', () => state.epubEngine.goToHref(item.href));
+    fragment.appendChild(button);
+  }
+  tocList.appendChild(fragment);
+}
+
 function renderToc() {
   const query = tocFilter.value.trim().toLocaleLowerCase('tr');
   tocList.replaceChildren();
   tocEmpty.hidden = true;
+  if (state.epubMode && state.epubEngine) {
+    renderEpubToc(query);
+    return;
+  }
 
   if (state.outline.length) {
     const items = state.outline.filter((item) => item.title.toLocaleLowerCase('tr').includes(query));
@@ -860,6 +913,16 @@ function toggleToc(show) {
 }
 
 function updatePageUi() {
+  if (state.epubMode) {
+    pageInput.hidden = true;
+    pageTotal.hidden = true;
+    bookmarkBtn.hidden = true;
+    pageLabel.textContent = `${state.epubProgress?.percent || 0}%`;
+    return;
+  }
+  pageInput.hidden = false;
+  pageTotal.hidden = false;
+  bookmarkBtn.hidden = false;
   pageInput.max = String(state.numPages || 1);
   pageInput.value = String(state.page || 1);
   pageTotal.textContent = `/ ${state.numPages || 1}`;
@@ -873,7 +936,13 @@ function updateUrl() {
   if (!state.book) return;
   const url = new URL(window.location.href);
   url.searchParams.set('book', state.book.id);
-  url.searchParams.set('page', String(state.page));
+  if (state.epubMode) {
+    url.searchParams.delete('page');
+    if (state.epubEngine?.getCurrentCfi()) url.searchParams.set('cfi', state.epubEngine.getCurrentCfi());
+  } else {
+    url.searchParams.delete('cfi');
+    url.searchParams.set('page', String(state.page));
+  }
   history.replaceState(null, '', url);
 }
 
@@ -955,6 +1024,7 @@ function showShortcuts() {
 function showTocTab(tab) {
   const search = tab === 'search';
   const pages = tab === 'pages';
+  if (pages && state.epubMode) return;
   tabToc.classList.toggle('active', !search && !pages);
   tabSearch.classList.toggle('active', search);
   tabPages.classList.toggle('active', pages);
@@ -1079,6 +1149,31 @@ async function runSearch(rawQuery) {
 
   if (!normalized) {
     searchStatus.textContent = '';
+    return;
+  }
+
+  if (state.epubMode) {
+    state.searchHits = [];
+    state.searchIndex = -1;
+    updateSearchNav();
+    searchStatus.textContent = 'EPUB içinde aranıyor…';
+    const results = await state.epubEngine?.search(query, { limit: 30 }) || [];
+    if (state.searchRun !== run) return;
+    searchStatus.textContent = results.length ? `${results.length} sonuç` : '0 sonuç';
+    searchEmpty.hidden = results.length > 0;
+    searchEmpty.textContent = 'Sonuç bulunamadı.';
+    results.forEach((result) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'toc-item search-item';
+      button.textContent = result.snippet;
+      const href = document.createElement('small');
+      href.className = 'search-snippet';
+      href.textContent = result.href;
+      button.appendChild(href);
+      button.addEventListener('click', () => state.epubEngine?.goToHref(result.href));
+      searchResults.appendChild(button);
+    });
     return;
   }
 
@@ -1862,7 +1957,10 @@ function renderNotes() {
     item.appendChild(color);
     const page = document.createElement('div');
     page.className = 'note-page';
-    page.textContent = `Sayfa ${annotation.anchor?.page || '—'}${isBookmark ? ' · Yer imi' : ''}`;
+    const epubAnchor = annotation.anchor?.type === 'epub';
+    page.textContent = epubAnchor
+      ? 'EPUB'
+      : `Sayfa ${annotation.anchor?.page || '—'}${isBookmark ? ' · Yer imi' : ''}`;
     item.appendChild(page);
     const createdAt = annotation.created_at ? new Date(annotation.created_at) : null;
     const updatedAt = annotation.updated_at ? new Date(annotation.updated_at) : null;
@@ -1931,8 +2029,12 @@ function renderNotes() {
     }
 
     item.addEventListener('click', async () => {
-      const target = Number(annotation.anchor?.page) || 1;
-      await goToPage(target);
+      if (annotation.anchor?.type === 'epub' && annotation.anchor?.cfi) {
+        await state.epubEngine?.goToCfi(annotation.anchor.cfi);
+      } else {
+        const target = Number(annotation.anchor?.page) || 1;
+        await goToPage(target);
+      }
       if (window.innerWidth < 820) notesPanel.hidden = true;
     });
     notesList.appendChild(item);
@@ -1942,6 +2044,29 @@ function renderNotes() {
 
 async function saveProgress() {
   if (!state.book) return;
+  if (state.epubMode) {
+    const progress = state.epubEngine?.getProgress();
+    if (!progress?.cfi) return;
+    try {
+      await fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          assetId: state.book.asset_id,
+          anchor: {
+            asset_version_id: state.book.asset_id,
+            type: 'epub',
+            cfi: progress.cfi,
+            href: progress.href,
+          },
+          percent: progress.percent,
+        }),
+      });
+    } catch (error) {
+      console.warn('EPUB progress save failed', error);
+    }
+    return;
+  }
   try {
     await fetch('/api/progress', {
       method: 'POST',
@@ -1957,13 +2082,98 @@ async function saveProgress() {
   }
 }
 
+async function openEpubBook(book) {
+  if (state.epubEngine) {
+    state.epubEngine.destroy();
+    state.epubEngine = null;
+  }
+  state.book = book;
+  state.readerReturnFocus = document.activeElement;
+  state.epubMode = true;
+  state.scrollMode = false;
+  state.twoPage = false;
+  state.secondPage = null;
+  state.secondViewport = null;
+  state.epubProgress = null;
+  state.annotations = [];
+  reader.hidden = false;
+  document.body.style.overflow = 'hidden';
+  readerTitle.textContent = book.title;
+  readerMeta.textContent = `${book.publisher || ''}${book.publication_year ? ` · ${book.publication_year}` : ''}`;
+  downloadBtn.hidden = true;
+  document.body.classList.toggle('print-blocked', book.allow_print === false);
+  reader.classList.add('epub-mode');
+  reader.classList.remove('scroll-mode');
+  pageWrap.hidden = true;
+  pageWrap2.hidden = true;
+  scrollPages.hidden = true;
+  epubView.hidden = false;
+  epubView.replaceChildren();
+  tabPages.hidden = true;
+  showTocTab('toc');
+  pageInput.hidden = true;
+  pageTotal.hidden = true;
+  bookmarkBtn.hidden = true;
+  pageLabel.textContent = 'EPUB';
+
+  try {
+    await loadScript('/vendor/epubjs/jszip.min.js');
+    await loadScript('/vendor/epubjs/epub.min.js');
+    const [progressResponse, annotationsResponse] = await Promise.all([
+      fetch(`/api/progress?assetId=${encodeURIComponent(book.asset_id)}`),
+      fetch(`/api/annotations?assetId=${encodeURIComponent(book.asset_id)}`),
+    ]);
+    const progress = progressResponse.ok ? await progressResponse.json() : null;
+    state.annotations = annotationsResponse.ok ? await annotationsResponse.json() : [];
+    const params = new URLSearchParams(window.location.search);
+    const initialCfi = params.get('book') === book.id ? params.get('cfi') : progress?.anchor?.cfi;
+    const engine = new EpubEngine(epubView, {
+      onRelocated: (next) => {
+        state.epubProgress = next;
+        pageLabel.textContent = `${next.percent}%`;
+        updateUrl();
+        saveProgress();
+      },
+    });
+    state.epubEngine = engine;
+    await engine.open(`/api/books/${encodeURIComponent(book.id)}/file`, initialCfi || undefined);
+    state.epubProgress = engine.getProgress();
+    pageLabel.textContent = `${state.epubProgress.percent}%`;
+    const savedTheme = (() => {
+      try { return localStorage.getItem('readerTheme') || 'light'; } catch { return 'light'; }
+    })();
+    applyTheme(savedTheme);
+    engine.setTheme(savedTheme);
+    renderToc();
+    renderNotes();
+    updateUrl();
+    $('closeReader').focus();
+  } catch (error) {
+    console.error(error);
+    toast('EPUB yüklenemedi. Konsol ayrıntısına bakın.');
+    closeReader();
+  }
+}
+
 async function openBook(book) {
   if (book.format === 'epub') {
-    toast('EPUB yüklendi; okuyucu entegrasyonu henüz bağlı değil');
+    await openEpubBook(book);
     return;
   }
   state.book = book;
   state.readerReturnFocus = document.activeElement;
+  if (state.epubEngine) {
+    state.epubEngine.destroy();
+    state.epubEngine = null;
+  }
+  state.epubMode = false;
+  reader.classList.remove('epub-mode');
+  epubView.hidden = true;
+  epubView.replaceChildren();
+  tabPages.hidden = false;
+  pageInput.hidden = false;
+  pageTotal.hidden = false;
+  bookmarkBtn.hidden = false;
   state.page = 1;
   state.scale = 0;
   state.fitMode = 'width';
@@ -2070,6 +2280,19 @@ async function openBook(book) {
 }
 
 async function closeReader() {
+  if (state.epubEngine) {
+    state.epubEngine.destroy();
+    state.epubEngine = null;
+  }
+  state.epubMode = false;
+  state.epubProgress = null;
+  reader.classList.remove('epub-mode');
+  tabPages.hidden = false;
+  epubView.hidden = true;
+  epubView.replaceChildren();
+  pageInput.hidden = false;
+  pageTotal.hidden = false;
+  bookmarkBtn.hidden = false;
   if (state.scrollMode) stopScrollMode(false);
   if (state.renderTask) {
     try { state.renderTask.cancel(); } catch { /* noop */ }
@@ -2279,6 +2502,11 @@ async function deleteAnnotation(id, options = {}) {
 }
 
 function changePage(delta) {
+  if (state.epubMode) {
+    if (delta > 0) state.epubEngine?.next();
+    else state.epubEngine?.prev();
+    return;
+  }
   goToPage(state.page + delta * (state.scrollMode ? 1 : state.twoPage ? 2 : 1));
 }
 
@@ -2556,7 +2784,9 @@ $('fullscreenBtn').addEventListener('click', async () => {
 });
 themeBtn.addEventListener('click', () => {
   const order = ['light', 'sepia', 'dark'];
-  applyTheme(order[(order.indexOf(state.theme) + 1) % order.length]);
+  const next = order[(order.indexOf(state.theme) + 1) % order.length];
+  applyTheme(next);
+  if (state.epubMode) state.epubEngine?.setTheme(next);
 });
 spreadBtn.addEventListener('click', () => {
   if (state.scrollMode) stopScrollMode(false);

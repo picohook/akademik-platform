@@ -242,6 +242,22 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
 }
 .scroll-pages[hidden] { display: none; }
 .scroll-page { cursor: default; }
+.epub-view {
+  width: 100%; flex: 1; min-width: 0; align-self: stretch;
+  height: 100%; background: var(--paper);
+}
+.epub-view[hidden] { display: none; }
+.epub-view iframe { border: 0; }
+.reader.epub-mode #fitToggle,
+.reader.epub-mode #rotateBtn,
+.reader.epub-mode #spreadBtn,
+.reader.epub-mode #scrollBtn,
+.reader.epub-mode #zoomOut,
+.reader.epub-mode #zoomIn,
+.reader.epub-mode #zoomLabel,
+.reader.epub-mode .page-jump,
+.reader.epub-mode #prevPage,
+.reader.epub-mode #nextPage { display: none; }
 .reader.scroll-mode .nav-btn { display: none; }
 .page-wrap canvas { display: block; }
 .page-loading {

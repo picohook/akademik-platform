@@ -1089,6 +1089,9 @@ async function servePdf(req, res, storageKey) {
     json(res, 403, { error: 'forbidden' });
     return;
   }
+  const contentType = path.extname(storageKey).toLowerCase() === '.epub'
+    ? 'application/epub+zip'
+    : 'application/pdf';
   let info;
   try {
     info = await stat(safePath);
@@ -1112,7 +1115,7 @@ async function servePdf(req, res, storageKey) {
       return;
     }
     res.writeHead(206, {
-      'content-type': 'application/pdf',
+      'content-type': contentType,
       'content-length': end - start + 1,
       'content-range': `bytes ${start}-${end}/${info.size}`,
       'accept-ranges': 'bytes',
@@ -1122,7 +1125,7 @@ async function servePdf(req, res, storageKey) {
     return;
   }
   res.writeHead(200, {
-    'content-type': 'application/pdf',
+    'content-type': contentType,
     'content-length': info.size,
     'accept-ranges': 'bytes',
     'cache-control': 'private, max-age=0',
