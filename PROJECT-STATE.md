@@ -6,7 +6,8 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 - Web: **v51** (`spike/app/public/index.html`), stiller **v29**
 - DB migration: **001–007** (`db/migrations/`)
-- Son commit: `1777db6` (ADR-012)
+- Prod: v51 + 007 doğrulandı (2026-10-21) — Caddy HTTPS, smoke **16/16** (tekrarlanabilir), seat limit 3 profil + 4. login 429; oturumlar temiz.
+- Son commit: prod doğrulama (bu commit)
 - EPUB kararı: **ADR-012** — MVP/V1a için epub.js, `EpubEngine` adapter arkasında, pinli; Readium/R2D2BC geçiş eşikleri yazılı.
 
 ## Çalışanlar
@@ -19,14 +20,13 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Açık işler (sırayla)
 
-1. **Prod doğrulama:** v51 rebuild + `007-user-sessions.sql`; seat limitini 3 profilde test et; smoke.
-2. **Arama kalitesi:** stemming/fuzzy/tam kelime; dil-duyarlı katalog araması.
-3. **EPUB adapter + epub.js spike:** ADR-012 sözleşmesi; tek EPUB; CFI/vurgu/TOC/arama.
-4. **Erişilebilirlik:** WCAG 2.2 AA, odak tuzağı, ekran okuyucu.
-5. **Grant/entitlement:** koleksiyon/yayıncı görünürlüğü + seat limit entegrasyonu.
-6. **500 MB / 2.000 sayfa:** fixture gelince performans; sürekli kaydırma belleği.
-7. **Interop:** MARC21/OPDS/OAI-PMH/COUNTER.
-8. **Mobil/PWA/offline**, sonra analitik/AI.
+1. **Arama kalitesi:** stemming/fuzzy/tam kelime; dil-duyarlı katalog araması.
+2. **EPUB adapter + epub.js spike:** ADR-012 sözleşmesi; tek EPUB; CFI/vurgu/TOC/arama.
+3. **Erişilebilirlik:** WCAG 2.2 AA, odak tuzağı, ekran okuyucu.
+4. **Grant/entitlement:** koleksiyon/yayıncı görünürlüğü + seat limit entegrasyonu.
+5. **500 MB / 2.000 sayfa:** fixture gelince performans; sürekli kaydırma belleği.
+6. **Interop:** MARC21/OPDS/OAI-PMH/COUNTER.
+7. **Mobil/PWA/offline**, sonra analitik/AI.
 
 ## Bilinen açıklar / riskler
 

@@ -14,9 +14,9 @@ Against the pilot:
 node scripts/smoke.mjs https://localhost
 ```
 
-The script checks health/config, anonymous rejection, login (reader + librarian), CSRF, annotation create/patch/delete (with tags), reader upload 403, search endpoint, and logout. It creates and deletes its own annotation; no other data is changed.
+The script checks health/config, anonymous rejection, login (reader + librarian), CSRF, annotation create/patch/delete (with tags), reader upload 403, search endpoint, and logout for both accounts. It creates and deletes its own annotation; no other data is changed. Both sessions are logged out at the end, so repeated runs do not consume the seat limit.
 
-Expected: `15 checks passed`.
+Expected: `16 checks passed`.
 
 ## Browser checklist
 

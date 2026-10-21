@@ -153,4 +153,8 @@ const librarianBooks = await request('/api/books');
 assert.equal(librarianBooks.status, 200);
 ok('librarian catalog');
 
+const librarianLogout = await request('/api/logout', { method: 'POST' });
+assert.equal(librarianLogout.status, 200);
+ok('librarian logout');
+
 console.log(`\n${checks} checks passed against ${base}`);
