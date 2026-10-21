@@ -1100,8 +1100,17 @@ async function focusSearchResult(index) {
   const normalized = ((index % total) + total) % total;
   state.searchIndex = normalized;
   const hit = state.searchHits[normalized];
-  state.activeQuery = hit.query;
-  await goToPage(hit.page);
+  state.activeQuery = hit.query || state.searchQuery;
+  if (state.epubMode) {
+    try {
+      if (hit.href) await state.epubEngine?.goToHref(hit.href);
+      else await state.epubEngine?.goToSpineIndex(hit.page);
+    } catch {
+      await state.epubEngine?.goToSpineIndex(hit.page);
+    }
+  } else {
+    await goToPage(hit.page);
+  }
   searchResults.querySelectorAll('.search-item').forEach((item) => {
     item.classList.toggle('active', Number(item.dataset.index) === normalized);
   });
@@ -1141,6 +1150,29 @@ function addSearchResultSnippet(pageNumber, snippetText, query, matches = 0, mat
   updateSearchNav();
 }
 
+function addEpubSearchResult(result, index) {
+  state.searchHits.push({
+    page: result.page,
+    href: result.href || '',
+    snippet: result.snippet,
+    matches: result.matches || 1,
+    query: state.searchQuery,
+  });
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'toc-item search-item';
+  button.dataset.index = String(index);
+  const label = document.createElement('span');
+  label.textContent = `Bölüm ${result.page}${result.matches > 1 ? ` · ${result.matches} eşleşme` : ''}`;
+  const snippet = document.createElement('small');
+  snippet.className = 'search-snippet';
+  snippet.textContent = result.snippet;
+  button.appendChild(label);
+  button.appendChild(snippet);
+  button.addEventListener('click', () => focusSearchResult(index));
+  searchResults.appendChild(button);
+}
+
 let searchTimer = null;
 async function runSearch(rawQuery) {
   const query = String(rawQuery || '').trim();
@@ -1165,23 +1197,38 @@ async function runSearch(rawQuery) {
     state.searchIndex = -1;
     updateSearchNav();
     searchStatus.textContent = 'EPUB içinde aranıyor…';
-    const results = await state.epubEngine?.search(query, { limit: 30 }) || [];
+    const params = new URLSearchParams({ q: query });
+    if (searchWhole.checked) params.set('whole', '1');
+    if (searchFuzzy.checked) params.set('fuzzy', '1');
+    let results = [];
+    try {
+      const response = await fetch(`/api/books/${encodeURIComponent(state.book.id)}/search?${params}`);
+      const payload = response.ok ? await response.json() : {};
+      if (state.searchRun !== run) return;
+      if (payload.indexed) {
+        results = payload.results || [];
+        results.forEach((result, index) => addEpubSearchResult(result, index));
+        searchStatus.textContent = results.length ? `${results.length} sonuç · dizin` : '0 sonuç';
+        searchEmpty.hidden = results.length > 0;
+        searchEmpty.textContent = 'Sonuç bulunamadı.';
+        updateSearchNav();
+        return;
+      }
+    } catch (error) {
+      console.warn('EPUB index search failed', error);
+    }
+    const fallback = await state.epubEngine?.search(query, { limit: 30 }) || [];
     if (state.searchRun !== run) return;
-    searchStatus.textContent = results.length ? `${results.length} sonuç` : '0 sonuç';
-    searchEmpty.hidden = results.length > 0;
+    fallback.forEach((result, index) => addEpubSearchResult({
+      page: result.page || index + 1,
+      href: result.href,
+      snippet: result.snippet,
+      matches: 1,
+    }, index));
+    searchStatus.textContent = fallback.length ? `${fallback.length} sonuç` : '0 sonuç';
+    searchEmpty.hidden = fallback.length > 0;
     searchEmpty.textContent = 'Sonuç bulunamadı.';
-    results.forEach((result) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'toc-item search-item';
-      button.textContent = result.snippet;
-      const href = document.createElement('small');
-      href.className = 'search-snippet';
-      href.textContent = result.href;
-      button.appendChild(href);
-      button.addEventListener('click', () => state.epubEngine?.goToHref(result.href));
-      searchResults.appendChild(button);
-    });
+    updateSearchNav();
     return;
   }
 

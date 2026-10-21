@@ -56,6 +56,7 @@ Run in Chrome and Edge; repeat mobile width once.
 - [ ] ‹ › arrows are visible and change pages; TOC opening resizes the page without a horizontal scrollbar.
 - [ ] Zoom −/+ changes EPUB font size; the label tracks it.
 - [ ] Select text → highlight bar → save; note appears and highlight persists after reload.
+- [ ] Search a word: status shows `· dizin`, result says `Bölüm N`, clicking jumps to the chapter; old EPUBs can be indexed with `node index-text.mjs --all`.
 - [ ] TOC entries jump; theme button changes the EPUB; next/prev works.
 - [ ] Reload the page: progress resumes at the saved CFI.
 - [ ] EPUB download is rejected with 501 for now (watermarking not implemented).

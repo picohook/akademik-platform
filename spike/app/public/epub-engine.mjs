@@ -116,6 +116,11 @@ export class EpubEngine {
     await this.rendition.display(href);
   }
 
+  async goToSpineIndex(index) {
+    const section = this.book?.spine?.spineItems?.[Number(index) - 1];
+    if (section) await this.rendition.display(section.href);
+  }
+
   async next() {
     await this.rendition?.next();
   }

@@ -1096,7 +1096,7 @@ async function handleUpload(req) {
 
     const saved = await getBook(book.workId);
     if (!saved) throw new Error('book insert failed');
-    if (format === 'pdf') {
+    if (format === 'pdf' || format === 'epub') {
       void indexAsset({
         pool,
         tenantId: TENANT_ID,
@@ -1356,7 +1356,7 @@ const server = http.createServer(async (req, res) => {
                 order by min(tier), page_no
                 limit 100
              )
-             select p.page_no, p.source, top.tier,
+             select p.page_no, p.source, p.locator, top.tier,
                     (length(p.text_search) - length(replace(p.text_search, $2, '')))
                       / greatest(length($2), 1) as exact_hits,
                     (length(p.text_fold) - length(replace(p.text_fold, $3, '')))
@@ -1390,7 +1390,7 @@ const server = http.createServer(async (req, res) => {
           let fuzzyRows = [];
           if (fuzzy && rows.length < 20) {
             ({ rows: fuzzyRows } = await client.query(
-              `select page_no, text_content, source,
+              `select page_no, text_content, source, locator,
                       word_similarity($2, text_fold) as score
                  from asset_pages
                 where asset_id = $1 and length($2) >= 4 and text_fold %> $2
@@ -1425,6 +1425,7 @@ const server = http.createServer(async (req, res) => {
                 : 1;
           return {
             page: row.page_no,
+            href: row.locator || null,
             snippet: row.snippet,
             source: row.source,
             matches,
@@ -1437,6 +1438,7 @@ const server = http.createServer(async (req, res) => {
           const anchor = findSnippetAnchor(row.text_content, query);
           results.push({
             page: row.page_no,
+            href: row.locator || null,
             snippet: buildSnippet(row.text_content, anchor.index, anchor.length),
             source: row.source,
             matches: 1,
