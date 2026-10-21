@@ -1777,7 +1777,7 @@ function renderNotes() {
     item.addEventListener('click', async () => {
       const target = Number(annotation.anchor?.page) || 1;
       await goToPage(target);
-      notesPanel.hidden = true;
+      if (window.innerWidth < 820) notesPanel.hidden = true;
     });
     notesList.appendChild(item);
   });
