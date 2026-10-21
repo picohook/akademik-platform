@@ -26,9 +26,10 @@ function normalize(value) {
 }
 
 export class EpubEngine {
-  constructor(container, { onRelocated } = {}) {
+  constructor(container, { onRelocated, onSelected } = {}) {
     this.container = container;
     this.onRelocated = onRelocated || (() => {});
+    this.onSelected = onSelected || (() => {});
     this.book = null;
     this.rendition = null;
     this.toc = [];
@@ -54,26 +55,42 @@ export class EpubEngine {
       allowScriptedContent: false,
     });
     this.resizeHandler = () => {
-      if (!this.rendition) return;
-      const nextWidth = Math.max(320, Math.floor(this.container.clientWidth || window.innerWidth));
-      const nextHeight = Math.max(420, Math.floor(this.container.clientHeight || window.innerHeight - 90));
-      this.rendition.resize(nextWidth, nextHeight);
+      this.resize();
     };
     window.addEventListener('resize', this.resizeHandler);
+    this.resizeObserver = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(() => this.resize())
+      : null;
+    this.resizeObserver?.observe(this.container);
     this.rendition.on('relocated', (location) => {
       this.currentCfi = location?.start?.cfi || this.currentCfi;
       this.currentHref = location?.start?.href || this.currentHref;
       this.onRelocated(this.getProgress());
     });
+    this.rendition.on('selected', (cfiRange, contents) => {
+      const text = contents?.window?.getSelection()?.toString() || '';
+      if (text.trim()) this.onSelected({ cfiRange, text: text.trim(), contents });
+    });
     await this.rendition.display(initialCfi || undefined);
+    this.resize();
     const navigation = await this.book.loaded.navigation;
     this.toc = flattenToc(navigation.toc);
     this.locationsReady = await this.book.locations.generate(1200).then(() => true).catch(() => false);
     return this;
   }
 
+  resize() {
+    if (!this.rendition) return;
+    const width = Math.max(320, Math.floor(this.container.clientWidth || window.innerWidth));
+    const height = Math.max(420, Math.floor(this.container.clientHeight || window.innerHeight - 90));
+    if (this.lastSize && Math.abs(this.lastSize.width - width) < 2 && Math.abs(this.lastSize.height - height) < 2) return;
+    this.lastSize = { width, height };
+    this.rendition.resize(width, height);
+  }
+
   destroy() {
     this.disposed = true;
+    if (this.resizeObserver) this.resizeObserver.disconnect();
     if (this.resizeHandler) window.removeEventListener('resize', this.resizeHandler);
     try { this.rendition?.destroy(); } catch { /* noop */ }
     try { this.book?.destroy(); } catch { /* noop */ }

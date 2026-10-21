@@ -72,6 +72,8 @@ const state = {
   epubEngine: null,
   epubMode: false,
   epubProgress: null,
+  epubFontSize: 100,
+  epubSelection: null,
   viewport: null,
   annotations: [],
   noteQuery: '',
@@ -697,6 +699,10 @@ async function loadBooks(query = '') {
 }
 
 function updateZoomLabel() {
+  if (state.epubMode) {
+    zoomLabel.textContent = `${state.epubFontSize}%`;
+    return;
+  }
   zoomLabel.textContent = `${Math.round(state.scale * 100)}%`;
 }
 
@@ -2136,6 +2142,7 @@ async function openEpubBook(book) {
         updateUrl();
         saveProgress();
       },
+      onSelected: handleEpubSelection,
     });
     state.epubEngine = engine;
     await engine.open(`/api/books/${encodeURIComponent(book.id)}/book.epub`, initialCfi || undefined);
@@ -2157,6 +2164,16 @@ async function openEpubBook(book) {
     })();
     applyTheme(savedTheme);
     engine.setTheme(savedTheme);
+    state.epubFontSize = 100;
+    engine.setFontSize(state.epubFontSize);
+    updateZoomLabel();
+    state.annotations
+      .filter((annotation) => annotation.anchor?.type === 'epub' && annotation.anchor?.cfi)
+      .forEach((annotation) => engine.addAnnotation({
+        id: annotation.id,
+        cfiRange: annotation.anchor.cfi,
+        color: annotation.color,
+      }));
     renderToc();
     renderNotes();
     updateUrl();
@@ -2358,6 +2375,30 @@ async function closeReader() {
   if (returnFocus && returnFocus.isConnected) returnFocus.focus();
 }
 
+function handleEpubSelection({ cfiRange, text, contents }) {
+  if (!cfiRange || !text) return;
+  state.epubSelection = { cfiRange, text };
+  let rect = null;
+  try {
+    const selection = contents.window.getSelection();
+    const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+    const frameRect = contents.window.frameElement?.getBoundingClientRect();
+    const localRect = range?.getBoundingClientRect();
+    if (frameRect && localRect && localRect.width) {
+      rect = {
+        left: frameRect.left + localRect.left,
+        top: frameRect.top + localRect.top,
+        width: localRect.width,
+      };
+    }
+  } catch {
+    /* selection geometry is best-effort */
+  }
+  updateSelectionBar(rect || { left: window.innerWidth / 2, top: 100, width: 0 });
+  hlNote.value = '';
+  hlBar.hidden = false;
+}
+
 function updateSelectionBar(rect) {
   const barWidth = 320;
   const left = Math.min(Math.max(12, rect.left + rect.width / 2 - barWidth / 2), window.innerWidth - barWidth - 12);
@@ -2470,7 +2511,52 @@ function paneForNode(node) {
   return primaryPaneRef();
 }
 
+async function saveEpubHighlight() {
+  const selection = state.epubSelection;
+  if (!selection || !state.book) return;
+  state.epubSelection = null;
+  hlBar.hidden = true;
+  try {
+    const response = await fetch('/api/annotations', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        assetId: state.book.asset_id,
+        anchor: {
+          asset_version_id: state.book.asset_id,
+          type: 'epub',
+          cfi: selection.cfiRange,
+          text_quote: selection.text.slice(0, 500),
+        },
+        color: state.highlightColor,
+        note: hlNote.value.trim() || null,
+        selectedText: selection.text,
+      }),
+    });
+    if (!response.ok) throw new Error('annotation failed');
+    const saved = await response.json();
+    state.annotations.push({ ...saved, selected_text: saved.selected_text || selection.text });
+    state.epubEngine?.addAnnotation({
+      id: saved.id,
+      cfiRange: selection.cfiRange,
+      color: state.highlightColor,
+    });
+    renderNotes();
+    toast('Vurgu kaydedildi');
+    try {
+      epubView.querySelector('iframe')?.contentWindow?.getSelection()?.removeAllRanges();
+    } catch { /* same-origin iframe */ }
+  } catch (error) {
+    console.error(error);
+    toast('Vurgu kaydedilemedi');
+  }
+}
+
 async function saveHighlight() {
+  if (state.epubSelection) {
+    await saveEpubHighlight();
+    return;
+  }
   if (!state.pending || !state.book) return;
   const pending = state.pending;
   state.pending = null;
@@ -2505,8 +2591,9 @@ async function deleteAnnotation(id, options = {}) {
     const response = await fetch(`/api/annotations/${encodeURIComponent(id)}`, { method: 'DELETE' });
     if (!response.ok) throw new Error('delete failed');
     state.annotations = state.annotations.filter((annotation) => annotation.id !== id);
+    if (state.epubMode) state.epubEngine?.removeAnnotation(id);
     renderNotes();
-    renderHighlights();
+    if (!state.epubMode) renderHighlights();
     if (!options.silent) toast('Not silindi');
   } catch (error) {
     console.error(error);
@@ -2771,6 +2858,12 @@ $('prevPage').addEventListener('click', () => changePage(-1));
 $('nextPage').addEventListener('click', () => changePage(1));
 $('zoomIn').addEventListener('click', () => {
   state.initialFit = false;
+  if (state.epubMode) {
+    state.epubFontSize = Math.min(200, state.epubFontSize + 10);
+    state.epubEngine?.setFontSize(state.epubFontSize);
+    updateZoomLabel();
+    return;
+  }
   state.scale = Math.min(3, state.scale + 0.2);
   updateZoomLabel();
   if (state.scrollMode) rebuildScrollMode();
@@ -2778,6 +2871,12 @@ $('zoomIn').addEventListener('click', () => {
 });
 $('zoomOut').addEventListener('click', () => {
   state.initialFit = false;
+  if (state.epubMode) {
+    state.epubFontSize = Math.max(70, state.epubFontSize - 10);
+    state.epubEngine?.setFontSize(state.epubFontSize);
+    updateZoomLabel();
+    return;
+  }
   state.scale = Math.max(0.5, state.scale - 0.2);
   updateZoomLabel();
   if (state.scrollMode) rebuildScrollMode();
@@ -2855,10 +2954,12 @@ hlColors.addEventListener('click', (event) => {
 });
 $('hlCancel').addEventListener('click', () => {
   state.pending = null;
+  state.epubSelection = null;
   hlBar.hidden = true;
   clearPending(highlightsEl);
   clearPending(highlights2);
   window.getSelection()?.removeAllRanges();
+  try { epubView.querySelector('iframe')?.contentWindow?.getSelection()?.removeAllRanges(); } catch { /* noop */ }
 });
 hlNote.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') saveHighlight();

@@ -53,6 +53,9 @@ Run in Chrome and Edge; repeat mobile width once.
 
 - [ ] Upload `sample.epub` from `spike/app/public/seed/`; card shows **EPUB** and no page count.
 - [ ] Open it: EPUB renders in the reader; PDF zoom/fit/scroll controls are hidden.
+- [ ] ‹ › arrows are visible and change pages; TOC opening resizes the page without a horizontal scrollbar.
+- [ ] Zoom −/+ changes EPUB font size; the label tracks it.
+- [ ] Select text → highlight bar → save; note appears and highlight persists after reload.
 - [ ] TOC entries jump; theme button changes the EPUB; next/prev works.
 - [ ] Reload the page: progress resumes at the saved CFI.
 - [ ] EPUB download is rejected with 501 for now (watermarking not implemented).
