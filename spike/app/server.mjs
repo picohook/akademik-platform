@@ -98,6 +98,11 @@ function normalizeText(value) {
   return String(value || '').toLocaleLowerCase('tr').replace(/\s+/g, ' ').trim();
 }
 
+function foldSearch(value) {
+  const map = { 'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u' };
+  return normalizeText(value).replace(/[çğıöşü]/g, (character) => map[character]);
+}
+
 function canManage(role) {
   return role === 'admin' || role === 'librarian' || role === 'publisher';
 }
@@ -1217,14 +1222,27 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       try {
+        const foldedQuery = foldSearch(query);
         const data = await withTenant(async (client) => {
           const { rows } = await client.query(
-            `select page_no, text_content, text_search, source
-               from asset_pages
-              where asset_id = $1 and position($2 in text_search) > 0
-              order by page_no
+            `select page_no, text_content, text_search, source, exact_hits, folded_hits
+               from (
+                 select page_no, text_content, text_search, source,
+                        (length(text_search) - length(replace(text_search, $2, '')))
+                          / greatest(length($2), 1) as exact_hits,
+                        (length(folded) - length(replace(folded, $3, '')))
+                          / greatest(length($3), 1) as folded_hits
+                   from (
+                     select page_no, text_content, text_search, source,
+                            translate(text_search, 'çğıöşü', 'cgiosu') as folded
+                       from asset_pages
+                      where asset_id = $1
+                   ) normalized
+               ) hits
+              where exact_hits > 0 or folded_hits > 0
+              order by exact_hits desc, folded_hits desc, page_no
               limit 100`,
-            [book.asset_id, query],
+            [book.asset_id, query, foldedQuery],
           );
           const indexed = rows.length > 0 || (await client.query(
             'select exists(select 1 from asset_pages where asset_id = $1) as present',
@@ -1234,13 +1252,16 @@ const server = http.createServer(async (req, res) => {
         });
 
         const results = data.rows.map((row) => {
-          const index = row.text_search.indexOf(query);
+          const exactIndex = row.text_search.indexOf(query);
+          const index = exactIndex >= 0 ? exactIndex : 0;
           const start = Math.max(0, index - 45);
           const end = Math.min(row.text_content.length, index + query.length + 45);
           return {
             page: row.page_no,
             snippet: `${start > 0 ? '…' : ''}${row.text_content.slice(start, end)}${end < row.text_content.length ? '…' : ''}`,
             source: row.source,
+            matches: Math.max(Number(row.exact_hits), Number(row.folded_hits)),
+            matchType: exactIndex >= 0 ? 'exact' : 'folded',
           };
         });
         json(res, 200, { indexed: data.indexed, results });

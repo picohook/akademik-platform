@@ -974,18 +974,18 @@ function addSearchResult(pageNumber, text, index, queryLength, query) {
   const start = Math.max(0, index - 45);
   const end = Math.min(text.length, index + queryLength + 45);
   const snippetText = `${start > 0 ? '…' : ''}${text.slice(start, end)}${end < text.length ? '…' : ''}`;
-  addSearchResultSnippet(pageNumber, snippetText, query);
+  addSearchResultSnippet(pageNumber, snippetText, query, 1);
 }
 
-function addSearchResultSnippet(pageNumber, snippetText, query) {
+function addSearchResultSnippet(pageNumber, snippetText, query, matches = 0) {
   const hitIndex = state.searchHits.length;
-  state.searchHits.push({ page: pageNumber, snippet: snippetText, query });
+  state.searchHits.push({ page: pageNumber, snippet: snippetText, query, matches });
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'toc-item search-item';
   button.dataset.index = String(hitIndex);
   const label = document.createElement('span');
-  label.textContent = `Sayfa ${pageNumber}`;
+  label.textContent = `Sayfa ${pageNumber}${matches > 1 ? ` · ${matches} eşleşme` : ''}`;
   const snippet = document.createElement('span');
   snippet.className = 'search-snippet';
   snippet.textContent = snippetText;
@@ -1023,7 +1023,7 @@ async function runSearch(rawQuery) {
       const data = await response.json();
       if (data.indexed) {
         const results = Array.isArray(data.results) ? data.results : [];
-        results.forEach((result) => addSearchResultSnippet(result.page, result.snippet, query));
+        results.forEach((result) => addSearchResultSnippet(result.page, result.snippet, query, result.matches));
         searchStatus.textContent = results.length ? `${results.length}${results.length >= 100 ? '+' : ''} sonuç` : '0 sonuç';
         if (!results.length) {
           searchEmpty.hidden = false;
