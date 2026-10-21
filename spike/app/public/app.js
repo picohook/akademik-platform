@@ -2138,7 +2138,7 @@ async function openEpubBook(book) {
       },
     });
     state.epubEngine = engine;
-    await engine.open(`/api/books/${encodeURIComponent(book.id)}/file`, initialCfi || undefined);
+    await engine.open(`/api/books/${encodeURIComponent(book.id)}/book.epub`, initialCfi || undefined);
     const frame = epubView.querySelector('iframe');
     const frameRect = frame?.getBoundingClientRect();
     if (!frame || !frameRect || frameRect.height < 20) {

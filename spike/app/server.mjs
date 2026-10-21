@@ -1596,10 +1596,15 @@ const server = http.createServer(async (req, res) => {
       res.end(payload);
       return;
     }
-    if (pathname.startsWith('/api/books/') && pathname.endsWith('/file') && req.method === 'GET') {
-      const id = pathname.slice('/api/books/'.length, -'/file'.length);
+    const bookFile = pathname.startsWith('/api/books/')
+      && (pathname.endsWith('/file') || pathname.endsWith('/book.epub'))
+      && req.method === 'GET';
+    if (bookFile) {
+      const epubFile = pathname.endsWith('/book.epub');
+      const suffix = epubFile ? '/book.epub' : '/file';
+      const id = pathname.slice('/api/books/'.length, -suffix.length);
       const storageKey = await resolveStorageKey(id);
-      if (!storageKey) {
+      if (!storageKey || (epubFile && !storageKey.toLowerCase().endsWith('.epub'))) {
         json(res, 404, { error: 'book not found' });
         return;
       }
