@@ -5,7 +5,7 @@ import { mkdir, open, readFile, readdir, stat, unlink } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createHash, createHmac, randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
 import Busboy from 'busboy';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib';
 import { indexAsset } from './indexer.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -339,6 +339,11 @@ function normalizeTags(value) {
   return [...new Set(items.map((item) => String(item || '').trim()).filter(Boolean))].slice(0, 20);
 }
 
+function asBool(value, fallback = true) {
+  if (value === undefined) return fallback;
+  return value !== false && value !== 'false' && value !== 0 && value !== '0';
+}
+
 async function readJson(req, limit = 1_000_000) {
   let size = 0;
   const chunks = [];
@@ -357,7 +362,8 @@ async function listBooks() {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
-              a.id as asset_id, a.storage_key, a.page_count
+              a.id as asset_id, a.storage_key, a.page_count,
+              a.allow_copy, a.allow_download, a.allow_print, a.watermark
          from works w
          join editions e on e.work_id = w.id
          join assets a on a.edition_id = e.id
@@ -375,7 +381,8 @@ async function getBook(id) {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
-              a.id as asset_id, a.storage_key, a.page_count
+              a.id as asset_id, a.storage_key, a.page_count,
+              a.allow_copy, a.allow_download, a.allow_print, a.watermark
          from works w
          join editions e on e.work_id = w.id
          join assets a on a.edition_id = e.id
@@ -401,6 +408,10 @@ async function updateBook(id, body) {
     if (body.authors !== undefined) {
       book.metadata = { ...(book.metadata || {}), authors: parseAuthors(body.authors) };
     }
+    if (body.allow_copy !== undefined) book.allow_copy = asBool(body.allow_copy);
+    if (body.allow_download !== undefined) book.allow_download = asBool(body.allow_download);
+    if (body.allow_print !== undefined) book.allow_print = asBool(body.allow_print);
+    if (body.watermark !== undefined) book.watermark = asBool(body.watermark);
     return book;
   }
 
@@ -463,10 +474,34 @@ async function updateBook(id, body) {
       );
     }
 
+    const assetSets = [];
+    const assetValues = [];
+    let assetIndex = 1;
+    const addAsset = (column, value) => {
+      assetSets.push(`${column} = $${assetIndex}`);
+      assetValues.push(value);
+      assetIndex += 1;
+    };
+    if (body.allow_copy !== undefined) addAsset('allow_copy', asBool(body.allow_copy));
+    if (body.allow_download !== undefined) addAsset('allow_download', asBool(body.allow_download));
+    if (body.allow_print !== undefined) addAsset('allow_print', asBool(body.allow_print));
+    if (body.watermark !== undefined) addAsset('watermark', asBool(body.watermark));
+    if (assetSets.length) {
+      assetValues.push(id, TENANT_ID);
+      await client.query(
+        `update assets set ${assetSets.join(', ')}
+          where edition_id in (
+            select id from editions where work_id = $${assetIndex} and tenant_id = $${assetIndex + 1}
+          )`,
+        assetValues,
+      );
+    }
+
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
-              a.id as asset_id, a.storage_key, a.page_count
+              a.id as asset_id, a.storage_key, a.page_count,
+              a.allow_copy, a.allow_download, a.allow_print, a.watermark
          from works w
          join editions e on e.work_id = w.id
          join assets a on a.edition_id = e.id
@@ -510,6 +545,7 @@ async function searchBooks(query) {  const q = String(query || '').trim();
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
               a.id as asset_id, a.storage_key, a.page_count,
+              a.allow_copy, a.allow_download, a.allow_print, a.watermark,
               ts_rank(a.search_vector, websearch_to_tsquery('turkish', $2)) as rank
          from works w
          join editions e on e.work_id = w.id
@@ -1168,6 +1204,65 @@ const server = http.createServer(async (req, res) => {
     }
     if (pathname === '/api/search' && req.method === 'GET') {
       json(res, 200, await searchBooks(url.searchParams.get('q')));
+      return;
+    }
+    const downloadMatch = pathname.match(/^\/api\/books\/([^/]+)\/download$/);
+    if (downloadMatch && req.method === 'GET') {
+      const bookId = decodeURIComponent(downloadMatch[1]);
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookId)) {
+        json(res, 400, { error: 'invalid book id' });
+        return;
+      }
+      const book = await getBook(bookId);
+      if (!book) {
+        json(res, 404, { error: 'book not found' });
+        return;
+      }
+      if (book.allow_download === false) {
+        json(res, 403, { error: 'download disabled for this title' });
+        return;
+      }
+      const safePath = path.resolve(PUBLIC_DIR, book.storage_key);
+      if (!safePath.startsWith(PUBLIC_DIR + path.sep)) {
+        json(res, 400, { error: 'invalid storage key' });
+        return;
+      }
+      const buffer = await readFile(safePath);
+      let payload = buffer;
+      if (book.watermark !== false) {
+        const pdf = await PDFDocument.load(buffer, { ignoreEncryption: true });
+        const font = await pdf.embedFont(StandardFonts.Helvetica);
+        const stamp = `${auth.email} · ${new Date().toISOString().slice(0, 10)}`;
+        pdf.getPages().forEach((page) => {
+          const { width, height } = page.getSize();
+          page.drawText(stamp, {
+            x: 36,
+            y: 22,
+            size: 8,
+            font,
+            color: rgb(0.45, 0.45, 0.45),
+            opacity: 0.6,
+          });
+          page.drawText(stamp, {
+            x: width * 0.16,
+            y: height * 0.48,
+            size: 16,
+            font,
+            color: rgb(0.45, 0.45, 0.45),
+            opacity: 0.12,
+            rotate: degrees(35),
+          });
+        });
+        payload = Buffer.from(await pdf.save());
+      }
+      const filename = `${book.title.replace(/[^\p{L}\p{N}._-]+/gu, '-').slice(0, 80) || 'kitap'}.pdf`;
+      res.writeHead(200, {
+        'content-type': 'application/pdf',
+        'content-length': payload.length,
+        'content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
+        'cache-control': 'no-store',
+      });
+      res.end(payload);
       return;
     }
     if (pathname.startsWith('/api/books/') && pathname.endsWith('/file') && req.method === 'GET') {

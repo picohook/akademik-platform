@@ -71,6 +71,10 @@ create table if not exists assets (
   source_checksum text,
   harvested_at timestamptz,
   access_status text not null default 'open' check (access_status in ('open','restricted','embargoed')),
+  allow_copy boolean not null default true,
+  allow_download boolean not null default true,
+  allow_print boolean not null default true,
+  watermark boolean not null default true,
   created_at timestamptz not null default now(),
   search_vector tsvector generated always as (to_tsvector('turkish', coalesce(text_content, ''))) stored
 );

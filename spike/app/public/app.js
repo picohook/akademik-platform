@@ -124,6 +124,7 @@ const themeBtn = $('themeBtn');
 const spreadBtn = $('spreadBtn');
 const scrollBtn = $('scrollBtn');
 const bookmarkBtn = $('bookmarkBtn');
+const downloadBtn = $('downloadBtn');
 const tabToc = $('tabToc');
 const tabSearch = $('tabSearch');
 const tabPages = $('tabPages');
@@ -155,6 +156,10 @@ const editYear = $('editYear');
 const editPublisher = $('editPublisher');
 const editSubjects = $('editSubjects');
 const editAuthors = $('editAuthors');
+const editAllowCopy = $('editAllowCopy');
+const editAllowDownload = $('editAllowDownload');
+const editAllowPrint = $('editAllowPrint');
+const editWatermark = $('editWatermark');
 
 const uploadModal = $('uploadModal');
 const uploadForm = $('uploadForm');
@@ -296,6 +301,10 @@ function openEdit(book) {
   editPublisher.value = book.publisher || '';
   editSubjects.value = (book.subjects || []).join('; ');
   editAuthors.value = authorsToText(book.metadata?.authors);
+  editAllowCopy.checked = book.allow_copy !== false;
+  editAllowDownload.checked = book.allow_download !== false;
+  editAllowPrint.checked = book.allow_print !== false;
+  editWatermark.checked = book.watermark !== false;
   editModal.hidden = false;
   setTimeout(() => editTitle.focus(), 0);
 }
@@ -351,6 +360,10 @@ async function saveEdit(event) {
     year: editYear.value ? Number(editYear.value) : null,
     subjects: editSubjects.value.split(/[;,]/).map((item) => item.trim()).filter(Boolean),
     authors: editAuthors.value.trim(),
+    allow_copy: editAllowCopy.checked,
+    allow_download: editAllowDownload.checked,
+    allow_print: editAllowPrint.checked,
+    watermark: editWatermark.checked,
   };
   if (!payload.title) {
     toast('Başlık boş olamaz');
@@ -1874,6 +1887,8 @@ async function openBook(book) {
   document.body.style.overflow = 'hidden';
   readerTitle.textContent = book.title;
   readerMeta.textContent = `${book.publisher || ''}${book.publication_year ? ` · ${book.publication_year}` : ''}`;
+  downloadBtn.hidden = book.allow_download === false;
+  document.body.classList.toggle('print-blocked', book.allow_print === false);
   notesPanel.hidden = window.innerWidth < 820;
   pageLabel.textContent = '…';
 
@@ -1945,6 +1960,8 @@ async function closeReader() {
   state.secondViewport = null;
   reader.hidden = true;
   document.body.style.overflow = '';
+  document.body.classList.remove('print-blocked');
+  downloadBtn.hidden = true;
   hlBar.hidden = true;
   pageLoading.hidden = true;
   tocPanel.hidden = true;
@@ -2286,6 +2303,35 @@ pageInput.addEventListener('keydown', (event) => {
 pageInput.addEventListener('change', () => goToPage(pageInput.value));
 bookmarkBtn.addEventListener('click', toggleBookmark);
 $('citeBook').addEventListener('click', openCite);
+downloadBtn.addEventListener('click', async () => {
+  if (!state.book) return;
+  const original = downloadBtn.textContent;
+  downloadBtn.disabled = true;
+  downloadBtn.textContent = 'İndiriliyor…';
+  try {
+    const response = await fetch(`/api/books/${encodeURIComponent(state.book.id)}/download`);
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || 'download failed');
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${state.book.title.replace(/[^\p{L}\p{N}._-]+/gu, '-').slice(0, 80) || 'kitap'}.pdf`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast('PDF indirildi');
+  } catch (error) {
+    console.error(error);
+    toast(error.message === 'download disabled for this title' ? 'Bu kitapta indirme kapalı' : 'PDF indirilemedi');
+  } finally {
+    downloadBtn.disabled = false;
+    downloadBtn.textContent = original;
+  }
+});
 $('closeCite').addEventListener('click', closeCite);
 $('closeCite2').addEventListener('click', closeCite);
 $('copyCite').addEventListener('click', copyCitation);
@@ -2413,6 +2459,11 @@ document.addEventListener('selectionchange', () => {
 });
 
 document.addEventListener('copy', (event) => {
+  if (state.book && state.book.allow_copy === false) {
+    event.preventDefault();
+    toast('Bu kitapta kopyalama kapalı');
+    return;
+  }
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed || !selection.anchorNode) return;
   const inPrimary = textLayerEl.contains(selection.anchorNode);
@@ -2425,6 +2476,13 @@ document.addEventListener('copy', (event) => {
   if (!words.length || !event.clipboardData) return;
   event.clipboardData.setData('text/plain', words.join(' '));
   event.preventDefault();
+});
+
+document.addEventListener('cut', (event) => {
+  if (state.book && state.book.allow_copy === false) {
+    event.preventDefault();
+    toast('Bu kitapta kopyalama kapalı');
+  }
 });
 
 document.addEventListener('mousedown', (event) => {

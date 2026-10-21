@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=26" />
+  <link rel="stylesheet" href="/styles.css?v=27" />
 </head>
 <body>
   <div class="login-screen" id="loginScreen" hidden>
@@ -68,6 +68,12 @@
         <label>Başlık<input id="editTitle" required maxlength="300" /></label>
         <label>Alt başlık<input id="editSubtitle" maxlength="300" /></label>
         <label>Yazarlar (; ile ayırın; "Soyad, Ad")<input id="editAuthors" placeholder="Yılmaz, Ayşe; Kaya, Mehmet" /></label>
+        <div class="form-row check-row">
+          <label class="check-label"><input id="editAllowCopy" type="checkbox" /> Kopyalama</label>
+          <label class="check-label"><input id="editAllowDownload" type="checkbox" /> İndirme</label>
+          <label class="check-label"><input id="editAllowPrint" type="checkbox" /> Yazdırma</label>
+          <label class="check-label"><input id="editWatermark" type="checkbox" /> Filigran</label>
+        </div>
         <div class="form-row">
           <label>Dil
             <select id="editLanguage">
@@ -185,6 +191,7 @@
         <button class="icon-btn" id="zoomIn" aria-label="Yakınlaştır">+</button>
         <button class="ghost-btn" id="bookmarkBtn" type="button" title="Yer imi" aria-label="Yer imi" aria-pressed="false">☆</button>
         <button class="ghost-btn" id="citeBook" type="button" title="Atıf">Atıf</button>
+        <button class="ghost-btn" id="downloadBtn" type="button" title="PDF indir" hidden>İndir</button>
         <button class="ghost-btn" id="toggleNotes">Notlar <span id="noteCount">0</span></button>
       </div>
     </div>
@@ -293,6 +300,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=46"></script>
+  <script type="module" src="/app.js?v=47"></script>
 </body>
 </html>
