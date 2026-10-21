@@ -472,13 +472,40 @@ async function readJson(req, limit = 1_000_000) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 
+async function deleteUploadedBook(id) {
+  if (!pool) {
+    const index = demoBooks.findIndex((book) => book.id === id);
+    if (index < 0) return { status: 'not_found', keys: [] };
+    const [book] = demoBooks.splice(index, 1);
+    if (book.sha256) demoHashes.delete(book.sha256);
+    return { status: 'ok', keys: [book.storage_key] };
+  }
+  return withTenant(async (client) => {
+    const { rows } = await client.query(
+      `select a.storage_key, a.source_system
+         from works w
+         join editions e on e.work_id = w.id
+         join assets a on a.edition_id = e.id
+        where w.id = $1
+        limit 50`,
+      [id],
+    );
+    if (!rows.length) return { status: 'not_found', keys: [] };
+    if (rows.some((row) => row.source_system !== 'upload')) {
+      return { status: 'not_uploaded', keys: [] };
+    }
+    await client.query('delete from works where id = $1', [id]);
+    return { status: 'ok', keys: rows.map((row) => row.storage_key).filter(Boolean) };
+  });
+}
+
 async function listBooks() {
   if (!pool) return demoBooks;
   return withTenant(async (client) => {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
-              a.id as asset_id, a.format, a.storage_key, a.page_count,
+              a.id as asset_id, a.format, a.source_system, a.storage_key, a.page_count,
               a.allow_copy, a.allow_download, a.allow_print, a.watermark
          from works w
          join editions e on e.work_id = w.id
@@ -497,7 +524,7 @@ async function getBook(id) {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
-              a.id as asset_id, a.format, a.storage_key, a.page_count,
+              a.id as asset_id, a.format, a.source_system, a.storage_key, a.page_count,
               a.allow_copy, a.allow_download, a.allow_print, a.watermark
          from works w
          join editions e on e.work_id = w.id
@@ -616,7 +643,7 @@ async function updateBook(id, body) {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
-              a.id as asset_id, a.format, a.storage_key, a.page_count,
+              a.id as asset_id, a.format, a.source_system, a.storage_key, a.page_count,
               a.allow_copy, a.allow_download, a.allow_print, a.watermark
          from works w
          join editions e on e.work_id = w.id
@@ -659,7 +686,7 @@ async function searchBooks(query) {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
-              a.id as asset_id, a.format, a.storage_key, a.page_count,
+              a.id as asset_id, a.format, a.source_system, a.storage_key, a.page_count,
               a.allow_copy, a.allow_download, a.allow_print, a.watermark,
               ts_rank(ts.vector, ts.query) as rank,
               (folded.folded_text like '%' || q.folded || '%') as phrase_hit
@@ -1012,6 +1039,8 @@ async function handleUpload(req) {
       publication_year: year,
       asset_id: assetId,
       storage_key: fileMeta.storageKey,
+      sha256: fileMeta.sha256,
+      source_system: 'upload',
       format,
       page_count: pageCount,
       metadata: { authors },
@@ -1476,6 +1505,28 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       json(res, 200, book);
+      return;
+    }
+    if (pathname.startsWith('/api/books/') && req.method === 'DELETE') {
+      if (!canManage(auth.role)) {
+        json(res, 403, { error: 'yetkiniz yok' });
+        return;
+      }
+      const id = decodeURIComponent(pathname.slice('/api/books/'.length));
+      const result = await deleteUploadedBook(id);
+      if (result.status === 'not_found') {
+        json(res, 404, { error: 'book not found' });
+        return;
+      }
+      if (result.status === 'not_uploaded') {
+        json(res, 409, { error: 'only uploaded titles can be deleted' });
+        return;
+      }
+      for (const key of result.keys) {
+        const safePath = path.resolve(PUBLIC_DIR, key);
+        if (safePath.startsWith(PUBLIC_DIR + path.sep)) await unlink(safePath).catch(() => {});
+      }
+      json(res, 200, { ok: true });
       return;
     }
     if (pathname === '/api/search' && req.method === 'GET') {

@@ -191,6 +191,7 @@ const editAllowCopy = $('editAllowCopy');
 const editAllowDownload = $('editAllowDownload');
 const editAllowPrint = $('editAllowPrint');
 const editWatermark = $('editWatermark');
+const deleteBookBtn = $('deleteBook');
 
 const uploadModal = $('uploadModal');
 const uploadForm = $('uploadForm');
@@ -378,6 +379,7 @@ function openEdit(book) {
   editAllowDownload.checked = book.allow_download !== false;
   editAllowPrint.checked = book.allow_print !== false;
   editWatermark.checked = book.watermark !== false;
+  deleteBookBtn.hidden = book.source_system !== 'upload';
   openModal(editModal, editTitle);
 }
 
@@ -2622,6 +2624,33 @@ uploadFile.addEventListener('change', () => {
 });
 
 editForm.addEventListener('submit', saveEdit);
+deleteBookBtn.addEventListener('click', async () => {
+  const id = editId.value;
+  if (!id) return;
+  const title = editTitle.value.trim() || 'Bu kitap';
+  if (!window.confirm(`“${title}” kalıcı olarak silinsin mi? Notlar ve ilerleme de silinir.`)) return;
+  deleteBookBtn.disabled = true;
+  try {
+    const response = await fetch(`/api/books/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: { 'x-csrf-token': readCookie('akademik_csrf') },
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || 'delete failed');
+    }
+    closeEdit();
+    toast('Kitap silindi');
+    await loadBooks();
+  } catch (error) {
+    console.error(error);
+    toast(error.message === 'only uploaded titles can be deleted'
+      ? 'Yalnızca yüklenen kitaplar silinebilir'
+      : 'Kitap silinemedi');
+  } finally {
+    deleteBookBtn.disabled = false;
+  }
+});
 $('closeEdit').addEventListener('click', closeEdit);
 $('cancelEdit').addEventListener('click', closeEdit);
 editModal.addEventListener('click', (event) => {

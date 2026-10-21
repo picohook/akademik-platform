@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=33" />
+  <link rel="stylesheet" href="/styles.css?v=34" />
 </head>
 <body>
   <a class="skip-link" href="#mainContent">İçeriğe atla</a>
@@ -87,6 +87,8 @@
         <label>Yayıncı<input id="editPublisher" maxlength="200" /></label>
         <label>Konular (; ile ayırın)<input id="editSubjects" placeholder="Diş Hekimliği;Implantoloji" /></label>
         <div class="modal-actions">
+          <button class="ghost-btn danger" id="deleteBook" type="button" hidden>Sil</button>
+          <span class="spacer"></span>
           <button class="ghost-btn" id="cancelEdit" type="button">Vazgeç</button>
           <button class="primary" type="submit">Kaydet</button>
         </div>
@@ -310,6 +312,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=55"></script>
+  <script type="module" src="/app.js?v=56"></script>
 </body>
 </html>

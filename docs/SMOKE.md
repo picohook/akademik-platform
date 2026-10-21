@@ -56,6 +56,7 @@ Run in Chrome and Edge; repeat mobile width once.
 - [ ] TOC entries jump; theme button changes the EPUB; next/prev works.
 - [ ] Reload the page: progress resumes at the saved CFI.
 - [ ] EPUB download is rejected with 501 for now (watermarking not implemented).
+- [ ] Edit → **Sil**: confirmation, card disappears, file removed from `public/uploads`; seed books show no Sil button.
 
 ### Accessibility
 

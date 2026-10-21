@@ -465,6 +465,9 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
 }
 .form-row { display: grid; grid-template-columns: 1fr 120px; gap: 10px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+.modal-actions .spacer { flex: 1; }
+.ghost-btn.danger { color: #a33; border-color: #e0b4b4; }
+.ghost-btn.danger:hover { background: #fbeaea; }
 .cite-output {
   white-space: pre-wrap; word-break: break-word; background: #f7f2e7;
   border: 1px solid var(--line); border-radius: 8px; padding: 12px;

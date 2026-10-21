@@ -4,7 +4,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web: **v55** (`spike/app/public/index.html`), stiller **v33**
+- Web: **v56** (`spike/app/public/index.html`), stiller **v34**
 - DB migration: **001–008** (`db/migrations/`)
 - Prod: **v52 + 008** deploy edildi (2026-10-21) — Caddy HTTPS, smoke **16/16**; kök/tam kelime/bulanık prod'da doğrulandı.
 - Son commit: dil düzeltmesi (bu commit)
@@ -13,6 +13,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 ## Çalışanlar
 
 - PDF okuyucu: tek/çift sayfa/sürekli kaydırma, küçük resimler, TOC, arama, vurgu/not/etiket/tarih, yer imi, atıf, dışa aktarma, temalar.
+- Yükleme/silme: PDF + EPUB upload; yalnızca `source_system='upload'` kitaplar librarian/admin/publisher tarafından silinebilir; DB cascade + dosya silme.
 - EPUB: `.epub` upload/format algılama; ana okuyucuda `EpubEngine` ile açılıyor (TOC, tema, ilerleme/CFI, bölüm içi arama). Not/vurgu oluşturma ve CFI arama indeksi henüz yok; EPUB indirme 501.
 - Auth: login, scrypt, CSRF, rate limit, session_version, user_sessions + seat limit (varsayılan 3).
 - Erişim: kopyalama/indirme/yazdırma/filigran; `/api/books/:id/download`.
