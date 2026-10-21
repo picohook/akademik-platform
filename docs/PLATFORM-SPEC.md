@@ -315,7 +315,7 @@ yükleme → virüs tarama → arşiv/format doğrulama → metadata çıkarma
 - `[V1]` gelişmiş tipografi, dipnot popup, MathML, RTL, fixed-layout, heceleme.
 - `[V1]` CFI tabanlı vurgu/not. MVP'de EPUB notu yok; yalnızca yer imi ve konum.
 
-**Motor seçimi:** Readium mu epub.js mi? Bu karar spike'ta değil, **V1a başında** verilir; MVP temel reflow ile ilerler. Seçim kriteri: CFI doğruluğu, MathML/RTL desteği, paket boyutu, bakım. Karar ADR'ye yazılır.
+**Motor seçimi:** **epub.js** — MVP/V1a için kabul, `EpubEngine` adapter arkasında ve sürüm pinli. Uzun vadeli varsayılan değil; geçiş eşikleri (WCAG 2.2 AA sözleşmesi, MathML/RTL/fixed-layout >%10, CFI/vurgu kabul testi başarısızlığı) ADR-012'de tanımlıdır. Readium Web Toolkit birinci, R2D2BC ikinci yedek adaydır. LCP/DRM bu kararın dışındadır.
 
 ### 6.4 Not, vurgu, yer imi
 
@@ -1045,6 +1045,7 @@ FieldOverride *─1 (Work|Edition|Asset)   (V1b; field_name bazlı, kaynak check
 | ADR-009 | Anotasyon çapası: text_quote + range + CFI; yetim işaretleme | Kabul |
 | ADR-010 | FieldOverride MVP'de değil, V1b'de DSpace/OAI ile | Kabul |
 | ADR-011 | Atıf: ara model **CSL-JSON**, renderer manuel 4 stil (APA/MLA/Chicago/IEEE); BibTeX `[M]`, RIS `[V1]`; CSL motoruna geçiş yalnızca renderer değişimi | Kabul |
+| ADR-012 | EPUB: MVP/V1a için **epub.js**, `EpubEngine` adapter arkasında ve pinli; Readium/R2D2BC geçiş eşikleri ölçülebilir | Kabul (MVP/V1a) |
 
 Her ADR: bağlam, karar, alternatifler, sonuç ve tarih içerir; `docs/adr/` altında saklanır.
 

@@ -38,3 +38,4 @@ What becomes easier, what becomes harder, what we must revisit.
 | 0004 | AI as an optional layer, not in MVP | accepted |
 | 0005 | DSpace as a source, platform as reading layer | accepted |
 | 0006 | V1 split into V1a (infrastructure) and V1b (discovery/AI) | accepted |
+| 0012 | EPUB engine: epub.js for MVP/V1a behind an adapter; Readium/R2D2BC fallback thresholds | accepted (MVP/V1a) |
