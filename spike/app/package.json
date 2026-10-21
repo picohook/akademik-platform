@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "busboy": "^1.6.0",
+    "epubjs": "^0.3.93",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^5.4.296",
     "pg": "^8.13.1"

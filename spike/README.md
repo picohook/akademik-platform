@@ -87,6 +87,17 @@ npm run test:citations
 
 Covers six records × APA/MLA/Chicago/IEEE/BibTeX, including Turkish characters, editors, editions, DOI, and missing metadata.
 
+### EPUB spike
+
+`public/epub-spike.html` loads the vendored epub.js build, opens `public/seed/sample.epub`, and exercises TOC, CFI/progress, themes, font size, and section search through the `EpubEngine` adapter (ADR-012).
+
+```bash
+python spike/tools/make_epub.py   # regenerate the fixture
+# open http://localhost:8080/epub-spike.html
+```
+
+This page is a spike, not the catalog reader; it is public and uses the sample fixture only.
+
 ### Reader performance
 
 Open the reader with `?perf=1` to show the small perf panel (`PDF yükleme`, first page, average/max render, JS heap). From the console:

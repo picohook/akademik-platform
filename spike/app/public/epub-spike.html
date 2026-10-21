@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EPUB spike — ADR-012</title>
+  <style>
+    :root { --ink:#241f18; --muted:#7b7060; --line:#d9cfbd; --paper:#fffdf8; --bg:#f3eee3; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 system-ui, sans-serif; }
+    header { padding:14px 22px; border-bottom:1px solid var(--line); background:var(--paper); }
+    header strong { font-size:17px; }
+    header span { color:var(--muted); font-size:12px; margin-left:10px; }
+    .layout { display:flex; height:calc(100vh - 58px); }
+    aside { width:300px; flex:0 0 300px; border-right:1px solid var(--line); background:var(--paper); overflow:auto; padding:14px; }
+    aside h2 { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:14px 0 8px; }
+    .toc-item, .result { display:block; width:100%; text-align:left; border:0; background:transparent; padding:6px 8px; border-radius:6px; cursor:pointer; font:inherit; font-size:12.5px; }
+    .toc-item:hover, .result:hover { background:#f1ebdd; }
+    .result small { display:block; color:var(--muted); font-size:10.5px; }
+    input { width:100%; padding:8px 9px; border:1px solid var(--line); border-radius:7px; font:inherit; font-size:12px; background:#fff; }
+    main { flex:1; min-width:0; display:flex; flex-direction:column; }
+    .toolbar { display:flex; align-items:center; gap:6px; padding:10px 16px; border-bottom:1px solid var(--line); background:var(--paper); flex-wrap:wrap; }
+    .toolbar button { padding:6px 10px; border:1px solid var(--line); border-radius:7px; background:#fff; cursor:pointer; font:inherit; font-size:12px; }
+    .toolbar button.active { background:#1f5c4a; color:#fff; border-color:#1f5c4a; }
+    #status { margin-left:auto; color:var(--muted); font-size:11.5px; }
+    #viewer { flex:1; min-height:0; background:#e9e2d5; }
+    #viewer iframe { border:0; }
+    .note { padding:12px 22px; color:var(--muted); font-size:12px; }
+  </style>
+</head>
+<body>
+  <header><strong>EPUB spike</strong><span>ADR-012 · epub.js adapter · sample.epub</span></header>
+  <div class="layout">
+    <aside>
+      <h2>İçindekiler</h2>
+      <div id="toc"></div>
+      <h2>Bölümde ara</h2>
+      <input id="search" type="search" placeholder="Ara ve Enter…" />
+      <div id="results"></div>
+      <p class="note">Bu sayfa yalnızca motor/CFI/TOC/vurgu denemesi içindir; ana okuyucudan ayrıdır.</p>
+    </aside>
+    <main>
+      <div class="toolbar">
+        <button id="prev" type="button">‹</button>
+        <button id="next" type="button">›</button>
+        <button data-theme="light" class="active" type="button">Açık</button>
+        <button data-theme="sepia" type="button">Sepia</button>
+        <button data-theme="dark" type="button">Koyu</button>
+        <button id="fontSmall" type="button">A−</button>
+        <button id="fontBig" type="button">A+</button>
+        <span id="status">yükleniyor…</span>
+      </div>
+      <div id="viewer"></div>
+    </main>
+  </div>
+  <script src="/vendor/epubjs/jszip.min.js"></script>
+  <script src="/vendor/epubjs/epub.min.js"></script>
+  <script type="module" src="/epub-spike.mjs"></script>
+</body>
+</html>

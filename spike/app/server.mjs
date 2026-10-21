@@ -42,6 +42,7 @@ const MIME = {
   '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.pdf': 'application/pdf',
+  '.epub': 'application/epub+zip',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.woff2': 'font/woff2',
@@ -1146,7 +1147,7 @@ const server = http.createServer(async (req, res) => {
     'content-security-policy',
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
     + "img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; "
-    + "worker-src 'self' blob:; object-src 'none'; base-uri 'self'; "
+    + "frame-src 'self' blob: data:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; "
     + "form-action 'self'; frame-ancestors 'none'",
   );
 
