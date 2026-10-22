@@ -2050,9 +2050,9 @@ function renderNotes() {
     ? String(state.annotations.length)
     : `${visible.length}/${state.annotations.length}`;
   notesEmpty.hidden = visible.length !== 0;
-  notesEmpty.textContent = state.annotations.length
+  notesEmpty.textContent = t(state.annotations.length
     ? 'Filtreye uygun not yok.'
-    : 'Metin seçip Vurgula ile başlayın.';
+    : 'Metin seçip Vurgula ile başlayın.');
   visible.forEach((annotation) => {
     const isBookmark = annotation.color === 'bookmark';
     const item = document.createElement('div');
@@ -2272,7 +2272,8 @@ async function openEpubBook(book) {
     }
     state.epubProgress = engine.getProgress();
     pageLabel.textContent = `${state.epubProgress.percent}%`;
-    readerMeta.textContent = t(`${book.publisher || ''}${book.publication_year ? ` · ${book.publication_year}` : ''} · EPUB · ${engine.getSpineCount()} bölüm`);
+    const metaPrefix = [book.publisher, book.publication_year].filter(Boolean).join(' · ');
+    readerMeta.textContent = t(`${metaPrefix ? `${metaPrefix} · ` : ''}EPUB · ${engine.getSpineCount()} bölüm`);
     const savedTheme = (() => {
       try { return localStorage.getItem('readerTheme') || 'light'; } catch { return 'light'; }
     })();
