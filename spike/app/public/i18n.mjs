@@ -121,6 +121,13 @@ const DICT = {
   'Grantlar yüklenemedi.': 'Could not load grants.',
   'Eşleşme': 'Matches',
   'Kurum': 'Institution',
+  'Oku': 'Read',
+  'Not rengi': 'Note color',
+  'Sayfa alanı': 'Page area',
+  'Bölüm listesi': 'Chapter list',
+  'Arama sonuçları': 'Search results',
+  'Not listesi': 'Note list',
+  'Grant listesi': 'Grant list',
   'Yazar yok; editörle biçimlendirildi.': 'No author; formatted with editor.',
   'Yazar bilgisi yok; başlıkla biçimlendirildi.': 'No author; formatted by title.',
   'Yayın yılı yok.': 'No publication year.',
@@ -228,6 +235,7 @@ const PATTERNS = [
   [/^Dışa aktarma: (.+)$/, 'Export: $1'],
   [/^Oluşturuldu: (.+) · Düzenlendi: (.+)$/, 'Created: $1 · Edited: $2'],
   [/^Oluşturuldu: (.+)$/, 'Created: $1'],
+  [/^(.+) kitabını oku$/, 'Read $1'],
   [/^“(.+)” kalıcı olarak silinsin mi\? Notlar ve ilerleme de silinir\.$/, 'Delete “$1” permanently? Notes and progress will also be deleted.'],
 ];
 

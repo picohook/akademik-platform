@@ -80,6 +80,7 @@ const state = {
   epubProgress: null,
   epubFontSize: 100,
   epubSelection: null,
+  epubFrameObserver: null,
   viewport: null,
   annotations: [],
   noteQuery: '',
@@ -240,15 +241,7 @@ function hue(text) {
 function makeCard(book) {
   const card = document.createElement('div');
   card.className = 'card';
-  card.tabIndex = 0;
-  card.setAttribute('role', 'button');
   card.addEventListener('click', () => openBook(book));
-  card.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      openBook(book);
-    }
-  });
 
   const cover = document.createElement('div');
   cover.className = 'cover';
@@ -303,6 +296,17 @@ function makeCard(book) {
     badges.appendChild(badge);
   });
   meta.appendChild(badges);
+
+  const open = document.createElement('button');
+  open.type = 'button';
+  open.className = 'open-btn';
+  open.textContent = t('Oku');
+  open.setAttribute('aria-label', t(`${book.title} kitabını oku`));
+  open.addEventListener('click', (event) => {
+    event.stopPropagation();
+    openBook(book);
+  });
+  meta.appendChild(open);
 
   if (canManage()) {
     const edit = document.createElement('button');
@@ -2340,6 +2344,16 @@ async function saveProgress() {
   }
 }
 
+function labelEpubFrames() {
+  for (const frame of epubView.querySelectorAll('iframe')) {
+    frame.setAttribute('title', t('EPUB içeriği'));
+    frame.setAttribute('aria-label', t('EPUB içeriği'));
+    try {
+      frame.contentDocument.documentElement.lang = state.book?.language === 'en' ? 'en' : 'tr';
+    } catch { /* sandboxed frame */ }
+  }
+}
+
 async function openEpubBook(book) {
   if (state.epubEngine) {
     state.epubEngine.destroy();
@@ -2413,9 +2427,10 @@ async function openEpubBook(book) {
     }
     frame.setAttribute('title', t('EPUB içeriği'));
     frame.setAttribute('aria-label', t('EPUB içeriği'));
-    try {
-      frame.contentDocument.documentElement.lang = book.language || 'tr';
-    } catch { /* sandboxed frame */ }
+    labelEpubFrames();
+    state.epubFrameObserver?.disconnect();
+    state.epubFrameObserver = new MutationObserver(labelEpubFrames);
+    state.epubFrameObserver.observe(epubView, { childList: true, subtree: true });
     let frameBody = null;
     try { frameBody = frame.contentDocument?.body || null; } catch { /* cross-origin */ }
     if (frameBody && !frameBody.textContent.trim() && !frameBody.querySelector('img, svg, canvas')) {
@@ -2579,6 +2594,10 @@ async function openBook(book) {
 }
 
 async function closeReader() {
+  if (state.epubFrameObserver) {
+    state.epubFrameObserver.disconnect();
+    state.epubFrameObserver = null;
+  }
   if (state.epubEngine) {
     state.epubEngine.destroy();
     state.epubEngine = null;
