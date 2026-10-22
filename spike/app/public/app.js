@@ -604,7 +604,8 @@ function grantScopeTypeChanged() {
   key.placeholder = scope === 'publisher' ? 'Yayıncı adı' : scope === 'subject' ? 'Konu adı' : '';
 }
 
-async function loadGrantOptions() {
+async function loadGrantOptions(selectedGroupId = '') {
+  const previousGroup = selectedGroupId || grantSubjectGroup.value;
   const [groups, collections] = await Promise.all([
     fetch('/api/groups').then((response) => response.ok ? response.json() : []).catch(() => []),
     fetch('/api/collections').then((response) => response.ok ? response.json() : []).catch(() => []),
@@ -616,6 +617,9 @@ async function loadGrantOptions() {
     option.textContent = `${group.name} (${group.member_count || 0})`;
     grantSubjectGroup.appendChild(option);
   });
+  if (previousGroup && [...grantSubjectGroup.options].some((option) => option.value === previousGroup)) {
+    grantSubjectGroup.value = previousGroup;
+  }
   grantCollection.replaceChildren();
   (collections || []).forEach((collection) => {
     const option = document.createElement('option');
@@ -709,9 +713,10 @@ async function createGrantGroup() {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ name }),
     });
-    if (!response.ok) throw new Error('group failed');
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || 'group failed');
     $('grantGroupName').value = '';
-    await loadGrantOptions();
+    await loadGrantOptions(payload.id);
     toast(t('Grup oluşturuldu'));
   } catch (error) {
     console.error(error);
@@ -722,20 +727,30 @@ async function createGrantGroup() {
 async function addGrantGroupMember() {
   const groupId = grantSubjectGroup.value;
   const email = $('grantGroupEmail').value.trim();
-  if (!groupId || !email) return;
+  if (!groupId) {
+    toast(t('Önce bir grup oluşturun/seçin'));
+    return;
+  }
+  if (!email) {
+    toast(t('Kullanıcı e-postası gerekli'));
+    return;
+  }
   try {
     const response = await fetch(`/api/groups/${encodeURIComponent(groupId)}/members`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email }),
     });
-    if (!response.ok) throw new Error('member failed');
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || 'member failed');
     $('grantGroupEmail').value = '';
-    await loadGrantOptions();
+    await loadGrantOptions(groupId);
     toast(t('Üye eklendi'));
   } catch (error) {
     console.error(error);
-    toast(t('Üye eklenemedi'));
+    toast(error.message === 'user not found'
+      ? t('Kullanıcı bulunamadı')
+      : `${t('Üye eklenemedi')}: ${error.message}`);
   }
 }
 
