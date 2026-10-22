@@ -1388,7 +1388,7 @@ const server = http.createServer(async (req, res) => {
           // Typo tolerance is a fallback tier: only run it when the indexed
           // tiers are thin, since word similarity over every page is costly.
           let fuzzyRows = [];
-          if (fuzzy && rows.length < 20) {
+          if (fuzzy && !whole && rows.length < 20) {
             ({ rows: fuzzyRows } = await client.query(
               `select page_no, text_content, source, locator,
                       word_similarity($2, text_fold) as score

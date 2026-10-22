@@ -2903,6 +2903,14 @@ bookSearch.addEventListener('input', () => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => runSearch(bookSearch.value), 300);
 });
+searchWhole.addEventListener('change', () => {
+  if (searchWhole.checked) {
+    searchFuzzy.checked = false;
+    searchFuzzy.disabled = true;
+  } else {
+    searchFuzzy.disabled = false;
+  }
+});
 for (const toggle of [searchWhole, searchFuzzy]) {
   toggle.addEventListener('change', () => {
     if (bookSearch.value.trim()) runSearch(bookSearch.value);
