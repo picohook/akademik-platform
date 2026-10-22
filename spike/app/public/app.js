@@ -435,7 +435,7 @@ function renderCitation() {
   const { text, warnings } = formatCitation(state.book, citeStyle.value, citePage.value);
   citeOutput.textContent = text;
   citeWarning.hidden = warnings.length === 0;
-  citeWarning.textContent = warnings.join(' ');
+  citeWarning.textContent = warnings.map((warning) => t(warning)).join(' ');
 }
 
 async function copyCitation() {
@@ -1163,6 +1163,7 @@ async function focusSearchResult(index) {
     state.epubEngine?.highlightSearch(hit.query || state.searchQuery);
   } else {
     await goToPage(hit.page);
+    refreshSearchHighlights();
   }
   searchResults.querySelectorAll('.search-item').forEach((item) => {
     item.classList.toggle('active', Number(item.dataset.index) === normalized);
@@ -1188,11 +1189,11 @@ function addSearchResultSnippet(pageNumber, snippetText, query, matches = 0, mat
   button.className = 'toc-item search-item';
   button.dataset.index = String(hitIndex);
   const label = document.createElement('span');
-  const note = matchType === 'stem' ? ' · kök'
-    : matchType === 'fuzzy' ? ' · yakın'
-      : matchType === 'word' ? ' · tam kelime'
+  const note = matchType === 'stem' ? t(' · kök')
+    : matchType === 'fuzzy' ? t(' · yakın')
+      : matchType === 'word' ? t(' · tam kelime')
         : '';
-  label.textContent = `Sayfa ${pageNumber}${matches > 1 ? ` · ${matches} eşleşme` : ''}${note}`;
+  label.textContent = t(`Sayfa ${pageNumber}${matches > 1 ? ` · ${matches} eşleşme` : ''}`) + note;
   const snippet = document.createElement('span');
   snippet.className = 'search-snippet';
   snippet.textContent = snippetText;
@@ -1306,8 +1307,9 @@ async function runSearch(rawQuery) {
         searchStatus.textContent = t(results.length ? `${results.length}${results.length >= 100 ? '+' : ''} sonuç` : '0 sonuç');
         if (!results.length) {
           searchEmpty.hidden = false;
-          searchEmpty.textContent = 'Sonuç bulunamadı.';
+          searchEmpty.textContent = t('Sonuç bulunamadı.');
         }
+        refreshSearchHighlights();
         return;
       }
     }
@@ -1315,7 +1317,7 @@ async function runSearch(rawQuery) {
     // Fall back to the browser-side cache when the server index is unavailable.
   }
 
-  searchStatus.textContent = `Aranıyor… 0 / ${state.numPages}`;
+  searchStatus.textContent = t(`Aranıyor… 0 / ${state.numPages}`);
   let count = 0;
 
   // Start from the current page, then scan forward and wrap around. Academic
@@ -1344,7 +1346,7 @@ async function runSearch(rawQuery) {
       from = found + normalized.length;
     }
     if (index % 10 === 0 || index === order.length - 1) {
-      searchStatus.textContent = `Aranıyor… ${index + 1} / ${order.length}`;
+      searchStatus.textContent = t(`Aranıyor… ${index + 1} / ${order.length}`);
     }
     if (index % 3 === 0) await nextFrame();
     if (count >= 200) break;
@@ -1354,8 +1356,9 @@ async function runSearch(rawQuery) {
   searchStatus.textContent = t(count ? `${count}${count >= 200 ? '+' : ''} sonuç` : '0 sonuç');
   if (!count) {
     searchEmpty.hidden = false;
-    searchEmpty.textContent = 'Sonuç bulunamadı.';
+    searchEmpty.textContent = t('Sonuç bulunamadı.');
   }
+  refreshSearchHighlights();
 }
 
 function refreshSearchHighlights() {
@@ -1794,6 +1797,8 @@ async function renderPage() {
   if (secondary) {
     try { secondary.page.cleanup(); } catch { /* noop */ }
   }
+  applySearchHighlight(textLayerEl);
+  applySearchHighlight(textLayer2);
   reader.setAttribute('aria-busy', 'false');
 }
 
