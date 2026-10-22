@@ -70,6 +70,14 @@ Run in Chrome and Edge; repeat mobile width once.
 - [ ] Reader controls, tabs, modals and search labels are English; book metadata stays as catalogued.
 - [ ] **TR** switches back and persists.
 
+### Entitlements
+
+- [ ] With no active grants, the catalog is unchanged (backward compatible).
+- [ ] Insert a `publisher` grant for a tenant (`docs/ENTITLEMENTS.md`); reload: only that publisher’s titles remain.
+- [ ] Direct `/api/books/<id>/file` for a hidden title returns 403.
+- [ ] With `seat_limit = 1`, a second profile login is rejected with the institution seat message.
+- [ ] Revoke the grant; the catalog returns to unrestricted.
+
 ### Accessibility
 
 - [ ] Login: Tab reaches email/password/submit; focus ring visible; app behind is inert.

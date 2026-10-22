@@ -247,13 +247,13 @@
         <div class="scroll-pages" id="scrollPages" hidden></div>
         <div class="epub-view" id="epubView" aria-label="EPUB içeriği" hidden></div>
         <button class="nav-btn" id="prevPage" aria-label="Önceki sayfa">‹</button>
-        <div class="page-wrap" id="pageWrap">
-          <canvas id="canvas"></canvas>
+        <div class="page-wrap" id="pageWrap" role="document" aria-label="Sayfa 1">
+          <canvas id="canvas" aria-hidden="true"></canvas>
           <div class="textLayer" id="textLayer"></div>
           <div class="highlights" id="highlights"></div>
         </div>
-        <div class="page-wrap" id="pageWrap2" hidden>
-          <canvas id="canvas2"></canvas>
+        <div class="page-wrap" id="pageWrap2" role="document" aria-label="Sayfa 2" hidden>
+          <canvas id="canvas2" aria-hidden="true"></canvas>
           <div class="textLayer" id="textLayer2"></div>
           <div class="highlights" id="highlights2"></div>
         </div>
@@ -291,7 +291,7 @@
     </div>
   </div>
 
-  <div class="hl-bar" id="hlBar" hidden>
+  <div class="hl-bar" id="hlBar" role="toolbar" aria-label="Vurgu araçları" hidden>
     <div class="hl-colors" id="hlColors" role="group" aria-label="Vurgu rengi">
       <button class="hl-color yellow active" data-color="yellow" type="button" aria-label="Sarı"></button>
       <button class="hl-color green" data-color="green" type="button" aria-label="Yeşil"></button>
@@ -314,6 +314,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=78"></script>
+  <script type="module" src="/app.js?v=79"></script>
 </body>
 </html>

@@ -143,6 +143,7 @@ create table if not exists grants (
   subject_id uuid not null,
   scope_type text not null check (scope_type in ('all','publisher','subject','collection','title')),
   scope_id uuid,
+  scope_key text,
   valid_from timestamptz not null default now(),
   valid_to timestamptz,
   seat_limit int,

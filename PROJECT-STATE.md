@@ -4,8 +4,8 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web: **v78** (`spike/app/public/index.html`), stiller **v37**
-- DB migration: **001–009** (`db/migrations/`)
+- Web: **v79** (`spike/app/public/index.html`), stiller **v37**
+- DB migration: **001–010** (`db/migrations/`)
 - Prod: **v52 + 008** deploy edildi (2026-10-21) — Caddy HTTPS, smoke **16/16**; kök/tam kelime/bulanık prod'da doğrulandı.
 - Son commit: dil düzeltmesi (bu commit)
 - EPUB kararı: **ADR-012** — MVP/V1a için epub.js, `EpubEngine` adapter arkasında, pinli; Readium/R2D2BC geçiş eşikleri yazılı.
@@ -16,6 +16,8 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - Yükleme/silme: PDF + EPUB upload; yalnızca `source_system='upload'` kitaplar librarian/admin/publisher tarafından silinebilir; DB cascade + dosya silme.
 - EPUB: `.epub` upload/format; ana okuyucuda `EpubEngine` (TOC, tema, ± font/zoom, ‹ ›, CFI/ilerleme, seçimden CFI vurgu/not, bölüm arama). EPUB bölüm metni `asset_pages` (`source='epub'`, `locator=href`) olarak indeksleniyor; v72 sonrası XHTML `<body>` dışındaki `<title>` metni indekse girmiyor. Arama DB indeksinden; sonuçta geçerli bölümde eşleşmeler işaretleniyor. EPUB indirme 501.
 - Auth: login, scrypt, CSRF, rate limit, session_version, user_sessions + seat limit (varsayılan 3).
+- Entitlement: `grants` tablosu (all/publisher/subject/title); katalog + dosya/arama/indirme filtreli; `seat_limit` kurum oturum sayısını sınırlar. Yönetim UI’si yok, SQL ile (`docs/ENTITLEMENTS.md`); collection grant henüz uygulanmıyor.
+- Erişilebilirlik: WCAG temel denetimi `docs/ACCESSIBILITY.md`; reader modal/inert/trap, tab/aria, canvas/page etiketleri.
 - Arayüz **TR/EN**: `i18n.mjs`; header/login `data-lang-toggle`, `localStorage.uiLang`, sayfa yenilenerek uygulanır. Statik metinler + yaygın dinamik etiketler çevrildi; bazı toast/yardım metinleri hâlâ Türkçe.
 - Erişim: kopyalama/indirme/yazdırma/filigran; `/api/books/:id/download`.
 - Arama: sunucu sayfa indeksi (`asset_pages`); diakritik katlama, **tam kelime**, **bulanık** (pg_trgm), **kök** eşleşmesi (tr/en FTS, `text_tsv`/`text_tsv_en`); dil-duyarlı katalog araması (`works.language`), eşleşme sayısı + tür etiketi (`exact`/`folded`/`word`/`stem`/`fuzzy`).
@@ -23,8 +25,8 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Açık işler (sırayla)
 
-1. **WCAG 2.2 AA denetimi:** odak tuzağı/klavye/aria temel olarak eklendi; ekran okuyucu ve kontrast denetimi kaldı.
-2. **Grant/entitlement:** koleksiyon/yayıncı görünürlüğü + seat limit entegrasyonu.
+1. **Grant yönetim UI + collection scope:** yönetim ekranı, collection_items ile görünürlük, group subject.
+2. **WCAG 2.2 AA manuel denetimi:** ekran okuyucu, axe, %200 zoom, EPUB iframe.
 3. **500 MB / 2.000 sayfa:** fixture gelince performans; sürekli kaydırma belleği.
 4. **EPUB indirme/filigran:** PDF dışı indirme 501; lisans/watermark kararı.
 5. **Interop:** MARC21/OPDS/OAI-PMH/COUNTER.
@@ -43,6 +45,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - Prod'daki mayenit kitabı 2026-10-21'de `language='en'` yapıldı (İngilizce sözlükle kök arama çalışıyor). Ingest `--language` verilmezse sessizce `tr` yazar; İngilizce kitaplar için `--language en` şart.
 - İçerik hakları ve gerçek yayıncı kitapları hâlâ yok.
 - i18n kısmi: statik UI ve yaygın dinamik etiketler EN; bazı toast/doğrulama/yardım metinleri ve kitap metadata’sı çevrilmiyor.
+- Grants: yönetim UI’si yok; `010-grant-scope-key.sql` uygulanmalı. Grant yoksa katalog eskisi gibi açık. Seat limit `users.max_sessions` ile birlikte çalışır (küçük olan geçerli).
 
 ## Komutlar
 
@@ -50,6 +53,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 docker compose up -d --build
 docker compose exec db psql -U akademik -d akademik -f /migrations/008-page-search.sql
 docker compose exec db psql -U akademik -d akademik -f /migrations/009-epub-pages.sql
+docker compose exec db psql -U akademik -d akademik -f /migrations/010-grant-scope-key.sql
 docker compose exec web node index-text.mjs --all --force
 node scripts/smoke.mjs http://localhost:8080
 ```

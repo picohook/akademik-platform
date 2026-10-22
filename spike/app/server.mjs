@@ -272,9 +272,9 @@ function verifyPassword(password, stored) {
   return candidate.length === expected.length && timingSafeEqual(candidate, expected);
 }
 
-function sessionLimitError(max) {
-  const error = new Error('session limit reached');
-  error.code = 'SESSION_LIMIT';
+function sessionLimitError(max, code = 'SESSION_LIMIT') {
+  const error = new Error(code === 'TENANT_SEAT_LIMIT' ? 'tenant seat limit reached' : 'session limit reached');
+  error.code = code;
   error.limit = max;
   return error;
 }
@@ -304,6 +304,28 @@ async function createSession(user, req) {
         [user.id],
       );
       if (rows[0].count >= max) throw sessionLimitError(max);
+      const { rows: grantRows } = await client.query(
+        `select seat_limit
+           from grants
+          where tenant_id = $1
+            and status = 'active'
+            and valid_from <= now()
+            and (valid_to is null or valid_to > now())
+            and ((subject_type = 'tenant' and subject_id = $1)
+              or (subject_type = 'user' and subject_id = $2))`,
+        [user.tenant_id || TENANT_ID, user.id],
+      );
+      const seatLimit = tenantSeatLimit(grantRows);
+      if (seatLimit) {
+        const { rows: tenantRows } = await client.query(
+          `select count(*)::int as count
+             from user_sessions
+            where tenant_id = $1
+              and last_seen_at >= now() - interval '7 days'`,
+          [user.tenant_id || TENANT_ID],
+        );
+        if (tenantRows[0].count >= seatLimit) throw sessionLimitError(seatLimit, 'TENANT_SEAT_LIMIT');
+      }
       await client.query(
         `insert into user_sessions (id, user_id, tenant_id, ip, user_agent)
          values ($1, $2, $3, $4, $5)`,
@@ -505,9 +527,56 @@ async function deleteUploadedBook(id) {
   });
 }
 
-async function listBooks() {
+function grantAllows(book, grants) {
+  if (!grants.length) return true;
+  const publisher = String(book.publisher || '').toLocaleLowerCase('tr');
+  const subjects = (book.subjects || []).map((value) => String(value).toLocaleLowerCase('tr'));
+  return grants.some((grant) => {
+    if (grant.scope_type === 'all') return true;
+    if (grant.scope_type === 'title') return String(grant.scope_id || '') === String(book.id);
+    if (grant.scope_type === 'publisher') return String(grant.scope_key || '').toLocaleLowerCase('tr') === publisher;
+    if (grant.scope_type === 'subject') return subjects.includes(String(grant.scope_key || '').toLocaleLowerCase('tr'));
+    return false;
+  });
+}
+
+async function activeGrants(auth) {
+  if (!pool || !auth) return [];
+  try {
+    const tenantId = auth.tenantId || TENANT_ID;
+    return await withTenant(async (client) => {
+      const { rows } = await client.query(
+        `select id, subject_type, subject_id, scope_type, scope_id, scope_key, seat_limit
+           from grants
+          where tenant_id = $1
+            and status = 'active'
+            and valid_from <= now()
+            and (valid_to is null or valid_to > now())
+            and ((subject_type = 'tenant' and subject_id = $1)
+              or (subject_type = 'user' and subject_id = $2))`,
+        [tenantId, auth.userId || null],
+      );
+      return rows;
+    });
+  } catch (error) {
+    console.warn('[grants] lookup failed:', error.message);
+    return [];
+  }
+}
+
+function tenantSeatLimit(grants) {
+  const limits = grants.map((grant) => Number(grant.seat_limit)).filter((value) => Number.isFinite(value) && value > 0);
+  return limits.length ? Math.min(...limits) : null;
+}
+
+async function canAccessBook(book, auth) {
+  if (!book) return false;
+  return grantAllows(book, await activeGrants(auth));
+}
+
+async function listBooks(auth) {
   if (!pool) return demoBooks;
-  return withTenant(async (client) => {
+  const books = await withTenant(async (client) => {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
@@ -522,6 +591,8 @@ async function listBooks() {
     );
     return rows;
   });
+  const grants = await activeGrants(auth);
+  return books.filter((book) => grantAllows(book, grants));
 }
 
 async function getBook(id) {
@@ -678,15 +749,15 @@ async function deleteAnnotation(id, userId) {
   });
 }
 
-async function searchBooks(query) {
+async function searchBooks(query, auth) {
   const q = String(query || '').trim();
-  if (!q) return listBooks();
+  if (!q) return listBooks(auth);
   if (!pool) {
     return demoBooks.filter((book) =>
       catalogMatches([book.title, book.subtitle, book.abstract, ...(book.subjects || [])], q),
     );
   }
-  return withTenant(async (client) => {
+  const books = await withTenant(async (client) => {
     // Language-aware: use the work's own FTS dictionary, fold Turkish
     // diacritics for substring and trigram matching, and rank stem hits first.
     const { rows } = await client.query(
@@ -734,6 +805,8 @@ async function searchBooks(query) {
     );
     return rows;
   });
+  const grants = await activeGrants(auth);
+  return books.filter((book) => grantAllows(book, grants));
 }
 
 async function listAnnotations(assetId, userId) {
@@ -1248,8 +1321,11 @@ const server = http.createServer(async (req, res) => {
       try {
         sessionId = await createSession(user, req);
       } catch (error) {
-        if (error.code === 'SESSION_LIMIT') {
-          json(res, 429, { error: 'session limit reached', limit: error.limit });
+        if (error.code === 'SESSION_LIMIT' || error.code === 'TENANT_SEAT_LIMIT') {
+          json(res, 429, {
+            error: error.code === 'TENANT_SEAT_LIMIT' ? 'tenant seat limit reached' : 'session limit reached',
+            limit: error.limit,
+          });
           return;
         }
         throw error;
@@ -1319,6 +1395,10 @@ const server = http.createServer(async (req, res) => {
       const book = await getBook(bookId);
       if (!book) {
         json(res, 404, { error: 'book not found' });
+        return;
+      }
+      if (!await canAccessBook(book, auth)) {
+        json(res, 403, { error: 'yetkiniz yok' });
         return;
       }
       const query = normalizeSearch(url.searchParams.get('q') || '');
@@ -1502,7 +1582,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname === '/api/books' && req.method === 'GET') {
-      json(res, 200, await listBooks());
+      json(res, 200, await listBooks(auth));
       return;
     }
     if (pathname.startsWith('/api/books/') && req.method === 'PATCH') {
@@ -1542,7 +1622,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname === '/api/search' && req.method === 'GET') {
-      json(res, 200, await searchBooks(url.searchParams.get('q')));
+      json(res, 200, await searchBooks(url.searchParams.get('q'), auth));
       return;
     }
     const downloadMatch = pathname.match(/^\/api\/books\/([^/]+)\/download$/);
@@ -1555,6 +1635,10 @@ const server = http.createServer(async (req, res) => {
       const book = await getBook(bookId);
       if (!book) {
         json(res, 404, { error: 'book not found' });
+        return;
+      }
+      if (!await canAccessBook(book, auth)) {
+        json(res, 403, { error: 'yetkiniz yok' });
         return;
       }
       if (book.allow_download === false) {
@@ -1615,7 +1699,12 @@ const server = http.createServer(async (req, res) => {
       const epubFile = pathname.endsWith('/book.epub');
       const suffix = epubFile ? '/book.epub' : '/file';
       const id = pathname.slice('/api/books/'.length, -suffix.length);
-      const storageKey = await resolveStorageKey(id);
+      const book = await getBook(id);
+      if (!book || !await canAccessBook(book, auth)) {
+        json(res, 404, { error: 'book not found' });
+        return;
+      }
+      const storageKey = book.storage_key;
       if (!storageKey || (epubFile && !storageKey.toLowerCase().endsWith('.epub'))) {
         json(res, 404, { error: 'book not found' });
         return;

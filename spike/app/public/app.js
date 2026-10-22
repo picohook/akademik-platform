@@ -637,7 +637,9 @@ async function handleLogin(event) {
     if (!response.ok) {
       showLogin(payload.error === 'session limit reached'
         ? `Aynı anda en fazla ${payload.limit || 3} oturum açılabilir. Önce bir cihazdan çıkış yapın.`
-        : 'E-posta veya parola hatalı.');
+        : payload.error === 'tenant seat limit reached'
+          ? `Kurumun eşzamanlı oturum limiti (${payload.limit || 3}) dolu. Önce bir cihazdan çıkış yapın.`
+          : 'E-posta veya parola hatalı.');
       return;
     }
     loginScreen.hidden = true;
@@ -927,10 +929,12 @@ function renderThumbs() {
     button.type = 'button';
     button.className = `thumb-item${pageNumber === state.page ? ' active' : ''}`;
     if (pageNumber === state.page) button.setAttribute('aria-current', 'page');
+    button.setAttribute('aria-label', t(`Sayfa ${pageNumber}`));
     button.dataset.page = String(pageNumber);
     const canvas = document.createElement('canvas');
     canvas.width = 1;
     canvas.height = 1;
+    canvas.setAttribute('aria-hidden', 'true');
     const label = document.createElement('span');
     label.textContent = `Sayfa ${pageNumber}`;
     button.append(canvas, label);
@@ -970,6 +974,8 @@ function updatePageUi() {
   pageInput.max = String(state.numPages || 1);
   pageInput.value = String(state.page || 1);
   pageTotal.textContent = `/ ${state.numPages || 1}`;
+  pageWrap.setAttribute('aria-label', t(`Sayfa ${state.page}`));
+  pageWrap2.setAttribute('aria-label', t(`Sayfa ${state.secondPage || state.page + 1}`));
   pageLabel.textContent = t(state.twoPage && state.secondPage
     ? `${state.page}-${state.secondPage} / ${state.numPages}`
     : `${state.page} / ${state.numPages}`);

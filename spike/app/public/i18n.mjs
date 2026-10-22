@@ -197,6 +197,7 @@ const PATTERNS = [
   [/^(\d+) dk önce$/, '$1 min ago'],
   [/^Aranıyor… (\d+) \/ (\d+)$/, 'Searching… $1 / $2'],
   [/^Aynı anda en fazla (\d+) oturum açılabilir\. Önce bir cihazdan çıkış yapın\.$/, 'At most $1 sessions can be open. Sign out on one device first.'],
+  [/^Kurumun eşzamanlı oturum limiti \((\d+)\) dolu\. Önce bir cihazdan çıkış yapın\.$/, 'The institution seat limit ($1) is full. Sign out on one device first.'],
   [/^EPUB yüklenemedi: (.+)$/, 'Could not load EPUB: $1'],
   [/^Dışa aktarma: (.+)$/, 'Export: $1'],
   [/^Oluşturuldu: (.+) · Düzenlendi: (.+)$/, 'Created: $1 · Edited: $2'],
