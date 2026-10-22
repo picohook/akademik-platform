@@ -116,7 +116,19 @@ export class EpubEngine {
 
   async goToHref(href) {
     if (!this.rendition || !href) return;
-    await this.rendition.display(href);
+    const clean = (value) => {
+      try {
+        return decodeURIComponent(String(value || '').split('#')[0]).replace(/^\.?\//, '');
+      } catch {
+        return String(value || '').split('#')[0].replace(/^\.?\//, '');
+      }
+    };
+    const target = clean(href);
+    const section = (this.book?.spine?.spineItems || []).find((item) => {
+      const itemHref = clean(item.href);
+      return itemHref === target || itemHref.endsWith(`/${target}`) || target.endsWith(`/${itemHref}`);
+    });
+    await this.rendition.display(section ? section.href : href);
   }
 
   async goToSpineIndex(index) {
@@ -251,6 +263,17 @@ export class EpubEngine {
     const match = this.findMatchCfi(query, { fuzzy });
     if (!match) return false;
     await this.rendition.display(match.cfi);
+    // Some paginated layouts keep the chapter start even when the CFI target
+    // is inside it; nudge the actual text node into view as a fallback.
+    try {
+      const contents = this.rendition.getContents()?.[0];
+      const range = contents?.range?.(match.cfi);
+      const rect = range?.getBoundingClientRect?.();
+      const height = contents?.window?.innerHeight || 0;
+      if (rect && height && (rect.top < 0 || rect.bottom > height)) {
+        range.startContainer.parentElement?.scrollIntoView({ block: 'center', inline: 'center' });
+      }
+    } catch { /* layout fallback */ }
     return true;
   }
 

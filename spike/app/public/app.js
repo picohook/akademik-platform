@@ -1160,11 +1160,12 @@ async function focusSearchResult(index) {
     const query = hit.query || state.searchQuery;
     const fuzzy = ['fuzzy', 'stem'].includes(hit.matchType);
     try {
-      await state.epubEngine?.goToSearchHit(hit);
-      await state.epubEngine?.goToMatch(query, { fuzzy });
+      if (hit.href) await state.epubEngine?.goToHref(hit.href);
+      else await state.epubEngine?.goToSpineIndex(hit.page);
     } catch {
       await state.epubEngine?.goToSpineIndex(hit.page);
     }
+    await state.epubEngine?.goToMatch(query, { fuzzy });
     state.epubEngine?.highlightSearch(query, { fuzzy });
   } else {
     await goToPage(hit.page);
