@@ -61,7 +61,7 @@ Run in Chrome and Edge; repeat mobile width once.
 - [ ] Fuzzy/stem result: a close word is marked (e.g. `polluted` for `pollution`); clicking a chapter result lands on the indexed chapter number.
 - [ ] TOC entries jump; theme button changes the EPUB; next/prev works.
 - [ ] Reload the page: progress resumes at the saved CFI.
-- [ ] EPUB download is rejected with 501 for now (watermarking not implemented).
+- [ ] EPUB download returns the raw `.epub` (`application/epub+zip`) when `allow_download` is true; it is **not watermarked**.
 - [ ] Edit → **Sil**: confirmation, card disappears, file removed from `public/uploads`; seed books show no Sil button.
 
 ### Language

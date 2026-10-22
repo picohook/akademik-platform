@@ -2716,7 +2716,7 @@ async function openEpubBook(book, options = {}) {
   document.body.style.overflow = 'hidden';
   readerTitle.textContent = book.title;
   readerMeta.textContent = `${book.publisher || ''}${book.publication_year ? ` · ${book.publication_year}` : ''}`;
-  downloadBtn.hidden = true;
+  downloadBtn.hidden = book.allow_download === false;
   document.body.classList.toggle('print-blocked', book.allow_print === false);
   reader.classList.add('epub-mode');
   reader.classList.remove('scroll-mode');

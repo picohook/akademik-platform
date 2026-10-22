@@ -2386,7 +2386,20 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       if (book.format === 'epub') {
-        json(res, 501, { error: 'EPUB download is not supported yet' });
+        const epubPath = path.resolve(PUBLIC_DIR, book.storage_key || '');
+        if (!book.storage_key || !epubPath.startsWith(PUBLIC_DIR + path.sep)) {
+          json(res, 400, { error: 'invalid storage key' });
+          return;
+        }
+        await logUsage('book.download', book, auth);
+        const buffer = await readFile(epubPath);
+        res.writeHead(200, {
+          'content-type': 'application/epub+zip',
+          'content-disposition': `attachment; filename="book-${book.id}.epub"`,
+          'content-length': buffer.length,
+          'cache-control': 'private, max-age=0',
+        });
+        res.end(buffer);
         return;
       }
       await logUsage('book.download', book, auth);
