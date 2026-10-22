@@ -23,6 +23,30 @@ GET /api/books/:id/marc
 - Minimal MARC fields: `001`, `040`, `100`, `245`, `260`, `650`, `856`.
 - It is not a full MARC21 validation; map to the library’s ILS profile before production import.
 
+## OAI-PMH
+
+```text
+GET /oai?verb=Identify
+GET /oai?verb=ListMetadataFormats
+GET /oai?verb=ListRecords&metadataPrefix=oai_dc
+GET /oai?verb=GetRecord&metadataPrefix=oai_dc&identifier=oai:akademik:<work-uuid>
+```
+
+- Public metadata endpoint; set `OAI_TOKEN` in production and append `&token=...`.
+- `oai_dc` only; no resumption tokens (small catalogs).
+- Restricted assets are excluded from the feed.
+
+## COUNTER/SUSHI (minimal)
+
+```text
+GET /sushi?report=IR&begin_date=2026-01-01&end_date=2026-01-31&customer_id=...
+```
+
+- Returns a COUNTER-5-shaped `ReportResponse` with `Total_Item_Requests`.
+- Set `SUSHI_API_KEY`; callers append `&api_key=...`.
+- Usage comes from `audit_events` (`book.view`, `book.download`); only events after this release exist.
+- **Not COUNTER 5 certified**: no SUSHI request envelope, exception codes, item investigations, DR/PR/TR reports or 90-day rolling limits.
+
 ## Usage CSV (not COUNTER/SUSHI)
 
 ```text
@@ -35,7 +59,7 @@ GET /api/reports/usage.csv
 
 ## Not implemented
 
-- OAI-PMH.
-- COUNTER 5 / SUSHI server.
+- Certified COUNTER 5 / full SUSHI envelope.
+- Resumption tokens and sets in OAI-PMH.
 - OPDS authentication for third-party e-readers.
 - Bulk MARC import/export.

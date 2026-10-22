@@ -17,7 +17,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - EPUB: `.epub` upload/format; ana okuyucuda `EpubEngine` (TOC, tema, ± font/zoom, ‹ ›, CFI/ilerleme, seçimden CFI vurgu/not, bölüm arama). EPUB bölüm metni `asset_pages` (`source='epub'`, `locator=href`) olarak indeksleniyor; v72 sonrası XHTML `<body>` dışındaki `<title>` metni indekse girmiyor. Arama DB indeksinden; sonuçta geçerli bölümde eşleşmeler işaretleniyor. EPUB indirme 501.
 - Auth: login, scrypt, CSRF, rate limit, session_version, user_sessions + seat limit (varsayılan 3).
 - Entitlement: `grants` tablosu (all/publisher/subject/collection/title); katalog + dosya/arama/indirme filtreli; `seat_limit` kurum oturum sayısını sınırlar. **Erişim** modalından grant ekle/sil (librarian/admin); collection kapsamı `collection_items` ile uygulanıyor.
-- Interop: `GET /opds` (OPDS acquisition), `GET /api/books/:id/marc` (minimal MARC21), `GET /api/reports/usage.csv` (operasyonel rapor, COUNTER değil). Ayrıntı `docs/INTEROP.md`.
+- Interop: `GET /opds`, `/oai` (OAI-PMH oai_dc), `/sushi` (COUNTER-5-shaped IR), `GET /api/books/:id/marc`, `GET /api/reports/usage.csv`. Ayrıntı `docs/INTEROP.md`; OAI/SUSHI sertifikalı değil.
 - Erişilebilirlik: WCAG temel denetimi `docs/ACCESSIBILITY.md`; manuel test planı `docs/A11Y-TEST-PLAN.md` (axe, NVDA/VoiceOver, %200 zoom, EPUB iframe).
 - Arayüz **TR/EN**: `i18n.mjs`; header/login `data-lang-toggle`, `localStorage.uiLang`, sayfa yenilenerek uygulanır. Statik metinler + yaygın dinamik etiketler çevrildi; bazı toast/yardım metinleri hâlâ Türkçe.
 - Erişim: kopyalama/indirme/yazdırma/filigran; `/api/books/:id/download`.
@@ -32,7 +32,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 1. **WCAG 2.2 AA manuel denetimi:** ekran okuyucu, axe, %200 zoom, EPUB iframe.
 2. **Görsel ağırlıklı >300 MB:** kapsam dışı; yalnızca gerçek yayıncı talebi olursa önizleme/derivative pipeline.
 3. **EPUB indirme/filigran:** PDF dışı indirme 501; lisans/watermark kararı.
-4. **Interop:** OPDS/MARC/CSV hazır; OAI-PMH, COUNTER/SUSHI ve OPDS auth kaldı (`docs/INTEROP.md`).
+4. **Interop:** OPDS/OAI/MARC/SUSHI/CSV hazır; sertifikalı COUNTER, OAI resumption/set ve OPDS auth kaldı (`docs/INTEROP.md`).
 5. **Mobil/PWA:** shell + swipe + çevrimdışı kitaplık ve not kuyruğu hazır; çakışma/çoklu cihaz çözümü ve native kararı kaldı.
 6. **Grant grup/audit:** group subject, kullanım raporu, grant geçmişi.
 

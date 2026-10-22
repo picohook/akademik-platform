@@ -80,6 +80,7 @@ const demoGrants = [];
 const demoGrantAudit = [];
 const demoGroups = [];
 const demoGroupMembers = [];
+const demoUsage = [];
 const demoProgress = new Map();
 const demoHashes = new Set();
 
@@ -607,6 +608,31 @@ async function listGrants() {
   });
 }
 
+async function logUsage(action, book, auth) {
+  if (!book?.asset_id) return;
+  const event = {
+    action,
+    asset_id: book.asset_id,
+    user_id: auth?.userId || null,
+    occurred_at: new Date().toISOString(),
+  };
+  if (!pool) {
+    demoUsage.push(event);
+    return;
+  }
+  try {
+    await withTenant(async (client) => {
+      await client.query(
+        `insert into audit_events (tenant_id, actor_id, action, object_type, object_id, payload)
+         values ($1, $2, $3, 'asset', $4, $5::jsonb)`,
+        [TENANT_ID, auth?.userId || null, action, book.asset_id, JSON.stringify({ book_id: book.id })],
+      );
+    });
+  } catch (error) {
+    console.warn('usage log failed', error.message);
+  }
+}
+
 async function logGrantAudit(client, auth, grantId, action, detail) {
   if (!pool) {
     demoGrantAudit.unshift({
@@ -904,6 +930,167 @@ function marcRecord(book, base) {
   (book.subjects || []).slice(0, 6).forEach((subject) => lines.push(`650 #0$a${subject}`));
   lines.push(`856 40$u${base}/api/books/${book.id}/file$zPDF`);
   return `${lines.join('\n')}\n`;
+}
+
+async function sushiResponse(url) {
+  let params = Object.fromEntries(url.searchParams.entries());
+  if (params.request) {
+    try {
+      params = { ...params, ...JSON.parse(params.request) };
+    } catch { /* keep query */ }
+  }
+  const reportId = String(params.report || params.report_id || 'IR').toUpperCase();
+  const begin = params.begin_date || `${new Date().toISOString().slice(0, 7)}-01`;
+  const end = params.end_date || new Date().toISOString().slice(0, 10);
+  const customer = String(params.customer_id || process.env.SUSHI_CUSTOMER_ID || 'anonymous');
+  const esc = escapeXml;
+  let rows = [];
+  if (!pool) {
+    rows = demoBooks.map((book) => ({
+      title: book.title,
+      asset_id: book.asset_id,
+      requests: demoUsage.filter((event) => event.asset_id === book.asset_id).length,
+    })).filter((row) => row.requests > 0);
+  } else {
+    rows = await withTenant(async (client) => {
+      const { rows: result } = await client.query(
+        `select w.title, ev.object_id as asset_id, count(*)::int as requests
+           from audit_events ev
+           join assets a on a.id = ev.object_id
+           join editions e on e.id = a.edition_id
+           join works w on w.id = e.work_id
+          where ev.tenant_id = $1
+            and ev.action in ('book.view', 'book.download')
+            and ev.created_at >= $2::date
+            and ev.created_at < ($3::date + interval '1 day')
+          group by w.title, ev.object_id
+          order by requests desc`,
+        [TENANT_ID, begin, end],
+      );
+      return result;
+    });
+  }
+  const items = rows.map((row) => `<ReportItem>
+    <ItemIdentifier><Type>Online_Resource</Type><Value>${esc(row.asset_id)}</Value></ItemIdentifier>
+    <ItemName>${esc(row.title)}</ItemName>
+    <ItemDataType>Book</ItemDataType>
+    <ItemPerformance><Instance>
+      <MetricType>Total_Item_Requests</MetricType>
+      <Count>${Number(row.requests) || 0}</Count>
+    </Instance></ItemPerformance>
+  </ReportItem>`).join('');
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<ReportResponse xmlns="http://www.niso.org/schemas/counter">
+  <Report>
+    <ReportHeader>
+      <ReportName>Item Requests</ReportName>
+      <ReportID>${esc(reportId)}</ReportID>
+      <Release>5</Release>
+      <InstitutionName>Akademik Platform</InstitutionName>
+      <CustomerID>${esc(customer)}</CustomerID>
+      <ReportPeriod><BeginDate>${esc(begin)}</BeginDate><EndDate>${esc(end)}</EndDate></ReportPeriod>
+      <Created>${new Date().toISOString()}</Created>
+    </ReportHeader>
+    <ReportItems>${items}</ReportItems>
+  </Report>
+</ReportResponse>`;
+}
+
+function oaiDate(value) {
+  return new Date(value || Date.now()).toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
+
+async function oaiRecords() {
+  if (!pool) {
+    return demoBooks.map((book) => ({
+      id: book.id,
+      title: book.title,
+      subtitle: book.subtitle,
+      language: book.language || 'tr',
+      subjects: book.subjects || [],
+      metadata: book.metadata || {},
+      publisher: book.publisher,
+      publication_year: book.publication_year,
+      created_at: book.created_at || new Date().toISOString(),
+      format: book.format,
+    }));
+  }
+  return withTenant(async (client) => {
+    const { rows } = await client.query(
+      `select distinct on (w.id)
+              w.id, w.title, w.subtitle, w.language, w.subjects, w.metadata, w.created_at,
+              e.publisher, e.publication_year, e.isbn13, e.doi,
+              a.format, a.access_status
+         from works w
+         left join editions e on e.work_id = w.id
+         left join assets a on a.edition_id = e.id
+        where w.tenant_id is null or w.tenant_id = $1
+        order by w.id, a.format`,
+      [TENANT_ID],
+    );
+    return rows.filter((row) => row.access_status !== 'restricted');
+  });
+}
+
+function oaiRecord(record, includeMetadata = true) {
+  const identifier = `oai:akademik:${record.id}`;
+  const author = record.metadata?.authors?.[0];
+  const creator = author && typeof author === 'object'
+    ? [author.given, author.family].filter(Boolean).join(' ')
+    : (author || '');
+  const header = `<header><identifier>${escapeXml(identifier)}</identifier><datestamp>${oaiDate(record.created_at)}</datestamp></header>`;
+  if (!includeMetadata) return header;
+  return `<record>${header}<metadata><oai_dc:dc
+    xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/"
+    xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>${escapeXml(record.title)}</dc:title>
+    ${record.subtitle ? `<dc:description>${escapeXml(record.subtitle)}</dc:description>` : ''}
+    ${creator ? `<dc:creator>${escapeXml(creator)}</dc:creator>` : ''}
+    ${record.publisher ? `<dc:publisher>${escapeXml(record.publisher)}</dc:publisher>` : ''}
+    ${record.publication_year ? `<dc:date>${record.publication_year}</dc:date>` : ''}
+    <dc:identifier>${escapeXml(identifier)}</dc:identifier>
+    <dc:language>${escapeXml(record.language || 'tr')}</dc:language>
+    ${(record.subjects || []).map((subject) => `<dc:subject>${escapeXml(subject)}</dc:subject>`).join('')}
+    <dc:type>${escapeXml(record.format === 'epub' ? 'text' : 'text')}</dc:type>
+  </oai_dc:dc></metadata></record>`;
+}
+
+async function oaiResponse(url, req) {
+  const base = `${req.headers['x-forwarded-proto'] || (isSecureRequest(req) ? 'https' : 'http')}://${req.headers.host || 'localhost'}/oai`;
+  const verb = url.searchParams.get('verb');
+  const prefix = `<?xml version="1.0" encoding="UTF-8"?>\n<OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd"><responseDate>${oaiDate()}</responseDate><request verb="${escapeXml(verb || '')}">${escapeXml(base)}</request>`;
+  const close = '</OAI-PMH>';
+  if (!verb) return `${prefix}<error code="badVerb">Missing verb</error>${close}`;
+  if (verb === 'Identify') {
+    return `${prefix}<Identify><repositoryName>Akademik Platform</repositoryName><baseURL>${escapeXml(base)}</baseURL><protocolVersion>2.0</protocolVersion><adminEmail>library@example.edu.tr</adminEmail><earliestDatestamp>1970-01-01T00:00:00Z</earliestDatestamp><deletedRecord>no</deletedRecord><granularity>YYYY-MM-DDThh:mm:ssZ</granularity></Identify>${close}`;
+  }
+  if (verb === 'ListMetadataFormats') {
+    return `${prefix}<ListMetadataFormats><metadataFormat><metadataPrefix>oai_dc</metadataPrefix><schema>http://www.openarchives.org/OAI/2.0/oai_dc.xsd</schema><metadataNamespace>http://www.openarchives.org/OAI/2.0/oai_dc/</metadataNamespace></metadataFormat></ListMetadataFormats>${close}`;
+  }
+  if (verb === 'ListSets') return `${prefix}<ListSets></ListSets>${close}`;
+  const records = await oaiRecords();
+  const identifier = url.searchParams.get('identifier');
+  if (verb === 'GetRecord') {
+    if (!identifier) return `${prefix}<error code="badArgument">identifier required</error>${close}`;
+    const id = identifier.replace(/^oai:akademik:/, '');
+    const record = records.find((item) => item.id === id);
+    if (!record) return `${prefix}<error code="idDoesNotExist">Unknown identifier</error>${close}`;
+    return `${prefix}<GetRecord>${oaiRecord(record)}</GetRecord>${close}`;
+  }
+  if (verb === 'ListIdentifiers' || verb === 'ListRecords') {
+    if (url.searchParams.get('metadataPrefix') !== 'oai_dc') {
+      return `${prefix}<error code="cannotDisseminateFormat">Only oai_dc is supported</error>${close}`;
+    }
+    const from = url.searchParams.get('from');
+    const until = url.searchParams.get('until');
+    const filtered = records.filter((record) => {
+      const day = oaiDate(record.created_at).slice(0, 10);
+      return (!from || day >= from.slice(0, 10)) && (!until || day <= until.slice(0, 10));
+    });
+    const body = filtered.map((record) => oaiRecord(record, verb === 'ListRecords')).join('');
+    return `${prefix}<${verb}>${body}</${verb}>${close}`;
+  }
+  return `${prefix}<error code="badVerb">Unsupported verb</error>${close}`;
 }
 
 function escapeXml(value) {
@@ -1681,6 +1868,28 @@ const server = http.createServer(async (req, res) => {
   );
 
   try {
+    if (pathname === '/sushi' && req.method === 'GET') {
+      const apiKey = process.env.SUSHI_API_KEY;
+      if (apiKey && url.searchParams.get('api_key') !== apiKey) {
+        res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' });
+        res.end('SUSHI api_key required');
+        return;
+      }
+      res.writeHead(200, { 'content-type': 'text/xml; charset=utf-8', 'cache-control': 'no-store' });
+      res.end(await sushiResponse(url));
+      return;
+    }
+    if (pathname === '/oai' && req.method === 'GET') {
+      const token = process.env.OAI_TOKEN;
+      if (token && url.searchParams.get('token') !== token) {
+        res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' });
+        res.end('OAI token required');
+        return;
+      }
+      res.writeHead(200, { 'content-type': 'text/xml; charset=utf-8', 'cache-control': 'public, max-age=300' });
+      res.end(await oaiResponse(url, req));
+      return;
+    }
     if (pathname === '/api/health') {
       json(res, 200, { ok: true, mode: pool ? 'db' : 'demo', tenantId: TENANT_ID });
       return;
@@ -2180,6 +2389,7 @@ const server = http.createServer(async (req, res) => {
         json(res, 501, { error: 'EPUB download is not supported yet' });
         return;
       }
+      await logUsage('book.download', book, auth);
       const safePath = path.resolve(PUBLIC_DIR, book.storage_key);
       if (!safePath.startsWith(PUBLIC_DIR + path.sep)) {
         json(res, 400, { error: 'invalid storage key' });
@@ -2262,6 +2472,7 @@ const server = http.createServer(async (req, res) => {
         json(res, 404, { error: 'book not found' });
         return;
       }
+      if (!req.headers.range) await logUsage('book.view', book, auth);
       await servePdf(req, res, storageKey);
       return;
     }
