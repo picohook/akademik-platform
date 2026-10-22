@@ -858,6 +858,97 @@ async function canAccessBook(book, auth) {
   return grantAllows(book, await activeGrants(auth));
 }
 
+async function usageCsv() {
+  if (!pool) return 'title,publisher,language,readers,progress_rows,avg_percent,annotations\n';
+  return withTenant(async (client) => {
+    const { rows } = await client.query(
+      `select w.title, e.publisher, w.language,
+              count(distinct rp.user_id)::int as readers,
+              count(rp.asset_id)::int as progress_rows,
+              coalesce(round(avg(rp.percent), 1), 0) as avg_percent,
+              (select count(*)::int from annotations an
+                 join assets a2 on a2.id = an.asset_id
+                where a2.edition_id = e.id) as annotations
+         from works w
+         join editions e on e.work_id = w.id
+         left join assets a on a.edition_id = e.id
+         left join reading_progress rp on rp.asset_id = a.id
+        where (w.tenant_id is null or w.tenant_id = $1)
+        group by w.id, w.title, e.id, e.publisher, w.language
+        order by readers desc, w.title`,
+      [TENANT_ID],
+    );
+    const escape = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    return [
+      'title,publisher,language,readers,progress_rows,avg_percent,annotations',
+      ...rows.map((row) => [
+        escape(row.title), escape(row.publisher), escape(row.language),
+        row.readers, row.progress_rows, row.avg_percent, row.annotations,
+      ].join(',')),
+    ].join('\n') + '\n';
+  });
+}
+
+function marcRecord(book, base) {
+  const author = book.metadata?.authors?.[0];
+  const family = author && typeof author === 'object' ? author.family : '';
+  const given = author && typeof author === 'object' ? author.given : '';
+  const lines = [];
+  lines.push(`001 ${book.id}`);
+  lines.push('040 ##$aAkademik Platform$cAkademik Platform');
+  if (family) lines.push(`100 1#$a${family}${given ? `, ${given}` : ''}`);
+  lines.push(`245 10$a${book.title}${book.subtitle ? ` :$b${book.subtitle}` : ''}`);
+  if (book.publisher || book.publication_year) {
+    lines.push(`260 ##$a${book.publisher || ''}${book.publication_year ? `$c${book.publication_year}` : ''}`);
+  }
+  (book.subjects || []).slice(0, 6).forEach((subject) => lines.push(`650 #0$a${subject}`));
+  lines.push(`856 40$u${base}/api/books/${book.id}/file$zPDF`);
+  return `${lines.join('\n')}\n`;
+}
+
+function escapeXml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+async function opdsFeed(auth, req) {
+  const books = await listBooks(auth);
+  const proto = req.headers['x-forwarded-proto'] || (isSecureRequest(req) ? 'https' : 'http');
+  const base = `${proto}://${req.headers.host || 'localhost'}`;
+  const updated = new Date().toISOString();
+  const entries = books.map((book) => {
+    const author = book.metadata?.authors?.[0];
+    const authorName = author && typeof author === 'object'
+      ? [author.given, author.family].filter(Boolean).join(' ')
+      : (author || book.publisher || '');
+    const type = book.format === 'epub' ? 'application/epub+zip' : 'application/pdf';
+    const href = book.format === 'epub'
+      ? `${base}/api/books/${book.id}/book.epub`
+      : `${base}/api/books/${book.id}/file`;
+    return `<entry>
+  <title>${escapeXml(book.title)}</title>
+  <id>urn:uuid:${escapeXml(book.id)}</id>
+  <updated>${updated}</updated>
+  ${authorName ? `<author><name>${escapeXml(authorName)}</name></author>` : ''}
+  <dc:language>${escapeXml(book.language || 'tr')}</dc:language>
+  ${book.publisher ? `<dc:publisher>${escapeXml(book.publisher)}</dc:publisher>` : ''}
+  ${book.subjects?.length ? book.subjects.slice(0, 5).map((subject) => `<category term="${escapeXml(subject)}"/>`).join('\n  ') : ''}
+  <link rel="http://opds-spec.org/acquisition" href="${escapeXml(href)}" type="${type}"/>
+</entry>`;
+  }).join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/terms/">
+  <id>urn:uuid:${escapeXml(TENANT_ID)}</id>
+  <title>Akademik Platform</title>
+  <updated>${updated}</updated>
+  <link rel="self" href="${base}/opds" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
+  ${entries}
+</feed>`;
+}
+
 async function listBooks(auth) {
   if (!pool) {
     const grants = await activeGrants(auth);
@@ -1924,6 +2015,33 @@ const server = http.createServer(async (req, res) => {
       }
       return;
     }
+    if (pathname.startsWith('/api/groups/') && pathname.endsWith('/members') && req.method === 'DELETE') {
+      if (!canManage(auth.role)) {
+        json(res, 403, { error: 'yetkiniz yok' });
+        return;
+      }
+      const groupId = decodeURIComponent(pathname.slice('/api/groups/'.length, -'/members'.length));
+      const email = String(url.searchParams.get('email') || '').trim().toLocaleLowerCase('tr');
+      if (!email) {
+        json(res, 400, { error: 'email required' });
+        return;
+      }
+      let userId = null;
+      if (!pool) {
+        userId = email.startsWith('reader') ? USER_ID : '44444444-4444-4444-4444-444444444444';
+      } else {
+        userId = await withTenant(async (client) => {
+          const { rows } = await client.query('select id from users where email = $1 limit 1', [email]);
+          return rows[0]?.id || null;
+        });
+      }
+      if (!userId || !await removeGroupMember(groupId, userId)) {
+        json(res, 404, { error: 'member not found' });
+        return;
+      }
+      json(res, 200, { ok: true });
+      return;
+    }
     if (pathname === '/api/grants' && req.method === 'GET') {
       if (!canManage(auth.role)) {
         json(res, 403, { error: 'yetkiniz yok' });
@@ -1971,6 +2089,27 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       json(res, 200, { ok: true });
+      return;
+    }
+    if (pathname === '/api/reports/usage.csv' && req.method === 'GET') {
+      if (!canManage(auth.role)) {
+        json(res, 403, { error: 'yetkiniz yok' });
+        return;
+      }
+      res.writeHead(200, {
+        'content-type': 'text/csv; charset=utf-8',
+        'content-disposition': 'attachment; filename="usage.csv"',
+        'cache-control': 'no-store',
+      });
+      res.end(await usageCsv());
+      return;
+    }
+    if (pathname === '/opds' && req.method === 'GET') {
+      res.writeHead(200, {
+        'content-type': 'application/atom+xml;profile=opds-catalog;kind=acquisition; charset=utf-8',
+        'cache-control': 'private, max-age=60',
+      });
+      res.end(await opdsFeed(auth, req));
       return;
     }
     if (pathname === '/api/books' && req.method === 'GET') {
@@ -2082,6 +2221,28 @@ const server = http.createServer(async (req, res) => {
         'cache-control': 'no-store',
       });
       res.end(payload);
+      return;
+    }
+    const marcMatch = pathname.match(/^\/api\/books\/([^/]+)\/marc$/);
+    if (marcMatch && req.method === 'GET') {
+      if (!canManage(auth.role)) {
+        json(res, 403, { error: 'yetkiniz yok' });
+        return;
+      }
+      const bookId = decodeURIComponent(marcMatch[1]);
+      const book = await getBook(bookId);
+      if (!book || !await canAccessBook(book, auth)) {
+        json(res, 404, { error: 'book not found' });
+        return;
+      }
+      const proto = req.headers['x-forwarded-proto'] || (isSecureRequest(req) ? 'https' : 'http');
+      const base = `${proto}://${req.headers.host || 'localhost'}`;
+      res.writeHead(200, {
+        'content-type': 'application/marc; charset=utf-8',
+        'content-disposition': `attachment; filename="book-${book.id}.mrc"`,
+        'cache-control': 'no-store',
+      });
+      res.end(marcRecord(book, base));
       return;
     }
     const bookFile = pathname.startsWith('/api/books/')

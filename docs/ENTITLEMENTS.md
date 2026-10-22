@@ -67,4 +67,4 @@ select subject_type, subject_id, scope_type, scope_key, scope_id, seat_limit, va
 
 - COUNTER-style usage reports.
 - Per-grant usage history chart (audit rows are available).
-- Group member removal UI (API/SQL only).
+- Group member list/removal by picker (email-based add/remove is available).

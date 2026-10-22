@@ -645,6 +645,24 @@ async function renderGrantAudit() {
   });
 }
 
+async function removeGrantGroupMember() {
+  const groupId = grantSubjectGroup.value;
+  const email = $('grantGroupEmail').value.trim();
+  if (!groupId || !email) return;
+  try {
+    const response = await fetch(`/api/groups/${encodeURIComponent(groupId)}/members?email=${encodeURIComponent(email)}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('remove member failed');
+    $('grantGroupEmail').value = '';
+    await loadGrantOptions();
+    toast(t('Üye çıkarıldı'));
+  } catch (error) {
+    console.error(error);
+    toast(t('Üye çıkarılamadı'));
+  }
+}
+
 async function submitGrant(event) {
   event.preventDefault();
   grantError.hidden = true;
@@ -3336,6 +3354,7 @@ $('grantScopeType').addEventListener('change', grantScopeTypeChanged);
 $('grantSubjectType').addEventListener('change', grantSubjectTypeChanged);
 $('createGroupBtn').addEventListener('click', createGrantGroup);
 $('addGroupMemberBtn').addEventListener('click', addGrantGroupMember);
+$('removeGroupMemberBtn').addEventListener('click', removeGrantGroupMember);
 grantForm.addEventListener('submit', submitGrant);
 grantsModal.addEventListener('click', (event) => {
   if (event.target === grantsModal) closeGrants();
