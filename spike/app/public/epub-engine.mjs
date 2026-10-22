@@ -124,6 +124,34 @@ export class EpubEngine {
     if (section) await this.rendition.display(section.href);
   }
 
+  async goToSearchHit({ href, page }) {
+    if (!this.rendition) return;
+    const clean = (value) => {
+      try {
+        return decodeURIComponent(String(value || '').split('#')[0]).replace(/^\.?\//, '');
+      } catch {
+        return String(value || '').split('#')[0].replace(/^\.?\//, '');
+      }
+    };
+    const target = clean(href);
+    const sections = this.book?.spine?.spineItems || [];
+    let section = target
+      ? sections.find((item) => {
+        const itemHref = clean(item.href);
+        return itemHref === target || itemHref.endsWith(`/${target}`) || target.endsWith(`/${itemHref}`);
+      })
+      : null;
+    if (!section && target) {
+      try { section = this.book.spine.get(href); } catch { /* noop */ }
+    }
+    if (!section) section = sections[Number(page) - 1];
+    if (section) {
+      await this.rendition.display(section.href);
+    } else if (href) {
+      await this.rendition.display(href);
+    }
+  }
+
   async next() {
     await this.rendition?.next();
   }

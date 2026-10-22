@@ -1158,9 +1158,9 @@ async function focusSearchResult(index) {
   state.activeMatchType = hit.matchType || 'exact';
   if (state.epubMode) {
     try {
-      await state.epubEngine?.goToSpineIndex(hit.page);
+      await state.epubEngine?.goToSearchHit(hit);
     } catch {
-      if (hit.href) await state.epubEngine?.goToHref(hit.href);
+      await state.epubEngine?.goToSpineIndex(hit.page);
     }
     state.epubEngine?.highlightSearch(hit.query || state.searchQuery, {
       fuzzy: ['fuzzy', 'stem'].includes(hit.matchType),
