@@ -35,7 +35,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Bilinen açıklar / riskler
 
-- 500 MB fixture yok. 2.000 sayfa sentetik PDF: sıcak 491 ms; 20 Mbps cold cache/sayfa 20 ölçümü **1.960 ms** (load 1.729 ms), 20 render ort. 33 ms/max 197 ms, heap 4 MB; hedef sınırda geçti. v89 PDF worker prefetch. Tam 500 MB görsel dosya hâlâ gerekli. Scroll mode lazy DOM + `disableAutoFetch`.
+- 500 MB fixture yok. 2.000 sayfa sentetik PDF v89: 20 Mbps cold cache 3 run — ilk sayfa **1.404/1.614/1.647 ms**, PDF load 1.129–1.383 ms, 20 render ort. 29–43 ms (max 278 ms), heap 4–7 MB; **hedef geçildi**. 500 MB görsel dosya hâlâ gerekli. Scroll mode lazy DOM + `disableAutoFetch`.
 - Sürekli kaydırmada zoom her seferinde 697 pane yeniden kuruyor; ağır olabilir.
 - Eski oturumlar `sid` taşımadığı için yeniden giriş gerekir.
 - Seat limiti aynı tarayıcı sekmelerinde artmaz; ayrı profil/tarayıcı gerekir. Limit sayımı son **2 saat** içinde görülen oturumlardır; eski satırlar `docs/SESSIONS.md` ile temizlenir.
