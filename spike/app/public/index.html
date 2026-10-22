@@ -9,7 +9,7 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/icons/icon-180.png" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=38" />
+  <link rel="stylesheet" href="/styles.css?v=39" />
   <link rel="prefetch" href="/vendor/pdfjs/pdf.worker.mjs" as="script" />
 </head>
 <body>
@@ -194,9 +194,11 @@
             <select id="grantSubjectType">
               <option value="tenant">Tüm kurum</option>
               <option value="user">Tek kullanıcı</option>
+              <option value="group">Grup</option>
             </select>
           </label>
-          <label>Kullanıcı e-postası<input id="grantSubjectEmail" type="email" placeholder="reader@example.edu.tr" /></label>
+          <label id="grantEmailLabel">Kullanıcı e-postası<input id="grantSubjectEmail" type="email" placeholder="reader@example.edu.tr" /></label>
+          <label id="grantGroupLabel" hidden>Grup<select id="grantSubjectGroup"></select></label>
         </div>
         <div class="form-row">
           <label>Kapsam
@@ -204,11 +206,13 @@
               <option value="all">Tümü</option>
               <option value="publisher">Yayıncı</option>
               <option value="subject">Konu</option>
-              <option value="collection">Koleksiyon UUID</option>
-              <option value="title">Başlık UUID</option>
+              <option value="collection">Koleksiyon</option>
+              <option value="title">Başlık</option>
             </select>
           </label>
-          <label>Değer<input id="grantScopeKey" placeholder="Yayıncı / konu / UUID" /></label>
+          <label id="grantKeyLabel">Değer<input id="grantScopeKey" placeholder="Yayıncı / konu" /></label>
+          <label id="grantCollectionLabel" hidden>Koleksiyon<select id="grantCollection"></select></label>
+          <label id="grantTitleLabel" hidden>Başlık<select id="grantTitle"></select></label>
         </div>
         <div class="form-row">
           <label>Koltuk limiti<input id="grantSeatLimit" type="number" min="1" max="9999" /></label>
@@ -221,12 +225,22 @@
             </select>
           </label>
         </div>
+        <div class="form-row">
+          <label>Yeni grup<input id="grantGroupName" placeholder="Örn. Tıp Fakültesi" /></label>
+          <button class="ghost-btn" id="createGroupBtn" type="button">Grup oluştur</button>
+        </div>
+        <div class="form-row">
+          <label>Gruba e-posta<input id="grantGroupEmail" type="email" placeholder="reader@example.edu.tr" /></label>
+          <button class="ghost-btn" id="addGroupMemberBtn" type="button">Üye ekle</button>
+        </div>
         <div class="login-error" id="grantError" hidden></div>
         <div class="modal-actions">
           <button class="ghost-btn" id="cancelGrant" type="button">Vazgeç</button>
           <button class="primary" type="submit">Grant ekle</button>
         </div>
       </form>
+      <p class="login-hint">Son grant işlemleri</p>
+      <div class="grant-list" id="grantAudit" role="region" aria-label="Grant geçmişi" tabindex="0"></div>
     </div>
   </div>
 
@@ -383,6 +397,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=93"></script>
+  <script type="module" src="/app.js?v=95"></script>
 </body>
 </html>

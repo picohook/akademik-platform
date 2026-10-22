@@ -78,6 +78,8 @@ const demoBooks = [
 const demoAnnotations = [];
 const demoGrants = [];
 const demoGrantAudit = [];
+const demoGroups = [];
+const demoGroupMembers = [];
 const demoProgress = new Map();
 const demoHashes = new Set();
 
@@ -318,7 +320,10 @@ async function createSession(user, req) {
             and valid_from <= now()
             and (valid_to is null or valid_to > now())
             and ((subject_type = 'tenant' and subject_id = $1)
-              or (subject_type = 'user' and subject_id = $2))`,
+              or (subject_type = 'user' and subject_id = $2)
+              or (subject_type = 'group' and subject_id in (
+                select group_id from user_group_members where user_id = $2
+              )))`,
         [user.tenant_id || TENANT_ID, user.id],
       );
       const seatLimit = tenantSeatLimit(grantRows);
@@ -555,7 +560,9 @@ async function activeGrants(auth) {
     return demoGrants.filter((grant) => grant.status === 'active'
       && grant.tenant_id === TENANT_ID
       && ((grant.subject_type === 'tenant' && grant.subject_id === TENANT_ID)
-        || (grant.subject_type === 'user' && grant.subject_id === auth.userId)));
+        || (grant.subject_type === 'user' && grant.subject_id === auth.userId)
+        || (grant.subject_type === 'group'
+          && demoGroupMembers.some((member) => member.group_id === grant.subject_id && member.user_id === auth.userId))));
   }
   try {
     const tenantId = auth.tenantId || TENANT_ID;
@@ -568,7 +575,10 @@ async function activeGrants(auth) {
             and valid_from <= now()
             and (valid_to is null or valid_to > now())
             and ((subject_type = 'tenant' and subject_id = $1)
-              or (subject_type = 'user' and subject_id = $2))`,
+              or (subject_type = 'user' and subject_id = $2)
+              or (subject_type = 'group' and subject_id in (
+                select group_id from user_group_members where user_id = $2
+              )))`,
         [tenantId, auth.userId || null],
       );
       return rows;
@@ -585,9 +595,10 @@ async function listGrants() {
     const { rows } = await client.query(
       `select g.id, g.subject_type, g.subject_id, g.scope_type, g.scope_id, g.scope_key,
               g.seat_limit, g.source, g.status, g.valid_from, g.valid_to, g.created_at,
-              u.email as subject_email
+              coalesce(u.email, ug.name) as subject_email
          from grants g
          left join users u on g.subject_type = 'user' and u.id = g.subject_id
+         left join user_groups ug on g.subject_type = 'group' and ug.id = g.subject_id
         where g.tenant_id = $1
         order by g.created_at desc`,
       [TENANT_ID],
@@ -611,13 +622,117 @@ async function logGrantAudit(client, auth, grantId, action, detail) {
   );
 }
 
+async function listCollections() {
+  if (!pool) return [{ id: 'demo-collection', title: 'Demo koleksiyonu', item_count: 0 }];
+  return withTenant(async (client) => {
+    const { rows } = await client.query(
+      `select c.id, c.title, count(ci.work_id)::int as item_count
+         from collections c
+         left join collection_items ci on ci.collection_id = c.id
+        where c.tenant_id = $1
+        group by c.id, c.title
+        order by c.title`,
+      [TENANT_ID],
+    );
+    return rows;
+  });
+}
+
+async function listGroups() {
+  if (!pool) {
+    return demoGroups.map((group) => ({
+      ...group,
+      member_count: demoGroupMembers.filter((member) => member.group_id === group.id).length,
+    }));
+  }
+  return withTenant(async (client) => {
+    const { rows } = await client.query(
+      `select g.id, g.name, g.created_at, count(m.user_id)::int as member_count
+         from user_groups g
+         left join user_group_members m on m.group_id = g.id
+        where g.tenant_id = $1
+        group by g.id, g.name, g.created_at
+        order by g.name`,
+      [TENANT_ID],
+    );
+    return rows;
+  });
+}
+
+async function createGroup(name) {
+  const value = String(name || '').trim();
+  if (!value) throw new Error('group name required');
+  if (!pool) {
+    if (demoGroups.some((group) => group.name === value)) throw new Error('group exists');
+    const group = { id: randomUUID(), name: value, created_at: new Date().toISOString() };
+    demoGroups.push(group);
+    return group;
+  }
+  return withTenant(async (client) => {
+    const { rows } = await client.query(
+      `insert into user_groups (tenant_id, name) values ($1, $2)
+       returning id, name, created_at`,
+      [TENANT_ID, value],
+    );
+    return rows[0];
+  });
+}
+
+async function addGroupMember(groupId, email) {
+  const normalized = String(email || '').trim().toLocaleLowerCase('tr');
+  if (!groupId || !normalized) throw new Error('group and email required');
+  if (!pool) {
+    const user = normalized.startsWith('reader') ? USER_ID : '44444444-4444-4444-4444-444444444444';
+    if (!demoGroups.some((group) => group.id === groupId)) throw new Error('group not found');
+    if (!demoGroupMembers.some((member) => member.group_id === groupId && member.user_id === user)) {
+      demoGroupMembers.push({ group_id: groupId, user_id: user });
+    }
+    return true;
+  }
+  return withTenant(async (client) => {
+    const { rows } = await client.query('select id from users where email = $1 limit 1', [normalized]);
+    if (!rows[0]) throw new Error('user not found');
+    await client.query(
+      'insert into user_group_members (group_id, user_id) values ($1, $2) on conflict do nothing',
+      [groupId, rows[0].id],
+    );
+    return true;
+  });
+}
+
+async function removeGroupMember(groupId, userId) {
+  if (!pool) {
+    const index = demoGroupMembers.findIndex((member) => member.group_id === groupId && member.user_id === userId);
+    if (index >= 0) demoGroupMembers.splice(index, 1);
+    return index >= 0;
+  }
+  return withTenant(async (client) => {
+    const { rowCount } = await client.query(
+      'delete from user_group_members where group_id = $1 and user_id = $2',
+      [groupId, userId],
+    );
+    return rowCount > 0;
+  });
+}
+
 async function createGrant(body, auth) {
   const scopeType = ['all', 'publisher', 'subject', 'collection', 'title'].includes(body.scopeType)
     ? body.scopeType
     : null;
   if (!scopeType) throw new Error('invalid scope');
-  const subjectType = body.subjectType === 'user' ? 'user' : 'tenant';
+  const subjectType = ['tenant', 'user', 'group'].includes(body.subjectType) ? body.subjectType : 'tenant';
   let subjectId = TENANT_ID;
+  if (subjectType === 'group') {
+    subjectId = String(body.subjectGroup || '').trim();
+    if (!subjectId) throw new Error('group required');
+    if (pool) {
+      const found = await withTenant(async (client) => {
+        const { rows } = await client.query('select id from user_groups where id = $1 limit 1', [subjectId]);
+        return rows[0];
+      });
+      if (!found) throw new Error('group not found');
+    }
+  }
   if (subjectType === 'user') {
     const email = String(body.subjectEmail || '').trim().toLocaleLowerCase('tr');
     if (!email) throw new Error('user email required');
@@ -1765,6 +1880,48 @@ const server = http.createServer(async (req, res) => {
       }
       const book = await handleUpload(req);
       json(res, 201, book);
+      return;
+    }
+    if (pathname === '/api/collections' && req.method === 'GET') {
+      if (!canManage(auth.role)) {
+        json(res, 403, { error: 'yetkiniz yok' });
+        return;
+      }
+      json(res, 200, await listCollections());
+      return;
+    }
+    if (pathname === '/api/groups' && req.method === 'GET') {
+      if (!canManage(auth.role)) {
+        json(res, 403, { error: 'yetkiniz yok' });
+        return;
+      }
+      json(res, 200, await listGroups());
+      return;
+    }
+    if (pathname === '/api/groups' && req.method === 'POST') {
+      if (!canManage(auth.role)) {
+        json(res, 403, { error: 'yetkiniz yok' });
+        return;
+      }
+      try {
+        json(res, 201, await createGroup((await readJson(req)).name));
+      } catch (error) {
+        json(res, 400, { error: error.message });
+      }
+      return;
+    }
+    if (pathname.startsWith('/api/groups/') && pathname.endsWith('/members') && req.method === 'POST') {
+      if (!canManage(auth.role)) {
+        json(res, 403, { error: 'yetkiniz yok' });
+        return;
+      }
+      const groupId = decodeURIComponent(pathname.slice('/api/groups/'.length, -'/members'.length));
+      try {
+        await addGroupMember(groupId, (await readJson(req)).email);
+        json(res, 201, { ok: true });
+      } catch (error) {
+        json(res, 400, { error: error.message });
+      }
       return;
     }
     if (pathname === '/api/grants' && req.method === 'GET') {

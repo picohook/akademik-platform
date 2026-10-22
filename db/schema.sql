@@ -163,6 +163,20 @@ create table if not exists grant_audit (
 );
 create index if not exists grant_audit_tenant_time on grant_audit (tenant_id, created_at desc);
 
+create table if not exists user_groups (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references tenants(id) on delete cascade,
+  name text not null,
+  created_at timestamptz not null default now(),
+  unique (tenant_id, name)
+);
+
+create table if not exists user_group_members (
+  group_id uuid not null references user_groups(id) on delete cascade,
+  user_id uuid not null references users(id) on delete cascade,
+  primary key (group_id, user_id)
+);
+
 create table if not exists annotations (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references tenants(id) on delete cascade,
@@ -220,6 +234,8 @@ alter table asset_pages enable row level security;
 alter table collections enable row level security;
 alter table grants enable row level security;
 alter table grant_audit enable row level security;
+alter table user_groups enable row level security;
+alter table user_group_members enable row level security;
 alter table annotations enable row level security;
 alter table reading_progress enable row level security;
 alter table tenants enable row level security;
@@ -234,6 +250,8 @@ alter table asset_pages force row level security;
 alter table collections force row level security;
 alter table grants force row level security;
 alter table grant_audit force row level security;
+alter table user_groups force row level security;
+alter table user_group_members force row level security;
 alter table annotations force row level security;
 alter table reading_progress force row level security;
 alter table tenants force row level security;
@@ -254,6 +272,14 @@ create policy grants_tenant on grants
   using (tenant_id = current_setting('app.tenant_id', true)::uuid);
 create policy grant_audit_tenant on grant_audit
   using (tenant_id = current_setting('app.tenant_id', true)::uuid);
+create policy user_groups_tenant on user_groups
+  using (tenant_id = current_setting('app.tenant_id', true)::uuid);
+create policy user_group_members_tenant on user_group_members
+  using (exists (
+    select 1 from user_groups g
+     where g.id = group_id
+       and g.tenant_id = current_setting('app.tenant_id', true)::uuid
+  ));
 create policy annotations_tenant on annotations
   using (tenant_id = current_setting('app.tenant_id', true)::uuid);
 create policy progress_tenant on reading_progress

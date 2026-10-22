@@ -220,6 +220,10 @@ const grantsList = $('grantsList');
 const grantForm = $('grantForm');
 const grantError = $('grantError');
 const grantUsage = $('grantUsage');
+const grantSubjectGroup = $('grantSubjectGroup');
+const grantCollection = $('grantCollection');
+const grantTitle = $('grantTitle');
+const grantAuditEl = $('grantAudit');
 const offlineModal = $('offlineModal');
 const offlineList = $('offlineList');
 const offlineStorage = $('offlineStorage');
@@ -569,11 +573,14 @@ async function loadGrants() {
   }
 }
 
-function openGrants() {
+async function openGrants() {
   grantError.hidden = true;
   grantForm.reset();
   grantScopeTypeChanged();
+  grantSubjectTypeChanged();
+  await loadGrantOptions();
   loadGrants();
+  renderGrantAudit();
   openModal(grantsModal, $('grantSubjectType'));
 }
 
@@ -581,34 +588,79 @@ function closeGrants() {
   closeModal(grantsModal);
 }
 
+function grantSubjectTypeChanged() {
+  const type = $('grantSubjectType').value;
+  $('grantEmailLabel').hidden = type === 'group';
+  $('grantGroupLabel').hidden = type !== 'group';
+}
+
 function grantScopeTypeChanged() {
   const scope = $('grantScopeType').value;
   const key = $('grantScopeKey');
-  key.disabled = scope === 'all';
-  key.placeholder = scope === 'publisher'
-    ? 'Yayıncı adı'
-    : scope === 'subject'
-      ? 'Konu adı'
-      : scope === 'title'
-        ? 'Başlık UUID'
-        : scope === 'collection'
-          ? 'Koleksiyon UUID'
-          : 'Tümü için boş';
+  $('grantKeyLabel').hidden = ['collection', 'title', 'all'].includes(scope);
+  $('grantCollectionLabel').hidden = scope !== 'collection';
+  $('grantTitleLabel').hidden = scope !== 'title';
+  key.disabled = ['collection', 'title', 'all'].includes(scope);
+  key.placeholder = scope === 'publisher' ? 'Yayıncı adı' : scope === 'subject' ? 'Konu adı' : '';
+}
+
+async function loadGrantOptions() {
+  const [groups, collections] = await Promise.all([
+    fetch('/api/groups').then((response) => response.ok ? response.json() : []).catch(() => []),
+    fetch('/api/collections').then((response) => response.ok ? response.json() : []).catch(() => []),
+  ]);
+  grantSubjectGroup.replaceChildren();
+  (groups || []).forEach((group) => {
+    const option = document.createElement('option');
+    option.value = group.id;
+    option.textContent = `${group.name} (${group.member_count || 0})`;
+    grantSubjectGroup.appendChild(option);
+  });
+  grantCollection.replaceChildren();
+  (collections || []).forEach((collection) => {
+    const option = document.createElement('option');
+    option.value = collection.id;
+    option.textContent = `${collection.title} (${collection.item_count || 0})`;
+    grantCollection.appendChild(option);
+  });
+  grantTitle.replaceChildren();
+  state.books.forEach((book) => {
+    const option = document.createElement('option');
+    option.value = book.id;
+    option.textContent = book.title;
+    grantTitle.appendChild(option);
+  });
+}
+
+async function renderGrantAudit() {
+  const response = await fetch('/api/grants/audit').catch(() => null);
+  if (!response?.ok) return;
+  const rows = await response.json();
+  grantAuditEl.replaceChildren();
+  (rows || []).slice(0, 6).forEach((row) => {
+    const item = document.createElement('div');
+    item.className = 'grant-row';
+    item.textContent = `${row.action} · ${row.actor_email || row.actor_user_id || '—'} · ${new Date(row.created_at).toLocaleString(getLang() === 'en' ? 'en-GB' : 'tr-TR')}`;
+    grantAuditEl.appendChild(item);
+  });
 }
 
 async function submitGrant(event) {
   event.preventDefault();
   grantError.hidden = true;
+  const scopeType = $('grantScopeType').value;
+  const subjectType = $('grantSubjectType').value;
   try {
     const response = await fetch('/api/grants', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        subjectType: $('grantSubjectType').value,
+        subjectType,
         subjectEmail: $('grantSubjectEmail').value.trim(),
-        scopeType: $('grantScopeType').value,
+        subjectGroup: grantSubjectGroup.value,
+        scopeType,
         scopeKey: $('grantScopeKey').value.trim(),
-        scopeId: $('grantScopeKey').value.trim(),
+        scopeId: scopeType === 'collection' ? grantCollection.value : scopeType === 'title' ? grantTitle.value : '',
         seatLimit: Number($('grantSeatLimit').value) || null,
         source: $('grantSource').value,
       }),
@@ -619,12 +671,53 @@ async function submitGrant(event) {
     }
     grantForm.reset();
     grantScopeTypeChanged();
+    grantSubjectTypeChanged();
     await loadGrants();
+    await renderGrantAudit();
     toast(t('Grant eklendi'));
   } catch (error) {
     console.error(error);
     grantError.textContent = error.message;
     grantError.hidden = false;
+  }
+}
+
+async function createGrantGroup() {
+  const name = $('grantGroupName').value.trim();
+  if (!name) return;
+  try {
+    const response = await fetch('/api/groups', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    if (!response.ok) throw new Error('group failed');
+    $('grantGroupName').value = '';
+    await loadGrantOptions();
+    toast(t('Grup oluşturuldu'));
+  } catch (error) {
+    console.error(error);
+    toast(t('Grup oluşturulamadı'));
+  }
+}
+
+async function addGrantGroupMember() {
+  const groupId = grantSubjectGroup.value;
+  const email = $('grantGroupEmail').value.trim();
+  if (!groupId || !email) return;
+  try {
+    const response = await fetch(`/api/groups/${encodeURIComponent(groupId)}/members`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    if (!response.ok) throw new Error('member failed');
+    $('grantGroupEmail').value = '';
+    await loadGrantOptions();
+    toast(t('Üye eklendi'));
+  } catch (error) {
+    console.error(error);
+    toast(t('Üye eklenemedi'));
   }
 }
 
@@ -3240,6 +3333,9 @@ $('grantsBtn').addEventListener('click', openGrants);
 $('closeGrants').addEventListener('click', closeGrants);
 $('cancelGrant').addEventListener('click', closeGrants);
 $('grantScopeType').addEventListener('change', grantScopeTypeChanged);
+$('grantSubjectType').addEventListener('change', grantSubjectTypeChanged);
+$('createGroupBtn').addEventListener('click', createGrantGroup);
+$('addGroupMemberBtn').addEventListener('click', addGrantGroupMember);
 grantForm.addEventListener('submit', submitGrant);
 grantsModal.addEventListener('click', (event) => {
   if (event.target === grantsModal) closeGrants();

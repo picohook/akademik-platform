@@ -60,6 +60,7 @@ docker compose -f docker-compose.prod.yml exec db psql -U akademik -d akademik -
 docker compose -f docker-compose.prod.yml exec db psql -U akademik -d akademik -f /migrations/009-epub-pages.sql
 docker compose -f docker-compose.prod.yml exec db psql -U akademik -d akademik -f /migrations/010-grant-scope-key.sql
 docker compose -f docker-compose.prod.yml exec db psql -U akademik -d akademik -f /migrations/011-grant-audit.sql
+docker compose -f docker-compose.prod.yml exec db psql -U akademik -d akademik -f /migrations/012-groups.sql
 ```
 
 ## 5. App rolü parolasını değiştir

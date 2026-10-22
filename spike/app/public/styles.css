@@ -235,6 +235,8 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
 .icon-btn { width: 32px; height: 32px; display: grid; place-items: center; font-size: 15px; }
 .ghost-btn { padding: 7px 11px; font-size: 12.5px; }
 .ghost-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+#grantEmailLabel[hidden], #grantGroupLabel[hidden], #grantKeyLabel[hidden],
+#grantCollectionLabel[hidden], #grantTitleLabel[hidden] { display: none; }
 #downloadBtn[hidden] { display: none; }
 .ghost-btn span { display: inline-grid; place-items: center; min-width: 18px; height: 18px; border-radius: 999px; background: var(--bg); margin-left: 5px; font-size: 11px; }
 .primary { background: var(--accent); color: #fff; border-color: var(--accent); padding: 8px 14px; font-size: 13px; }
