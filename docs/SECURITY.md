@@ -8,7 +8,7 @@ Five findings were reported against v100. All five were confirmed and fixed.
 
 **Fix:** static serving is now an explicit allowlist (`index.html`, app modules, CSS, SW, manifest, `/icons/`, `/vendor/`); everything else is 404. The allowlist is checked against the **resolved filesystem path**, not the raw URL, so `/vendor/..%2fuploads/...` and `/vendor/%2e%2e/uploads/...` are rejected. Book files are only served through `/api/books/:id/file` and `/download`, which enforce session + grants.
 
-hOCR files are no longer static: `/ocr/<asset-uuid>/page-NNN.hocr` is a session+grant-checked route, preserving the OCR overlay without exposing the directory.
+hOCR files are no longer static: `/ocr/<asset-uuid>/page-NNN.hocr` is a session+grant-checked route, preserving the OCR overlay without exposing the directory. `/opds` is also behind the session gate (it was previously reachable unauthenticated because the gate only covered `/api/`).
 
 ## 2. URIError killed the process
 
@@ -47,6 +47,8 @@ Trade-off: logins for one tenant serialize for the duration of the count/insert 
 - `node --check` on server/app.
 - `/uploads/test.pdf` → 404, `/seed/sample.pdf` → 404, `/` → 200.
 - `/vendor/..%2fuploads/security-probe.txt` → 404; `/vendor/%2e%2e/uploads/security-probe.txt` → 404.
+- `/ocr/<asset>/page-001.hocr` → 401 anonymous, 200 with session.
+- `/opds` → 401 anonymous, 200 with session.
 - malformed URL → 400, server still healthy.
 - login/books/grants/OPDS smoke → 200.
 - DB-mode integration and concurrent login test still need to run against Postgres.

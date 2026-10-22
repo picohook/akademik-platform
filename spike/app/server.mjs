@@ -1996,7 +1996,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     const auth = readSession(req);
-    if (pathname.startsWith('/api/') && !auth) {
+    if (!auth && (pathname.startsWith('/api/') || pathname.startsWith('/ocr/') || pathname === '/opds')) {
       json(res, 401, { error: 'authentication required' });
       return;
     }
