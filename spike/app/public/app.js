@@ -2930,12 +2930,10 @@ bookSearch.addEventListener('input', () => {
   searchTimer = setTimeout(() => runSearch(bookSearch.value), 300);
 });
 searchWhole.addEventListener('change', () => {
-  if (searchWhole.checked) {
-    searchFuzzy.checked = false;
-    searchFuzzy.disabled = true;
-  } else {
-    searchFuzzy.disabled = false;
-  }
+  if (searchWhole.checked) searchFuzzy.checked = false;
+});
+searchFuzzy.addEventListener('change', () => {
+  if (searchFuzzy.checked) searchWhole.checked = false;
 });
 for (const toggle of [searchWhole, searchFuzzy]) {
   toggle.addEventListener('change', () => {
