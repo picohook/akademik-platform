@@ -4,7 +4,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web: **v87** (`spike/app/public/index.html`), stiller **v38**
+- Web: **v88** (`spike/app/public/index.html`), stiller **v38**
 - DB migration: **001–010** (`db/migrations/`)
 - Prod: **v52 + 008** deploy edildi (2026-10-21) — Caddy HTTPS, smoke **16/16**; kök/tam kelime/bulanık prod'da doğrulandı.
 - Son commit: dil düzeltmesi (bu commit)
@@ -38,7 +38,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - 500 MB fixture yok. 2.000 sayfa sentetik PDF v87: ilk açılış 491 ms (warm), sayfa 39’dan devam 1.638 ms (load 1.071 ms); 8–20 render ort. 27–46 ms, max 479 ms, heap 27–39 MB. Hedef <2 sn iki ölçümde de geçildi; tam soğuk cache ve 500 MB görsel dosya hâlâ gerekli. Scroll mode lazy DOM + `disableAutoFetch`.
 - Sürekli kaydırmada zoom her seferinde 697 pane yeniden kuruyor; ağır olabilir.
 - Eski oturumlar `sid` taşımadığı için yeniden giriş gerekir.
-- Seat limiti aynı tarayıcı sekmelerinde artmaz; ayrı profil/tarayıcı gerekir.
+- Seat limiti aynı tarayıcı sekmelerinde artmaz; ayrı profil/tarayıcı gerekir. Limit sayımı son **2 saat** içinde görülen oturumlardır; eski satırlar `docs/SESSIONS.md` ile temizlenir.
 - Demo modunda parola değiştirme/oturum iptali 501.
 - OCR otomasyonu yok; hOCR manuel/CLI.
 - EPUB okuyucu tarayıcıda otomatik test edilmedi; EPUB indirme 501. v78: tam kelime/bulanık birbirini dışlıyor; fuzzy yalnızca exact sonuç <3 iken ve `word_similarity >= 0.6` ile çalışıyor. Arama `<body>` ve gerçek chapter etiketi. Eski indeksler için `index-text --all --force`.

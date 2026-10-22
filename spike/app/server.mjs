@@ -302,7 +302,10 @@ async function createSession(user, req) {
         [user.id],
       );
       const { rows } = await client.query(
-        'select count(*)::int as count from user_sessions where user_id = $1',
+        `select count(*)::int as count
+           from user_sessions
+          where user_id = $1
+            and last_seen_at >= now() - interval '2 hours'`,
         [user.id],
       );
       if (rows[0].count >= max) throw sessionLimitError(max);
@@ -323,7 +326,7 @@ async function createSession(user, req) {
           `select count(*)::int as count
              from user_sessions
             where tenant_id = $1
-              and last_seen_at >= now() - interval '7 days'`,
+              and last_seen_at >= now() - interval '2 hours'`,
           [user.tenant_id || TENANT_ID],
         );
         if (tenantRows[0].count >= seatLimit) throw sessionLimitError(seatLimit, 'TENANT_SEAT_LIMIT');
