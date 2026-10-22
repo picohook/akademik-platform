@@ -4,7 +4,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web: **v63** (`spike/app/public/index.html`), stiller **v36**
+- Web: **v64** (`spike/app/public/index.html`), stiller **v36**
 - DB migration: **001–009** (`db/migrations/`)
 - Prod: **v52 + 008** deploy edildi (2026-10-21) — Caddy HTTPS, smoke **16/16**; kök/tam kelime/bulanık prod'da doğrulandı.
 - Son commit: dil düzeltmesi (bu commit)

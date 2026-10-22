@@ -180,24 +180,40 @@ export class EpubEngine {
 
   highlightSearch(query) {
     this.clearSearchHighlights();
-    const needle = String(query || '').trim();
+    const needle = String(query || '').trim().toLocaleLowerCase('tr');
     if (!needle || !this.rendition) return 0;
     let count = 0;
     for (const contents of this.rendition.getContents() || []) {
-      const section = contents.section;
-      if (!section?.find) continue;
-      for (const match of section.find(needle).slice(0, 200)) {
-        try {
-          this.rendition.annotations.highlight(
-            match.cfi,
-            { search: needle },
-            undefined,
-            'epub-search-hit',
-            { fill: 'rgba(255, 150, 0, 0.35)', 'fill-opacity': '1' },
-          );
-          this.searchHighlights.push(match.cfi);
-          count += 1;
-        } catch { /* invalid CFI */ }
+      const section = this.book?.spine?.spineItems?.[contents.sectionIndex];
+      const doc = contents.document;
+      if (!section || !doc?.body) continue;
+      const walker = doc.createTreeWalker(doc.body, 4);
+      let node = walker.nextNode();
+      while (node && count < 200) {
+        const text = node.textContent || '';
+        const lower = text.toLocaleLowerCase('tr');
+        let from = 0;
+        let index = lower.indexOf(needle, from);
+        while (index >= 0 && count < 200) {
+          try {
+            const range = doc.createRange();
+            range.setStart(node, index);
+            range.setEnd(node, index + needle.length);
+            const cfi = section.cfiFromRange(range);
+            this.rendition.annotations.highlight(
+              cfi,
+              { search: needle },
+              undefined,
+              'epub-search-hit',
+              { fill: 'rgba(255, 150, 0, 0.45)', 'fill-opacity': '1' },
+            );
+            this.searchHighlights.push(cfi);
+            count += 1;
+          } catch { /* invalid range */ }
+          from = index + needle.length;
+          index = lower.indexOf(needle, from);
+        }
+        node = walker.nextNode();
       }
     }
     return count;

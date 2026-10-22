@@ -1232,6 +1232,7 @@ async function runSearch(rawQuery) {
         searchEmpty.hidden = results.length > 0;
         searchEmpty.textContent = 'Sonuç bulunamadı.';
         updateSearchNav();
+        state.epubEngine?.highlightSearch(query);
         return;
       }
     } catch (error) {
@@ -1249,6 +1250,7 @@ async function runSearch(rawQuery) {
     searchEmpty.hidden = fallback.length > 0;
     searchEmpty.textContent = 'Sonuç bulunamadı.';
     updateSearchNav();
+    state.epubEngine?.highlightSearch(query);
     return;
   }
 
