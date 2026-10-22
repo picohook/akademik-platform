@@ -42,6 +42,8 @@ node scripts/make-image-pdf.mjs ../../tmp/image-pages ../../tmp/large-500mb.pdf
 
 Generated fixture (2026-10-22): `tmp/large-500mb.pdf`, **500,640,062 bytes**, **188 pages**, image-only (no text layer). Node/PDF.js legacy baseline: document load **4,549 ms**, first-page text 87 ms (0 chars), 20 page texts 187 ms. Browser cold-cache measurement is still required; at 20 Mbps a full 500 MB transfer would take ~200 s, so this test depends on PDF.js range requests fetching only the first-page image. If it fails, the acceptance target must be set with the real publisher file, not synthetic noise.
 
+**Browser result (v89, 20 Mbps, page 20/188):** PDF load **1,488 ms** (range requests working), first page **7,368 ms**, 20 renders avg **4,238 ms** / max **5,852 ms**, last canvas **3,030 ms**, text 21 ms, heap **10 MB**, zoom 111%. **Fails <2 s.** The bottleneck is JPEG decode + canvas for noisy 1600×2200 images, not network. A real scanned book may differ; a preview/derivative pipeline is the likely fix for image-only large PDFs.
+
 ## Large-file baseline — 2026-10-22
 
 > DevTools custom throttling units: **20 Mbps = 20,000 kbps**. If the profile field is set to `20`, it is 20 **kbps**; a 706 KB PDF then takes ~283 s (observed 317 s), which is not a reader regression.

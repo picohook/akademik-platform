@@ -27,7 +27,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 ## Açık işler (sırayla)
 
 1. **WCAG 2.2 AA manuel denetimi:** ekran okuyucu, axe, %200 zoom, EPUB iframe.
-2. **500 MB / 2.000 sayfa:** fixture gelince performans; sürekli kaydırma belleği.
+2. **Görsel ağırlıklı 500 MB PDF:** JPEG/canvas render 3–7 s; önizleme/derivative pipeline veya gerçek taramayla kabul eşiği.
 3. **EPUB indirme/filigran:** PDF dışı indirme 501; lisans/watermark kararı.
 4. **Interop:** MARC21/OPDS/OAI-PMH/COUNTER.
 5. **Mobil/PWA:** kurulabilir shell + swipe hazır; çevrimdışı kitap indirme/native kararı kaldı, sonra analitik/AI.
@@ -35,7 +35,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Bilinen açıklar / riskler
 
-- 500 MB fixture yok. 2.000 sayfa sentetik PDF v89: 20 Mbps cold cache 3 run — ilk sayfa **1.404/1.614/1.647 ms**, PDF load 1.129–1.383 ms, 20 render ort. 29–43 ms (max 278 ms), heap 4–7 MB; **hedef geçildi**. 500 MB görsel dosya hâlâ gerekli. Scroll mode lazy DOM + `disableAutoFetch`.
+- 2.000 sayfa sentetik PDF v89: 20 Mbps cold cache 3 run — ilk sayfa **1.404/1.614/1.647 ms**, PDF load 1.129–1.383 ms, 20 render ort. 29–43 ms (max 278 ms), heap 4–7 MB; **hedef geçildi**. 500 MB görsel fixture (`tmp/large-500mb.pdf`, 188 sayfa, JPEG-only) ilk sayfa **7.368 ms**, render ort. 4.238 s, canvas 3.03 s; **hedef kaldı**. JPEG/canvas darboğazı; gerçek tarama veya önizleme pipeline’ı gerekli.
 - Sürekli kaydırmada zoom her seferinde 697 pane yeniden kuruyor; ağır olabilir.
 - Eski oturumlar `sid` taşımadığı için yeniden giriş gerekir.
 - Seat limiti aynı tarayıcı sekmelerinde artmaz; ayrı profil/tarayıcı gerekir. Limit sayımı son **2 saat** içinde görülen oturumlardır; eski satırlar `docs/SESSIONS.md` ile temizlenir.
