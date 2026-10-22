@@ -552,6 +552,27 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
 }
 .toast[hidden] { display: none; }
 
+@media (max-width: 600px) {
+  .topbar { padding-top: max(10px, env(safe-area-inset-top)); }
+  .reader-top { padding-top: max(8px, env(safe-area-inset-top)); }
+  .reader-actions { gap: 2px; flex-wrap: wrap; }
+  .reader-actions .ghost-btn,
+  .reader-actions .icon-btn { min-width: 38px; min-height: 38px; }
+  .reader:not(.epub-mode) #fitToggle,
+  .reader:not(.epub-mode) #rotateBtn,
+  .reader:not(.epub-mode) #spreadBtn,
+  .reader:not(.epub-mode) #scrollBtn { display: none; }
+  .toc, .notes { width: min(88vw, 340px); }
+  .page-area { padding: 4px; touch-action: pan-y; }
+  .nav-btn { width: 34px; height: 52px; opacity: 0.55; }
+  .modal-card { padding: 14px; }
+  .modal { padding: 10px; }
+  .form-row { grid-template-columns: 1fr; }
+  .login-card { padding: 20px; }
+  input, select, textarea { font-size: 16px; }
+  .grid { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 820px) {
   .topbar { flex-wrap: wrap; padding: 12px 16px; gap: 10px; }
   .search { order: 3; flex-basis: 100%; margin-left: 0; max-width: none; }

@@ -4,6 +4,9 @@ import { EpubEngine } from '/epub-engine.mjs';
 import { initializeLanguage, toggleLanguage, t, translateDom, getLang } from '/i18n.mjs';
 
 initializeLanguage();
+if ('serviceWorker' in navigator && (window.isSecureContext || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('/sw.js').catch((error) => console.warn('service worker:', error.message));
+}
 for (const button of document.querySelectorAll('[data-lang-toggle]')) {
   button.addEventListener('click', toggleLanguage);
 }
@@ -2417,6 +2420,7 @@ async function openEpubBook(book) {
         }
       },
       onSelected: handleEpubSelection,
+      onSwipe: (delta) => changePage(delta),
     });
     state.epubEngine = engine;
     await engine.open(`/api/books/${encodeURIComponent(book.id)}/book.epub`, initialCfi || undefined);
@@ -2899,6 +2903,25 @@ function changePage(delta) {
   }
   goToPage(state.page + delta * (state.scrollMode ? 1 : state.twoPage ? 2 : 1));
 }
+
+let readerSwipe = null;
+pageArea.addEventListener('touchstart', (event) => {
+  if (reader.hidden || event.touches.length !== 1 || event.target.closest('button, input, select, a, textarea')) {
+    readerSwipe = null;
+    return;
+  }
+  readerSwipe = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+}, { passive: true });
+pageArea.addEventListener('touchend', (event) => {
+  if (!readerSwipe || !event.changedTouches.length) {
+    readerSwipe = null;
+    return;
+  }
+  const dx = event.changedTouches[0].clientX - readerSwipe.x;
+  const dy = event.changedTouches[0].clientY - readerSwipe.y;
+  readerSwipe = null;
+  if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) changePage(dx < 0 ? 1 : -1);
+}, { passive: true });
 
 search.addEventListener('input', () => {
   const query = search.value.trim();

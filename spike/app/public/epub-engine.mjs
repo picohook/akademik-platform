@@ -28,10 +28,11 @@ function normalize(value) {
 }
 
 export class EpubEngine {
-  constructor(container, { onRelocated, onSelected } = {}) {
+  constructor(container, { onRelocated, onSelected, onSwipe } = {}) {
     this.container = container;
     this.onRelocated = onRelocated || (() => {});
     this.onSelected = onSelected || (() => {});
+    this.onSwipe = onSwipe || (() => {});
     this.book = null;
     this.rendition = null;
     this.toc = [];
@@ -73,6 +74,24 @@ export class EpubEngine {
     this.rendition.on('selected', (cfiRange, contents) => {
       const text = contents?.window?.getSelection()?.toString() || '';
       if (text.trim()) this.onSelected({ cfiRange, text: text.trim(), contents });
+    });
+    this.rendition.hooks.content.register((contents) => {
+      let start = null;
+      const doc = contents.document;
+      doc.addEventListener('touchstart', (event) => {
+        if (event.touches.length !== 1 || event.target.closest('a, button, input, select, textarea')) {
+          start = null;
+          return;
+        }
+        start = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+      }, { passive: true });
+      doc.addEventListener('touchend', (event) => {
+        if (!start || !event.changedTouches.length) return;
+        const dx = event.changedTouches[0].clientX - start.x;
+        const dy = event.changedTouches[0].clientY - start.y;
+        start = null;
+        if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) this.onSwipe(dx < 0 ? 1 : -1);
+      }, { passive: true });
     });
     await this.rendition.display(initialCfi || undefined);
     this.resize();
