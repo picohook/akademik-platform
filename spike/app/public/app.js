@@ -372,7 +372,7 @@ function makeCard(book) {
     meta.appendChild(offline);
   }
 
-  if (canManage()) {
+  if (canEditBook(book)) {
     const edit = document.createElement('button');
     edit.type = 'button';
     edit.className = 'edit-btn';
@@ -983,9 +983,19 @@ function canManage() {
   return ['admin', 'librarian', 'publisher'].includes(state.user?.role);
 }
 
+function canManageAccess() {
+  return ['admin', 'librarian'].includes(state.user?.role);
+}
+
+function canEditBook(book) {
+  if (!state.user) return false;
+  if (['admin', 'librarian'].includes(state.user.role)) return true;
+  return state.user.role === 'publisher' && book?.metadata?.uploaded_by === state.user.id;
+}
+
 function applyRoleUi() {
   $('openUpload').hidden = !canManage();
-  $('grantsBtn').hidden = !canManage();
+  $('grantsBtn').hidden = !canManageAccess();
 }
 
 function setAppInert(inert) {

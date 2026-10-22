@@ -138,6 +138,16 @@ function canManage(role) {
   return role === 'admin' || role === 'librarian' || role === 'publisher';
 }
 
+function canManageAccess(role) {
+  return role === 'admin' || role === 'librarian';
+}
+
+function canEditBook(auth, book) {
+  if (!book || !auth) return false;
+  if (auth.role === 'admin' || auth.role === 'librarian') return true;
+  return auth.role === 'publisher' && book.metadata?.uploaded_by === auth.userId;
+}
+
 function parseAuthors(value) {
   const items = Array.isArray(value) ? value : String(value || '').split(';');  return items.map((item) => {
     if (item && typeof item === 'object') {
@@ -298,8 +308,9 @@ async function createSession(user, req) {
   return withTenant(async (client) => {
     await client.query('begin');
     try {
-      // Serialize concurrent logins for the same user so two requests cannot
-      // both pass the count check.
+      // Serialize login seat checks for the whole tenant, then for the user.
+      // Different users could otherwise pass the tenant count concurrently.
+      await client.query('select pg_advisory_xact_lock(hashtext($1::text))', [`tenant:${user.tenant_id || TENANT_ID}`]);
       await client.query('select pg_advisory_xact_lock(hashtext($1::text))', [user.id]);
       await client.query(
         "delete from user_sessions where user_id = $1 and last_seen_at < now() - interval '7 days'",
@@ -586,7 +597,7 @@ async function activeGrants(auth) {
     });
   } catch (error) {
     console.warn('[grants] lookup failed:', error.message);
-    return [];
+    throw new Error('grant lookup failed');
   }
 }
 
@@ -1571,7 +1582,7 @@ async function detectUploadFormat(destination) {
   return null;
 }
 
-async function handleUpload(req) {
+async function handleUpload(req, auth) {
   const MAX_BYTES = 300 * 1024 * 1024;
   const fields = {};
   let fileMeta = null;
@@ -1721,7 +1732,7 @@ async function handleUpload(req) {
           `insert into works (tenant_id, content_type, title, subtitle, language, abstract, subjects, metadata)
            values ($1, 'monograph', $2, $3, $4, null, $5, $6::jsonb)
            returning id`,
-          [TENANT_ID, title, subtitle, language, subjects, JSON.stringify({ uploaded: true, authors })],
+          [TENANT_ID, title, subtitle, language, subjects, JSON.stringify({ uploaded: true, authors, uploaded_by: auth?.userId || null })],
         );
         const edition = await client.query(
           `insert into editions (tenant_id, work_id, publisher, publication_year, license_note, rights_note)
@@ -1822,6 +1833,15 @@ async function servePdf(req, res, storageKey) {
 
 async function serveStatic(req, res, pathname) {
   const relative = pathname === '/' ? '/index.html' : pathname;
+  const allowedFiles = new Set([
+    '/index.html', '/app.js', '/styles.css', '/i18n.mjs', '/citations.mjs',
+    '/search.mjs', '/epub-engine.mjs', '/offline.mjs', '/sw.js', '/manifest.webmanifest',
+  ]);
+  const allowedPrefixes = ['/icons/', '/vendor/'];
+  if (!allowedFiles.has(relative) && !allowedPrefixes.some((prefix) => relative.startsWith(prefix))) {
+    json(res, 404, { error: 'not found' });
+    return;
+  }
   const filePath = path.resolve(PUBLIC_DIR, '.' + relative);
   if (!filePath.startsWith(PUBLIC_DIR + path.sep)) {
     json(res, 403, { error: 'forbidden' });
@@ -1851,8 +1871,16 @@ async function serveStatic(req, res, pathname) {
 await mkdir(UPLOAD_DIR, { recursive: true });
 
 const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-  const pathname = decodeURIComponent(url.pathname);
+  let url;
+  let pathname;
+  try {
+    url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    pathname = decodeURIComponent(url.pathname);
+  } catch {
+    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ error: 'bad request' }));
+    return;
+  }
 
   res.setHeader('x-content-type-options', 'nosniff');
   res.setHeader('x-frame-options', 'DENY');
@@ -2178,12 +2206,12 @@ const server = http.createServer(async (req, res) => {
         json(res, 403, { error: 'yetkiniz yok' });
         return;
       }
-      const book = await handleUpload(req);
+      const book = await handleUpload(req, auth);
       json(res, 201, book);
       return;
     }
     if (pathname === '/api/collections' && req.method === 'GET') {
-      if (!canManage(auth.role)) {
+      if (!canManageAccess(auth.role)) {
         json(res, 403, { error: 'yetkiniz yok' });
         return;
       }
@@ -2191,7 +2219,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname === '/api/groups' && req.method === 'GET') {
-      if (!canManage(auth.role)) {
+      if (!canManageAccess(auth.role)) {
         json(res, 403, { error: 'yetkiniz yok' });
         return;
       }
@@ -2199,7 +2227,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname === '/api/groups' && req.method === 'POST') {
-      if (!canManage(auth.role)) {
+      if (!canManageAccess(auth.role)) {
         json(res, 403, { error: 'yetkiniz yok' });
         return;
       }
@@ -2211,7 +2239,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname.startsWith('/api/groups/') && pathname.endsWith('/members') && req.method === 'POST') {
-      if (!canManage(auth.role)) {
+      if (!canManageAccess(auth.role)) {
         json(res, 403, { error: 'yetkiniz yok' });
         return;
       }
@@ -2225,7 +2253,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname.startsWith('/api/groups/') && pathname.endsWith('/members') && req.method === 'DELETE') {
-      if (!canManage(auth.role)) {
+      if (!canManageAccess(auth.role)) {
         json(res, 403, { error: 'yetkiniz yok' });
         return;
       }
@@ -2252,7 +2280,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname === '/api/grants' && req.method === 'GET') {
-      if (!canManage(auth.role)) {
+      if (!canManageAccess(auth.role)) {
         json(res, 403, { error: 'yetkiniz yok' });
         return;
       }
@@ -2260,7 +2288,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname === '/api/grants/usage' && req.method === 'GET') {
-      if (!canManage(auth.role)) {
+      if (!canManageAccess(auth.role)) {
         json(res, 403, { error: 'yetkiniz yok' });
         return;
       }
@@ -2268,7 +2296,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname === '/api/grants/audit' && req.method === 'GET') {
-      if (!canManage(auth.role)) {
+      if (!canManageAccess(auth.role)) {
         json(res, 403, { error: 'yetkiniz yok' });
         return;
       }
@@ -2276,7 +2304,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname === '/api/grants' && req.method === 'POST') {
-      if (!canManage(auth.role)) {
+      if (!canManageAccess(auth.role)) {
         json(res, 403, { error: 'yetkiniz yok' });
         return;
       }
@@ -2288,7 +2316,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname.startsWith('/api/grants/') && req.method === 'DELETE') {
-      if (!canManage(auth.role)) {
+      if (!canManageAccess(auth.role)) {
         json(res, 403, { error: 'yetkiniz yok' });
         return;
       }
@@ -2301,7 +2329,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname === '/api/reports/usage.csv' && req.method === 'GET') {
-      if (!canManage(auth.role)) {
+      if (!canManageAccess(auth.role)) {
         json(res, 403, { error: 'yetkiniz yok' });
         return;
       }
@@ -2326,11 +2354,16 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname.startsWith('/api/books/') && req.method === 'PATCH') {
-      if (!canManage(auth.role)) {
+      const id = pathname.slice('/api/books/'.length);
+      const existing = await getBook(id);
+      if (!existing) {
+        json(res, 404, { error: 'book not found' });
+        return;
+      }
+      if (!canEditBook(auth, existing)) {
         json(res, 403, { error: 'yetkiniz yok' });
         return;
       }
-      const id = pathname.slice('/api/books/'.length);
       const book = await updateBook(id, await readJson(req));
       if (!book) {
         json(res, 404, { error: 'book not found' });
@@ -2340,11 +2373,16 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname.startsWith('/api/books/') && req.method === 'DELETE') {
-      if (!canManage(auth.role)) {
+      const id = decodeURIComponent(pathname.slice('/api/books/'.length));
+      const existing = await getBook(id);
+      if (!existing) {
+        json(res, 404, { error: 'book not found' });
+        return;
+      }
+      if (!canEditBook(auth, existing)) {
         json(res, 403, { error: 'yetkiniz yok' });
         return;
       }
-      const id = decodeURIComponent(pathname.slice('/api/books/'.length));
       const result = await deleteUploadedBook(id);
       if (result.status === 'not_found') {
         json(res, 404, { error: 'book not found' });
@@ -2448,7 +2486,7 @@ const server = http.createServer(async (req, res) => {
     }
     const marcMatch = pathname.match(/^\/api\/books\/([^/]+)\/marc$/);
     if (marcMatch && req.method === 'GET') {
-      if (!canManage(auth.role)) {
+      if (!canManageAccess(auth.role)) {
         json(res, 403, { error: 'yetkiniz yok' });
         return;
       }
