@@ -1085,6 +1085,23 @@ async function getPageText(pageNumber) {
   return text;
 }
 
+function resetSearch() {
+  clearTimeout(searchTimer);
+  state.searchRun += 1;
+  state.activeQuery = '';
+  state.searchQuery = '';
+  state.searchHits = [];
+  state.searchIndex = -1;
+  bookSearch.value = '';
+  searchResults.replaceChildren();
+  searchStatus.textContent = '';
+  searchEmpty.hidden = true;
+  searchEmpty.textContent = '';
+  updateSearchNav();
+  refreshSearchHighlights();
+  state.epubEngine?.clearSearchHighlights();
+}
+
 function updateSearchNav() {
   const total = state.searchHits.length;
   searchPosition.textContent = total
@@ -2145,6 +2162,7 @@ async function openEpubBook(book) {
     state.epubEngine.destroy();
     state.epubEngine = null;
   }
+  resetSearch();
   state.book = book;
   state.readerReturnFocus = document.activeElement;
   state.epubMode = true;
@@ -2249,6 +2267,7 @@ async function openBook(book) {
     state.epubEngine.destroy();
     state.epubEngine = null;
   }
+  resetSearch();
   state.epubMode = false;
   reader.classList.remove('epub-mode');
   epubView.hidden = true;
@@ -2367,6 +2386,7 @@ async function closeReader() {
     state.epubEngine.destroy();
     state.epubEngine = null;
   }
+  resetSearch();
   state.epubMode = false;
   state.epubProgress = null;
   reader.classList.remove('epub-mode');
