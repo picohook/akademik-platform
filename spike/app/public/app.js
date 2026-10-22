@@ -361,7 +361,12 @@ function makeCard(book) {
       event.stopPropagation();
       handleOfflineDownload(book).catch((error) => {
         console.error(error);
-        toast(t('Çevrimdışı kaydedilemedi'));
+        const detail = error.name === 'QuotaExceededError'
+          ? t('Depolama alanı yetersiz')
+          : error.message === 'Failed to fetch'
+            ? t('İnternet bağlantısı yok')
+            : error.message;
+        toast(`${t('Çevrimdışı kaydedilemedi')}: ${detail}`);
       });
     });
     meta.appendChild(offline);
@@ -471,8 +476,24 @@ async function handleOfflineDownload(book) {
     return;
   }
   toast(t('Çevrimdışı kaydediliyor…'));
-  const response = await fetch(`/api/books/${encodeURIComponent(book.id)}/file`);
-  if (!response.ok) throw new Error('download failed');
+  const url = `/api/books/${encodeURIComponent(book.id)}/file`;
+  const probe = await fetch(url, { headers: { range: 'bytes=0-0' } });
+  if (!probe.ok && probe.status !== 206) {
+    const payload = await probe.json().catch(() => ({}));
+    throw new Error(payload.error || `HTTP ${probe.status}`);
+  }
+  const range = probe.headers.get('content-range') || '';
+  const total = Number(range.split('/')[1]) || Number(probe.headers.get('content-length')) || 0;
+  probe.body?.cancel();
+  if (total > 300 * 1024 * 1024) {
+    toast(t('Dosya 300 MB sınırını aşıyor; çevrimdışı kaydedilemez'));
+    return;
+  }
+  const response = await fetch(url);
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || `HTTP ${response.status}`);
+  }
   const blob = await response.blob();
   const estimate = await storageEstimate();
   if (estimate?.quota && estimate.usage + blob.size > estimate.quota * 0.95) {
