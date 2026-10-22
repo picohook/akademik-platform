@@ -3,6 +3,13 @@
 
 const DICT = {
   'İçeriğe atla': 'Skip to content',
+  'Okuyucu': 'Reader',
+  'EPUB içeriği': 'EPUB content',
+  'Katalogda ara': 'Search catalog',
+  'Bölüm başlığında ara': 'Search chapters',
+  'Kitabın içinde ara': 'Search in book',
+  'Notlarda ara': 'Search notes',
+  'Vurgu notu': 'Highlight note',
   'Okuyucu:': 'Reader:',
   'Kütüphaneci:': 'Librarian:',
   '· Kütüphaneci:': '· Librarian:',

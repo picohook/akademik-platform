@@ -376,6 +376,27 @@ function trapModalFocus(event) {
   return true;
 }
 
+function trapReaderFocus(event) {
+  if (event.key !== 'Tab' || reader.hidden) return false;
+  const focusable = [...reader.querySelectorAll(
+    'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], iframe, [tabindex]:not([tabindex="-1"])',
+  )].filter((element) => element.offsetParent !== null);
+  if (!focusable.length) return false;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+    return true;
+  }
+  if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+    return true;
+  }
+  return false;
+}
+
 function openEdit(book) {
   editId.value = book.id;
   editTitle.value = book.title || '';
@@ -919,9 +940,15 @@ function renderThumbs() {
   thumbGrid.appendChild(fragment);
 }
 
+function syncPanelA11y() {
+  $('toggleToc').setAttribute('aria-expanded', tocPanel.hidden ? 'false' : 'true');
+  $('toggleNotes').setAttribute('aria-expanded', notesPanel.hidden ? 'false' : 'true');
+}
+
 function toggleToc(show) {
   const next = typeof show === 'boolean' ? show : tocPanel.hidden;
   tocPanel.hidden = !next;
+  syncPanelA11y();
   if (next) {
     renderToc();
     if (window.innerWidth < 820) notesPanel.hidden = true;
@@ -2184,6 +2211,10 @@ async function openEpubBook(book) {
   state.epubProgress = null;
   state.annotations = [];
   reader.hidden = false;
+  setAppInert(true);
+  tocPanel.hidden = true;
+  notesPanel.hidden = true;
+  syncPanelA11y();
   document.body.style.overflow = 'hidden';
   readerTitle.textContent = book.title;
   readerMeta.textContent = `${book.publisher || ''}${book.publication_year ? ` · ${book.publication_year}` : ''}`;
@@ -2233,6 +2264,7 @@ async function openEpubBook(book) {
     if (!frame || !frameRect || frameRect.height < 20) {
       throw new Error('EPUB görünümü oluşmadı (iframe boyutu 0)');
     }
+    frame.setAttribute('title', t('EPUB içeriği'));
     let frameBody = null;
     try { frameBody = frame.contentDocument?.body || null; } catch { /* cross-origin */ }
     if (frameBody && !frameBody.textContent.trim() && !frameBody.querySelector('img, svg, canvas')) {
@@ -2332,12 +2364,14 @@ async function openBook(book) {
   tocFilter.value = '';
   tocPanel.hidden = true;
   reader.hidden = false;
+  setAppInert(true);
   document.body.style.overflow = 'hidden';
   readerTitle.textContent = book.title;
   readerMeta.textContent = `${book.publisher || ''}${book.publication_year ? ` · ${book.publication_year}` : ''}`;
   downloadBtn.hidden = book.allow_download === false;
   document.body.classList.toggle('print-blocked', book.allow_print === false);
   notesPanel.hidden = window.innerWidth < 820;
+  syncPanelA11y();
   pageLabel.textContent = '…';
 
   try {
@@ -2456,6 +2490,7 @@ async function closeReader() {
   }
   const returnFocus = state.readerReturnFocus;
   state.readerReturnFocus = null;
+  if (loginScreen.hidden) setAppInert(false);
   if (returnFocus && returnFocus.isConnected) returnFocus.focus();
 }
 
@@ -2709,6 +2744,7 @@ document.addEventListener('keydown', (event) => {
     && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable);
 
   if (trapModalFocus(event)) return;
+  if (trapReaderFocus(event)) return;
 
   if (!passwordModal.hidden) {
     if (event.key === 'Escape') closePassword();
@@ -2767,6 +2803,7 @@ document.addEventListener('keydown', (event) => {
       break;
     case 'n':
       notesPanel.hidden = !notesPanel.hidden;
+      syncPanelA11y();
       if (!notesPanel.hidden && window.innerWidth < 820) tocPanel.hidden = true;
       break;
     case 'b':
@@ -3029,6 +3066,7 @@ scrollBtn.addEventListener('click', () => {
 });
 $('toggleNotes').addEventListener('click', () => {
   notesPanel.hidden = !notesPanel.hidden;
+  syncPanelA11y();
   if (!notesPanel.hidden && window.innerWidth < 820) tocPanel.hidden = true;
 });
 $('hlSave').addEventListener('click', saveHighlight);

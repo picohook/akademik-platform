@@ -30,7 +30,7 @@
       <span class="brand-text"><span id="brandName">Akademik Platform</span> <em id="brandTag">spike</em></span>
     </a>
     <div class="search">
-      <input id="search" type="search" placeholder="Başlık, konu veya tam metin ara…" autocomplete="off" />
+      <input id="search" type="search" placeholder="Başlık, konu veya tam metin ara…" aria-label="Katalogda ara" autocomplete="off" />
       <kbd>/</kbd>
     </div>
     <span class="mode" id="mode">bağlanıyor…</span>
@@ -172,7 +172,7 @@
     </div>
   </div>
 
-  <div class="reader" id="reader" hidden>
+  <div class="reader" id="reader" role="dialog" aria-modal="true" aria-label="Okuyucu" hidden>
     <div class="reader-top">
       <button class="icon-btn" id="closeReader" aria-label="Kapat">✕</button>
       <div class="reader-title">
@@ -180,7 +180,7 @@
         <span id="readerMeta"></span>
       </div>
       <div class="reader-actions">
-        <button class="ghost-btn" id="toggleToc" type="button" title="İçindekiler" aria-label="İçindekiler">☰</button>
+        <button class="ghost-btn" id="toggleToc" type="button" title="İçindekiler" aria-label="İçindekiler" aria-controls="tocPanel" aria-expanded="false">☰</button>
         <div class="page-jump">
           <input id="pageInput" type="number" min="1" value="1" aria-label="Sayfa numarası" />
           <span id="pageTotal">/ 1</span>
@@ -197,7 +197,7 @@
         <button class="ghost-btn" id="bookmarkBtn" type="button" title="Yer imi" aria-label="Yer imi" aria-pressed="false">☆</button>
         <button class="ghost-btn" id="citeBook" type="button" title="Atıf">Atıf</button>
         <button class="ghost-btn" id="downloadBtn" type="button" title="PDF indir" hidden>İndir</button>
-        <button class="ghost-btn" id="toggleNotes">Notlar <span id="noteCount">0</span></button>
+        <button class="ghost-btn" id="toggleNotes" aria-controls="notesPanel" aria-expanded="false">Notlar <span id="noteCount">0</span></button>
       </div>
     </div>
     <div class="reader-body">
@@ -213,14 +213,14 @@
         </div>
         <div id="tocView" role="tabpanel" aria-labelledby="tabToc">
           <div class="toc-filter">
-            <input id="tocFilter" type="search" placeholder="Bölüm başlığında ara…" />
+            <input id="tocFilter" type="search" placeholder="Bölüm başlığında ara…" aria-label="Bölüm başlığında ara" />
           </div>
           <div class="toc-list" id="tocList"></div>
           <div class="toc-empty" id="tocEmpty" hidden></div>
         </div>
         <div id="searchView" hidden role="tabpanel" aria-labelledby="tabSearch">
           <div class="toc-filter">
-            <input id="bookSearch" type="search" placeholder="Kitabın içinde ara…" />
+            <input id="bookSearch" type="search" placeholder="Kitabın içinde ara…" aria-label="Kitabın içinde ara" />
           </div>
           <div class="search-options">
             <label class="search-toggle" title="Yalnızca tam kelime eşleşmeleri">
@@ -245,7 +245,7 @@
       </aside>
       <div class="page-area">
         <div class="scroll-pages" id="scrollPages" hidden></div>
-        <div class="epub-view" id="epubView" hidden></div>
+        <div class="epub-view" id="epubView" aria-label="EPUB içeriği" hidden></div>
         <button class="nav-btn" id="prevPage" aria-label="Önceki sayfa">‹</button>
         <div class="page-wrap" id="pageWrap">
           <canvas id="canvas"></canvas>
@@ -273,7 +273,7 @@
           </div>
         </div>
         <div class="notes-filter">
-          <input id="noteFilter" type="search" placeholder="Notlarda ara…" />
+          <input id="noteFilter" type="search" placeholder="Notlarda ara…" aria-label="Notlarda ara" />
           <select id="noteColorFilter">
             <option value="all">Tüm renkler</option>
             <option value="yellow">Sarı</option>
@@ -298,7 +298,7 @@
       <button class="hl-color blue" data-color="blue" type="button" aria-label="Mavi"></button>
       <button class="hl-color pink" data-color="pink" type="button" aria-label="Pembe"></button>
     </div>
-    <input id="hlNote" type="text" placeholder="Not (opsiyonel)" maxlength="280" />
+    <input id="hlNote" type="text" placeholder="Not (opsiyonel)" aria-label="Vurgu notu" maxlength="280" />
     <button class="primary" id="hlSave">Vurgula</button>
     <button class="icon-btn" id="hlCancel" aria-label="İptal">✕</button>
   </div>
@@ -314,6 +314,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=68"></script>
+  <script type="module" src="/app.js?v=69"></script>
 </body>
 </html>

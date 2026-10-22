@@ -72,6 +72,8 @@ Run in Chrome and Edge; repeat mobile width once.
 ### Accessibility
 
 - [ ] Login: Tab reaches email/password/submit; focus ring visible; app behind is inert.
+- [ ] Open a book: background is inert; Tab stays inside the reader; Esc/close returns focus to the card.
+- [ ] TOC/Notes buttons expose `aria-expanded`; panels stay reachable by keyboard.
 - [ ] Open Düzenle/Atıf/Parola: Tab cycles inside the dialog; Shift+Tab wraps; Esc closes and focus returns to the trigger.
 - [ ] TOC tabs support ←/→ and `aria-selected` updates.
 - [ ] TOC/thumbnail active item has `aria-current`.
