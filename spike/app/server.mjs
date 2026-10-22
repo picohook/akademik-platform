@@ -17,6 +17,12 @@ import {
   normalizeSearch,
 } from './public/search.mjs';
 
+function chapterNumberFromHref(href) {
+  const base = decodeURIComponent(String(href || '').split('/').pop() || '');
+  const match = base.match(/chapter[\s_-]*(\d+)/i);
+  return match ? Number(match[1]) : null;
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const UPLOAD_DIR = path.join(PUBLIC_DIR, 'uploads');
@@ -1426,6 +1432,7 @@ const server = http.createServer(async (req, res) => {
           return {
             page: row.page_no,
             href: row.locator || null,
+            chapter: chapterNumberFromHref(row.locator),
             snippet: row.snippet,
             source: row.source,
             matches,
@@ -1439,6 +1446,7 @@ const server = http.createServer(async (req, res) => {
           results.push({
             page: row.page_no,
             href: row.locator || null,
+            chapter: chapterNumberFromHref(row.locator),
             snippet: buildSnippet(row.text_content, anchor.index, anchor.length),
             source: row.source,
             matches: 1,

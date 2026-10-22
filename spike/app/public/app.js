@@ -1212,6 +1212,7 @@ function addEpubSearchResult(result, index) {
   state.searchHits.push({
     page: result.page,
     href: result.href || '',
+    chapter: result.chapter || null,
     snippet: result.snippet,
     matches: result.matches || 1,
     matchType: result.matchType || 'exact',
@@ -1222,7 +1223,11 @@ function addEpubSearchResult(result, index) {
   button.className = 'toc-item search-item';
   button.dataset.index = String(index);
   const label = document.createElement('span');
-  label.textContent = t(`Bölüm ${result.page}${result.matches > 1 ? ` · ${result.matches} eşleşme` : ''}`);
+  const chapter = Number(result.chapter);
+  const fallbackLabel = String(result.href || '').split('/').pop().replace(/\.[^.]+$/, '');
+  label.textContent = t(chapter
+    ? `Bölüm ${chapter}${result.matches > 1 ? ` · ${result.matches} eşleşme` : ''}`
+    : `${fallbackLabel || 'Bölüm'}${result.matches > 1 ? ` · ${result.matches} eşleşme` : ''}`);
   const snippet = document.createElement('small');
   snippet.className = 'search-snippet';
   snippet.textContent = result.snippet;
