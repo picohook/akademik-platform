@@ -179,7 +179,7 @@
         <strong id="grantsHeading">Erişim grantleri</strong>
         <button class="icon-btn" id="closeGrants" type="button" aria-label="Kapat">✕</button>
       </div>
-      <div class="grant-list" id="grantsList" aria-label="Grant listesi" tabindex="0"></div>
+      <div class="grant-list" id="grantsList" role="region" aria-label="Grant listesi" tabindex="0"></div>
       <form id="grantForm">
         <div class="form-row">
           <label>Kime
@@ -265,7 +265,7 @@
           <div class="toc-filter">
             <input id="tocFilter" type="search" placeholder="Bölüm başlığında ara…" aria-label="Bölüm başlığında ara" />
           </div>
-          <div class="toc-list" id="tocList" aria-label="Bölüm listesi" tabindex="0"></div>
+          <div class="toc-list" id="tocList" role="region" aria-label="Bölüm listesi" tabindex="0"></div>
           <div class="toc-empty" id="tocEmpty" hidden></div>
         </div>
         <div id="searchView" hidden role="tabpanel" aria-labelledby="tabSearch">
@@ -286,7 +286,7 @@
             <span id="searchPosition">0 / 0</span>
             <button class="mini-btn" id="searchNext" type="button" aria-label="Sonraki sonuç">↓</button>
           </div>
-          <div class="toc-list" id="searchResults" aria-label="Arama sonuçları" tabindex="0"></div>
+          <div class="toc-list" id="searchResults" role="region" aria-label="Arama sonuçları" tabindex="0"></div>
           <div class="toc-empty" id="searchEmpty" hidden></div>
         </div>
         <div id="pagesView" hidden role="tabpanel" aria-labelledby="tabPages">
@@ -333,7 +333,7 @@
             <option value="bookmark">Yer imi</option>
           </select>
         </div>
-        <div class="notes-list" id="notesList" aria-label="Not listesi" tabindex="0"></div>
+        <div class="notes-list" id="notesList" role="region" aria-label="Not listesi" tabindex="0"></div>
         <div class="notes-empty" id="notesEmpty">
           Metin seçip <strong>Vurgula</strong> ile başlayın.
         </div>
@@ -364,6 +364,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=83"></script>
+  <script type="module" src="/app.js?v=84"></script>
 </body>
 </html>

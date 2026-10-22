@@ -20,16 +20,15 @@ Scope: login, catalog, modals, PDF reader, EPUB reader, notes/search/highlight U
 | Canvas | decorative canvases `aria-hidden`; page region has an accessible label |
 | EPUB | iframe has a title; reader controls are labelled |
 
-## Latest axe fixes (v83)
+## Latest axe fixes (v84)
 
 - `#noteColorFilter` has an accessible name.
-- TOC/notes/page/list/grant scroll regions are keyboard-focusable (`tabindex=0`).
+- Scroll regions (`tocList`, `searchResults`, `notesList`, `grantsList`, panels, page area) use `role="region"` + `tabindex="0"` so `aria-label` is allowed and Safari keyboard scrolling works.
 - `#epubView` uses `role="document"`; `aria-label` is allowed.
 - EPUB iframe title/`aria-label`/`lang` are applied and re-applied by a `MutationObserver` after EPUB.js re-renders.
 - Hero `code` contrast raised to ink-on-sand (13:1).
 - Book cards are no longer nested interactive regions: the card is static; explicit **Oku** and **Düzenle** buttons are siblings.
 - Reader page canvases are `aria-hidden`; page regions have labels.
-- `notesList` is focusable for Safari scrollable-region checks.
 
 ## Manual checks still required
 
