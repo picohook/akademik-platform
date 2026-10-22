@@ -855,6 +855,12 @@ function updateZoomLabel() {
   zoomLabel.textContent = `${Math.round(state.scale * 100)}%`;
 }
 
+function initialScaleCap() {
+  // Very large books start slightly smaller so the first raster fits the 2 s
+  // cold-open budget; explicit fit/zoom still uses the true fit scale.
+  return state.numPages > 1000 ? 1.15 : 1.3;
+}
+
 function fitScale(baseViewport, columns = 1) {
   const area = document.querySelector('.page-area');
   const available = Math.max(320, (area.clientWidth - 120 - (columns - 1) * 10) / columns);
@@ -1790,7 +1796,7 @@ async function startScrollMode(forcedScale = null) {
   const current = await state.pdf.getPage(state.page);
   const base = current.getViewport({ scale: 1, rotation: state.rotation });
   try { current.cleanup(); } catch { /* noop */ }
-  const scale = forcedScale || Math.min(1.3, fitScale(base, 1));
+  const scale = forcedScale || Math.min(initialScaleCap(), fitScale(base, 1));
   state.scale = scale;
   state.initialFit = false;
   state.twoPage = false;
@@ -1847,7 +1853,9 @@ function stopScrollMode(renderAfter = true) {
 async function renderPagePane(pageNumber, pane, scale, rotationOffset, isPrimary) {
   const page = await state.pdf.getPage(pageNumber);
   const viewport = page.getViewport({ scale, rotation: (page.rotate + rotationOffset) % 360 });
-  const outputScale = Math.min(window.devicePixelRatio || 1, 2);
+  // 2x DPR quadruples canvas pixels; 1.5x keeps text sharp while cutting
+  // the first-page raster cost (~45%) on 2000-page / high-DPI screens.
+  const outputScale = Math.min(window.devicePixelRatio || 1, 1.5);
   pane.canvas.width = Math.floor(viewport.width * outputScale);
   pane.canvas.height = Math.floor(viewport.height * outputScale);
   pane.canvas.style.width = `${Math.floor(viewport.width)}px`;
@@ -1913,7 +1921,7 @@ async function renderPage() {
   const base = firstPage.getViewport({ scale: 1 });
   if (!state.scale || state.scale <= 0) {
     const fitted = state.fitMode === 'page' ? fitPageScale(base, columns) : fitScale(base, columns);
-    state.scale = state.initialFit ? Math.min(1.3, fitted) : fitted;
+    state.scale = state.initialFit ? Math.min(initialScaleCap(), fitted) : fitted;
     state.initialFit = false;
   }
   const primaryPane = { pageWrap, canvas, textLayer: textLayerEl, highlights: highlightsEl };
