@@ -2412,6 +2412,10 @@ async function openEpubBook(book) {
       throw new Error('EPUB görünümü oluşmadı (iframe boyutu 0)');
     }
     frame.setAttribute('title', t('EPUB içeriği'));
+    frame.setAttribute('aria-label', t('EPUB içeriği'));
+    try {
+      frame.contentDocument.documentElement.lang = book.language || 'tr';
+    } catch { /* sandboxed frame */ }
     let frameBody = null;
     try { frameBody = frame.contentDocument?.body || null; } catch { /* cross-origin */ }
     if (frameBody && !frameBody.textContent.trim() && !frameBody.querySelector('img, svg, canvas')) {
