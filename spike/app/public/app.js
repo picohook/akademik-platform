@@ -1108,6 +1108,7 @@ async function focusSearchResult(index) {
     } catch {
       await state.epubEngine?.goToSpineIndex(hit.page);
     }
+    state.epubEngine?.highlightSearch(hit.query || state.searchQuery);
   } else {
     await goToPage(hit.page);
   }
@@ -1188,11 +1189,13 @@ async function runSearch(rawQuery) {
   searchEmpty.hidden = true;
 
   if (!normalized) {
+    state.epubEngine?.clearSearchHighlights();
     searchStatus.textContent = '';
     return;
   }
 
   if (state.epubMode) {
+    state.epubEngine?.clearSearchHighlights();
     state.searchHits = [];
     state.searchIndex = -1;
     updateSearchNav();
@@ -2188,6 +2191,9 @@ async function openEpubBook(book) {
         pageLabel.textContent = `${next.percent}%`;
         updateUrl();
         saveProgress();
+        if (state.searchQuery) {
+          setTimeout(() => state.epubEngine?.highlightSearch(state.searchQuery), 120);
+        }
       },
       onSelected: handleEpubSelection,
     });

@@ -36,6 +36,7 @@ export class EpubEngine {
     this.currentCfi = '';
     this.currentHref = '';
     this.annotations = new Map();
+    this.searchHighlights = [];
     this.locationsReady = false;
     this.disposed = false;
   }
@@ -167,6 +168,39 @@ export class EpubEngine {
       }
     }
     return results;
+  }
+
+  clearSearchHighlights() {
+    if (!this.rendition) return;
+    for (const cfi of this.searchHighlights) {
+      try { this.rendition.annotations.remove(cfi, 'highlight'); } catch { /* noop */ }
+    }
+    this.searchHighlights = [];
+  }
+
+  highlightSearch(query) {
+    this.clearSearchHighlights();
+    const needle = String(query || '').trim();
+    if (!needle || !this.rendition) return 0;
+    let count = 0;
+    for (const contents of this.rendition.getContents() || []) {
+      const section = contents.section;
+      if (!section?.find) continue;
+      for (const match of section.find(needle).slice(0, 200)) {
+        try {
+          this.rendition.annotations.highlight(
+            match.cfi,
+            { search: needle },
+            undefined,
+            'epub-search-hit',
+            { fill: 'rgba(255, 150, 0, 0.35)', 'fill-opacity': '1' },
+          );
+          this.searchHighlights.push(match.cfi);
+          count += 1;
+        } catch { /* invalid CFI */ }
+      }
+    }
+    return count;
   }
 
   addAnnotation({ id, cfiRange, color = '#ffc700', note = '' }) {
