@@ -14,7 +14,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 - PDF okuyucu: tek/çift sayfa/sürekli kaydırma, küçük resimler, TOC, arama, vurgu/not/etiket/tarih, yer imi, atıf, dışa aktarma, temalar.
 - Yükleme/silme: PDF + EPUB upload; yalnızca `source_system='upload'` kitaplar librarian/admin/publisher tarafından silinebilir; DB cascade + dosya silme.
-- EPUB: `.epub` upload/format; ana okuyucuda `EpubEngine` (TOC, tema, ± font/zoom, ‹ ›, CFI/ilerleme, seçimden CFI vurgu/not, bölüm arama). EPUB bölüm metni `asset_pages` (`source='epub'`, `locator=href`) olarak indeksleniyor; arama DB indeksinden, sonuçta geçerli bölümde tüm eşleşmeler turuncu işaretleniyor. EPUB indirme 501.
+- EPUB: `.epub` upload/format; ana okuyucuda `EpubEngine` (TOC, tema, ± font/zoom, ‹ ›, CFI/ilerleme, seçimden CFI vurgu/not, bölüm arama). EPUB bölüm metni `asset_pages` (`source='epub'`, `locator=href`) olarak indeksleniyor; v72 sonrası XHTML `<body>` dışındaki `<title>` metni indekse girmiyor. Arama DB indeksinden; sonuçta geçerli bölümde eşleşmeler işaretleniyor. EPUB indirme 501.
 - Auth: login, scrypt, CSRF, rate limit, session_version, user_sessions + seat limit (varsayılan 3).
 - Arayüz **TR/EN**: `i18n.mjs`; header/login `data-lang-toggle`, `localStorage.uiLang`, sayfa yenilenerek uygulanır. Statik metinler + yaygın dinamik etiketler çevrildi; bazı toast/yardım metinleri hâlâ Türkçe.
 - Erişim: kopyalama/indirme/yazdırma/filigran; `/api/books/:id/download`.
@@ -38,7 +38,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - Seat limiti aynı tarayıcı sekmelerinde artmaz; ayrı profil/tarayıcı gerekir.
 - Demo modunda parola değiştirme/oturum iptali 501.
 - OCR otomasyonu yok; hOCR manuel/CLI.
-- EPUB okuyucu tarayıcıda otomatik test edilmedi; EPUB indirme 501. v61: EPUB bölümleri `asset_pages`'e indeksleniyor (`009-epub-pages.sql`), arama DB'den CFI/href ile dönüyor; eski EPUB'lar için `index-text --all`. Hâlâ sorun varsa konsol gerekli.
+- EPUB okuyucu tarayıcıda otomatik test edilmedi; EPUB indirme 501. v61: EPUB bölümleri `asset_pages`'e indeksleniyor (`009-epub-pages.sql`), arama DB'den CFI/href ile dönüyor; eski/yanlış indeksli EPUB'lar için `index-text --all --force`. Hâlâ sorun varsa konsol gerekli.
 - Erişilebilirlik: modal odak tuzağı, tab/aria-current, skip link, `aria-busy`, reduced-motion eklendi; **tam WCAG 2.2 AA denetimi yapılmadı**.
 - Prod'daki mayenit kitabı 2026-10-21'de `language='en'` yapıldı (İngilizce sözlükle kök arama çalışıyor). Ingest `--language` verilmezse sessizce `tr` yazar; İngilizce kitaplar için `--language en` şart.
 - İçerik hakları ve gerçek yayıncı kitapları hâlâ yok.
@@ -49,6 +49,8 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 ```powershell
 docker compose up -d --build
 docker compose exec db psql -U akademik -d akademik -f /migrations/008-page-search.sql
+docker compose exec db psql -U akademik -d akademik -f /migrations/009-epub-pages.sql
+docker compose exec web node index-text.mjs --all --force
 node scripts/smoke.mjs http://localhost:8080
 ```
 

@@ -186,7 +186,9 @@ export async function indexEpubAsset({ pool, tenantId, assetId, storageKey, publ
 }
 
 function stripXhtml(html) {
-  return decodeEntities(String(html || '')
+  const source = String(html || '');
+  const body = source.match(/<body\b[^>]*>([\s\S]*?)<\/body>/i)?.[1] || source;
+  return decodeEntities(body
     .replace(/<script\b[\s\S]*?<\/script>/gi, ' ')
     .replace(/<style\b[\s\S]*?<\/style>/gi, ' ')
     .replace(/<[^>]+>/g, ' ')
@@ -196,18 +198,21 @@ function stripXhtml(html) {
     .trim();
 }
 
-export async function indexAll({ pool, tenantId, publicDir }) {
+export async function indexAll({ pool, tenantId, publicDir, force = false }) {
   const client = await pool.connect();
   let rows = [];
   try {
     await client.query("select set_config('app.tenant_id', $1, false)", [tenantId]);
+    const condition = force
+      ? 'true'
+      : `(not exists (select 1 from asset_pages p where p.asset_id = a.id)
+           or (a.page_count is not null
+               and (select count(*) from asset_pages p where p.asset_id = a.id) < a.page_count))`;
     ({ rows } = await client.query(
       `select a.id, a.storage_key, a.tenant_id
          from assets a
         where a.format in ('pdf', 'epub')
-          and (not exists (select 1 from asset_pages p where p.asset_id = a.id)
-           or (a.page_count is not null
-               and (select count(*) from asset_pages p where p.asset_id = a.id) < a.page_count))
+          and ${condition}
         order by a.created_at`,
     ));
   } finally {

@@ -117,6 +117,8 @@ docker compose exec db psql -U akademik -d akademik -f /migrations/001-asset-pag
 docker compose exec web node index-text.mjs --all
 ```
 
+To rebuild existing EPUB indexes after an extractor change, add `--force`: `node index-text.mjs --all --force`.
+
 New uploads are indexed in the background. If the API reports `indexed: false`, the browser falls back to the slower client-side page cache.
 
 ### Add your own PDFs

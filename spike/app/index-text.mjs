@@ -11,6 +11,7 @@ const args = process.argv.slice(2);
 const assetIndex = args.indexOf('--asset');
 const assetId = assetIndex >= 0 ? args[assetIndex + 1] : null;
 const statusOnly = args.includes('--status');
+const force = args.includes('--force');
 
 if (!process.env.DATABASE_URL) {
   console.error('DATABASE_URL is required (run inside the web container).');
@@ -56,7 +57,7 @@ try {
       publicDir: PUBLIC_DIR,
     });
   } else {
-    await indexAll({ pool, tenantId: TENANT_ID, publicDir: PUBLIC_DIR });
+    await indexAll({ pool, tenantId: TENANT_ID, publicDir: PUBLIC_DIR, force });
   }
 } catch (error) {
   console.error(error);
