@@ -1111,7 +1111,7 @@ async function detectUploadFormat(destination) {
 }
 
 async function handleUpload(req) {
-  const MAX_BYTES = 1024 * 1024 * 1024;
+  const MAX_BYTES = 300 * 1024 * 1024;
   const fields = {};
   let fileMeta = null;
   let writePromise = null;

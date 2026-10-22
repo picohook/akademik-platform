@@ -677,7 +677,8 @@ async function submitUpload(event) {
     console.error(error);
     const message = error.message === 'already uploaded' ? 'Bu dosya zaten yüklü'
       : error.message === 'yetkiniz yok' ? 'Bu işlem için yetkiniz yok'
-        : 'Kitap yüklenemedi';
+        : error.message === 'file too large' ? 'Dosya 300 MB sınırını aşıyor'
+          : 'Kitap yüklenemedi';
     toast(message);
   } finally {
     uploadSubmitButton.disabled = false;

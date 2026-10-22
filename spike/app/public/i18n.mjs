@@ -47,6 +47,8 @@ const DICT = {
   'Kaydet': 'Save',
   'Kitap ekle': 'Add book',
   'PDF veya EPUB dosyası': 'PDF or EPUB file',
+  'PDF veya EPUB dosyası (max. 300 MB)': 'PDF or EPUB file (max. 300 MB)',
+  'Dosya 300 MB sınırını aşıyor': 'File exceeds the 300 MB limit',
   'Başlık (boşsa dosya adı)': 'Title (filename if empty)',
   'Yükle': 'Upload',
   'Atıf': 'Citation',

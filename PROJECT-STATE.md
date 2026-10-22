@@ -4,7 +4,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web: **v89** (`spike/app/public/index.html`), stiller **v38**
+- Web: **v90** (`spike/app/public/index.html`), stiller **v38**
 - DB migration: **001–010** (`db/migrations/`)
 - Prod: **v52 + 008** deploy edildi (2026-10-21) — Caddy HTTPS, smoke **16/16**; kök/tam kelime/bulanık prod'da doğrulandı.
 - Son commit: dil düzeltmesi (bu commit)
@@ -23,11 +23,12 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - Arama: sunucu sayfa indeksi (`asset_pages`); diakritik katlama, **tam kelime**, **bulanık** (pg_trgm), **kök** eşleşmesi (tr/en FTS, `text_tsv`/`text_tsv_en`); dil-duyarlı katalog araması (`works.language`), eşleşme sayısı + tür etiketi (`exact`/`folded`/`word`/`stem`/`fuzzy`).
 - Pilot: `docker-compose.prod.yml`, Caddy TLS, yedek scriptleri, `docs/PILOT.md`, `docs/SMOKE.md`, `scripts/smoke.mjs`.
 - Mobil/PWA: `manifest.webmanifest`, `sw.js` app-shell cache, ikonlar, kurulabilir PWA; PDF/EPUB alanında dokunmatik swipe, mobil toolbar sadeleştirme. Çevrimdışı **kitap içeriği** önbelleklenmiyor.
+- İçerik limiti: PDF/EPUB upload **300 MB**; 2.000 sayfa test edildi. SLO ve 500 MB kararı `docs/CONTENT-LIMITS.md`.
 
 ## Açık işler (sırayla)
 
 1. **WCAG 2.2 AA manuel denetimi:** ekran okuyucu, axe, %200 zoom, EPUB iframe.
-2. **Görsel ağırlıklı 500 MB PDF:** JPEG/canvas render 3–7 s; önizleme/derivative pipeline veya gerçek taramayla kabul eşiği.
+2. **Görsel ağırlıklı >300 MB:** kapsam dışı; yalnızca gerçek yayıncı talebi olursa önizleme/derivative pipeline.
 3. **EPUB indirme/filigran:** PDF dışı indirme 501; lisans/watermark kararı.
 4. **Interop:** MARC21/OPDS/OAI-PMH/COUNTER.
 5. **Mobil/PWA:** kurulabilir shell + swipe hazır; çevrimdışı kitap indirme/native kararı kaldı, sonra analitik/AI.
