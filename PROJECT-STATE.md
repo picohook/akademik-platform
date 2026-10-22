@@ -35,7 +35,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Bilinen açıklar / riskler
 
-- 500 MB fixture yok; 697 sayfa ölçümü `spike/measurement.md` (cold first page ~3–4 sn, hedef <2 sn). 2.000 sayfa sentetik PDF: PDF.js load 662 ms, ilk metin 86 ms; scroll mode artık sayfa DOM’unu lazy oluşturuyor, `disableAutoFetch` açık.
+- 500 MB fixture yok. 2.000 sayfa sentetik PDF v87: PDF yükleme **336 ms**, ilk sayfa **491 ms** (hedef <2 sn), 8 render ort. 27 ms/max 112 ms, heap 39 MB, zoom 115%. Sıcak cache/worker; soğuk cache ve 500 MB görsel dosya hâlâ gerekli. Scroll mode lazy DOM + `disableAutoFetch`.
 - Sürekli kaydırmada zoom her seferinde 697 pane yeniden kuruyor; ağır olabilir.
 - Eski oturumlar `sid` taşımadığı için yeniden giriş gerekir.
 - Seat limiti aynı tarayıcı sekmelerinde artmaz; ayrı profil/tarayıcı gerekir.
