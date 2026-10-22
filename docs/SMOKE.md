@@ -63,6 +63,12 @@ Run in Chrome and Edge; repeat mobile width once.
 - [ ] EPUB download is rejected with 501 for now (watermarking not implemented).
 - [ ] Edit → **Sil**: confirmation, card disappears, file removed from `public/uploads`; seed books show no Sil button.
 
+### Language
+
+- [ ] Header/Login **EN** toggle switches the UI; reload keeps English.
+- [ ] Reader controls, tabs, modals and search labels are English; book metadata stays as catalogued.
+- [ ] **TR** switches back and persists.
+
 ### Accessibility
 
 - [ ] Login: Tab reaches email/password/submit; focus ring visible; app behind is inert.

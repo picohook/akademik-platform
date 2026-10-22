@@ -1,6 +1,12 @@
 import * as pdfjsLib from '/vendor/pdfjs/pdf.mjs';
 import { formatCitation } from '/citations.mjs';
 import { EpubEngine } from '/epub-engine.mjs';
+import { initializeLanguage, toggleLanguage, t, translateDom } from '/i18n.mjs';
+
+initializeLanguage();
+for (const button of document.querySelectorAll('[data-lang-toggle]')) {
+  button.addEventListener('click', toggleLanguage);
+}
 import { findWholeWord, foldChars, normalizeSearch } from '/search.mjs?v=1';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.mjs';
@@ -214,7 +220,7 @@ const citeOutput = $('citeOutput');
 const citeWarning = $('citeWarning');
 
 function toast(message) {
-  toastEl.textContent = message;
+  toastEl.textContent = t(message);
   toastEl.hidden = false;
   clearTimeout(toast._timer);
   toast._timer = setTimeout(() => { toastEl.hidden = true; }, 2600);
@@ -319,6 +325,8 @@ function renderBooks() {
   visible.forEach((book) => grid.appendChild(makeCard(book)));
   count.textContent = `${visible.length} başlık`;
   empty.hidden = visible.length !== 0;
+  translateDom(grid);
+  translateDom(count);
 }
 
 function authorsToText(authors) {
@@ -477,7 +485,7 @@ function renderFilters() {
   filters.replaceChildren();
   const all = document.createElement('button');
   all.className = `chip${state.filter === 'all' ? ' active' : ''}`;
-  all.textContent = 'Tümü';
+  all.textContent = t('Tümü');
   all.addEventListener('click', () => { state.filter = 'all'; renderFilters(); renderBooks(); });
   filters.appendChild(all);
   [...subjects].sort((a, b) => a.localeCompare(b, 'tr')).forEach((subject) => {
@@ -580,7 +588,7 @@ function showLogin(message = '') {
   setAppInert(true);
   loginScreen.hidden = false;
   loginError.hidden = !message;
-  loginError.textContent = message;
+  loginError.textContent = t(message);
   loginPassword.value = '';
   setTimeout(() => loginPassword.focus(), 0);
 }
@@ -776,7 +784,7 @@ function renderEpubToc(query) {
   );
   if (!items.length) {
     tocEmpty.hidden = false;
-    tocEmpty.textContent = state.epubEngine.getToc().length ? 'Eşleşen bölüm yok.' : 'Bu EPUB’ta içindekiler yok.';
+    tocEmpty.textContent = state.epubEngine.getToc().length ? t('Eşleşen bölüm yok.') : t('Bu EPUB’ta içindekiler yok.');
     return;
   }
   const fragment = document.createDocumentFragment();
@@ -805,7 +813,7 @@ function renderToc() {
     const items = state.outline.filter((item) => item.title.toLocaleLowerCase('tr').includes(query));
     if (!items.length) {
       tocEmpty.hidden = false;
-      tocEmpty.textContent = 'Eşleşen bölüm yok.';
+      tocEmpty.textContent = t('Eşleşen bölüm yok.');
       return;
     }
     const fragment = document.createDocumentFragment();
@@ -934,9 +942,9 @@ function updatePageUi() {
   pageInput.max = String(state.numPages || 1);
   pageInput.value = String(state.page || 1);
   pageTotal.textContent = `/ ${state.numPages || 1}`;
-  pageLabel.textContent = state.twoPage && state.secondPage
+  pageLabel.textContent = t(state.twoPage && state.secondPage
     ? `${state.page}-${state.secondPage} / ${state.numPages}`
-    : `${state.page} / ${state.numPages}`;
+    : `${state.page} / ${state.numPages}`);
   updateBookmarkUi();
 }
 
@@ -1181,7 +1189,7 @@ function addEpubSearchResult(result, index) {
   button.className = 'toc-item search-item';
   button.dataset.index = String(index);
   const label = document.createElement('span');
-  label.textContent = `Bölüm ${result.page}${result.matches > 1 ? ` · ${result.matches} eşleşme` : ''}`;
+  label.textContent = t(`Bölüm ${result.page}${result.matches > 1 ? ` · ${result.matches} eşleşme` : ''}`);
   const snippet = document.createElement('small');
   snippet.className = 'search-snippet';
   snippet.textContent = result.snippet;
@@ -1216,7 +1224,7 @@ async function runSearch(rawQuery) {
     state.searchHits = [];
     state.searchIndex = -1;
     updateSearchNav();
-    searchStatus.textContent = 'EPUB içinde aranıyor…';
+    searchStatus.textContent = t('EPUB içinde aranıyor…');
     const params = new URLSearchParams({ q: query });
     if (searchWhole.checked) params.set('whole', '1');
     if (searchFuzzy.checked) params.set('fuzzy', '1');
@@ -1228,9 +1236,9 @@ async function runSearch(rawQuery) {
       if (payload.indexed) {
         results = payload.results || [];
         results.forEach((result, index) => addEpubSearchResult(result, index));
-        searchStatus.textContent = results.length ? `${results.length} sonuç · dizin` : '0 sonuç';
+        searchStatus.textContent = t(results.length ? `${results.length} sonuç · dizin` : '0 sonuç');
         searchEmpty.hidden = results.length > 0;
-        searchEmpty.textContent = 'Sonuç bulunamadı.';
+        searchEmpty.textContent = t('Sonuç bulunamadı.');
         updateSearchNav();
         state.epubEngine?.highlightSearch(query);
         return;
@@ -1246,15 +1254,15 @@ async function runSearch(rawQuery) {
       snippet: result.snippet,
       matches: 1,
     }, index));
-    searchStatus.textContent = fallback.length ? `${fallback.length} sonuç` : '0 sonuç';
+    searchStatus.textContent = t(fallback.length ? `${fallback.length} sonuç` : '0 sonuç');
     searchEmpty.hidden = fallback.length > 0;
-    searchEmpty.textContent = 'Sonuç bulunamadı.';
+    searchEmpty.textContent = t('Sonuç bulunamadı.');
     updateSearchNav();
     state.epubEngine?.highlightSearch(query);
     return;
   }
 
-  searchStatus.textContent = 'Aranıyor…';
+  searchStatus.textContent = t('Aranıyor…');
   try {
     const params = new URLSearchParams({ q: query });
     if (searchWhole.checked) params.set('whole', '1');
@@ -1268,7 +1276,7 @@ async function runSearch(rawQuery) {
         results.forEach((result) => addSearchResultSnippet(
           result.page, result.snippet, query, result.matches, result.matchType,
         ));
-        searchStatus.textContent = results.length ? `${results.length}${results.length >= 100 ? '+' : ''} sonuç` : '0 sonuç';
+        searchStatus.textContent = t(results.length ? `${results.length}${results.length >= 100 ? '+' : ''} sonuç` : '0 sonuç');
         if (!results.length) {
           searchEmpty.hidden = false;
           searchEmpty.textContent = 'Sonuç bulunamadı.';
@@ -1316,7 +1324,7 @@ async function runSearch(rawQuery) {
   }
 
   if (state.searchRun !== run) return;
-  searchStatus.textContent = count ? `${count}${count >= 200 ? '+' : ''} sonuç` : '0 sonuç';
+  searchStatus.textContent = t(count ? `${count}${count >= 200 ? '+' : ''} sonuç` : '0 sonuç');
   if (!count) {
     searchEmpty.hidden = false;
     searchEmpty.textContent = 'Sonuç bulunamadı.';
@@ -2116,6 +2124,7 @@ function renderNotes() {
     });
     notesList.appendChild(item);
   });
+  translateDom(notesList);
   updateBookmarkUi();
 }
 
@@ -2231,7 +2240,7 @@ async function openEpubBook(book) {
     }
     state.epubProgress = engine.getProgress();
     pageLabel.textContent = `${state.epubProgress.percent}%`;
-    readerMeta.textContent = `${book.publisher || ''}${book.publication_year ? ` · ${book.publication_year}` : ''} · EPUB · ${engine.getSpineCount()} bölüm`;
+    readerMeta.textContent = t(`${book.publisher || ''}${book.publication_year ? ` · ${book.publication_year}` : ''} · EPUB · ${engine.getSpineCount()} bölüm`);
     const savedTheme = (() => {
       try { return localStorage.getItem('readerTheme') || 'light'; } catch { return 'light'; }
     })();
@@ -3160,15 +3169,15 @@ window.__readerStress = stressPages;
     const config = await fetch('/api/config').then((response) => (response.ok ? response.json() : null));
     if (config) {
       applyBrand(config.brandName, config.brandTagline);
-      mode.textContent = config.mode === 'db' ? 'DB modu' : 'Demo modu';
+      mode.textContent = t(config.mode === 'db' ? 'DB modu' : 'Demo modu');
       mode.classList.toggle('db', config.mode === 'db');
     } else {
       const health = await fetch('/api/health').then((response) => response.json());
-      mode.textContent = health.mode === 'db' ? 'DB modu' : 'Demo modu';
+      mode.textContent = t(health.mode === 'db' ? 'DB modu' : 'Demo modu');
       mode.classList.toggle('db', health.mode === 'db');
     }
   } catch {
-    mode.textContent = 'bağlantı yok';
+    mode.textContent = t('bağlantı yok');
   }
   if (new URLSearchParams(window.location.search).get('perf') === '1') {
     perfPanel.hidden = false;

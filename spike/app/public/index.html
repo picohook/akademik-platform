@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=36" />
+  <link rel="stylesheet" href="/styles.css?v=37" />
 </head>
 <body>
   <a class="skip-link" href="#mainContent">İçeriğe atla</a>
@@ -12,6 +12,7 @@
     <form class="login-card" id="loginForm">
       <span class="brand-mark">A</span>
       <h2 id="loginBrand">Akademik Platform</h2>
+      <button class="lang-link" data-lang-toggle type="button">EN</button>
       <p class="login-hint">
         Okuyucu: <code>reader@example.edu.tr</code> · Kütüphaneci: <code>librarian@example.edu.tr</code><br />
         Parola: <code>demo1234</code>
@@ -34,6 +35,7 @@
     </div>
     <span class="mode" id="mode">bağlanıyor…</span>
     <span class="user-chip" id="userChip" hidden></span>
+    <button class="ghost-btn" data-lang-toggle type="button">EN</button>
     <button class="ghost-btn" id="passwordBtn" type="button" hidden>Parola</button>
     <button class="ghost-btn" id="logoutBtn" type="button" hidden>Çıkış</button>
   </header>
@@ -312,6 +314,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=64"></script>
+  <script type="module" src="/app.js?v=66"></script>
 </body>
 </html>
