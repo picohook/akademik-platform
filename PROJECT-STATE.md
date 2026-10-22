@@ -4,7 +4,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web: **v85** (`spike/app/public/index.html`), stiller **v38**
+- Web: **v86** (`spike/app/public/index.html`), stiller **v38**
 - DB migration: **001–010** (`db/migrations/`)
 - Prod: **v52 + 008** deploy edildi (2026-10-21) — Caddy HTTPS, smoke **16/16**; kök/tam kelime/bulanık prod'da doğrulandı.
 - Son commit: dil düzeltmesi (bu commit)
@@ -35,7 +35,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Bilinen açıklar / riskler
 
-- 500 MB fixture yok; 697 sayfa ölçümü `spike/measurement.md` (cold first page ~3–4 sn, hedef <2 sn).
+- 500 MB fixture yok; 697 sayfa ölçümü `spike/measurement.md` (cold first page ~3–4 sn, hedef <2 sn). 2.000 sayfa sentetik PDF: PDF.js load 662 ms, ilk metin 86 ms; scroll mode artık sayfa DOM’unu lazy oluşturuyor, `disableAutoFetch` açık.
 - Sürekli kaydırmada zoom her seferinde 697 pane yeniden kuruyor; ağır olabilir.
 - Eski oturumlar `sid` taşımadığı için yeniden giriş gerekir.
 - Seat limiti aynı tarayıcı sekmelerinde artmaz; ayrı profil/tarayıcı gerekir.

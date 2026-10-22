@@ -1500,7 +1500,9 @@ async function runSearch(rawQuery) {
 function refreshSearchHighlights() {
   applySearchHighlight(textLayerEl);
   applySearchHighlight(textLayer2);
-  state.scrollPanes.forEach((pane) => applySearchHighlight(pane.textLayer));
+  state.scrollPanes.forEach((pane) => {
+    if (pane.textLayer) applySearchHighlight(pane.textLayer);
+  });
 }
 
 function clearSearchMarks(container) {
@@ -1704,29 +1706,37 @@ function createScrollPane(pageNumber, width, height) {
   wrap.className = 'page-wrap scroll-page';
   wrap.style.width = `${Math.floor(width)}px`;
   wrap.style.height = `${Math.floor(height)}px`;
-  const canvas = document.createElement('canvas');
-  const textLayer = document.createElement('div');
-  textLayer.className = 'textLayer';
-  const highlights = document.createElement('div');
-  highlights.className = 'highlights';
-  wrap.append(canvas, textLayer, highlights);
   const pane = {
     pageWrap: wrap,
-    canvas,
-    textLayer,
-    highlights,
+    canvas: null,
+    textLayer: null,
+    highlights: null,
     pageNumber,
     viewport: null,
     rendered: false,
     rendering: false,
   };
   wrap.__pane = pane;
-  textLayer.addEventListener('mouseup', () => setTimeout(() => onSelection(pane), 0));
   return pane;
+}
+
+function ensureScrollPaneElements(pane) {
+  if (pane.canvas) return;
+  const canvas = document.createElement('canvas');
+  const textLayer = document.createElement('div');
+  textLayer.className = 'textLayer';
+  const highlights = document.createElement('div');
+  highlights.className = 'highlights';
+  pane.pageWrap.append(canvas, textLayer, highlights);
+  pane.canvas = canvas;
+  pane.textLayer = textLayer;
+  pane.highlights = highlights;
+  textLayer.addEventListener('mouseup', () => setTimeout(() => onSelection(pane), 0));
 }
 
 async function renderScrollPane(pane) {
   if (!state.scrollMode || pane.rendered || pane.rendering) return;
+  ensureScrollPaneElements(pane);
   pane.rendering = true;
   const token = state.scrollToken;
   try {
@@ -1758,11 +1768,13 @@ function buildScrollPanes(width, height) {
   state.scrollToken += 1;
   scrollPages.replaceChildren();
   state.scrollPanes = [];
+  const fragment = document.createDocumentFragment();
   for (let pageNumber = 1; pageNumber <= state.numPages; pageNumber += 1) {
     const pane = createScrollPane(pageNumber, width, height);
     state.scrollPanes.push(pane);
-    scrollPages.appendChild(pane.pageWrap);
+    fragment.appendChild(pane.pageWrap);
   }
+  scrollPages.appendChild(fragment);
   state.scrollObserver = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (!entry.isIntersecting) return;
@@ -2559,6 +2571,7 @@ async function openBook(book) {
       cMapPacked: true,
       standardFontDataUrl: '/vendor/pdfjs/standard_fonts/',
       isEvalSupported: false,
+      disableAutoFetch: true,
     });
     state.pdf = await task.promise;
     state.perf.pdfLoadMs = performance.now() - state.perf.openedAt;
