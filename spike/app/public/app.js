@@ -8,6 +8,14 @@ import {
   getOfflineBook,
   deleteOfflineBook,
   storageEstimate,
+  listLocalAnnotations,
+  saveLocalAnnotation,
+  deleteLocalAnnotation,
+  updateLocalAnnotation,
+  queueAnnotationOp,
+  listAnnotationOps,
+  deleteAnnotationOp,
+  removeQueuedCreate,
 } from '/offline.mjs';
 
 initializeLanguage();
@@ -94,6 +102,7 @@ const state = {
   offlineMode: false,
   offlineLibrary: false,
   offlineBlob: null,
+  annotationSyncing: false,
   viewport: null,
   annotations: [],
   noteQuery: '',
@@ -2711,13 +2720,11 @@ async function openEpubBook(book, options = {}) {
         const saved = JSON.parse(localStorage.getItem(`offlineProgress:${book.id}`) || 'null');
         progress = saved ? { anchor: saved } : null;
       } catch { /* noop */ }
+      state.annotations = await listLocalAnnotations(book.asset_id).catch(() => []);
     } else {
-      const [progressResponse, annotationsResponse] = await Promise.all([
-        fetch(`/api/progress?assetId=${encodeURIComponent(book.asset_id)}`),
-        fetch(`/api/annotations?assetId=${encodeURIComponent(book.asset_id)}`),
-      ]);
+      const progressResponse = await fetch(`/api/progress?assetId=${encodeURIComponent(book.asset_id)}`);
       progress = progressResponse.ok ? await progressResponse.json() : null;
-      state.annotations = annotationsResponse.ok ? await annotationsResponse.json() : [];
+      state.annotations = await loadAnnotationsFor(book.asset_id, false);
     }
     const params = new URLSearchParams(window.location.search);
     const initialCfi = params.get('book') === book.id ? params.get('cfi') : progress?.anchor?.cfi;
@@ -2870,14 +2877,11 @@ async function openBook(book, options = {}) {
         const saved = JSON.parse(localStorage.getItem(`offlineProgress:${book.id}`) || 'null');
         progress = saved ? { anchor: saved } : null;
       } catch { /* noop */ }
-      state.annotations = [];
+      state.annotations = await listLocalAnnotations(book.asset_id).catch(() => []);
     } else {
-      const [progressResponse, annotationsResponse] = await Promise.all([
-        fetch(`/api/progress?assetId=${encodeURIComponent(book.asset_id)}`),
-        fetch(`/api/annotations?assetId=${encodeURIComponent(book.asset_id)}`),
-      ]);
+      const progressResponse = await fetch(`/api/progress?assetId=${encodeURIComponent(book.asset_id)}`);
       progress = progressResponse.ok ? await progressResponse.json() : null;
-      state.annotations = annotationsResponse.ok ? await annotationsResponse.json() : [];
+      state.annotations = await loadAnnotationsFor(book.asset_id, false);
     }
 
     const task = pdfjsLib.getDocument(offlineBlob ? {
@@ -3146,6 +3150,28 @@ async function saveEpubHighlight() {
   if (!selection || !state.book) return;
   state.epubSelection = null;
   hlBar.hidden = true;
+  if (state.offlineMode) {
+    const annotation = await saveLocalHighlight({
+      assetId: state.book.asset_id,
+      anchor: {
+        asset_version_id: state.book.asset_id,
+        type: 'epub',
+        cfi: selection.cfiRange,
+        text_quote: selection.text.slice(0, 500),
+      },
+      color: state.highlightColor,
+      selectedText: selection.text,
+    });
+    state.epubEngine?.addAnnotation({
+      id: annotation.id,
+      cfiRange: selection.cfiRange,
+      color: state.highlightColor,
+    });
+    try {
+      epubView.querySelector('iframe')?.contentWindow?.getSelection()?.removeAllRanges();
+    } catch { /* same-origin iframe */ }
+    return;
+  }
   try {
     const response = await fetch('/api/annotations', {
       method: 'POST',
@@ -3182,6 +3208,101 @@ async function saveEpubHighlight() {
   }
 }
 
+async function syncOfflineAnnotations() {
+  if (!navigator.onLine || state.annotationSyncing) return;
+  state.annotationSyncing = true;
+  try {
+    const ops = await listAnnotationOps();
+    for (const op of ops) {
+      if (op.type === 'create') {
+        const response = await fetch('/api/annotations', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(op.payload),
+        });
+        if (!response.ok) continue;
+        const saved = await response.json();
+        const local = (await listLocalAnnotations(op.assetId)).find((item) => item.id === op.localId);
+        if (local) {
+          await updateLocalAnnotation({
+            ...local,
+            server_id: saved.id,
+            pending: false,
+            updated_at: saved.updated_at || new Date().toISOString(),
+          });
+        }
+        await deleteAnnotationOp(op.opId);
+      } else if (op.type === 'delete') {
+        if (op.serverId) {
+          const response = await fetch(`/api/annotations/${encodeURIComponent(op.serverId)}`, { method: 'DELETE' });
+          if (!response.ok) continue;
+        }
+        await deleteAnnotationOp(op.opId);
+      }
+    }
+  } catch (error) {
+    console.warn('offline annotation sync failed', error);
+  } finally {
+    state.annotationSyncing = false;
+  }
+}
+
+async function loadAnnotationsFor(assetId, offline) {
+  const local = await listLocalAnnotations(assetId).catch(() => []);
+  if (offline) return local;
+  await syncOfflineAnnotations();
+  let server = [];
+  try {
+    const response = await fetch(`/api/annotations?assetId=${encodeURIComponent(assetId)}`);
+    if (response.ok) server = await response.json();
+  } catch { /* offline */ }
+  const serverIds = new Set(server.map((item) => item.id));
+  await Promise.all(server.map((item) => saveLocalAnnotation({
+    ...item,
+    server_id: item.id,
+    pending: false,
+  }).catch(() => {})));
+  const localOnly = local.filter((item) => item.pending || (item.server_id && !serverIds.has(item.server_id)));
+  return [...localOnly, ...server];
+}
+
+async function saveLocalHighlight({ assetId, anchor, color, selectedText }) {
+  const id = `offline-${crypto.randomUUID()}`;
+  const now = new Date().toISOString();
+  const annotation = {
+    id,
+    asset_id: assetId,
+    anchor,
+    color,
+    note: hlNote.value.trim() || null,
+    selected_text: selectedText,
+    tags: [],
+    status: 'active',
+    created_at: now,
+    updated_at: now,
+    pending: true,
+  };
+  await saveLocalAnnotation(annotation);
+  await queueAnnotationOp({
+    opId: crypto.randomUUID(),
+    type: 'create',
+    localId: id,
+    assetId,
+    payload: {
+      assetId,
+      anchor,
+      color,
+      note: annotation.note,
+      selectedText,
+    },
+    createdAt: now,
+  });
+  state.annotations.push(annotation);
+  renderNotes();
+  toast(t('Vurgu çevrimdışı kaydedildi'));
+  return annotation;
+}
+
 async function saveHighlight() {
   if (state.epubSelection) {
     await saveEpubHighlight();
@@ -3191,6 +3312,17 @@ async function saveHighlight() {
   const pending = state.pending;
   state.pending = null;
   hlBar.hidden = true;
+  if (state.offlineMode) {
+    await saveLocalHighlight({
+      assetId: state.book.asset_id,
+      anchor: pending.anchor,
+      color: state.highlightColor,
+      selectedText: pending.text,
+    });
+    renderHighlights();
+    window.getSelection()?.removeAllRanges();
+    return;
+  }
   try {
     const response = await fetch('/api/annotations', {
       method: 'POST',
@@ -3217,9 +3349,32 @@ async function saveHighlight() {
 }
 
 async function deleteAnnotation(id, options = {}) {
+  if (state.offlineMode) {
+    const annotation = state.annotations.find((item) => item.id === id);
+    if (!annotation) return;
+    if (annotation.server_id) {
+      await queueAnnotationOp({
+        opId: crypto.randomUUID(),
+        type: 'delete',
+        localId: annotation.id,
+        serverId: annotation.server_id,
+        createdAt: new Date().toISOString(),
+      });
+    } else {
+      await removeQueuedCreate(annotation.id);
+    }
+    await deleteLocalAnnotation(annotation.id);
+    state.annotations = state.annotations.filter((item) => item.id !== id);
+    if (state.epubMode) state.epubEngine?.removeAnnotation(id);
+    renderNotes();
+    if (!state.epubMode) renderHighlights();
+    if (!options.silent) toast('Not silindi (çevrimdışı)');
+    return;
+  }
   try {
     const response = await fetch(`/api/annotations/${encodeURIComponent(id)}`, { method: 'DELETE' });
     if (!response.ok) throw new Error('delete failed');
+    await deleteLocalAnnotation(id).catch(() => {});
     state.annotations = state.annotations.filter((annotation) => annotation.id !== id);
     if (state.epubMode) state.epubEngine?.removeAnnotation(id);
     renderNotes();
@@ -3751,6 +3906,17 @@ pageArea.addEventListener('scroll', () => {
   });
 });
 
+window.addEventListener('online', () => {
+  if (state.user) {
+    syncOfflineAnnotations().then(() => {
+      if (state.book) loadAnnotationsFor(state.book.asset_id, false).then((items) => {
+        state.annotations = items;
+        renderNotes();
+        if (!state.epubMode) renderHighlights();
+      }).catch(() => {});
+    }).catch(() => {});
+  }
+});
 window.addEventListener('resize', () => {
   if (reader.hidden || !state.pdf) return;
   clearTimeout(window._resizeTimer);
@@ -3790,6 +3956,7 @@ window.__readerStress = stressPages;
     }
     setUser(await me.json());
     await bootData();
+    syncOfflineAnnotations().catch(() => {});
   } catch (error) {
     console.error(error);
     const offlineEntries = await listOfflineBooks().catch(() => []);

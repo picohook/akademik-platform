@@ -187,6 +187,8 @@ const DICT = {
   'Eşleşen bölüm yok.': 'No matching chapters.',
   'Bu EPUB’ta içindekiler yok.': 'This EPUB has no table of contents.',
   'Vurgu kaydedildi': 'Highlight saved',
+  'Vurgu çevrimdışı kaydedildi': 'Highlight saved offline',
+  'Not silindi (çevrimdışı)': 'Note deleted (offline)',
   'Vurgu kaydedilemedi': 'Could not save highlight',
   'Kitap silindi': 'Book deleted',
   'Kitap silinemedi': 'Could not delete book',
