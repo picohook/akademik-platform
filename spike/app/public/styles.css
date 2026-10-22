@@ -183,6 +183,8 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
   padding: 3px 8px;
   font: inherit;
   font-size: 11px;
+  min-height: 24px;
+  min-width: 24px;
   cursor: pointer;
 }
 .edit-btn:hover { color: var(--ink); border-color: #c9bfa9; }
@@ -197,6 +199,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
   padding: 3px 10px;
   font: inherit;
   font-size: 11px;
+  min-height: 24px;
   cursor: pointer;
 }
 .open-btn:hover { background: #174638; }
@@ -383,7 +386,8 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
 .notes-filter select { padding: 6px 4px; border: 1px solid var(--line); border-radius: 6px; background: #fff; font: inherit; font-size: 11px; }
 .mini-btn {
   border: 1px solid var(--line); background: transparent; color: var(--muted);
-  border-radius: 5px; padding: 2px 5px; font: inherit; font-size: 10px; cursor: pointer;
+  border-radius: 5px; padding: 3px 6px; min-width: 24px; min-height: 24px;
+  font: inherit; font-size: 10px; cursor: pointer;
 }
 .mini-btn:hover { color: var(--ink); border-color: #c9bfa9; }
 .notes-list { overflow: auto; padding: 8px; }

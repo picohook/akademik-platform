@@ -30,6 +30,15 @@ Scope: login, catalog, modals, PDF reader, EPUB reader, notes/search/highlight U
 - Book cards are no longer nested interactive regions: the card is static; explicit **Oku** and **Düzenle** buttons are siblings.
 - Reader page canvases are `aria-hidden`; page regions have labels.
 
+## Automated scan (2026-10-23, v103)
+
+`axe-core` 4.x was run in jsdom against the static DOM in these states: initial, login, catalog, PDF reader, grants modal, offline modal and upload modal.
+
+- Result: **0 violations** for WCAG 2.0/2.1/2.2 A/AA (color-contrast disabled because jsdom has no layout/paint).
+- The scan covers markup/ARIA/names/roles; it does **not** cover rendered contrast, focus order, screen-reader announcements, canvas/text layer, or EPUB iframe content.
+- `.mini-btn`, `.edit-btn` and `.open-btn` now have a **24×24 px** minimum target (`WCAG 2.2 SC 2.5.8`).
+- hOCR `/ocr/...` requires a session; the reader still adds its text layer.
+
 ## Manual checks still required
 
 - [ ] Screen-reader pass (NVDA/Edge, VoiceOver/Safari): login, card, reader, notes.
