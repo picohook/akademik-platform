@@ -38,6 +38,26 @@ export function findWholeWord(text, query, from = 0) {
   return -1;
 }
 
+// Fuzzy result pages do not contain the exact query. Find a close word or a
+// shared stem so the reader can still show where the fuzzy hit came from.
+export function findFuzzyWord(text, query, from = 0) {
+  const needle = foldChars(normalizeSearch(query)).split(' ')[0];
+  if (!needle || needle.length < 3) return null;
+  const maxDistance = needle.length >= 5 ? 2 : 1;
+  const prefix = needle.slice(0, Math.min(5, needle.length));
+  const words = /[\p{L}\p{N}]+/gu;
+  words.lastIndex = Math.max(0, from);
+  let match = words.exec(text);
+  while (match) {
+    const word = match[0].toLocaleLowerCase('tr');
+    if (word.startsWith(prefix) || editDistance(word, needle) <= maxDistance) {
+      return { index: match.index, length: word.length };
+    }
+    match = words.exec(text);
+  }
+  return null;
+}
+
 export function buildSnippet(text, index, length, radius = 45) {
   const value = String(text || '');
   const start = Math.max(0, index - radius);

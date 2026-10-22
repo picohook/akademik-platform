@@ -58,6 +58,7 @@ Run in Chrome and Edge; repeat mobile width once.
 - [ ] Select text → highlight bar → save; note appears and highlight persists after reload.
 - [ ] Search a word: status shows `· dizin`, result says `Bölüm N`, clicking jumps to the chapter; old EPUBs can be indexed with `node index-text.mjs --all`.
 - [ ] After the jump, every visible occurrence in that chapter is orange; clearing the search removes the marks.
+- [ ] Fuzzy/stem result: a close word is marked (e.g. `polluted` for `pollution`); clicking a chapter result lands on the indexed chapter number.
 - [ ] TOC entries jump; theme button changes the EPUB; next/prev works.
 - [ ] Reload the page: progress resumes at the saved CFI.
 - [ ] EPUB download is rejected with 501 for now (watermarking not implemented).

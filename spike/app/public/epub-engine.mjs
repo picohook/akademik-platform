@@ -2,6 +2,8 @@
 // EPUB adapter (ADR-012). UI must depend on this contract, not on epub.js
 // iframe/DOM details. Keep annotations and search in our own shapes.
 
+import { findFuzzyWord, foldChars } from '/search.mjs?v=1';
+
 const THEMES = {
   light: { body: { background: '#ffffff', color: '#222222' } },
   sepia: { body: { background: '#f3ead7', color: '#3b3225' } },
@@ -178,9 +180,9 @@ export class EpubEngine {
     this.searchHighlights = [];
   }
 
-  highlightSearch(query) {
+  highlightSearch(query, { fuzzy = false } = {}) {
     this.clearSearchHighlights();
-    const needle = String(query || '').trim().toLocaleLowerCase('tr');
+    const needle = foldChars(query);
     if (!needle || !this.rendition) return 0;
     let count = 0;
     for (const contents of this.rendition.getContents() || []) {
@@ -191,14 +193,19 @@ export class EpubEngine {
       let node = walker.nextNode();
       while (node && count < 200) {
         const text = node.textContent || '';
-        const lower = text.toLocaleLowerCase('tr');
+        const lower = foldChars(text);
         let from = 0;
-        let index = lower.indexOf(needle, from);
-        while (index >= 0 && count < 200) {
+        let match = fuzzy
+          ? findFuzzyWord(lower, needle, from)
+          : (() => {
+            const index = lower.indexOf(needle, from);
+            return index >= 0 ? { index, length: needle.length } : null;
+          })();
+        while (match && count < 200) {
           try {
             const range = doc.createRange();
-            range.setStart(node, index);
-            range.setEnd(node, index + needle.length);
+            range.setStart(node, match.index);
+            range.setEnd(node, match.index + match.length);
             const cfi = section.cfiFromRange(range);
             this.rendition.annotations.highlight(
               cfi,
@@ -210,8 +217,13 @@ export class EpubEngine {
             this.searchHighlights.push(cfi);
             count += 1;
           } catch { /* invalid range */ }
-          from = index + needle.length;
-          index = lower.indexOf(needle, from);
+          from = match.index + match.length;
+          match = fuzzy
+            ? findFuzzyWord(lower, needle, from)
+            : (() => {
+              const index = lower.indexOf(needle, from);
+              return index >= 0 ? { index, length: needle.length } : null;
+            })();
         }
         node = walker.nextNode();
       }

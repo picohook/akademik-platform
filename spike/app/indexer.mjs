@@ -155,14 +155,15 @@ export async function indexEpubAsset({ pool, tenantId, assetId, storageKey, publ
     .filter((id) => manifest.has(id));
 
   const pages = [];
-  for (const id of spine) {
+  for (let spineIndex = 0; spineIndex < spine.length; spineIndex += 1) {
+    const id = spine[spineIndex];
     const href = decodeURIComponent(manifest.get(id).split('#')[0]);
     const fullPath = path.posix.normalize(path.posix.join(opfDir, href));
     const entry = zip.file(fullPath);
     if (!entry) continue;
     const text = stripXhtml(await entry.async('string'));
     if (!text) continue;
-    pages.push({ pageNumber: pages.length + 1, text, search: normalize(text), source: 'epub', locator: href });
+    pages.push({ pageNumber: spineIndex + 1, text, search: normalize(text), source: 'epub', locator: href });
   }
   if (!pages.length) throw new Error('EPUB has no indexable spine text');
 

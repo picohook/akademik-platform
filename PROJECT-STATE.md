@@ -4,7 +4,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web: **v72** (`spike/app/public/index.html`), stiller **v37**
+- Web: **v73** (`spike/app/public/index.html`), stiller **v37**
 - DB migration: **001–009** (`db/migrations/`)
 - Prod: **v52 + 008** deploy edildi (2026-10-21) — Caddy HTTPS, smoke **16/16**; kök/tam kelime/bulanık prod'da doğrulandı.
 - Son commit: dil düzeltmesi (bu commit)
@@ -38,7 +38,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - Seat limiti aynı tarayıcı sekmelerinde artmaz; ayrı profil/tarayıcı gerekir.
 - Demo modunda parola değiştirme/oturum iptali 501.
 - OCR otomasyonu yok; hOCR manuel/CLI.
-- EPUB okuyucu tarayıcıda otomatik test edilmedi; EPUB indirme 501. v61: EPUB bölümleri `asset_pages`'e indeksleniyor (`009-epub-pages.sql`), arama DB'den CFI/href ile dönüyor; eski/yanlış indeksli EPUB'lar için `index-text --all --force`. Hâlâ sorun varsa konsol gerekli.
+- EPUB okuyucu tarayıcıda otomatik test edilmedi; EPUB indirme 501. v73: EPUB indeksi `<body>` ile sınırlı, `page_no` spine sırası; fuzzy/stem sonuçlar yakın kelimeyi işaretliyor. Eski indeksler için `index-text --all --force`. Hâlâ sorun varsa konsol gerekli.
 - Erişilebilirlik: modal odak tuzağı, tab/aria-current, skip link, `aria-busy`, reduced-motion eklendi; **tam WCAG 2.2 AA denetimi yapılmadı**.
 - Prod'daki mayenit kitabı 2026-10-21'de `language='en'` yapıldı (İngilizce sözlükle kök arama çalışıyor). Ingest `--language` verilmezse sessizce `tr` yazar; İngilizce kitaplar için `--language en` şart.
 - İçerik hakları ve gerçek yayıncı kitapları hâlâ yok.

@@ -7,7 +7,7 @@ initializeLanguage();
 for (const button of document.querySelectorAll('[data-lang-toggle]')) {
   button.addEventListener('click', toggleLanguage);
 }
-import { findWholeWord, foldChars, normalizeSearch } from '/search.mjs?v=1';
+import { findWholeWord, findFuzzyWord, foldChars, normalizeSearch } from '/search.mjs?v=1';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.mjs';
 
@@ -88,6 +88,7 @@ const state = {
   pageText: new Map(),
   searchRun: 0,
   activeQuery: '',
+  activeMatchType: '',
   searchHits: [],
   searchIndex: -1,
   searchQuery: '',
@@ -1124,6 +1125,7 @@ function resetSearch() {
   clearTimeout(searchTimer);
   state.searchRun += 1;
   state.activeQuery = '';
+  state.activeMatchType = '';
   state.searchQuery = '';
   state.searchHits = [];
   state.searchIndex = -1;
@@ -1153,14 +1155,16 @@ async function focusSearchResult(index) {
   state.searchIndex = normalized;
   const hit = state.searchHits[normalized];
   state.activeQuery = hit.query || state.searchQuery;
+  state.activeMatchType = hit.matchType || 'exact';
   if (state.epubMode) {
     try {
-      if (hit.href) await state.epubEngine?.goToHref(hit.href);
-      else await state.epubEngine?.goToSpineIndex(hit.page);
-    } catch {
       await state.epubEngine?.goToSpineIndex(hit.page);
+    } catch {
+      if (hit.href) await state.epubEngine?.goToHref(hit.href);
     }
-    state.epubEngine?.highlightSearch(hit.query || state.searchQuery);
+    state.epubEngine?.highlightSearch(hit.query || state.searchQuery, {
+      fuzzy: ['fuzzy', 'stem'].includes(hit.matchType),
+    });
   } else {
     await goToPage(hit.page);
     refreshSearchHighlights();
@@ -1183,7 +1187,7 @@ function addSearchResult(pageNumber, text, index, queryLength, query) {
 
 function addSearchResultSnippet(pageNumber, snippetText, query, matches = 0, matchType = 'exact') {
   const hitIndex = state.searchHits.length;
-  state.searchHits.push({ page: pageNumber, snippet: snippetText, query, matches });
+  state.searchHits.push({ page: pageNumber, snippet: snippetText, query, matches, matchType });
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'toc-item search-item';
@@ -1210,6 +1214,7 @@ function addEpubSearchResult(result, index) {
     href: result.href || '',
     snippet: result.snippet,
     matches: result.matches || 1,
+    matchType: result.matchType || 'exact',
     query: state.searchQuery,
   });
   const button = document.createElement('button');
@@ -1268,7 +1273,9 @@ async function runSearch(rawQuery) {
         searchEmpty.hidden = results.length > 0;
         searchEmpty.textContent = t('Sonuç bulunamadı.');
         updateSearchNav();
-        state.epubEngine?.highlightSearch(query);
+        state.epubEngine?.highlightSearch(query, {
+          fuzzy: results.some((result) => ['fuzzy', 'stem'].includes(result.matchType)),
+        });
         return;
       }
     } catch (error) {
@@ -1289,7 +1296,6 @@ async function runSearch(rawQuery) {
     state.epubEngine?.highlightSearch(query);
     return;
   }
-
   searchStatus.textContent = t('Aranıyor…');
   try {
     const params = new URLSearchParams({ q: query });
@@ -1378,6 +1384,7 @@ function clearSearchMarks(container) {
 function applySearchHighlight(container = textLayerEl) {
   clearSearchMarks(container);
   const whole = searchWhole.checked;
+  const fuzzyMode = state.activeMatchType === 'fuzzy' || state.activeMatchType === 'stem';
   const query = foldChars(state.activeQuery);
   if (!query) return;
   container.querySelectorAll('span').forEach((span) => {
@@ -1385,17 +1392,27 @@ function applySearchHighlight(container = textLayerEl) {
     if (!text || span.querySelector('span, mark')) return;
     const lower = foldChars(text);
     let cursor = 0;
-    let index = whole ? findWholeWord(lower, query, cursor) : lower.indexOf(query, cursor);
-    if (index < 0) return;
+    let match = fuzzyMode
+      ? findFuzzyWord(lower, query, cursor)
+      : (() => {
+        const index = whole ? findWholeWord(lower, query, cursor) : lower.indexOf(query, cursor);
+        return index >= 0 ? { index, length: query.length } : null;
+      })();
+    if (!match) return;
     const fragment = document.createDocumentFragment();
-    while (index >= 0) {
-      if (index > cursor) fragment.appendChild(document.createTextNode(text.slice(cursor, index)));
+    while (match) {
+      if (match.index > cursor) fragment.appendChild(document.createTextNode(text.slice(cursor, match.index)));
       const mark = document.createElement('mark');
       mark.className = 'search-hit';
-      mark.textContent = text.slice(index, index + query.length);
+      mark.textContent = text.slice(match.index, match.index + match.length);
       fragment.appendChild(mark);
-      cursor = index + query.length;
-      index = whole ? findWholeWord(lower, query, cursor) : lower.indexOf(query, cursor);
+      cursor = match.index + match.length;
+      match = fuzzyMode
+        ? findFuzzyWord(lower, query, cursor)
+        : (() => {
+          const index = whole ? findWholeWord(lower, query, cursor) : lower.indexOf(query, cursor);
+          return index >= 0 ? { index, length: query.length } : null;
+        })();
     }
     if (cursor < text.length) fragment.appendChild(document.createTextNode(text.slice(cursor)));
     span.replaceChildren(fragment);
@@ -2257,7 +2274,9 @@ async function openEpubBook(book) {
         updateUrl();
         saveProgress();
         if (state.searchQuery) {
-          setTimeout(() => state.epubEngine?.highlightSearch(state.searchQuery), 120);
+          setTimeout(() => state.epubEngine?.highlightSearch(state.searchQuery, {
+            fuzzy: ['fuzzy', 'stem'].includes(state.activeMatchType),
+          }), 120);
         }
       },
       onSelected: handleEpubSelection,
