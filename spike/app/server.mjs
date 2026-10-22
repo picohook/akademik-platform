@@ -26,6 +26,7 @@ function chapterNumberFromHref(href) {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const UPLOAD_DIR = path.join(PUBLIC_DIR, 'uploads');
+const OCR_DIR = path.join(PUBLIC_DIR, 'ocr');
 const PORT = Number(process.env.PORT || 3000);
 const TENANT_ID = process.env.DEMO_TENANT_ID || '11111111-1111-1111-1111-111111111111';
 const USER_ID = process.env.DEMO_USER_ID || '22222222-2222-2222-2222-222222222222';
@@ -1832,19 +1833,22 @@ async function servePdf(req, res, storageKey) {
 }
 
 async function serveStatic(req, res, pathname) {
-  const relative = pathname === '/' ? '/index.html' : pathname;
+  const requested = pathname === '/' ? '/index.html' : pathname;
+  const filePath = path.resolve(PUBLIC_DIR, '.' + requested);
+  if (!filePath.startsWith(PUBLIC_DIR + path.sep)) {
+    json(res, 403, { error: 'forbidden' });
+    return;
+  }
+  // Check the *resolved* path, not the raw URL: encoded slashes/dots must not
+  // escape an allowed prefix into uploads/ or ocr/.
+  const relative = '/' + path.relative(PUBLIC_DIR, filePath).split(path.sep).join('/');
   const allowedFiles = new Set([
     '/index.html', '/app.js', '/styles.css', '/i18n.mjs', '/citations.mjs',
     '/search.mjs', '/epub-engine.mjs', '/offline.mjs', '/sw.js', '/manifest.webmanifest',
   ]);
   const allowedPrefixes = ['/icons/', '/vendor/'];
-  if (!allowedFiles.has(relative) && !allowedPrefixes.some((prefix) => relative.startsWith(prefix))) {
+  if (relative.includes('..') || (!allowedFiles.has(relative) && !allowedPrefixes.some((prefix) => relative.startsWith(prefix)))) {
     json(res, 404, { error: 'not found' });
-    return;
-  }
-  const filePath = path.resolve(PUBLIC_DIR, '.' + relative);
-  if (!filePath.startsWith(PUBLIC_DIR + path.sep)) {
-    json(res, 403, { error: 'forbidden' });
     return;
   }
   let info;
@@ -2504,6 +2508,34 @@ const server = http.createServer(async (req, res) => {
         'cache-control': 'no-store',
       });
       res.end(marcRecord(book, base));
+      return;
+    }
+    const ocrMatch = pathname.match(/^\/ocr\/([0-9a-f-]{36})\/(page-\d{3})\.hocr$/i);
+    if (ocrMatch && req.method === 'GET') {
+      const assetId = ocrMatch[1];
+      const book = await getBook(assetId);
+      if (!book || !await canAccessBook(book, auth)) {
+        json(res, 403, { error: 'yetkiniz yok' });
+        return;
+      }
+      const ocrPath = path.resolve(OCR_DIR, assetId, `${ocrMatch[2]}.hocr`);
+      if (!ocrPath.startsWith(OCR_DIR + path.sep)) {
+        json(res, 404, { error: 'not found' });
+        return;
+      }
+      let info;
+      try {
+        info = await stat(ocrPath);
+      } catch {
+        json(res, 404, { error: 'not found' });
+        return;
+      }
+      res.writeHead(200, {
+        'content-type': 'text/html; charset=utf-8',
+        'content-length': info.size,
+        'cache-control': 'private, no-cache',
+      });
+      createReadStream(ocrPath).pipe(res);
       return;
     }
     const bookFile = pathname.startsWith('/api/books/')
