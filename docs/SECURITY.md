@@ -22,6 +22,11 @@ hOCR files are no longer static: `/ocr/<asset-uuid>/page-NNN.hocr` is a session+
 
 **Fix:** lookup errors now throw; callers return 500. An **empty but successful** result still means unrestricted by product design. Do not weaken this without changing the “no grants = open catalog” rule.
 
+The PostgreSQL integration test also exposed an OPDS error path: sending 200
+headers before awaiting the feed caused `ERR_HTTP_HEADERS_SENT` and terminated
+Node when grant lookup failed. The feed is now prepared before sending headers,
+so this failure returns 500 and leaves the server running.
+
 ## 4. Publisher role
 
 `canManage` included `publisher`, which gave grant management and edit/delete of any title. There was no content ownership.
@@ -51,4 +56,8 @@ Trade-off: logins for one tenant serialize for the duration of the count/insert 
 - `/opds` → 401 anonymous, 200 with session.
 - malformed URL → 400, server still healthy.
 - login/books/grants/OPDS smoke → 200.
-- DB-mode integration and concurrent login test still need to run against Postgres.
+- Automated PostgreSQL integration covers publisher upload/edit/delete ownership,
+  restricted management endpoints, real grant SQL permission failures, and
+  synchronized concurrent logins across two Node processes. Run
+  `cd spike/app; npm run test:security`. See [SECURITY-TESTS.md](SECURITY-TESTS.md)
+  for isolation, assertions, and requirements.

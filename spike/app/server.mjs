@@ -2346,11 +2346,12 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname === '/opds' && req.method === 'GET') {
+      const feed = await opdsFeed(auth, req);
       res.writeHead(200, {
         'content-type': 'application/atom+xml;profile=opds-catalog;kind=acquisition; charset=utf-8',
         'cache-control': 'private, max-age=60',
       });
-      res.end(await opdsFeed(auth, req));
+      res.end(feed);
       return;
     }
     if (pathname === '/api/books' && req.method === 'GET') {

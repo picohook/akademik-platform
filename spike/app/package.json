@@ -8,7 +8,8 @@
     "start": "node server.mjs",
     "dev": "node --watch server.mjs",
     "test:citations": "node test/citations.test.mjs",
-    "test:search": "node test/search.test.mjs"
+    "test:search": "node test/search.test.mjs",
+    "test:security": "node test/security.integration.mjs"
   },
   "engines": {
     "node": ">=22"

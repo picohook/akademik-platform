@@ -68,6 +68,7 @@ packages/    shared domain packages (after the spike)
 
 ## Security
 
+- PostgreSQL security integration tests: [`docs/SECURITY-TESTS.md`](docs/SECURITY-TESTS.md) (`cd spike/app` then `npm run test:security`; requires Docker).
 - Never commit secrets, credentials, customer data, or licensed publisher files.
 - Use `.env.example` for configuration keys; real values stay in the environment or a secret manager.
 - Report security issues privately; do not open a public issue with exploit details.
