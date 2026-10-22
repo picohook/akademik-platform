@@ -2,6 +2,13 @@ import * as pdfjsLib from '/vendor/pdfjs/pdf.mjs';
 import { formatCitation } from '/citations.mjs';
 import { EpubEngine } from '/epub-engine.mjs';
 import { initializeLanguage, toggleLanguage, t, translateDom, getLang } from '/i18n.mjs';
+import {
+  saveOfflineBook,
+  listOfflineBooks,
+  getOfflineBook,
+  deleteOfflineBook,
+  storageEstimate,
+} from '/offline.mjs';
 
 initializeLanguage();
 if ('serviceWorker' in navigator && (window.isSecureContext || location.hostname === 'localhost')) {
@@ -84,6 +91,9 @@ const state = {
   epubFontSize: 100,
   epubSelection: null,
   epubFrameObserver: null,
+  offlineMode: false,
+  offlineLibrary: false,
+  offlineBlob: null,
   viewport: null,
   annotations: [],
   noteQuery: '',
@@ -209,6 +219,9 @@ const grantsModal = $('grantsModal');
 const grantsList = $('grantsList');
 const grantForm = $('grantForm');
 const grantError = $('grantError');
+const offlineModal = $('offlineModal');
+const offlineList = $('offlineList');
+const offlineStorage = $('offlineStorage');
 
 const uploadModal = $('uploadModal');
 const uploadForm = $('uploadForm');
@@ -241,10 +254,22 @@ function hue(text) {
   return hash;
 }
 
+async function openCardBook(book) {
+  if (state.offlineMode || state.offlineLibrary) {
+    const stored = await getOfflineBook(book.id);
+    if (stored) {
+      if (stored.book.format === 'epub') await openEpubBook(stored.book, { offlineBlob: stored.blob });
+      else await openBook(stored.book, { offlineBlob: stored.blob });
+      return;
+    }
+  }
+  await openBook(book);
+}
+
 function makeCard(book) {
   const card = document.createElement('div');
   card.className = 'card';
-  card.addEventListener('click', () => openBook(book));
+  card.addEventListener('click', () => { openCardBook(book).catch((error) => console.error(error)); });
 
   const cover = document.createElement('div');
   cover.className = 'cover';
@@ -307,9 +332,26 @@ function makeCard(book) {
   open.setAttribute('aria-label', t(`${book.title} kitabını oku`));
   open.addEventListener('click', (event) => {
     event.stopPropagation();
-    openBook(book);
+    openCardBook(book).catch((error) => console.error(error));
   });
   meta.appendChild(open);
+
+  if (book.allow_download !== false) {
+    const offline = document.createElement('button');
+    offline.type = 'button';
+    offline.className = 'edit-btn offline-card-btn';
+    offline.textContent = '↓';
+    offline.title = t('Çevrimdışı indir');
+    offline.setAttribute('aria-label', t('Çevrimdışı indir'));
+    offline.addEventListener('click', (event) => {
+      event.stopPropagation();
+      handleOfflineDownload(book).catch((error) => {
+        console.error(error);
+        toast(t('Çevrimdışı kaydedilemedi'));
+      });
+    });
+    meta.appendChild(offline);
+  }
 
   if (canManage()) {
     const edit = document.createElement('button');
@@ -407,6 +449,82 @@ function trapReaderFocus(event) {
     return true;
   }
   return false;
+}
+
+async function handleOfflineDownload(book) {
+  if (book.allow_download === false) {
+    toast(t('Bu kitapta indirme kapalı'));
+    return;
+  }
+  toast(t('Çevrimdışı kaydediliyor…'));
+  const response = await fetch(`/api/books/${encodeURIComponent(book.id)}/file`);
+  if (!response.ok) throw new Error('download failed');
+  const blob = await response.blob();
+  const estimate = await storageEstimate();
+  if (estimate?.quota && estimate.usage + blob.size > estimate.quota * 0.95) {
+    toast(t('Çevrimdışı alan yetersiz'));
+    return;
+  }
+  await saveOfflineBook(book, blob);
+  toast(t('Çevrimdışı kaydedildi'));
+  if (!offlineModal.hidden) await renderOfflineModal();
+}
+
+function offlineSize(bytes) {
+  if (!bytes) return '—';
+  return bytes > 1024 * 1024
+    ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+    : `${Math.round(bytes / 1024)} KB`;
+}
+
+async function renderOfflineModal() {
+  const entries = await listOfflineBooks();
+  offlineList.replaceChildren();
+  if (!entries.length) {
+    offlineList.textContent = t('Çevrimdışı kitap yok.');
+  }
+  entries.forEach((entry) => {
+    const row = document.createElement('div');
+    row.className = 'grant-row';
+    const label = document.createElement('span');
+    label.textContent = `${entry.book.title} · ${String(entry.book.format || 'pdf').toUpperCase()} · ${offlineSize(entry.size)}`;
+    const open = document.createElement('button');
+    open.type = 'button';
+    open.className = 'mini-btn';
+    open.textContent = t('Aç');
+    open.addEventListener('click', async () => {
+      const stored = await getOfflineBook(entry.id);
+      if (!stored) return;
+      closeModal(offlineModal);
+      state.offlineMode = true;
+      if (stored.book.format === 'epub') await openEpubBook(stored.book, { offlineBlob: stored.blob });
+      else await openBook(stored.book, { offlineBlob: stored.blob });
+    });
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'mini-btn';
+    remove.textContent = 'Sil';
+    remove.addEventListener('click', async () => {
+      if (!window.confirm(t('Çevrimdışı kopya silinsin mi?'))) return;
+      await deleteOfflineBook(entry.id);
+      await renderOfflineModal();
+    });
+    row.append(label, open, remove);
+    offlineList.appendChild(row);
+  });
+  const estimate = await storageEstimate();
+  offlineStorage.textContent = estimate
+    ? `${t('Kullanılan')}: ${offlineSize(estimate.usage)} / ${offlineSize(estimate.quota)}`
+    : '';
+}
+
+async function openOfflineModal() {
+  await renderOfflineModal();
+  openModal(offlineModal, $('closeOffline'));
+}
+
+function closeOffline() {
+  closeModal(offlineModal);
 }
 
 async function loadGrants() {
@@ -716,12 +834,29 @@ function setAppInert(inert) {
 
 function setUser(user) {
   state.user = user;
+  state.offlineLibrary = false;
   setAppInert(!user);
   userChip.textContent = user ? `${user.displayName || user.email} · ${user.role || 'reader'}` : '';
   userChip.hidden = !user;
   logoutBtn.hidden = !user;
   passwordBtn.hidden = !user;
   applyRoleUi();
+}
+
+async function showOfflineLibrary(entries) {
+  loginScreen.hidden = true;
+  setAppInert(false);
+  setUser({ displayName: 'Çevrimdışı', role: 'reader' });
+  logoutBtn.hidden = true;
+  passwordBtn.hidden = true;
+  $('grantsBtn').hidden = true;
+  $('openUpload').hidden = true;
+  mode.textContent = t('Çevrimdışı');
+  state.offlineMode = true;
+  state.offlineLibrary = true;
+  state.books = entries.map((entry) => entry.book);
+  renderFilters();
+  renderBooks();
 }
 
 function showLogin(message = '') {
@@ -2330,6 +2465,18 @@ function renderNotes() {
 
 async function saveProgress() {
   if (!state.book) return;
+  if (state.offlineMode) {
+    try {
+      const anchor = state.epubMode
+        ? (() => {
+          const progress = state.epubEngine?.getProgress();
+          return progress?.cfi ? { type: 'epub', cfi: progress.cfi, href: progress.href, percent: progress.percent } : null;
+        })()
+        : { type: 'pdf', page: state.page };
+      if (anchor) localStorage.setItem(`offlineProgress:${state.book.id}`, JSON.stringify(anchor));
+    } catch { /* quota/private mode */ }
+    return;
+  }
   if (state.epubMode) {
     const progress = state.epubEngine?.getProgress();
     if (!progress?.cfi) return;
@@ -2378,7 +2525,10 @@ function labelEpubFrames() {
   }
 }
 
-async function openEpubBook(book) {
+async function openEpubBook(book, options = {}) {
+  const offlineBlob = options.offlineBlob || null;
+  state.offlineMode = Boolean(offlineBlob) || !navigator.onLine;
+  state.offlineBlob = offlineBlob;
   if (state.epubEngine) {
     state.epubEngine.destroy();
     state.epubEngine = null;
@@ -2420,12 +2570,20 @@ async function openEpubBook(book) {
   try {
     await loadScript('/vendor/epubjs/jszip.min.js');
     await loadScript('/vendor/epubjs/epub.min.js');
-    const [progressResponse, annotationsResponse] = await Promise.all([
-      fetch(`/api/progress?assetId=${encodeURIComponent(book.asset_id)}`),
-      fetch(`/api/annotations?assetId=${encodeURIComponent(book.asset_id)}`),
-    ]);
-    const progress = progressResponse.ok ? await progressResponse.json() : null;
-    state.annotations = annotationsResponse.ok ? await annotationsResponse.json() : [];
+    let progress = null;
+    if (offlineBlob) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(`offlineProgress:${book.id}`) || 'null');
+        progress = saved ? { anchor: saved } : null;
+      } catch { /* noop */ }
+    } else {
+      const [progressResponse, annotationsResponse] = await Promise.all([
+        fetch(`/api/progress?assetId=${encodeURIComponent(book.asset_id)}`),
+        fetch(`/api/annotations?assetId=${encodeURIComponent(book.asset_id)}`),
+      ]);
+      progress = progressResponse.ok ? await progressResponse.json() : null;
+      state.annotations = annotationsResponse.ok ? await annotationsResponse.json() : [];
+    }
     const params = new URLSearchParams(window.location.search);
     const initialCfi = params.get('book') === book.id ? params.get('cfi') : progress?.anchor?.cfi;
     const engine = new EpubEngine(epubView, {
@@ -2444,7 +2602,8 @@ async function openEpubBook(book) {
       onSwipe: (delta) => changePage(delta),
     });
     state.epubEngine = engine;
-    await engine.open(`/api/books/${encodeURIComponent(book.id)}/book.epub`, initialCfi || undefined);
+    const source = offlineBlob ? await offlineBlob.arrayBuffer() : `/api/books/${encodeURIComponent(book.id)}/book.epub`;
+    await engine.open(source, initialCfi || undefined);
     const frame = epubView.querySelector('iframe');
     const frameRect = frame?.getBoundingClientRect();
     if (!frame || !frameRect || frameRect.height < 20) {
@@ -2491,11 +2650,14 @@ async function openEpubBook(book) {
   }
 }
 
-async function openBook(book) {
+async function openBook(book, options = {}) {
   if (book.format === 'epub') {
-    await openEpubBook(book);
+    await openEpubBook(book, options);
     return;
   }
+  const offlineBlob = options.offlineBlob || null;
+  state.offlineMode = Boolean(offlineBlob) || !navigator.onLine;
+  state.offlineBlob = offlineBlob;
   state.book = book;
   state.readerReturnFocus = document.activeElement;
   if (state.epubEngine) {
@@ -2567,14 +2729,29 @@ async function openBook(book) {
   pageLabel.textContent = '…';
 
   try {
-    const [progressResponse, annotationsResponse] = await Promise.all([
-      fetch(`/api/progress?assetId=${encodeURIComponent(book.asset_id)}`),
-      fetch(`/api/annotations?assetId=${encodeURIComponent(book.asset_id)}`),
-    ]);
-    const progress = progressResponse.ok ? await progressResponse.json() : null;
-    state.annotations = annotationsResponse.ok ? await annotationsResponse.json() : [];
+    let progress = null;
+    if (offlineBlob) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(`offlineProgress:${book.id}`) || 'null');
+        progress = saved ? { anchor: saved } : null;
+      } catch { /* noop */ }
+      state.annotations = [];
+    } else {
+      const [progressResponse, annotationsResponse] = await Promise.all([
+        fetch(`/api/progress?assetId=${encodeURIComponent(book.asset_id)}`),
+        fetch(`/api/annotations?assetId=${encodeURIComponent(book.asset_id)}`),
+      ]);
+      progress = progressResponse.ok ? await progressResponse.json() : null;
+      state.annotations = annotationsResponse.ok ? await annotationsResponse.json() : [];
+    }
 
-    const task = pdfjsLib.getDocument({
+    const task = pdfjsLib.getDocument(offlineBlob ? {
+      data: new Uint8Array(await offlineBlob.arrayBuffer()),
+      cMapUrl: '/vendor/pdfjs/cmaps/',
+      cMapPacked: true,
+      standardFontDataUrl: '/vendor/pdfjs/standard_fonts/',
+      isEvalSupported: false,
+    } : {
       url: `/api/books/${encodeURIComponent(book.id)}/file`,
       cMapUrl: '/vendor/pdfjs/cmaps/',
       cMapPacked: true,
@@ -2628,6 +2805,8 @@ async function closeReader() {
     state.epubEngine.destroy();
     state.epubEngine = null;
   }
+  state.offlineMode = false;
+  state.offlineBlob = null;
   resetSearch();
   state.epubMode = false;
   state.epubProgress = null;
@@ -2982,6 +3161,10 @@ document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') closeGrants();
     return;
   }
+  if (!offlineModal.hidden) {
+    if (event.key === 'Escape') closeOffline();
+    return;
+  }
   if (event.key === '?' && !typing) {
     event.preventDefault();
     showShortcuts();
@@ -3039,6 +3222,11 @@ document.addEventListener('keydown', (event) => {
 });
 
 $('openUpload').addEventListener('click', openUpload);
+$('offlineBtn').addEventListener('click', openOfflineModal);
+$('closeOffline').addEventListener('click', closeOffline);
+offlineModal.addEventListener('click', (event) => {
+  if (event.target === offlineModal) closeOffline();
+});
 $('grantsBtn').addEventListener('click', openGrants);
 $('closeGrants').addEventListener('click', closeGrants);
 $('cancelGrant').addEventListener('click', closeGrants);
@@ -3465,6 +3653,11 @@ window.__readerStress = stressPages;
     await bootData();
   } catch (error) {
     console.error(error);
+    const offlineEntries = await listOfflineBooks().catch(() => []);
+    if (offlineEntries.length) {
+      await showOfflineLibrary(offlineEntries);
+      return;
+    }
     showLogin('Sunucuya ulaşılamadı.');
   }
 })();

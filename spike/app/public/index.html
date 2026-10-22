@@ -42,6 +42,7 @@
     <span class="mode" id="mode">bağlanıyor…</span>
     <span class="user-chip" id="userChip" hidden></span>
     <button class="ghost-btn" data-lang-toggle type="button">EN</button>
+    <button class="ghost-btn" id="offlineBtn" type="button">Çevrimdışı</button>
     <button class="ghost-btn" id="grantsBtn" type="button" hidden>Erişim</button>
     <button class="ghost-btn" id="passwordBtn" type="button" hidden>Parola</button>
     <button class="ghost-btn" id="logoutBtn" type="button" hidden>Çıkış</button>
@@ -228,6 +229,17 @@
     </div>
   </div>
 
+  <div class="modal" id="offlineModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="offlineHeading">
+      <div class="modal-head">
+        <strong id="offlineHeading">Çevrimdışı kitaplar</strong>
+        <button class="icon-btn" id="closeOffline" type="button" aria-label="Kapat">✕</button>
+      </div>
+      <div class="grant-list" id="offlineList" role="region" aria-label="Çevrimdışı kitap listesi" tabindex="0"></div>
+      <p class="login-hint" id="offlineStorage"></p>
+    </div>
+  </div>
+
   <div class="reader" id="reader" role="dialog" aria-modal="true" aria-label="Okuyucu" hidden>
     <div class="reader-top">
       <button class="icon-btn" id="closeReader" aria-label="Kapat">✕</button>
@@ -370,6 +382,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=90"></script>
+  <script type="module" src="/app.js?v=92"></script>
 </body>
 </html>

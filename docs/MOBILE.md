@@ -4,7 +4,8 @@
 
 - `manifest.webmanifest` + 180/192/512 PNG icons; installable as a standalone PWA.
 - `sw.js` caches the **app shell** (`/`, styles, app modules, icons) and serves it offline.
-- API, PDF/EPUB uploads and OCR files are **not** cached; offline reading of books is not implemented.
+- API, PDF/EPUB uploads and OCR files are **not** cached by the service worker.
+- Book files can be downloaded explicitly to **IndexedDB** (card ↓); the header **Çevrimdışı** modal opens/deletes them. Offline books reopen from the local blob, with local page/CFI progress. Notes/annotations are not synced offline.
 - Static JS/CSS use network-first with cache fallback, so a new deploy is picked up on the next online load.
 - Touch swipe on the PDF/EPUB page area: horizontal swipe >55px moves one page (or one EPUB section).
 - ≤600px: reader toolbar wraps, non-essential PDF controls are hidden, tap targets are at least 38px, form font is 16px (avoids iOS focus zoom), TOC/notes panels are 88vw overlays.

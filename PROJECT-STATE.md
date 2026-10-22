@@ -4,7 +4,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web: **v90** (`spike/app/public/index.html`), stiller **v38**
+- Web: **v92** (`spike/app/public/index.html`), stiller **v38**
 - DB migration: **001–010** (`db/migrations/`)
 - Prod: **v52 + 008** deploy edildi (2026-10-21) — Caddy HTTPS, smoke **16/16**; kök/tam kelime/bulanık prod'da doğrulandı.
 - Son commit: dil düzeltmesi (bu commit)
@@ -22,7 +22,8 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - Erişim: kopyalama/indirme/yazdırma/filigran; `/api/books/:id/download`.
 - Arama: sunucu sayfa indeksi (`asset_pages`); diakritik katlama, **tam kelime**, **bulanık** (pg_trgm), **kök** eşleşmesi (tr/en FTS, `text_tsv`/`text_tsv_en`); dil-duyarlı katalog araması (`works.language`), eşleşme sayısı + tür etiketi (`exact`/`folded`/`word`/`stem`/`fuzzy`).
 - Pilot: `docker-compose.prod.yml`, Caddy TLS, yedek scriptleri, `docs/PILOT.md`, `docs/SMOKE.md`, `scripts/smoke.mjs`.
-- Mobil/PWA: `manifest.webmanifest`, `sw.js` app-shell cache, ikonlar, kurulabilir PWA; PDF/EPUB alanında dokunmatik swipe, mobil toolbar sadeleştirme. Çevrimdışı **kitap içeriği** önbelleklenmiyor.
+- Mobil/PWA: `manifest.webmanifest`, `sw.js` app-shell cache, ikonlar, kurulabilir PWA; PDF/EPUB alanında dokunmatik swipe, mobil toolbar sadeleştirme.
+- Çevrimdışı: kitap dosyaları IndexedDB’de (`offline.mjs`), karttan ↓ ile indirilir; **Çevrimdışı** modalından açılır/silinir, çevrimdışı açılışta yerel katalog ve son konum kullanılır. Notlar/atıflar çevrimdışı yerel değil.
 - İçerik limiti: PDF/EPUB upload **300 MB**; 2.000 sayfa test edildi. SLO ve 500 MB kararı `docs/CONTENT-LIMITS.md`.
 
 ## Açık işler (sırayla)
@@ -31,7 +32,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 2. **Görsel ağırlıklı >300 MB:** kapsam dışı; yalnızca gerçek yayıncı talebi olursa önizleme/derivative pipeline.
 3. **EPUB indirme/filigran:** PDF dışı indirme 501; lisans/watermark kararı.
 4. **Interop:** MARC21/OPDS/OAI-PMH/COUNTER.
-5. **Mobil/PWA:** kurulabilir shell + swipe hazır; çevrimdışı kitap indirme/native kararı kaldı, sonra analitik/AI.
+5. **Mobil/PWA:** shell + swipe + temel çevrimdışı kitaplık hazır; çevrimdışı not/atıf senkronu ve native kararı kaldı, sonra analitik/AI.
 6. **Grant grup/audit:** group subject, kullanım raporu, grant geçmişi.
 
 ## Bilinen açıklar / riskler

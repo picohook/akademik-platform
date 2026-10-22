@@ -1,4 +1,4 @@
-const CACHE = 'akademik-shell-v2';
+const CACHE = 'akademik-shell-v4';
 const SHELL = [
   '/',
   '/styles.css',
@@ -7,6 +7,11 @@ const SHELL = [
   '/citations.mjs',
   '/search.mjs',
   '/epub-engine.mjs',
+  '/offline.mjs',
+  '/vendor/pdfjs/pdf.mjs',
+  '/vendor/pdfjs/pdf.worker.mjs',
+  '/vendor/epubjs/jszip.min.js',
+  '/vendor/epubjs/epub.min.js',
   '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
