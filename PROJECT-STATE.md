@@ -4,8 +4,8 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web: **v92** (`spike/app/public/index.html`), stiller **v38**
-- DB migration: **001–010** (`db/migrations/`)
+- Web: **v93** (`spike/app/public/index.html`), stiller **v38**
+- DB migration: **001–011** (`db/migrations/`)
 - Prod: **v52 + 008** deploy edildi (2026-10-21) — Caddy HTTPS, smoke **16/16**; kök/tam kelime/bulanık prod'da doğrulandı.
 - Son commit: dil düzeltmesi (bu commit)
 - EPUB kararı: **ADR-012** — MVP/V1a için epub.js, `EpubEngine` adapter arkasında, pinli; Readium/R2D2BC geçiş eşikleri yazılı.
@@ -48,7 +48,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - Prod'daki mayenit kitabı 2026-10-21'de `language='en'` yapıldı (İngilizce sözlükle kök arama çalışıyor). Ingest `--language` verilmezse sessizce `tr` yazar; İngilizce kitaplar için `--language en` şart.
 - İçerik hakları ve gerçek yayıncı kitapları hâlâ yok.
 - i18n kısmi: statik UI ve yaygın dinamik etiketler EN; bazı toast/doğrulama/yardım metinleri ve kitap metadata’sı çevrilmiyor.
-- Grants: `010-grant-scope-key.sql` uygulanmalı. Grant yoksa katalog eskisi gibi açık. Seat limit `users.max_sessions` ile birlikte çalışır (küçük olan geçerli). Grup subject/audit yok.
+- Grants: `010-grant-scope-key.sql` + `011-grant-audit.sql` uygulanmalı. Grant yoksa katalog eskisi gibi açık. Seat limit `users.max_sessions` ile birlikte çalışır (küçük olan geçerli). Grup subject yok; audit log API’de (`/api/grants/audit`) ve modalda kullanım sayacı var.
 
 ## Komutlar
 
@@ -57,6 +57,7 @@ docker compose up -d --build
 docker compose exec db psql -U akademik -d akademik -f /migrations/008-page-search.sql
 docker compose exec db psql -U akademik -d akademik -f /migrations/009-epub-pages.sql
 docker compose exec db psql -U akademik -d akademik -f /migrations/010-grant-scope-key.sql
+docker compose exec db psql -U akademik -d akademik -f /migrations/011-grant-audit.sql
 docker compose exec web node index-text.mjs --all --force
 node scripts/smoke.mjs http://localhost:8080
 ```

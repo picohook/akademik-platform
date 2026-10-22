@@ -19,6 +19,7 @@ docker compose exec db psql -U akademik -d akademik -f /migrations/007-user-sess
 docker compose exec db psql -U akademik -d akademik -f /migrations/008-page-search.sql
 docker compose exec db psql -U akademik -d akademik -f /migrations/009-epub-pages.sql
 docker compose exec db psql -U akademik -d akademik -f /migrations/010-grant-scope-key.sql
+docker compose exec db psql -U akademik -d akademik -f /migrations/011-grant-audit.sql
 ```
 
 Demo login: `reader@example.edu.tr` (reader) or `librarian@example.edu.tr` (upload/edit) / `demo1234`.

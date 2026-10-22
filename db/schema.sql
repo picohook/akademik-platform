@@ -152,6 +152,17 @@ create table if not exists grants (
   created_at timestamptz not null default now()
 );
 
+create table if not exists grant_audit (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references tenants(id) on delete cascade,
+  grant_id uuid,
+  action text not null check (action in ('create', 'revoke', 'update')),
+  actor_user_id uuid references users(id) on delete set null,
+  detail jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists grant_audit_tenant_time on grant_audit (tenant_id, created_at desc);
+
 create table if not exists annotations (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references tenants(id) on delete cascade,
@@ -208,6 +219,7 @@ alter table assets enable row level security;
 alter table asset_pages enable row level security;
 alter table collections enable row level security;
 alter table grants enable row level security;
+alter table grant_audit enable row level security;
 alter table annotations enable row level security;
 alter table reading_progress enable row level security;
 alter table tenants enable row level security;
@@ -221,6 +233,7 @@ alter table assets force row level security;
 alter table asset_pages force row level security;
 alter table collections force row level security;
 alter table grants force row level security;
+alter table grant_audit force row level security;
 alter table annotations force row level security;
 alter table reading_progress force row level security;
 alter table tenants force row level security;
@@ -238,6 +251,8 @@ create policy asset_pages_tenant on asset_pages
 create policy collections_tenant on collections
   using (tenant_id is null or tenant_id = current_setting('app.tenant_id', true)::uuid);
 create policy grants_tenant on grants
+  using (tenant_id = current_setting('app.tenant_id', true)::uuid);
+create policy grant_audit_tenant on grant_audit
   using (tenant_id = current_setting('app.tenant_id', true)::uuid);
 create policy annotations_tenant on annotations
   using (tenant_id = current_setting('app.tenant_id', true)::uuid);

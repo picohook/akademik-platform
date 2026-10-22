@@ -219,6 +219,7 @@ const grantsModal = $('grantsModal');
 const grantsList = $('grantsList');
 const grantForm = $('grantForm');
 const grantError = $('grantError');
+const grantUsage = $('grantUsage');
 const offlineModal = $('offlineModal');
 const offlineList = $('offlineList');
 const offlineStorage = $('offlineStorage');
@@ -533,6 +534,12 @@ async function loadGrants() {
     const response = await fetch('/api/grants');
     if (!response.ok) throw new Error('grants failed');
     const grants = await response.json();
+    try {
+      const usage = await fetch('/api/grants/usage').then((item) => item.ok ? item.json() : null);
+      if (usage) {
+        grantUsage.textContent = `${t('Aktif oturum')}: ${usage.activeSessions}${usage.seatLimit ? ` / ${usage.seatLimit}` : ''}`;
+      }
+    } catch { /* usage optional */ }
     if (!grants.length) {
       grantsList.textContent = t('Aktif grant yok.');
       return;
@@ -541,7 +548,9 @@ async function loadGrants() {
       const row = document.createElement('div');
       row.className = 'grant-row';
       const label = document.createElement('span');
-      const subject = grant.subject_type === 'tenant' ? 'Kurum' : grant.subject_id;
+      const subject = grant.subject_type === 'tenant'
+        ? 'Kurum'
+        : (grant.subject_email || grant.subject_id);
       const scope = grant.scope_type === 'all'
         ? 'Tümü'
         : `${grant.scope_type}: ${grant.scope_key || grant.scope_id || '—'}`;

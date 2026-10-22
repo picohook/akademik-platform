@@ -77,6 +77,7 @@ const demoBooks = [
 
 const demoAnnotations = [];
 const demoGrants = [];
+const demoGrantAudit = [];
 const demoProgress = new Map();
 const demoHashes = new Set();
 
@@ -582,15 +583,32 @@ async function listGrants() {
   if (!pool) return demoGrants;
   return withTenant(async (client) => {
     const { rows } = await client.query(
-      `select id, subject_type, subject_id, scope_type, scope_id, scope_key,
-              seat_limit, source, status, valid_from, valid_to, created_at
-         from grants
-        where tenant_id = $1
-        order by created_at desc`,
+      `select g.id, g.subject_type, g.subject_id, g.scope_type, g.scope_id, g.scope_key,
+              g.seat_limit, g.source, g.status, g.valid_from, g.valid_to, g.created_at,
+              u.email as subject_email
+         from grants g
+         left join users u on g.subject_type = 'user' and u.id = g.subject_id
+        where g.tenant_id = $1
+        order by g.created_at desc`,
       [TENANT_ID],
     );
     return rows;
   });
+}
+
+async function logGrantAudit(client, auth, grantId, action, detail) {
+  if (!pool) {
+    demoGrantAudit.unshift({
+      id: randomUUID(), grant_id: grantId, action, actor_user_id: auth?.userId || null,
+      detail, created_at: new Date().toISOString(),
+    });
+    return;
+  }
+  await client.query(
+    `insert into grant_audit (tenant_id, grant_id, action, actor_user_id, detail)
+     values ($1, $2, $3, $4, $5::jsonb)`,
+    [TENANT_ID, grantId, action, auth?.userId || null, JSON.stringify(detail || {})],
+  );
 }
 
 async function createGrant(body, auth) {
@@ -636,6 +654,9 @@ async function createGrant(body, auth) {
   };
   if (!pool) {
     demoGrants.unshift(grant);
+    await logGrantAudit(null, auth, grant.id, 'create', {
+      subjectType, scopeType, scopeKey, scopeId,
+    });
     return grant;
   }
   return withTenant(async (client) => {
@@ -648,20 +669,67 @@ async function createGrant(body, auth) {
                  seat_limit, source, status, valid_from, valid_to, created_at`,
       [TENANT_ID, subjectType, subjectId, scopeType, scopeId, scopeKey, grant.seat_limit, grant.source, grant.valid_to],
     );
+    await logGrantAudit(client, auth, rows[0].id, 'create', {
+      subjectType, scopeType, scopeKey, scopeId,
+    });
     return rows[0];
   });
 }
 
-async function deleteGrant(id) {
+async function deleteGrant(id, auth) {
   if (!pool) {
     const index = demoGrants.findIndex((grant) => grant.id === id);
     if (index < 0) return false;
-    demoGrants.splice(index, 1);
+    const [grant] = demoGrants.splice(index, 1);
+    await logGrantAudit(null, auth, id, 'revoke', { scopeType: grant.scope_type });
     return true;
   }
   return withTenant(async (client) => {
-    const { rowCount } = await client.query('delete from grants where id = $1 and tenant_id = $2', [id, TENANT_ID]);
+    const { rows, rowCount } = await client.query(
+      'delete from grants where id = $1 and tenant_id = $2 returning scope_type, scope_key, scope_id, subject_type, subject_id',
+      [id, TENANT_ID],
+    );
+    if (rowCount > 0) await logGrantAudit(client, auth, id, 'revoke', rows[0] || {});
     return rowCount > 0;
+  });
+}
+
+async function grantAuditLog(limit = 50) {
+  if (!pool) return demoGrantAudit.slice(0, limit);
+  return withTenant(async (client) => {
+    const { rows } = await client.query(
+      `select a.id, a.grant_id, a.action, a.actor_user_id, a.detail, a.created_at,
+              u.email as actor_email
+         from grant_audit a
+         left join users u on u.id = a.actor_user_id
+        where a.tenant_id = $1
+        order by a.created_at desc
+        limit $2`,
+      [TENANT_ID, limit],
+    );
+    return rows;
+  });
+}
+
+async function grantUsage() {
+  if (!pool) {
+    const seats = [...demoSessions.values()].reduce((total, list) => total + list.length, 0);
+    const limits = demoGrants.map((grant) => Number(grant.seat_limit)).filter((value) => value > 0);
+    return { activeSessions: seats, seatLimit: limits.length ? Math.min(...limits) : null };
+  }
+  return withTenant(async (client) => {
+    const { rows: sessionRows } = await client.query(
+      `select count(*)::int as count from user_sessions
+        where tenant_id = $1 and last_seen_at >= now() - interval '2 hours'`,
+      [TENANT_ID],
+    );
+    const { rows: grantRows } = await client.query(
+      `select seat_limit from grants
+        where tenant_id = $1 and status = 'active'
+          and valid_from <= now() and (valid_to is null or valid_to > now())`,
+      [TENANT_ID],
+    );
+    return { activeSessions: sessionRows[0].count, seatLimit: tenantSeatLimit(grantRows) };
   });
 }
 
@@ -1707,6 +1775,22 @@ const server = http.createServer(async (req, res) => {
       json(res, 200, await listGrants());
       return;
     }
+    if (pathname === '/api/grants/usage' && req.method === 'GET') {
+      if (!canManage(auth.role)) {
+        json(res, 403, { error: 'yetkiniz yok' });
+        return;
+      }
+      json(res, 200, await grantUsage());
+      return;
+    }
+    if (pathname === '/api/grants/audit' && req.method === 'GET') {
+      if (!canManage(auth.role)) {
+        json(res, 403, { error: 'yetkiniz yok' });
+        return;
+      }
+      json(res, 200, await grantAuditLog(50));
+      return;
+    }
     if (pathname === '/api/grants' && req.method === 'POST') {
       if (!canManage(auth.role)) {
         json(res, 403, { error: 'yetkiniz yok' });
@@ -1725,7 +1809,7 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       const id = decodeURIComponent(pathname.slice('/api/grants/'.length));
-      if (!await deleteGrant(id)) {
+      if (!await deleteGrant(id, auth)) {
         json(res, 404, { error: 'grant not found' });
         return;
       }

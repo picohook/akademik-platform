@@ -109,6 +109,7 @@ const DICT = {
   'Başlık UUID': 'Title UUID',
   'Değer': 'Value',
   'Koltuk limiti': 'Seat limit',
+  'Aktif oturum': 'Active sessions',
   'Kaynak': 'Source',
   'Manuel': 'Manual',
   'Abonelik': 'Subscription',
