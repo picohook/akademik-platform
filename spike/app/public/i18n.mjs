@@ -5,6 +5,7 @@ const DICT = {
   'İçeriğe atla': 'Skip to content',
   'Okuyucu:': 'Reader:',
   'Kütüphaneci:': 'Librarian:',
+  '· Kütüphaneci:': '· Librarian:',
   'Parola:': 'Password:',
   'E-posta': 'Email',
   'Parola': 'Password',
@@ -59,6 +60,7 @@ const DICT = {
   'Yakınlaştır': 'Zoom in',
   'Uzaklaştır': 'Zoom out',
   'Yer imi': 'Bookmark',
+  'Yer imi ekle': 'Add bookmark',
   'PDF indir': 'Download PDF',
   'İndir': 'Download',
   'Notlar': 'Notes',
@@ -112,12 +114,51 @@ const DICT = {
   'Giriş yapılamadı.': 'Could not sign in.',
   'Bu dosya zaten yüklü': 'This file is already uploaded',
   'Kitap eklendi': 'Book added',
+  'Düzenle': 'Edit',
+  'Açık tema': 'Light theme',
+  'Koyu tema': 'Dark theme',
+  'Sepia tema': 'Sepia theme',
+  'Notu düzenle': 'Edit note',
+  'Etiketler (; ile ayırın)': 'Tags (separate with ;)',
+  'Rengi değiştir': 'Change color',
+  'Atıf kopyalandı': 'Citation copied',
+  'Katalog yüklenemedi': 'Could not load catalog',
+  'Kitap yüklenemedi': 'Could not load book',
+  'Sunucuya ulaşılamadı.': 'Could not reach the server.',
+  'Künye güncellendi': 'Metadata updated',
+  'Künye güncellenemedi': 'Could not update metadata',
+  'Not güncellendi': 'Note updated',
+  'Not güncellenemedi': 'Could not update note',
+  'Yer imi kaldırıldı': 'Bookmark removed',
+  'Yer imini kaldır': 'Remove bookmark',
+  'Yalnızca yüklenen kitaplar silinebilir': 'Only uploaded titles can be deleted',
+  'Tüm cihazlardaki oturumlar kapatılsın mı?': 'Sign out of all devices?',
+  'Yeni parola en az 8 karakter olmalı.': 'New password must be at least 8 characters.',
+  'Mevcut parola hatalı.': 'Current password is incorrect.',
+  'Parola değiştirildi; yeniden giriş yapın.': 'Password changed; sign in again.',
+  'Parola değiştirilemedi.': 'Could not change password.',
+  'Demo modunda parola değiştirilemez.': 'Password cannot be changed in demo mode.',
+  'Başlık boş olamaz': 'Title cannot be empty',
+  'Başlıksız': 'Untitled',
+  'Bu PDF’te içindekiler bulunamadı.': 'No table of contents found in this PDF.',
+  'Bu PDF’te içindekiler bulunamadı. Sayfa numarası girerek veya aşağıdaki listeden gidebilirsiniz.': 'No table of contents found in this PDF. Enter a page number or use the list below.',
+  'Geçersiz sayfa numarası': 'Invalid page number',
+  'Sayfa aralığı dışında': 'Page out of range',
+  'Sürekli kaydırma açılamadı': 'Could not open continuous scroll',
+  'Tam ekran başlatılamadı': 'Could not start fullscreen',
+  'Performans testi tamamlanamadı': 'Performance test could not complete',
+  'İndiriliyor…': 'Downloading…',
+  'Önce bir PDF veya EPUB seçin': 'Choose a PDF or EPUB first',
+  'az önce': 'just now',
+  'j/k veya ←/→ sayfa · / kitapta ara · n notlar · b yer imi · ? yardım · Esc kapat': 'j/k or ←/→ page · / search in book · n notes · b bookmark · ? help · Esc close',
   'Geçersiz sayfa numarası': 'Invalid page number',
   'EPUB yüklenemedi': 'Could not load EPUB',
 };
 
 const PATTERNS = [
   [/^Sayfa (\d+) \/ (\d+)$/, 'Page $1 / $2'],
+  [/^Sayfa (\d+)$/, 'Page $1'],
+  [/^Sayfa (\d+) · Yer imi$/, 'Page $1 · Bookmark'],
   [/^Sayfa (\d+)-(\d+) \/ (\d+)$/, 'Pages $1-$2 / $3'],
   [/^Bölüm (\d+)$/, 'Chapter $1'],
   [/^Bölüm (\d+) · (\d+) eşleşme$/, 'Chapter $1 · $2 matches'],
@@ -131,9 +172,25 @@ const PATTERNS = [
   [/^(\d+) başlık$/, '$1 titles'],
   [/^(\d+) kitap$/, '$1 books'],
   [/^(\d+) gün önce$/, '$1 days ago'],
+  [/^(\d+) sa önce$/, '$1 hr ago'],
+  [/^(\d+) dk önce$/, '$1 min ago'],
+  [/^Aranıyor… (\d+) \/ (\d+)$/, 'Searching… $1 / $2'],
+  [/^Aynı anda en fazla (\d+) oturum açılabilir\. Önce bir cihazdan çıkış yapın\.$/, 'At most $1 sessions can be open. Sign out on one device first.'],
+  [/^EPUB yüklenemedi: (.+)$/, 'Could not load EPUB: $1'],
+  [/^Dışa aktarma: (.+)$/, 'Export: $1'],
+  [/^Oluşturuldu: (.+) · Düzenlendi: (.+)$/, 'Created: $1 · Edited: $2'],
+  [/^Oluşturuldu: (.+)$/, 'Created: $1'],
+  [/^“(.+)” kalıcı olarak silinsin mi\? Notlar ve ilerleme de silinir\.$/, 'Delete “$1” permanently? Notes and progress will also be deleted.'],
 ];
 
 const SKIP = 'script, style, code, .book-title, .book-meta, .note-text, .cite-output, [data-no-i18n]';
+
+const HTML_STRINGS = {
+  heroLede: {
+    tr: 'Bu ekran ürün değil; PDF.js, <code>anchor</code> modeli ve Postgres aramasını ölçmek için kurulmuş bir iskelet. Örnek içerik kamu malı test PDF’idir.',
+    en: 'This screen is not a product; it is a skeleton for measuring PDF.js, the <code>anchor</code> model and Postgres search. Sample content is a public-domain test PDF.',
+  },
+};
 
 let lang = 'tr';
 
@@ -159,8 +216,8 @@ export function toggleLanguage() {
   window.location.reload();
 }
 
-export function translateString(value) {
-  if (lang !== 'en') return value;
+export function translateString(value, language = lang) {
+  if (language !== 'en') return value;
   const text = String(value ?? '');
   if (DICT[text]) return DICT[text];
   for (const [pattern, replacement] of PATTERNS) {
@@ -175,6 +232,10 @@ export function t(value) {
 
 export function translateDom(root = document.body) {
   if (!root) return;
+  for (const element of root.querySelectorAll('[data-i18n]')) {
+    const entry = HTML_STRINGS[element.dataset.i18n];
+    if (entry && lang === 'en') element.innerHTML = entry.en;
+  }
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const nodes = [];
   let node = walker.nextNode();

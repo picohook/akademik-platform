@@ -1,7 +1,7 @@
 import * as pdfjsLib from '/vendor/pdfjs/pdf.mjs';
 import { formatCitation } from '/citations.mjs';
 import { EpubEngine } from '/epub-engine.mjs';
-import { initializeLanguage, toggleLanguage, t, translateDom } from '/i18n.mjs';
+import { initializeLanguage, toggleLanguage, t, translateDom, getLang } from '/i18n.mjs';
 
 initializeLanguage();
 for (const button of document.querySelectorAll('[data-lang-toggle]')) {
@@ -673,7 +673,7 @@ async function submitPassword(event) {
 }
 
 async function logoutAll() {
-  if (!window.confirm('Tüm cihazlardaki oturumlar kapatılsın mı?')) return;
+  if (!window.confirm(t('Tüm cihazlardaki oturumlar kapatılsın mı?'))) return;
   try {
     await fetch('/api/logout-all', { method: 'POST' });
   } catch {
@@ -740,7 +740,7 @@ function applyTheme(theme) {
   state.theme = next;
   reader.dataset.theme = next;
   themeBtn.textContent = next === 'dark' ? '☾' : next === 'sepia' ? '◐' : '☀';
-  themeBtn.title = next === 'dark' ? 'Koyu tema' : next === 'sepia' ? 'Sepia tema' : 'Açık tema';
+  themeBtn.title = t(next === 'dark' ? 'Koyu tema' : next === 'sepia' ? 'Sepia tema' : 'Açık tema');
   try {
     localStorage.setItem('readerTheme', next);
   } catch {
@@ -973,7 +973,7 @@ function updateBookmarkUi() {
   bookmarkBtn.textContent = hasBookmark ? '★' : '☆';
   bookmarkBtn.classList.toggle('active', hasBookmark);
   bookmarkBtn.setAttribute('aria-pressed', hasBookmark ? 'true' : 'false');
-  bookmarkBtn.title = hasBookmark ? 'Yer imini kaldır' : 'Yer imi ekle';
+  bookmarkBtn.title = t(hasBookmark ? 'Yer imini kaldır' : 'Yer imi ekle');
 }
 
 async function goToPage(value) {
@@ -1862,7 +1862,7 @@ function formatNoteDate(value) {
   if (age < 60 * 60 * 1000) return `${Math.floor(age / 60000)} dk önce`;
   if (age < 24 * 60 * 60 * 1000) return `${Math.floor(age / 3600000)} sa önce`;
   if (age < 7 * 24 * 60 * 60 * 1000) return `${Math.floor(age / 86400000)} gün önce`;
-  return new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+  return new Intl.DateTimeFormat(getLang() === 'en' ? 'en-GB' : 'tr-TR', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
 }
 
 async function updateAnnotation(id, changes) {
@@ -1930,7 +1930,7 @@ function exportAnnotations(format) {
     '',
     [book.publisher, book.publication_year].filter(Boolean).join(' · '),
     '',
-    `Dışa aktarma: ${new Date().toLocaleString('tr-TR')}`,
+    `Dışa aktarma: ${new Date().toLocaleString(getLang() === 'en' ? 'en-GB' : 'tr-TR')}`,
     '',
     '---',
     '',
@@ -2055,8 +2055,8 @@ function renderNotes() {
       date.className = 'note-date';
       date.textContent = `${formatNoteDate(createdAt)}${edited ? ' · düzenlendi' : ''}`;
       date.title = edited
-        ? `Oluşturuldu: ${createdAt.toLocaleString('tr-TR')} · Düzenlendi: ${updatedAt.toLocaleString('tr-TR')}`
-        : `Oluşturuldu: ${createdAt.toLocaleString('tr-TR')}`;
+        ? `Oluşturuldu: ${createdAt.toLocaleString(getLang() === 'en' ? 'en-GB' : 'tr-TR')} · Düzenlendi: ${updatedAt.toLocaleString(getLang() === 'en' ? 'en-GB' : 'tr-TR')}`
+        : `Oluşturuldu: ${createdAt.toLocaleString(getLang() === 'en' ? 'en-GB' : 'tr-TR')}`;
       item.appendChild(date);
     }
     if (!isBookmark && annotation.selected_text) {
@@ -2810,7 +2810,7 @@ deleteBookBtn.addEventListener('click', async () => {
   const id = editId.value;
   if (!id) return;
   const title = editTitle.value.trim() || 'Bu kitap';
-  if (!window.confirm(`“${title}” kalıcı olarak silinsin mi? Notlar ve ilerleme de silinir.`)) return;
+  if (!window.confirm(t(`“${title}” kalıcı olarak silinsin mi? Notlar ve ilerleme de silinir.`))) return;
   deleteBookBtn.disabled = true;
   try {
     const response = await fetch(`/api/books/${encodeURIComponent(id)}`, {
@@ -2894,7 +2894,7 @@ downloadBtn.addEventListener('click', async () => {
   if (!state.book) return;
   const original = downloadBtn.textContent;
   downloadBtn.disabled = true;
-  downloadBtn.textContent = 'İndiriliyor…';
+  downloadBtn.textContent = t('İndiriliyor…');
   try {
     const response = await fetch(`/api/books/${encodeURIComponent(state.book.id)}/download`);
     if (!response.ok) {
