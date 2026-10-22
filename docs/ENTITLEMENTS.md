@@ -10,9 +10,10 @@ Migration `010-grant-scope-key.sql` adds `grants.scope_key` for publisher/subjec
   - `publisher` — `scope_key` equals `editions.publisher` (case-insensitive)
   - `subject` — `scope_key` equals one of `works.subjects`
   - `title` — `scope_id` equals `works.id`
-  - `collection` — reserved; not enforced yet
+  - `collection` — `scope_id` equals a collection containing the work
 - Direct `/file`, `/book.epub`, `/search` and `/download` requests run the same check and return `403`.
 - `listBooks` filters the catalog.
+- **Erişim** modal (librarian/admin) creates and revokes grants; the form supports tenant/user subject, all/publisher/subject/collection/title scope and seat limit.
 
 ## Seat limit
 
@@ -63,8 +64,8 @@ select subject_type, subject_id, scope_type, scope_key, scope_id, seat_limit, va
 
 ## Not implemented yet
 
-- Admin UI for grants (SQL only).
-- Collection-scope membership enforcement.
 - Group subjects.
+- Granting a collection from a picker (the form takes a UUID).
 - COUNTER-style usage reports.
 - Per-grant audit log.
+- Seat usage dashboard.

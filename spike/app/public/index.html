@@ -36,6 +36,7 @@
     <span class="mode" id="mode">bağlanıyor…</span>
     <span class="user-chip" id="userChip" hidden></span>
     <button class="ghost-btn" data-lang-toggle type="button">EN</button>
+    <button class="ghost-btn" id="grantsBtn" type="button" hidden>Erişim</button>
     <button class="ghost-btn" id="passwordBtn" type="button" hidden>Parola</button>
     <button class="ghost-btn" id="logoutBtn" type="button" hidden>Çıkış</button>
   </header>
@@ -167,6 +168,55 @@
           <button class="ghost-btn" id="logoutAllBtn" type="button">Tüm cihazlardan çıkış</button>
           <button class="ghost-btn" id="cancelPassword" type="button">Vazgeç</button>
           <button class="primary" type="submit">Kaydet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="grantsModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="grantsHeading">
+      <div class="modal-head">
+        <strong id="grantsHeading">Erişim grantleri</strong>
+        <button class="icon-btn" id="closeGrants" type="button" aria-label="Kapat">✕</button>
+      </div>
+      <div class="grant-list" id="grantsList"></div>
+      <form id="grantForm">
+        <div class="form-row">
+          <label>Kime
+            <select id="grantSubjectType">
+              <option value="tenant">Tüm kurum</option>
+              <option value="user">Tek kullanıcı</option>
+            </select>
+          </label>
+          <label>Kullanıcı e-postası<input id="grantSubjectEmail" type="email" placeholder="reader@example.edu.tr" /></label>
+        </div>
+        <div class="form-row">
+          <label>Kapsam
+            <select id="grantScopeType">
+              <option value="all">Tümü</option>
+              <option value="publisher">Yayıncı</option>
+              <option value="subject">Konu</option>
+              <option value="collection">Koleksiyon UUID</option>
+              <option value="title">Başlık UUID</option>
+            </select>
+          </label>
+          <label>Değer<input id="grantScopeKey" placeholder="Yayıncı / konu / UUID" /></label>
+        </div>
+        <div class="form-row">
+          <label>Koltuk limiti<input id="grantSeatLimit" type="number" min="1" max="9999" /></label>
+          <label>Kaynak
+            <select id="grantSource">
+              <option value="manual">Manuel</option>
+              <option value="subscription">Abonelik</option>
+              <option value="trial">Deneme</option>
+              <option value="purchase">Satın alma</option>
+            </select>
+          </label>
+        </div>
+        <div class="login-error" id="grantError" hidden></div>
+        <div class="modal-actions">
+          <button class="ghost-btn" id="cancelGrant" type="button">Vazgeç</button>
+          <button class="primary" type="submit">Grant ekle</button>
         </div>
       </form>
     </div>
@@ -314,6 +364,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=79"></script>
+  <script type="module" src="/app.js?v=80"></script>
 </body>
 </html>

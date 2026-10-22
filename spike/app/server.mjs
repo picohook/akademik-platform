@@ -75,6 +75,7 @@ const demoBooks = [
 ];
 
 const demoAnnotations = [];
+const demoGrants = [];
 const demoProgress = new Map();
 const demoHashes = new Set();
 
@@ -536,12 +537,21 @@ function grantAllows(book, grants) {
     if (grant.scope_type === 'title') return String(grant.scope_id || '') === String(book.id);
     if (grant.scope_type === 'publisher') return String(grant.scope_key || '').toLocaleLowerCase('tr') === publisher;
     if (grant.scope_type === 'subject') return subjects.includes(String(grant.scope_key || '').toLocaleLowerCase('tr'));
+    if (grant.scope_type === 'collection') {
+      return (book.collection_ids || []).map(String).includes(String(grant.scope_id || ''));
+    }
     return false;
   });
 }
 
 async function activeGrants(auth) {
-  if (!pool || !auth) return [];
+  if (!auth) return [];
+  if (!pool) {
+    return demoGrants.filter((grant) => grant.status === 'active'
+      && grant.tenant_id === TENANT_ID
+      && ((grant.subject_type === 'tenant' && grant.subject_id === TENANT_ID)
+        || (grant.subject_type === 'user' && grant.subject_id === auth.userId)));
+  }
   try {
     const tenantId = auth.tenantId || TENANT_ID;
     return await withTenant(async (client) => {
@@ -564,6 +574,93 @@ async function activeGrants(auth) {
   }
 }
 
+async function listGrants() {
+  if (!pool) return demoGrants;
+  return withTenant(async (client) => {
+    const { rows } = await client.query(
+      `select id, subject_type, subject_id, scope_type, scope_id, scope_key,
+              seat_limit, source, status, valid_from, valid_to, created_at
+         from grants
+        where tenant_id = $1
+        order by created_at desc`,
+      [TENANT_ID],
+    );
+    return rows;
+  });
+}
+
+async function createGrant(body, auth) {
+  const scopeType = ['all', 'publisher', 'subject', 'collection', 'title'].includes(body.scopeType)
+    ? body.scopeType
+    : null;
+  if (!scopeType) throw new Error('invalid scope');
+  const subjectType = body.subjectType === 'user' ? 'user' : 'tenant';
+  let subjectId = TENANT_ID;
+  if (subjectType === 'user') {
+    const email = String(body.subjectEmail || '').trim().toLocaleLowerCase('tr');
+    if (!email) throw new Error('user email required');
+    if (!pool) {
+      if (email !== 'reader@example.edu.tr' && email !== 'librarian@example.edu.tr') throw new Error('user not found');
+      subjectId = email.startsWith('reader') ? USER_ID : '44444444-4444-4444-4444-444444444444';
+    } else {
+      const row = await withTenant(async (client) => {
+        const { rows } = await client.query('select id from users where email = $1 limit 1', [email]);
+        return rows[0];
+      });
+      if (!row) throw new Error('user not found');
+      subjectId = row.id;
+    }
+  }
+  const scopeId = ['title', 'collection'].includes(scopeType) ? (body.scopeId || null) : null;
+  const scopeKey = ['publisher', 'subject'].includes(scopeType) ? String(body.scopeKey || '').trim() : null;
+  if (['title', 'collection'].includes(scopeType) && !scopeId) throw new Error('scope id required');
+  if (['publisher', 'subject'].includes(scopeType) && !scopeKey) throw new Error('scope key required');
+  const seatLimit = Number(body.seatLimit);
+  const grant = {
+    id: randomUUID(),
+    tenant_id: TENANT_ID,
+    subject_type: subjectType,
+    subject_id: subjectId,
+    scope_type: scopeType,
+    scope_id: scopeId,
+    scope_key: scopeKey,
+    seat_limit: Number.isFinite(seatLimit) && seatLimit > 0 ? seatLimit : null,
+    source: ['subscription', 'trial', 'purchase', 'manual'].includes(body.source) ? body.source : 'manual',
+    status: 'active',
+    valid_to: body.validTo || null,
+    created_at: new Date().toISOString(),
+  };
+  if (!pool) {
+    demoGrants.unshift(grant);
+    return grant;
+  }
+  return withTenant(async (client) => {
+    const { rows } = await client.query(
+      `insert into grants
+         (tenant_id, subject_type, subject_id, scope_type, scope_id, scope_key,
+          seat_limit, source, status, valid_to)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, 'active', $9)
+       returning id, subject_type, subject_id, scope_type, scope_id, scope_key,
+                 seat_limit, source, status, valid_from, valid_to, created_at`,
+      [TENANT_ID, subjectType, subjectId, scopeType, scopeId, scopeKey, grant.seat_limit, grant.source, grant.valid_to],
+    );
+    return rows[0];
+  });
+}
+
+async function deleteGrant(id) {
+  if (!pool) {
+    const index = demoGrants.findIndex((grant) => grant.id === id);
+    if (index < 0) return false;
+    demoGrants.splice(index, 1);
+    return true;
+  }
+  return withTenant(async (client) => {
+    const { rowCount } = await client.query('delete from grants where id = $1 and tenant_id = $2', [id, TENANT_ID]);
+    return rowCount > 0;
+  });
+}
+
 function tenantSeatLimit(grants) {
   const limits = grants.map((grant) => Number(grant.seat_limit)).filter((value) => Number.isFinite(value) && value > 0);
   return limits.length ? Math.min(...limits) : null;
@@ -575,11 +672,17 @@ async function canAccessBook(book, auth) {
 }
 
 async function listBooks(auth) {
-  if (!pool) return demoBooks;
+  if (!pool) {
+    const grants = await activeGrants(auth);
+    return demoBooks.filter((book) => grantAllows(book, grants));
+  }
   const books = await withTenant(async (client) => {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
+              (select array_agg(ci.collection_id::text)
+                 from collection_items ci
+                where ci.work_id = w.id) as collection_ids,
               a.id as asset_id, a.format, a.source_system, a.storage_key, a.page_count,
               a.allow_copy, a.allow_download, a.allow_print, a.watermark
          from works w
@@ -601,6 +704,9 @@ async function getBook(id) {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
+              (select array_agg(ci.collection_id::text)
+                 from collection_items ci
+                where ci.work_id = w.id) as collection_ids,
               a.id as asset_id, a.format, a.source_system, a.storage_key, a.page_count,
               a.allow_copy, a.allow_download, a.allow_print, a.watermark
          from works w
@@ -720,6 +826,9 @@ async function updateBook(id, body) {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
+              (select array_agg(ci.collection_id::text)
+                 from collection_items ci
+                where ci.work_id = w.id) as collection_ids,
               a.id as asset_id, a.format, a.source_system, a.storage_key, a.page_count,
               a.allow_copy, a.allow_download, a.allow_print, a.watermark
          from works w
@@ -753,8 +862,10 @@ async function searchBooks(query, auth) {
   const q = String(query || '').trim();
   if (!q) return listBooks(auth);
   if (!pool) {
+    const grants = await activeGrants(auth);
     return demoBooks.filter((book) =>
-      catalogMatches([book.title, book.subtitle, book.abstract, ...(book.subjects || [])], q),
+      grantAllows(book, grants)
+      && catalogMatches([book.title, book.subtitle, book.abstract, ...(book.subjects || [])], q),
     );
   }
   const books = await withTenant(async (client) => {
@@ -763,6 +874,9 @@ async function searchBooks(query, auth) {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
+              (select array_agg(ci.collection_id::text)
+                 from collection_items ci
+                where ci.work_id = w.id) as collection_ids,
               a.id as asset_id, a.format, a.source_system, a.storage_key, a.page_count,
               a.allow_copy, a.allow_download, a.allow_print, a.watermark,
               ts_rank(ts.vector, ts.query) as rank,
@@ -1579,6 +1693,39 @@ const server = http.createServer(async (req, res) => {
       }
       const book = await handleUpload(req);
       json(res, 201, book);
+      return;
+    }
+    if (pathname === '/api/grants' && req.method === 'GET') {
+      if (!canManage(auth.role)) {
+        json(res, 403, { error: 'yetkiniz yok' });
+        return;
+      }
+      json(res, 200, await listGrants());
+      return;
+    }
+    if (pathname === '/api/grants' && req.method === 'POST') {
+      if (!canManage(auth.role)) {
+        json(res, 403, { error: 'yetkiniz yok' });
+        return;
+      }
+      try {
+        json(res, 201, await createGrant(await readJson(req), auth));
+      } catch (error) {
+        json(res, 400, { error: error.message });
+      }
+      return;
+    }
+    if (pathname.startsWith('/api/grants/') && req.method === 'DELETE') {
+      if (!canManage(auth.role)) {
+        json(res, 403, { error: 'yetkiniz yok' });
+        return;
+      }
+      const id = decodeURIComponent(pathname.slice('/api/grants/'.length));
+      if (!await deleteGrant(id)) {
+        json(res, 404, { error: 'grant not found' });
+        return;
+      }
+      json(res, 200, { ok: true });
       return;
     }
     if (pathname === '/api/books' && req.method === 'GET') {

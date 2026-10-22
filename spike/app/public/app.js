@@ -201,6 +201,10 @@ const editAllowDownload = $('editAllowDownload');
 const editAllowPrint = $('editAllowPrint');
 const editWatermark = $('editWatermark');
 const deleteBookBtn = $('deleteBook');
+const grantsModal = $('grantsModal');
+const grantsList = $('grantsList');
+const grantForm = $('grantForm');
+const grantError = $('grantError');
 
 const uploadModal = $('uploadModal');
 const uploadForm = $('uploadForm');
@@ -398,6 +402,111 @@ function trapReaderFocus(event) {
   return false;
 }
 
+async function loadGrants() {
+  grantsList.replaceChildren();
+  try {
+    const response = await fetch('/api/grants');
+    if (!response.ok) throw new Error('grants failed');
+    const grants = await response.json();
+    if (!grants.length) {
+      grantsList.textContent = t('Aktif grant yok.');
+      return;
+    }
+    grants.forEach((grant) => {
+      const row = document.createElement('div');
+      row.className = 'grant-row';
+      const label = document.createElement('span');
+      const subject = grant.subject_type === 'tenant' ? 'Kurum' : grant.subject_id;
+      const scope = grant.scope_type === 'all'
+        ? 'Tümü'
+        : `${grant.scope_type}: ${grant.scope_key || grant.scope_id || '—'}`;
+      label.textContent = `${subject} · ${scope}${grant.seat_limit ? ` · ${grant.seat_limit} koltuk` : ''} · ${grant.status}`;
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'mini-btn';
+      remove.textContent = 'Sil';
+      remove.addEventListener('click', () => deleteGrant(grant.id));
+      row.append(label, remove);
+      grantsList.appendChild(row);
+    });
+  } catch (error) {
+    console.error(error);
+    grantsList.textContent = 'Grantlar yüklenemedi.';
+  }
+}
+
+function openGrants() {
+  grantError.hidden = true;
+  grantForm.reset();
+  grantScopeTypeChanged();
+  loadGrants();
+  openModal(grantsModal, $('grantSubjectType'));
+}
+
+function closeGrants() {
+  closeModal(grantsModal);
+}
+
+function grantScopeTypeChanged() {
+  const scope = $('grantScopeType').value;
+  const key = $('grantScopeKey');
+  key.disabled = scope === 'all';
+  key.placeholder = scope === 'publisher'
+    ? 'Yayıncı adı'
+    : scope === 'subject'
+      ? 'Konu adı'
+      : scope === 'title'
+        ? 'Başlık UUID'
+        : scope === 'collection'
+          ? 'Koleksiyon UUID'
+          : 'Tümü için boş';
+}
+
+async function submitGrant(event) {
+  event.preventDefault();
+  grantError.hidden = true;
+  try {
+    const response = await fetch('/api/grants', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        subjectType: $('grantSubjectType').value,
+        subjectEmail: $('grantSubjectEmail').value.trim(),
+        scopeType: $('grantScopeType').value,
+        scopeKey: $('grantScopeKey').value.trim(),
+        scopeId: $('grantScopeKey').value.trim(),
+        seatLimit: Number($('grantSeatLimit').value) || null,
+        source: $('grantSource').value,
+      }),
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || 'grant failed');
+    }
+    grantForm.reset();
+    grantScopeTypeChanged();
+    await loadGrants();
+    toast(t('Grant eklendi'));
+  } catch (error) {
+    console.error(error);
+    grantError.textContent = error.message;
+    grantError.hidden = false;
+  }
+}
+
+async function deleteGrant(id) {
+  if (!window.confirm(t('Grant silinsin mi?'))) return;
+  try {
+    const response = await fetch(`/api/grants/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!response.ok) throw new Error('delete failed');
+    await loadGrants();
+    toast(t('Grant silindi'));
+  } catch (error) {
+    console.error(error);
+    toast(t('Grant silinemedi'));
+  }
+}
+
 function openEdit(book) {
   editId.value = book.id;
   editTitle.value = book.title || '';
@@ -585,6 +694,7 @@ function canManage() {
 
 function applyRoleUi() {
   $('openUpload').hidden = !canManage();
+  $('grantsBtn').hidden = !canManage();
 }
 
 function setAppInert(inert) {
@@ -2800,6 +2910,10 @@ document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') closeEdit();
     return;
   }
+  if (!grantsModal.hidden) {
+    if (event.key === 'Escape') closeGrants();
+    return;
+  }
   if (event.key === '?' && !typing) {
     event.preventDefault();
     showShortcuts();
@@ -2857,6 +2971,14 @@ document.addEventListener('keydown', (event) => {
 });
 
 $('openUpload').addEventListener('click', openUpload);
+$('grantsBtn').addEventListener('click', openGrants);
+$('closeGrants').addEventListener('click', closeGrants);
+$('cancelGrant').addEventListener('click', closeGrants);
+$('grantScopeType').addEventListener('change', grantScopeTypeChanged);
+grantForm.addEventListener('submit', submitGrant);
+grantsModal.addEventListener('click', (event) => {
+  if (event.target === grantsModal) closeGrants();
+});
 loginForm.addEventListener('submit', handleLogin);
 logoutBtn.addEventListener('click', logout);
 passwordBtn.addEventListener('click', openPassword);
