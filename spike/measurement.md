@@ -28,6 +28,20 @@ The repository ships only `sample.pdf` (public test file) until real files arriv
 | 50 concurrent, error rate | 0 | | | | | |
 | 50 concurrent, p95 (s) | < 2 | | | | | |
 
+## Image-heavy 500 MB fixture
+
+For a realistic image/raster test (not a random-byte dummy):
+
+```bash
+cd spike/app
+python scripts/make-image-pages.py 188 ../../tmp/image-pages
+node scripts/make-image-pdf.mjs ../../tmp/image-pages ../../tmp/large-500mb.pdf
+```
+
+188 noisy 1600×2200 JPEGs (quality 85) produce roughly 500 MB; the PDF has the same page count and embeds each image once. Upload it as a librarian and open with `?perf=1`. This is synthetic noise, so JPEG/decode cost is worst-case; a real scanned book is usually smaller per page.
+
+Generated fixture (2026-10-22): `tmp/large-500mb.pdf`, **500,640,062 bytes**, **188 pages**, image-only (no text layer). Node/PDF.js legacy baseline: document load **4,549 ms**, first-page text 87 ms (0 chars), 20 page texts 187 ms. Browser cold-cache measurement is still required; at 20 Mbps a full 500 MB transfer would take ~200 s, so this test depends on PDF.js range requests fetching only the first-page image. If it fails, the acceptance target must be set with the real publisher file, not synthetic noise.
+
 ## Large-file baseline — 2026-10-22
 
 > DevTools custom throttling units: **20 Mbps = 20,000 kbps**. If the profile field is set to `20`, it is 20 **kbps**; a 706 KB PDF then takes ~283 s (observed 317 s), which is not a reader regression.
