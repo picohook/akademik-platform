@@ -208,6 +208,52 @@ export class EpubEngine {
     this.searchHighlights = [];
   }
 
+  findMatchCfi(query, { fuzzy = false } = {}) {
+    if (!this.rendition || !query) return null;
+    const needle = foldChars(query);
+    for (const contents of this.rendition.getContents() || []) {
+      const section = this.book?.spine?.spineItems?.[contents.sectionIndex];
+      const doc = contents.document;
+      if (!section || !doc?.body) continue;
+      const walker = doc.createTreeWalker(doc.body, 4);
+      let node = walker.nextNode();
+      while (node) {
+        const text = node.textContent || '';
+        const lower = foldChars(text);
+        const match = fuzzy
+          ? findFuzzyWord(lower, needle)
+          : (() => {
+            const index = lower.indexOf(needle);
+            return index >= 0 ? { index, length: needle.length } : null;
+          })();
+        if (match) {
+          try {
+            const range = doc.createRange();
+            range.setStart(node, match.index);
+            range.setEnd(node, match.index + match.length);
+            return {
+              cfi: section.cfiFromRange(range),
+              node,
+              index: match.index,
+              length: match.length,
+            };
+          } catch {
+            return null;
+          }
+        }
+        node = walker.nextNode();
+      }
+    }
+    return null;
+  }
+
+  async goToMatch(query, { fuzzy = false } = {}) {
+    const match = this.findMatchCfi(query, { fuzzy });
+    if (!match) return false;
+    await this.rendition.display(match.cfi);
+    return true;
+  }
+
   highlightSearch(query, { fuzzy = false } = {}) {
     this.clearSearchHighlights();
     const needle = foldChars(query);

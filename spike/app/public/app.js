@@ -1157,14 +1157,15 @@ async function focusSearchResult(index) {
   state.activeQuery = hit.query || state.searchQuery;
   state.activeMatchType = hit.matchType || 'exact';
   if (state.epubMode) {
+    const query = hit.query || state.searchQuery;
+    const fuzzy = ['fuzzy', 'stem'].includes(hit.matchType);
     try {
       await state.epubEngine?.goToSearchHit(hit);
+      await state.epubEngine?.goToMatch(query, { fuzzy });
     } catch {
       await state.epubEngine?.goToSpineIndex(hit.page);
     }
-    state.epubEngine?.highlightSearch(hit.query || state.searchQuery, {
-      fuzzy: ['fuzzy', 'stem'].includes(hit.matchType),
-    });
+    state.epubEngine?.highlightSearch(query, { fuzzy });
   } else {
     await goToPage(hit.page);
     refreshSearchHighlights();
