@@ -1782,6 +1782,31 @@ async function handleUpload(req, auth) {
   }
 }
 
+function epubWatermarkMarkup(auth) {
+  const label = `Akademik Platform · ${auth?.email || 'reader'} · ${new Date().toISOString().slice(0, 10)}`;
+  const safe = label.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return `<div xmlns="http://www.w3.org/1999/xhtml" style="position:fixed;left:0;right:0;bottom:0;z-index:2147483647;padding:4px 10px;background:rgba(255,255,255,.82);color:#174638;font:11px/1.4 sans-serif;border-top:1px solid rgba(23,70,56,.25);pointer-events:none">${safe}</div>`;
+}
+
+async function watermarkEpub(buffer, auth) {
+  const zip = await JSZip.loadAsync(buffer);
+  if (zip.file('META-INF/encryption.xml')) {
+    throw new Error('encrypted EPUB cannot be watermarked');
+  }
+  let count = 0;
+  const files = Object.keys(zip.files).filter((name) => /\.(?:xhtml|html|htm)$/i.test(name));
+  for (const name of files) {
+    const entry = zip.file(name);
+    if (!entry) continue;
+    const content = await entry.async('string');
+    if (!/<\/body\s*>/i.test(content)) continue;
+    zip.file(name, content.replace(/<\/body\s*>/i, `${epubWatermarkMarkup(auth)}</body>`));
+    count += 1;
+  }
+  if (!count) return { buffer, changed: false };
+  return { buffer: await zip.generateAsync({ type: 'nodebuffer', mimeType: 'application/epub+zip' }), changed: true };
+}
+
 async function servePdf(req, res, storageKey) {
   const safePath = path.resolve(PUBLIC_DIR, storageKey);
   if (!safePath.startsWith(PUBLIC_DIR + path.sep)) {
@@ -2435,7 +2460,16 @@ const server = http.createServer(async (req, res) => {
           return;
         }
         await logUsage('book.download', book, auth);
-        const buffer = await readFile(epubPath);
+        let buffer = await readFile(epubPath);
+        if (book.watermark !== false) {
+          try {
+            const result = await watermarkEpub(buffer, auth);
+            buffer = result.buffer;
+          } catch (error) {
+            json(res, 409, { error: error.message });
+            return;
+          }
+        }
         res.writeHead(200, {
           'content-type': 'application/epub+zip',
           'content-disposition': `attachment; filename="book-${book.id}.epub"`,
