@@ -11,7 +11,11 @@ GET /opds
 - `application/atom+xml;profile=opds-catalog;kind=acquisition`
 - Includes title, UUID, author, language, publisher, subjects and an acquisition link (`/file` for PDF, `/book.epub` for EPUB).
 - Honors the caller’s active grants.
-- OPDS clients that cannot send a browser cookie need a proxy/API-key front; Basic auth is not implemented.
+- Session cookie works for browser use. For third-party e-readers, set in the server environment:
+  - `OPDS_API_KEY` — shared secret
+  - `OPDS_USER_EMAIL` — the reader account whose grants the feed uses
+  Then call `/opds?api_key=...` or send `Authorization: Bearer ...`.
+- Without a session or valid token, the feed returns **401**. The API key does not bypass grants; it is evaluated as `OPDS_USER_EMAIL`.
 
 ## MARC21 export
 

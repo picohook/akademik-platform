@@ -1113,6 +1113,42 @@ function escapeXml(value) {
     .replace(/"/g, '&quot;');
 }
 
+async function opdsTokenAuth(req, url) {
+  const configured = process.env.OPDS_API_KEY;
+  const email = String(process.env.OPDS_USER_EMAIL || '').trim().toLocaleLowerCase('tr');
+  if (!configured || !email) return null;
+  const header = String(req.headers.authorization || '');
+  const supplied = url.searchParams.get('api_key')
+    || (header.toLowerCase().startsWith('bearer ') ? header.slice(7).trim() : '');
+  if (!supplied || supplied.length !== configured.length
+    || !timingSafeEqual(Buffer.from(supplied), Buffer.from(configured))) return null;
+  if (!pool) {
+    const isLibrarian = email === 'librarian@example.edu.tr';
+    if (email !== 'reader@example.edu.tr' && !isLibrarian) return null;
+    return {
+      userId: isLibrarian ? '44444444-4444-4444-4444-444444444444' : USER_ID,
+      tenantId: TENANT_ID,
+      email,
+      displayName: isLibrarian ? 'Demo Kütüphaneci' : 'Demo Okuyucu',
+      role: isLibrarian ? 'librarian' : 'reader',
+    };
+  }
+  return withTenant(async (client) => {
+    const { rows } = await client.query(
+      'select id, tenant_id, email, display_name, role from users where email = $1 limit 1',
+      [email],
+    );
+    if (!rows[0]) return null;
+    return {
+      userId: rows[0].id,
+      tenantId: rows[0].tenant_id,
+      email: rows[0].email,
+      displayName: rows[0].display_name,
+      role: rows[0].role,
+    };
+  });
+}
+
 async function opdsFeed(auth, req) {
   const books = await listBooks(auth);
   const proto = req.headers['x-forwarded-proto'] || (isSecureRequest(req) ? 'https' : 'http');
@@ -2020,17 +2056,21 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    const auth = readSession(req);
+    const sessionAuth = readSession(req);
+    const tokenAuth = pathname === '/opds' && req.method === 'GET'
+      ? await opdsTokenAuth(req, url)
+      : null;
+    const auth = sessionAuth || tokenAuth;
     if (!auth && (pathname.startsWith('/api/') || pathname.startsWith('/ocr/') || pathname === '/opds')) {
       json(res, 401, { error: 'authentication required' });
       return;
     }
-    if (auth && !(await sessionIsValid(auth))) {
+    if (sessionAuth && !(await sessionIsValid(sessionAuth))) {
       clearSessionCookie(res, isSecureRequest(req));
       json(res, 401, { error: 'session revoked' });
       return;
     }
-    if (auth && ['POST', 'PATCH', 'DELETE', 'PUT'].includes(req.method) && !requireCsrf(req, auth)) {
+    if (sessionAuth && ['POST', 'PATCH', 'DELETE', 'PUT'].includes(req.method) && !requireCsrf(req, sessionAuth)) {
       json(res, 403, { error: 'csrf token missing or invalid' });
       return;
     }
