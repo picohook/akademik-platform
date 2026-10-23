@@ -44,7 +44,7 @@ const DEMO_EMAIL = process.env.DEMO_EMAIL || 'reader@example.edu.tr';
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'demo1234';
 const BRAND_NAME = process.env.BRAND_NAME || 'Akademik Platform';
 const BRAND_TAGLINE = process.env.BRAND_TAGLINE || 'spike';
-const APP_VERSION = process.env.APP_VERSION || '118';
+const APP_VERSION = process.env.APP_VERSION || '119';
 const BUILD_SHA = process.env.BUILD_SHA || '';
 const BUILD_DATE = process.env.BUILD_DATE || '';
 const APP_ENV = process.env.APP_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'development');
@@ -2634,7 +2634,12 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (pathname === '/api/annotations' && req.method === 'POST') {
-      json(res, 201, await createAnnotation(await readJson(req), auth.userId));
+      const body = await readJson(req);
+      if (Object.hasOwn(body, 'ownerId') && body.ownerId !== auth.userId) {
+        json(res, 403, { error: 'annotation owner mismatch' });
+        return;
+      }
+      json(res, 201, await createAnnotation(body, auth.userId));
       return;
     }
     if (pathname.startsWith('/api/annotations/') && req.method === 'PATCH') {
@@ -2643,7 +2648,12 @@ const server = http.createServer(async (req, res) => {
         json(res, 400, { error: 'invalid annotation id' });
         return;
       }
-      const updated = await updateAnnotation(id, await readJson(req), auth.userId);
+      const body = await readJson(req);
+      if (Object.hasOwn(body, 'ownerId') && body.ownerId !== auth.userId) {
+        json(res, 403, { error: 'annotation owner mismatch' });
+        return;
+      }
+      const updated = await updateAnnotation(id, body, auth.userId);
       json(res, updated ? 200 : 404, updated || { error: 'annotation not found' });
       return;
     }

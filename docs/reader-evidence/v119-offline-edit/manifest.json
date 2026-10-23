@@ -1,0 +1,55 @@
+{
+  "version": 119,
+  "generatedAt": "2026-10-23T23:18:07.037Z",
+  "finalRun": "3b2df968-972e-43d2-97e4-bf0677c709ab",
+  "acceptance": {
+    "browserCases": 14,
+    "pageErrors": 0,
+    "cleanup": {
+      "browser": true,
+      "server": true,
+      "temp": true
+    },
+    "postgresSecurityChecks": 68
+  },
+  "note": "Raw-byte SHA-256; sources also include LF-normalized SHA-256 for Git checkout comparison. PostgreSQL stdout is a separate regression, not the browser database.",
+  "sources": {
+    "spike/app/server.mjs": {
+      "sha256": "d28135b29acac94e2d2051aeadeb493c12bf2bba824bd3ee7a2af6c3ab877b1b",
+      "sha256LF": "d28135b29acac94e2d2051aeadeb493c12bf2bba824bd3ee7a2af6c3ab877b1b"
+    },
+    "spike/app/public/app.js": {
+      "sha256": "ac4f699c0ef1bef8ff684719a6b82c546b80896387619de657972d90fcbcb5a9",
+      "sha256LF": "ac4f699c0ef1bef8ff684719a6b82c546b80896387619de657972d90fcbcb5a9"
+    },
+    "spike/app/public/offline.mjs": {
+      "sha256": "44732f8fb540a039c6463d0bae379e3a58d29eae81174c8cf2ab41a04287b7bd",
+      "sha256LF": "44732f8fb540a039c6463d0bae379e3a58d29eae81174c8cf2ab41a04287b7bd"
+    },
+    "spike/app/public/index.html": {
+      "sha256": "ba8c0394e1e17d95139dbe3e00cd00b538e25098d67f007c6455a6329baa689a",
+      "sha256LF": "ba8c0394e1e17d95139dbe3e00cd00b538e25098d67f007c6455a6329baa689a"
+    },
+    "spike/app/public/sw.js": {
+      "sha256": "6bf704c8e5c8fd406fc780f8686717013c08bde767d8dc09995e8657bf63e9bf",
+      "sha256LF": "6bf704c8e5c8fd406fc780f8686717013c08bde767d8dc09995e8657bf63e9bf"
+    },
+    "spike/app/public/i18n.mjs": {
+      "sha256": "01a8652d46adf7a6c4e5605a8efd3c2d62481c28fd17aa538891cd820555ba66",
+      "sha256LF": "01a8652d46adf7a6c4e5605a8efd3c2d62481c28fd17aa538891cd820555ba66"
+    }
+  },
+  "artifacts": {
+    "docs/reader-evidence/v119-offline-edit/.gitattributes": "46ae9442e216b592f02c166c01c547d20e2bfc138e0074cd84b82ecc178df59b",
+    "docs/reader-evidence/v119-offline-edit/3b2df968-972e-43d2-97e4-bf0677c709ab/epub-offline-edited.png": "ccbe2ba3ecbb52911ccde448fc06dd6dc02d65fef949887fde122ed5a2f6b415",
+    "docs/reader-evidence/v119-offline-edit/3b2df968-972e-43d2-97e4-bf0677c709ab/pdf-offline-edited.png": "3435bf24c9c5ed2b028ec1bd870010c378b214494616d1705a5b73acf07225bd",
+    "docs/reader-evidence/v119-offline-edit/3b2df968-972e-43d2-97e4-bf0677c709ab/results.json": "fdcec10773551747295e86b08209488d2624a464a43cd207d5949732dea1e01f",
+    "docs/reader-evidence/v119-offline-edit/405af3e2-1321-4829-97e1-6f88f2521c90/epub-offline-edited.png": "0b52811c2b5c757b0104231e7276733cc5147020df89b44616cb24cb908e1584",
+    "docs/reader-evidence/v119-offline-edit/405af3e2-1321-4829-97e1-6f88f2521c90/pdf-offline-edited.png": "26fa7ce42fb41d3cdc33863c56029ccd773134326e92d35c99c89923600e6813",
+    "docs/reader-evidence/v119-offline-edit/405af3e2-1321-4829-97e1-6f88f2521c90/results.json": "d2e0e33dacd8397e62a8570052d7866b76e78682efdefbd946a0c69fc1b934b7",
+    "docs/reader-evidence/v119-offline-edit/74053a0e-c190-4320-83c3-f53138378fef/epub-offline-edited.png": "5184990619390bd11d3643b59dc51d01ad1ee4bb44d90fe34f41e6f8d371d8d1",
+    "docs/reader-evidence/v119-offline-edit/74053a0e-c190-4320-83c3-f53138378fef/pdf-offline-edited.png": "c686d8eaacfbef9a8b4ecc6bc868b6d1883e4d6af82bfc0a12ca1b1b421f9aea",
+    "docs/reader-evidence/v119-offline-edit/74053a0e-c190-4320-83c3-f53138378fef/results.json": "0425b8135cac3936e3f0130da2e3feeb097cfce8f72f222d01312cb8f5cd02af",
+    "docs/reader-evidence/v119-offline-edit/security.txt": "4176f60cbf8649cfdb8ff0f6bbcc9680012ea6462ab9a8b42b1904d03bb47788"
+  }
+}
