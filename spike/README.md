@@ -18,7 +18,7 @@ Until a real scanned book arrives, `spike/tools/make_scan.py` generates an image
 
 The reader is behind a session cookie. Demo credentials: `reader@example.edu.tr` (read-only) or `librarian@example.edu.tr` (upload/edit) / `demo1234`. Set a real `SESSION_SECRET` before deployment; the compose default is dev-only.
 
-For an existing database, apply `db/migrations/002-users-password.sql`, `003-librarian-user.sql`, `004-session-version.sql`, `005-annotation-tags.sql`, `006-access-policies.sql`, `007-user-sessions.sql`, `008-page-search.sql`, `009-epub-pages.sql`, `010-grant-scope-key.sql`, `011-grant-audit.sql`, and `012-groups.sql`; fresh volumes get the users and columns from `schema.sql`/`seed.sql`.
+For an existing database, apply `db/migrations/002-users-password.sql`, `003-librarian-user.sql`, `004-session-version.sql`, `005-annotation-tags.sql`, `006-access-policies.sql`, `007-user-sessions.sql`, `008-page-search.sql`, `009-epub-pages.sql`, `010-grant-scope-key.sql`, `011-grant-audit.sql`, `012-groups.sql`, `013-download-tickets.sql`, and `014-download-ticket-limits.sql`; fresh volumes get the users and columns from `schema.sql`/`seed.sql`.
 
 Auth hardening: login is limited to 8 failures per IP / 15 minutes; mutating requests use a double-submit CSRF token (`akademik_csrf`); responses set CSP, `X-Frame-Options`, `nosniff`, and related headers. `POST /api/password` changes the password, `POST /api/logout-all` increments `users.session_version` and revokes other sessions. Sessions created before the CSRF change must log in again. MFA/SSO and audit events are still open.
 
