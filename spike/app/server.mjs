@@ -3,7 +3,7 @@ import path from 'node:path';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { mkdir, open, readFile, readdir, rename, stat, unlink } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { createHash, createHmac, randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, randomUUID, scrypt, scryptSync, timingSafeEqual } from 'node:crypto';
 import Busboy from 'busboy';
 import JSZip from 'jszip';
 import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib';
@@ -285,12 +285,21 @@ function clearSessionCookie(res, secure = false) {
   ]);
 }
 
-function verifyPassword(password, stored) {
+function scryptAsync(password, salt, length) {
+  return new Promise((resolve, reject) => {
+    scrypt(String(password), salt, length, (error, key) => {
+      if (error) reject(error);
+      else resolve(key);
+    });
+  });
+}
+
+async function verifyPassword(password, stored) {
   if (!stored) return false;
   const [scheme, salt, hash] = String(stored).split('$');
   if (scheme !== 'scrypt' || !salt || !hash) return false;
   const expected = Buffer.from(hash, 'hex');
-  const candidate = scryptSync(String(password), salt, expected.length);
+  const candidate = await scryptAsync(password, salt, expected.length);
   return candidate.length === expected.length && timingSafeEqual(candidate, expected);
 }
 
@@ -450,7 +459,7 @@ async function loginUser(emailValue, passwordValue) {
       [TENANT_ID, email],
     );
     const row = rows[0];
-    if (!row || !verifyPassword(password, row.password_hash)) return null;
+    if (!row || !await verifyPassword(password, row.password_hash)) return null;
     return {
       id: row.id,
       tenant_id: row.tenant_id,
@@ -482,7 +491,7 @@ async function changePassword(userId, currentPassword, newPassword) {
       'select password_hash from users where id = $1 limit 1',
       [userId],
     );
-    if (!rows[0] || !verifyPassword(currentPassword, rows[0].password_hash)) return false;
+    if (!rows[0] || !await verifyPassword(currentPassword, rows[0].password_hash)) return false;
     await client.query(
       'update users set password_hash = $1, session_version = session_version + 1 where id = $2',
       [hashPassword(newPassword), userId],
