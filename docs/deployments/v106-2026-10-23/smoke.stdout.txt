@@ -1,0 +1,18 @@
+ok 1 - health (db)
+ok 2 - config
+ok 3 - anonymous books rejected
+ok 4 - reader login
+ok 5 - reader session
+ok 6 - catalog (2 books)
+ok 7 - CSRF rejection
+ok 8 - annotation create
+ok 9 - annotation patch
+ok 10 - annotation delete
+ok 11 - reader upload rejected
+ok 12 - book search endpoint
+ok 13 - logout
+ok 14 - librarian login
+ok 15 - librarian catalog
+ok 16 - librarian logout
+
+16 checks passed against https://localhost

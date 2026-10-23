@@ -1,0 +1,40 @@
+﻿{
+    "sourceCommit":  "cf25965962518a68526ab3e4f7e703d5fd0a84a5",
+    "artifacts":  [
+                      {
+                          "sha256":  "f9b253828d025dbf89098606fa0188a38a1c2cf107c98db878dc1d10a5399e84",
+                          "file":  "deployment.json",
+                          "bytes":  1706
+                      },
+                      {
+                          "sha256":  "456d25ec6257ad068686fc9c4b076b9c7ca92ef18bd4427947f050212185f377",
+                          "file":  "image-hashes.json",
+                          "bytes":  516
+                      },
+                      {
+                          "sha256":  "9f801ad48aeee6ec5dd325be581852048619ed4224260527d3b9df809dc7b1a9",
+                          "file":  "http-verification.json",
+                          "bytes":  697
+                      },
+                      {
+                          "sha256":  "d6553c9fefe7f4cd32c53031e535791e0fca72209ad9d654d4d4ceaec7aae17c",
+                          "file":  "smoke.stdout.txt",
+                          "bytes":  423
+                      }
+                  ],
+    "image":  "sha256:767fcd78c8e72a66989727138f0266fa43132bbcf5743b4c868e224f2f0a1f98",
+    "completedAt":  "2026-10-23T09:19:36.8057312Z",
+    "backups":  [
+                    {
+                        "sha256":  "46389d880333dd613530526a67d3db45cf45bbbdb8daaf411a1c23446f3f93e0",
+                        "file":  "backups/akademik-pre-v106-20261023-121317-6520ef.dump",
+                        "bytes":  85027
+                    },
+                    {
+                        "sha256":  "ee9122971b43f1979c3803bc9eeaf8011db8e7a5ca654a477a228232332f215c",
+                        "file":  "backups/files-pre-v106-20261023-121317-6520ef.tgz",
+                        "bytes":  653392880
+                    }
+                ],
+    "frontend":  "v106"
+}

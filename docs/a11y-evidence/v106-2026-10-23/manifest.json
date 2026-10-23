@@ -1,0 +1,108 @@
+{
+  "date": "2026-10-23",
+  "frontend": "v106",
+  "gitHead": "cf25965962518a68526ab3e4f7e703d5fd0a84a5",
+  "browser": "155.0.4283.45",
+  "url": "http://127.0.0.1:63402/?v=106",
+  "method": "Native Edge browser zoom with measured DPR; screenshot through CDP without clipping; local demo copy; no screen-reader claim",
+  "sources": [
+    {
+      "file": "spike/app/server.mjs",
+      "sha256": "13fcf43c188ea016651f0235553e0601e54c2625c1a7094254dc524f8b33a4f3"
+    },
+    {
+      "file": "spike/app/indexer.mjs",
+      "sha256": "10bd599125fc9253d970b0b6f847c55eb5b90b31da46cb9b0c3b7c0f1d2c8da8"
+    },
+    {
+      "file": "spike/app/public/index.html",
+      "sha256": "e922fb5c7129455c86edb8cf102f31d6892cd8dcbbf5d800318d2544433f95a1"
+    },
+    {
+      "file": "spike/app/public/app.js",
+      "sha256": "db44bda5cbdb3d610dd30950005fcc8a5c4a4fd120293f31ad3bc398612bc0dc"
+    },
+    {
+      "file": "spike/app/public/styles.css",
+      "sha256": "6ada3b0f5a17abcdd9bc2a4d8d404fdc86fd11d8e9e0c432bf8cfd3c624630ab"
+    },
+    {
+      "file": "spike/app/public/epub-engine.mjs",
+      "sha256": "d5016298567215d127e368341b79d94e6e4fdd101de87d56621422778cd9b44e"
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "browser-console.json",
+      "bytes": 677,
+      "sha256": "a918548bf21eabfed215b11013cda9c1085d16535baf7fc15075f712b87f2cfe"
+    },
+    {
+      "file": "notes-button-close-100.png",
+      "bytes": 28917,
+      "sha256": "1345d5a21706432e4616a07a56a4d6db3f0ff4416dd7326b8b4b323ebdaab437"
+    },
+    {
+      "file": "notes-button-close-400.png",
+      "bytes": 59743,
+      "sha256": "a364e54dc02fea564f591500d92099fd8a234ef7a8f9c93546af6faab0c39d15"
+    },
+    {
+      "file": "notes-open-100.png",
+      "bytes": 36603,
+      "sha256": "e137ad9b3aa577a85dd5652ebefad60f4cdb0a4f506ca51df552b56d413478fa"
+    },
+    {
+      "file": "notes-open-400.png",
+      "bytes": 66842,
+      "sha256": "fef8edd04321e662dc2ca3268e87494737c0057329d1fa2afc6a659435da509f"
+    },
+    {
+      "file": "notes-single-escape-100.png",
+      "bytes": 28917,
+      "sha256": "1345d5a21706432e4616a07a56a4d6db3f0ff4416dd7326b8b4b323ebdaab437"
+    },
+    {
+      "file": "notes-single-escape-400.png",
+      "bytes": 59743,
+      "sha256": "a364e54dc02fea564f591500d92099fd8a234ef7a8f9c93546af6faab0c39d15"
+    },
+    {
+      "file": "outside-input-blur-100.png",
+      "bytes": 27921,
+      "sha256": "83219b24b02f53ec22c1c3a5573185a120de5b56d8fb5f7dd0a6a49ec8caf567"
+    },
+    {
+      "file": "outside-input-blur-400.png",
+      "bytes": 55395,
+      "sha256": "068edd126e470b1a64205d4e39033b47d536fc9f750fd9fb286c505fa7025d61"
+    },
+    {
+      "file": "reader-closed-100.png",
+      "bytes": 248414,
+      "sha256": "4095184b6efdbf44468f8cce47ef16115f1c1eb941209c3801d0a883b7d4c811"
+    },
+    {
+      "file": "reader-closed-400.png",
+      "bytes": 533326,
+      "sha256": "313a24c6f243dfe3a60ac8fad889cfc66c1df4f15c68a0e676161ef60843c8e5"
+    },
+    {
+      "file": "results.json",
+      "bytes": 19846,
+      "sha256": "d0c83a5651f19e8399a7b1d8906220d2504ee02a83b786db81dbc3646d542c20"
+    }
+  ],
+  "sourceArchive": "git archive cf25965, tmp/deploy-v106/source-cf25965",
+  "deployGatePass": true,
+  "carriedForward": {
+    "sourceCommit": "90ed1a2",
+    "findings": [
+      "F1",
+      "F2",
+      "F3",
+      "F4"
+    ],
+    "evidence": "docs/a11y-evidence/v105-2026-10-23/results.json"
+  }
+}

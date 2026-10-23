@@ -1,0 +1,776 @@
+{
+  "date": "2026-10-23",
+  "frontend": "v106",
+  "stylesheet": 41,
+  "scope": "F5 Escape retest; F1-F4 carried forward from v105; no full WCAG sign-off",
+  "cases": [
+    {
+      "id": "F5-open-100",
+      "status": "PASS",
+      "pass": true,
+      "before": {
+        "active": "toggleNotes",
+        "tag": "BUTTON",
+        "focusVisible": true,
+        "rect": {
+          "x": 1179.3375244140625,
+          "y": 11.90000057220459,
+          "width": 84.6624984741211,
+          "height": 34.45000076293945,
+          "top": 11.90000057220459,
+          "right": 1264.0000228881836,
+          "bottom": 46.35000133514404,
+          "left": 1179.3375244140625
+        },
+        "hit": "toggleNotes",
+        "hitTag": "BUTTON",
+        "unobscured": true,
+        "notesHidden": true,
+        "width": 1280,
+        "height": 762,
+        "readerHidden": false,
+        "lastEscape": null
+      },
+      "after": {
+        "active": "noteFilter",
+        "tag": "INPUT",
+        "focusVisible": true,
+        "rect": {
+          "x": 970.7999877929688,
+          "y": 119.8499984741211,
+          "width": 206,
+          "height": 30.850000381469727,
+          "top": 119.8499984741211,
+          "right": 1176.7999877929688,
+          "bottom": 150.69999885559082,
+          "left": 970.7999877929688
+        },
+        "hit": "noteFilter",
+        "hitTag": "INPUT",
+        "unobscured": true,
+        "notesHidden": false,
+        "width": 1280,
+        "height": 762,
+        "readerHidden": false,
+        "lastEscape": null
+      },
+      "screenshot": {
+        "file": "notes-open-100.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 1280,
+        "height": 762,
+        "dpr": 1.25,
+        "documentWidth": 1280,
+        "active": "noteFilter",
+        "focusVisible": true
+      }
+    },
+    {
+      "id": "F5-single-Escape-100",
+      "status": "PASS",
+      "pass": true,
+      "before": {
+        "active": "noteFilter",
+        "tag": "INPUT",
+        "focusVisible": true,
+        "rect": {
+          "x": 970.7999877929688,
+          "y": 119.8499984741211,
+          "width": 206,
+          "height": 30.850000381469727,
+          "top": 119.8499984741211,
+          "right": 1176.7999877929688,
+          "bottom": 150.69999885559082,
+          "left": 970.7999877929688
+        },
+        "hit": "noteFilter",
+        "hitTag": "INPUT",
+        "unobscured": true,
+        "notesHidden": false,
+        "width": 1280,
+        "height": 762,
+        "readerHidden": false,
+        "lastEscape": null
+      },
+      "after": {
+        "active": "toggleNotes",
+        "tag": "BUTTON",
+        "focusVisible": true,
+        "rect": {
+          "x": 1179.3375244140625,
+          "y": 11.90000057220459,
+          "width": 84.6624984741211,
+          "height": 34.45000076293945,
+          "top": 11.90000057220459,
+          "right": 1264.0000228881836,
+          "bottom": 46.35000133514404,
+          "left": 1179.3375244140625
+        },
+        "hit": "toggleNotes",
+        "hitTag": "BUTTON",
+        "unobscured": true,
+        "notesHidden": true,
+        "width": 1280,
+        "height": 762,
+        "readerHidden": false,
+        "lastEscape": {
+          "target": "noteFilter",
+          "prevented": true
+        }
+      },
+      "screenshot": {
+        "file": "notes-single-escape-100.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 1280,
+        "height": 762,
+        "dpr": 1.25,
+        "documentWidth": 1280,
+        "active": "toggleNotes",
+        "focusVisible": true
+      }
+    },
+    {
+      "id": "F5-second-Escape-100",
+      "status": "PASS",
+      "pass": true,
+      "after": {
+        "active": "",
+        "tag": "BUTTON",
+        "focusVisible": true,
+        "rect": {
+          "x": 72.4000015258789,
+          "y": 658.5125122070312,
+          "width": 41.587501525878906,
+          "height": 24.100000381469727,
+          "top": 658.5125122070312,
+          "right": 113.98750305175781,
+          "bottom": 682.612512588501,
+          "left": 72.4000015258789
+        },
+        "hit": "",
+        "hitTag": "BUTTON",
+        "unobscured": true,
+        "notesHidden": true,
+        "width": 1280,
+        "height": 762,
+        "readerHidden": true,
+        "lastEscape": {
+          "target": "toggleNotes",
+          "prevented": false
+        }
+      },
+      "opener": {
+        "className": "open-btn",
+        "label": "Diş Hekimliğinde İmplant Komplikasyonları kitabını oku"
+      },
+      "screenshot": {
+        "file": "reader-closed-100.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 1280,
+        "height": 762,
+        "dpr": 1.25,
+        "documentWidth": 1265,
+        "active": "",
+        "focusVisible": true
+      }
+    },
+    {
+      "id": "F5-n-close-button-100",
+      "status": "PASS",
+      "pass": true,
+      "opened": {
+        "active": "noteFilter",
+        "tag": "INPUT",
+        "focusVisible": true,
+        "rect": {
+          "x": 970.7999877929688,
+          "y": 119.8499984741211,
+          "width": 206,
+          "height": 30.850000381469727,
+          "top": 119.8499984741211,
+          "right": 1176.7999877929688,
+          "bottom": 150.69999885559082,
+          "left": 970.7999877929688
+        },
+        "hit": "noteFilter",
+        "hitTag": "INPUT",
+        "unobscured": true,
+        "notesHidden": false,
+        "width": 1280,
+        "height": 762,
+        "readerHidden": false,
+        "lastEscape": {
+          "target": "toggleNotes",
+          "prevented": false
+        }
+      },
+      "button": {
+        "active": "closeNotes",
+        "tag": "BUTTON",
+        "focusVisible": true,
+        "rect": {
+          "x": 1160.8875732421875,
+          "y": 73.05000305175781,
+          "width": 24,
+          "height": 24,
+          "top": 73.05000305175781,
+          "right": 1184.8875732421875,
+          "bottom": 97.05000305175781,
+          "left": 1160.8875732421875
+        },
+        "hit": "closeNotes",
+        "hitTag": "BUTTON",
+        "unobscured": true,
+        "notesHidden": false,
+        "width": 1280,
+        "height": 762,
+        "readerHidden": false,
+        "lastEscape": {
+          "target": "toggleNotes",
+          "prevented": false
+        }
+      },
+      "closed": {
+        "active": "toggleNotes",
+        "tag": "BUTTON",
+        "focusVisible": true,
+        "rect": {
+          "x": 1179.3375244140625,
+          "y": 11.90000057220459,
+          "width": 84.6624984741211,
+          "height": 34.45000076293945,
+          "top": 11.90000057220459,
+          "right": 1264.0000228881836,
+          "bottom": 46.35000133514404,
+          "left": 1179.3375244140625
+        },
+        "hit": "toggleNotes",
+        "hitTag": "BUTTON",
+        "unobscured": true,
+        "notesHidden": true,
+        "width": 1280,
+        "height": 762,
+        "readerHidden": false,
+        "lastEscape": {
+          "target": "toggleNotes",
+          "prevented": false
+        }
+      },
+      "screenshot": {
+        "file": "notes-button-close-100.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 1280,
+        "height": 762,
+        "dpr": 1.25,
+        "documentWidth": 1280,
+        "active": "toggleNotes",
+        "focusVisible": true
+      }
+    },
+    {
+      "id": "F5-outside-input-100",
+      "status": "PASS",
+      "pass": true,
+      "before": {
+        "active": "pageInput",
+        "tag": "INPUT",
+        "focusVisible": true,
+        "rect": {
+          "x": 566.3875122070312,
+          "y": 13.324999809265137,
+          "width": 54,
+          "height": 31.600000381469727,
+          "top": 13.324999809265137,
+          "right": 620.3875122070312,
+          "bottom": 44.92500019073486,
+          "left": 566.3875122070312
+        },
+        "hit": "pageInput",
+        "hitTag": "INPUT",
+        "unobscured": true,
+        "notesHidden": true,
+        "width": 1280,
+        "height": 762,
+        "readerHidden": false,
+        "lastEscape": {
+          "target": "toggleNotes",
+          "prevented": false
+        }
+      },
+      "after": {
+        "active": "",
+        "tag": "BODY",
+        "focusVisible": false,
+        "rect": {
+          "x": 0,
+          "y": -123.20000457763672,
+          "width": 1280,
+          "height": 762.4000244140625,
+          "top": -123.20000457763672,
+          "right": 1280,
+          "bottom": 639.2000198364258,
+          "left": 0
+        },
+        "hit": "textLayer",
+        "hitTag": "DIV",
+        "unobscured": true,
+        "notesHidden": true,
+        "width": 1280,
+        "height": 762,
+        "readerHidden": false,
+        "lastEscape": {
+          "target": "pageInput",
+          "prevented": false
+        }
+      },
+      "valueBefore": "1",
+      "valueAfter": "1",
+      "screenshot": {
+        "file": "outside-input-blur-100.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 1280,
+        "height": 762,
+        "dpr": 1.25,
+        "documentWidth": 1280,
+        "active": "",
+        "focusVisible": false
+      }
+    },
+    {
+      "id": "F5-open-400",
+      "status": "PASS",
+      "pass": true,
+      "before": {
+        "active": "toggleNotes",
+        "tag": "BUTTON",
+        "focusVisible": true,
+        "rect": {
+          "x": 218.93125915527344,
+          "y": 88,
+          "width": 85.0687484741211,
+          "height": 38,
+          "top": 88,
+          "right": 304.00000762939453,
+          "bottom": 126,
+          "left": 218.93125915527344
+        },
+        "hit": "toggleNotes",
+        "hitTag": "BUTTON",
+        "unobscured": true,
+        "notesHidden": true,
+        "width": 320,
+        "height": 190,
+        "readerHidden": false,
+        "lastEscape": {
+          "target": "pageInput",
+          "prevented": false
+        }
+      },
+      "after": {
+        "active": "noteFilter",
+        "tag": "INPUT",
+        "focusVisible": true,
+        "rect": {
+          "x": 49.400001525878906,
+          "y": 61,
+          "width": 167.60000610351562,
+          "height": 31.25,
+          "top": 61,
+          "right": 217.00000762939453,
+          "bottom": 92.25,
+          "left": 49.400001525878906
+        },
+        "hit": "noteFilter",
+        "hitTag": "INPUT",
+        "unobscured": true,
+        "notesHidden": false,
+        "width": 320,
+        "height": 190,
+        "readerHidden": false,
+        "lastEscape": {
+          "target": "pageInput",
+          "prevented": false
+        }
+      },
+      "screenshot": {
+        "file": "notes-open-400.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "documentWidth": 320,
+        "active": "noteFilter",
+        "focusVisible": true
+      }
+    },
+    {
+      "id": "F5-single-Escape-400",
+      "status": "PASS",
+      "pass": true,
+      "before": {
+        "active": "noteFilter",
+        "tag": "INPUT",
+        "focusVisible": true,
+        "rect": {
+          "x": 49.400001525878906,
+          "y": 61,
+          "width": 167.60000610351562,
+          "height": 31.25,
+          "top": 61,
+          "right": 217.00000762939453,
+          "bottom": 92.25,
+          "left": 49.400001525878906
+        },
+        "hit": "noteFilter",
+        "hitTag": "INPUT",
+        "unobscured": true,
+        "notesHidden": false,
+        "width": 320,
+        "height": 190,
+        "readerHidden": false,
+        "lastEscape": {
+          "target": "pageInput",
+          "prevented": false
+        }
+      },
+      "after": {
+        "active": "toggleNotes",
+        "tag": "BUTTON",
+        "focusVisible": true,
+        "rect": {
+          "x": 218.93125915527344,
+          "y": 88,
+          "width": 85.0687484741211,
+          "height": 38,
+          "top": 88,
+          "right": 304.00000762939453,
+          "bottom": 126,
+          "left": 218.93125915527344
+        },
+        "hit": "toggleNotes",
+        "hitTag": "BUTTON",
+        "unobscured": true,
+        "notesHidden": true,
+        "width": 320,
+        "height": 190,
+        "readerHidden": false,
+        "lastEscape": {
+          "target": "noteFilter",
+          "prevented": true
+        }
+      },
+      "screenshot": {
+        "file": "notes-single-escape-400.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "documentWidth": 320,
+        "active": "toggleNotes",
+        "focusVisible": true
+      }
+    },
+    {
+      "id": "F5-second-Escape-400",
+      "status": "PASS",
+      "pass": true,
+      "after": {
+        "active": "",
+        "tag": "BUTTON",
+        "focusVisible": true,
+        "rect": {
+          "x": 18,
+          "y": 124.3843765258789,
+          "width": 41.98749923706055,
+          "height": 24.5,
+          "top": 124.3843765258789,
+          "right": 59.98749923706055,
+          "bottom": 148.8843765258789,
+          "left": 18
+        },
+        "hit": "",
+        "hitTag": "BUTTON",
+        "unobscured": true,
+        "notesHidden": true,
+        "width": 320,
+        "height": 190,
+        "readerHidden": true,
+        "lastEscape": {
+          "target": "toggleNotes",
+          "prevented": false
+        }
+      },
+      "opener": {
+        "className": "open-btn",
+        "label": "Diş Hekimliğinde İmplant Komplikasyonları kitabını oku"
+      },
+      "screenshot": {
+        "file": "reader-closed-400.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "documentWidth": 316,
+        "active": "",
+        "focusVisible": true
+      }
+    },
+    {
+      "id": "F5-n-close-button-400",
+      "status": "PASS",
+      "pass": true,
+      "opened": {
+        "active": "noteFilter",
+        "tag": "INPUT",
+        "focusVisible": true,
+        "rect": {
+          "x": 49.400001525878906,
+          "y": 61,
+          "width": 167.60000610351562,
+          "height": 31.25,
+          "top": 61,
+          "right": 217.00000762939453,
+          "bottom": 92.25,
+          "left": 49.400001525878906
+        },
+        "hit": "noteFilter",
+        "hitTag": "INPUT",
+        "unobscured": true,
+        "notesHidden": false,
+        "width": 320,
+        "height": 190,
+        "readerHidden": false,
+        "lastEscape": {
+          "target": "toggleNotes",
+          "prevented": false
+        }
+      },
+      "button": {
+        "active": "closeNotes",
+        "tag": "BUTTON",
+        "focusVisible": true,
+        "rect": {
+          "x": 200.10313415527344,
+          "y": 14,
+          "width": 24,
+          "height": 24,
+          "top": 14,
+          "right": 224.10313415527344,
+          "bottom": 38,
+          "left": 200.10313415527344
+        },
+        "hit": "closeNotes",
+        "hitTag": "BUTTON",
+        "unobscured": true,
+        "notesHidden": false,
+        "width": 320,
+        "height": 190,
+        "readerHidden": false,
+        "lastEscape": {
+          "target": "toggleNotes",
+          "prevented": false
+        }
+      },
+      "closed": {
+        "active": "toggleNotes",
+        "tag": "BUTTON",
+        "focusVisible": true,
+        "rect": {
+          "x": 218.93125915527344,
+          "y": 88,
+          "width": 85.0687484741211,
+          "height": 38,
+          "top": 88,
+          "right": 304.00000762939453,
+          "bottom": 126,
+          "left": 218.93125915527344
+        },
+        "hit": "toggleNotes",
+        "hitTag": "BUTTON",
+        "unobscured": true,
+        "notesHidden": true,
+        "width": 320,
+        "height": 190,
+        "readerHidden": false,
+        "lastEscape": {
+          "target": "toggleNotes",
+          "prevented": false
+        }
+      },
+      "screenshot": {
+        "file": "notes-button-close-400.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "documentWidth": 320,
+        "active": "toggleNotes",
+        "focusVisible": true
+      }
+    },
+    {
+      "id": "F5-outside-input-400",
+      "status": "PASS",
+      "pass": true,
+      "before": {
+        "active": "pageInput",
+        "tag": "INPUT",
+        "focusVisible": true,
+        "rect": {
+          "x": 74.16875457763672,
+          "y": 49,
+          "width": 44,
+          "height": 32,
+          "top": 49,
+          "right": 118.16875457763672,
+          "bottom": 81,
+          "left": 74.16875457763672
+        },
+        "hit": "pageInput",
+        "hitTag": "INPUT",
+        "unobscured": true,
+        "notesHidden": true,
+        "width": 320,
+        "height": 190,
+        "readerHidden": false,
+        "lastEscape": {
+          "target": "toggleNotes",
+          "prevented": false
+        }
+      },
+      "after": {
+        "active": "",
+        "tag": "BODY",
+        "focusVisible": false,
+        "rect": {
+          "x": 0,
+          "y": -856.7999877929688,
+          "width": 320,
+          "height": 190.60000610351562,
+          "top": -856.7999877929688,
+          "right": 320,
+          "bottom": -666.1999816894531,
+          "left": 0
+        },
+        "unobscured": false,
+        "notesHidden": true,
+        "width": 320,
+        "height": 190,
+        "readerHidden": false,
+        "lastEscape": {
+          "target": "pageInput",
+          "prevented": false
+        }
+      },
+      "valueBefore": "1",
+      "valueAfter": "1",
+      "screenshot": {
+        "file": "outside-input-blur-400.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "documentWidth": 320,
+        "active": "",
+        "focusVisible": false
+      }
+    }
+  ],
+  "url": "http://127.0.0.1:63402/?v=106",
+  "sourceArchive": "git archive cf25965, tmp/deploy-v106/source-cf25965",
+  "browser": "155.0.4283.45",
+  "baseline": {
+    "width": 1280,
+    "height": 762,
+    "dpr": 1.25,
+    "documentWidth": 1280,
+    "active": "loginPassword",
+    "focusVisible": true
+  },
+  "gitHead": "cf25965962518a68526ab3e4f7e703d5fd0a84a5",
+  "carriedForward": {
+    "sourceCommit": "90ed1a2",
+    "findings": [
+      "F1",
+      "F2",
+      "F3",
+      "F4"
+    ],
+    "evidence": "docs/a11y-evidence/v105-2026-10-23/results.json"
+  },
+  "findings": {
+    "F5": {
+      "pass": true,
+      "cases": [
+        "F5-open-100",
+        "F5-single-Escape-100",
+        "F5-second-Escape-100",
+        "F5-n-close-button-100",
+        "F5-outside-input-100",
+        "F5-open-400",
+        "F5-single-Escape-400",
+        "F5-second-Escape-400",
+        "F5-n-close-button-400",
+        "F5-outside-input-400"
+      ]
+    }
+  },
+  "deployGatePass": true,
+  "completed": true,
+  "sources": [
+    {
+      "file": "spike/app/server.mjs",
+      "sha256": "13fcf43c188ea016651f0235553e0601e54c2625c1a7094254dc524f8b33a4f3"
+    },
+    {
+      "file": "spike/app/indexer.mjs",
+      "sha256": "10bd599125fc9253d970b0b6f847c55eb5b90b31da46cb9b0c3b7c0f1d2c8da8"
+    },
+    {
+      "file": "spike/app/public/index.html",
+      "sha256": "e922fb5c7129455c86edb8cf102f31d6892cd8dcbbf5d800318d2544433f95a1"
+    },
+    {
+      "file": "spike/app/public/app.js",
+      "sha256": "db44bda5cbdb3d610dd30950005fcc8a5c4a4fd120293f31ad3bc398612bc0dc"
+    },
+    {
+      "file": "spike/app/public/styles.css",
+      "sha256": "6ada3b0f5a17abcdd9bc2a4d8d404fdc86fd11d8e9e0c432bf8cfd3c624630ab"
+    },
+    {
+      "file": "spike/app/public/epub-engine.mjs",
+      "sha256": "d5016298567215d127e368341b79d94e6e4fdd101de87d56621422778cd9b44e"
+    }
+  ]
+}

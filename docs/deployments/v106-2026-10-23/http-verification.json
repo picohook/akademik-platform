@@ -1,0 +1,29 @@
+{
+  "base": "https://localhost",
+  "frontend": "v106",
+  "stylesheet": 41,
+  "health": {
+    "status": 200,
+    "mode": "db"
+  },
+  "servedFiles": [
+    {
+      "file": "public/index.html",
+      "url": "/?v=106",
+      "sha256": "e922fb5c7129455c86edb8cf102f31d6892cd8dcbbf5d800318d2544433f95a1",
+      "bytes": 22161
+    },
+    {
+      "file": "public/app.js",
+      "url": "/app.js?v=106",
+      "sha256": "db44bda5cbdb3d610dd30950005fcc8a5c4a4fd120293f31ad3bc398612bc0dc",
+      "bytes": 143566
+    },
+    {
+      "file": "public/styles.css",
+      "url": "/styles.css?v=41",
+      "sha256": "6ada3b0f5a17abcdd9bc2a4d8d404fdc86fd11d8e9e0c432bf8cfd3c624630ab",
+      "bytes": 27657
+    }
+  ]
+}

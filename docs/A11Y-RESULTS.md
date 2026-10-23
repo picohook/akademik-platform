@@ -1,8 +1,8 @@
 # Accessibility manual results — WCAG 2.2 AA
 
-**Status: OPEN — v105 retest passes F1–F4; F5 is partially fixed (Escape focus path remains). Screen-reader sign-off outstanding.**
+**Status: OPEN — F1–F4 passed in v105; F5 passed in v106 (10/10 targeted checks). Screen-reader and full iframe sign-off remain outstanding.**
 
-The initial summary/findings below are the v104 baseline; current verification is recorded under **Retest — v105**.
+The initial summary/findings below are the v104 baseline; current verification is recorded under **Retest — v105** and **Retest — v106**.
 
 - Date: 2026-10-23 (Europe/Istanbul).
 - Frontend version: v104, stylesheet v40; repository HEAD `0db153c`.
@@ -61,7 +61,7 @@ Final native zoom measurements: 1280×762 CSS px at 100%, 640×381 at 200%, 320�
 - **Keyboard/DOM observations:** Reader background became inert; closing returned focus to the opening card after asynchronous cleanup. Right Arrow changed the selected TOC tab; PDF/EPUB search results and a saved note rendered. These do not verify spoken names, live-region announcements or screen-reader reading order.
 - **Offline scope:** Both final API probes failed while cached content was displayed. `navigator.onLine` was false for PDF and true for EPUB in the emulated session; this discrepancy is retained in the action log rather than treated as an application finding. OS airplane mode, cold offline restart and offline screen-reader tasks remain untested.
 - The one-page PDF cannot verify multi-page announcements. Fixed-layout EPUB, EPUB link navigation, publisher image/table semantics, macOS VoiceOver and human listening were not tested.
-- Assign a target release, fix F1–F5, repeat affected scans/zoom states, then complete NVDA + Edge and full iframe checks before closing this record.
+- F1–F5 have passed the targeted v105/v106 retests below. Complete NVDA + Edge and full iframe checks before closing the overall record.
 
 ## Remediation — v105
 
@@ -135,7 +135,7 @@ project maintainer; target patch not assigned. This is a remaining interaction
 acceptance issue; the original F5 opening-focus observation now passes. No new
 WCAG conformance verdict is inferred from the Escape behavior alone.
 
-**v106 remediation (pending retest):** when the typing branch receives Escape
+**v106 remediation (verified below):** when the typing branch receives Escape
 and the event target is inside `#notesPanel`, it now calls `setNotesOpen(false)`
 before returning. That closes the panel and restores focus to `#toggleNotes`
 because the active element is still the filter when the close runs. Escape from
@@ -146,6 +146,33 @@ forced-colors, offline v105, or full WCAG AA sign-off. Earlier v104 measurements
 remain above as the historical baseline. [Browser diagnostics](a11y-evidence/v105-2026-10-23/browser-console.json)
 are retained separately; no additional defect was assigned from console output.
 
+## Retest — v106 (`cf25965`) — 2026-10-23
+
+**F5: PASS. Deployment gate: PASS.** All five requested interactions pass at
+100% and native 400% browser zoom (10/10 checks). F1–F4 retain their v105
+targeted passes; the complete WCAG record remains open.
+
+- Tested source: `cf25965962518a68526ab3e4f7e703d5fd0a84a5`, extracted with `git archive` into an isolated demo copy. The working branch advanced during testing; subsequent versions are outside this release.
+- Local URL: `http://127.0.0.1:63402/?v=106`; Edge 155.0.4283.45 / Windows. Native zoom measured 1280×762 CSS px / DPR 1.25 at 100%, and 320×190 / DPR 5 at 400%.
+- Evidence: [manifest and source hashes](a11y-evidence/v106-2026-10-23/manifest.json), [10 measured cases](a11y-evidence/v106-2026-10-23/results.json), [browser diagnostics](a11y-evidence/v106-2026-10-23/browser-console.json). Source bytes in the demo copy match the pinned archive.
+
+| Interaction, repeated at 100% and 400% | Result | Observation |
+|---|---|---|
+| PDF → Notes | **PASS** | Keyboard activation focuses unobscured `#noteFilter` with `:focus-visible`. At 400%, its y range is 61–92.25 in the 190 px viewport. [Open at 400%](a11y-evidence/v106-2026-10-23/notes-open-400.png). |
+| One Escape from the filter | **PASS** | Notes closes, the reader stays open, and visible, unobscured focus returns to `#toggleNotes`; the event is prevented. At 400%, the toggle is x=218.93, y=88, 85.07×38 CSS px. [After one Escape](a11y-evidence/v106-2026-10-23/notes-single-escape-400.png). |
+| Second Escape | **PASS** | The reader closes and visible focus returns to the opening catalog button. [Reader closed](a11y-evidence/v106-2026-10-23/reader-closed-400.png). |
+| `n` → close button | **PASS** | `n` opens Notes and focuses the filter; Shift+Tab three times reaches the 24 px close button. Enter closes Notes and restores visible focus to the toggle. [Button close](a11y-evidence/v106-2026-10-23/notes-button-close-400.png). |
+| Escape in an input outside Notes | **PASS** | Focused `#pageInput` only blurs to BODY; the reader remains open, Notes remains closed, and the input value is unchanged. The event is not prevented. [Outside input](a11y-evidence/v106-2026-10-23/outside-input-blur-400.png). |
+
+This closes the targeted F1–F5 findings, including the remaining F5 Escape
+acceptance issue. It does not establish NVDA/VoiceOver usability, a complete
+EPUB include-frames axe pass, native Windows contrast themes, or full WCAG AA
+conformance. The v104 and v105 observations above remain historical evidence.
+
+Production now serves the pinned v106 release: health `healthy`, restarts 0,
+HTTPS asset hashes match the tested source, and smoke checks pass 16/16.
+[Separate deployment record](deployments/2026-10-23-v106.md).
+
 ## Sign-off
 
 - [ ] No critical/serious axe findings — targeted v105 highlight-toolbar scan passes; full iframe coverage remains incomplete.
@@ -153,5 +180,5 @@ are retained separately; no additional defect was assigned from console output.
 - [x] Targeted login / Edit / Upload / Grants controls reachable at 200%/400% — v105 retest passes.
 - [ ] EPUB iframe title/lang/reading order checked — v105 title/lang/sandbox pass; screen-reader reading order remains unverified.
 - [ ] Offline library/reader checked for v105 — only the v104 baseline smoke was performed.
-- [ ] Findings have owner and target version — F1–F4 verified in v105; F5 Escape fix in v106 pending retest.
-- [ ] v106 deployment gate — held for the F5 Escape retest; production remains v104.
+- [x] Targeted F1–F5 findings closed — F1–F4 verified in v105; F5 Escape and focus behavior verified in v106 (10/10).
+- [x] v106 deployment gate — F5 retest passed; [production deployed and verified](deployments/2026-10-23-v106.md), smoke 16/16.
