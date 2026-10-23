@@ -1466,6 +1466,30 @@ function updateUrl() {
   history.replaceState(null, '', url);
 }
 
+function epubChapterLabel(href) {
+  if (!href) return '';
+  const base = String(href).split('#')[0];
+  const toc = state.epubEngine?.getToc?.() || [];
+  const item = toc.find((entry) => entry.href === href || String(entry.href || '').split('#')[0] === base);
+  if (item?.label) return item.label;
+  const raw = base.split('/').pop() || '';
+  let name = raw;
+  try {
+    name = decodeURIComponent(raw);
+  } catch { /* malformed href */ }
+  return name.replace(/\.x?html?$/i, '') || '';
+}
+
+function epubBookmarkLabel(annotation, isBookmark) {
+  if (annotation.anchor?.type !== 'epub') return '';
+  const percent = Number(annotation.anchor.percent);
+  const chapter = epubChapterLabel(annotation.anchor.href);
+  const number = state.annotations
+    .filter((item) => item.color === 'bookmark' && item.anchor?.type === 'epub')
+    .findIndex((item) => item.id === annotation.id) + 1;
+  return `EPUB${chapter ? ` · ${chapter}` : ''}${Number.isFinite(percent) ? ` · %${Math.round(percent)}` : ''}${isBookmark && number ? ` · ${t('Yer imi')} #${number}` : ''}`;
+}
+
 function bookmarkForPage() {
   return state.annotations.find(
     (annotation) => annotation.color === 'bookmark' && Number(annotation.anchor?.page) === state.page,
@@ -2690,7 +2714,7 @@ function renderNotes() {
     page.className = 'note-page';
     const epubAnchor = annotation.anchor?.type === 'epub';
     page.textContent = epubAnchor
-      ? `EPUB${isBookmark ? ` · ${t('Yer imi')}` : ''}`
+      ? epubBookmarkLabel(annotation, isBookmark)
       : `Sayfa ${annotation.anchor?.page || '—'}${isBookmark ? ` · ${t('Yer imi')}` : ''}`;
     item.appendChild(page);
     const createdAt = annotation.created_at ? new Date(annotation.created_at) : null;
