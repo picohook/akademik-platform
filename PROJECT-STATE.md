@@ -6,7 +6,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 - Web: **v113** (`spike/app/public/index.html`), stiller **v42**
 - DB migration: **001–012** (`db/migrations/`)
-- Prod: **v110** (2026-10-23), kaynak **81a5fc5**, imaj `sha256:2b653dbc…`; dağıtım kaydında smoke **16/16**, health/restart `healthy/0`. Bağımsız HTTPS kontrolü v110/v42 dosyalarını doğruladı. v112 retest **20/21, HOLD**; v112 deploy edilmedi. Kayıt: `docs/deployments/2026-10-23-v110.md`.
+- Prod: **v113** (2026-10-23), kaynak **f572f3c**, imaj `sha256:0734bb11…`; smoke **16/16**, health/restart `healthy/0`. v113 visible-CFI bookmark fix canlı; package-1 bağımsız final retest bekliyor. Rollback: v106 image. Kayıt: `docs/deployments/2026-10-23-v113.md`.
 - Son test edilen kod commit’i: **d0e01c9** — v112, EPUB yer imi etiketleri; prod kaynağı **81a5fc5**.
 - Bağımlılık: `npm audit --omit=dev` **0**; tam audit’te yalnız dev-only `epubjs/@xmldom` (2 uyarı).
 - EPUB kararı: **ADR-012** — MVP/V1a için epub.js, `EpubEngine` adapter arkasında, pinli; Readium/R2D2BC geçiş eşikleri yazılı.
