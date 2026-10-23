@@ -102,8 +102,10 @@ export async function storageEstimate() {
 }
 
 export async function listLocalAnnotations(assetId, ownerId) {
+  // Missing identity and legacy ownerless rows must never expose private notes.
+  if (typeof ownerId !== 'string' || !ownerId) return [];
   const rows = await readAll(ANNOTATIONS, 'asset_id', assetId);
-  return ownerId === undefined ? rows : rows.filter(row => !row.ownerId || row.ownerId === ownerId);
+  return rows.filter(row => row.ownerId === ownerId);
 }
 
 export async function saveLocalAnnotation(annotation) {

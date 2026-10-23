@@ -1,0 +1,89 @@
+{
+  "version": 119,
+  "revision": "privacy-fix",
+  "generatedAt": "2026-10-23T23:43:15.462Z",
+  "finalRun": "5b002900-33ae-4e15-8887-32bcc1d5dd51",
+  "acceptance": {
+    "browserCases": 20,
+    "pageErrors": 0,
+    "cleanup": {
+      "browser": true,
+      "server": true,
+      "temp": true
+    }
+  },
+  "limitations": [
+    "Implementing agent retest; independent approval pending.",
+    "Copied demo server and local IndexedDB. Demo online annotations are shared; account switch clears book deep-link and opens B readers offline.",
+    "Previous PostgreSQL 68-check regression not rerun; server source unchanged."
+  ],
+  "sources": {
+    "spike/app/server.mjs": {
+      "sha256": "d28135b29acac94e2d2051aeadeb493c12bf2bba824bd3ee7a2af6c3ab877b1b",
+      "sha256LF": "d28135b29acac94e2d2051aeadeb493c12bf2bba824bd3ee7a2af6c3ab877b1b"
+    },
+    "spike/app/public/app.js": {
+      "sha256": "a12ec8859d4fd1e7f70067869513de86b342f3671d9b7253011e40bb1e183847",
+      "sha256LF": "a12ec8859d4fd1e7f70067869513de86b342f3671d9b7253011e40bb1e183847"
+    },
+    "spike/app/public/offline.mjs": {
+      "sha256": "75549aa75b94e4cee9456d3f67fcde897a5e2b634fddcca37fab1bd068abdc98",
+      "sha256LF": "75549aa75b94e4cee9456d3f67fcde897a5e2b634fddcca37fab1bd068abdc98"
+    },
+    "spike/app/public/index.html": {
+      "sha256": "ba8c0394e1e17d95139dbe3e00cd00b538e25098d67f007c6455a6329baa689a",
+      "sha256LF": "ba8c0394e1e17d95139dbe3e00cd00b538e25098d67f007c6455a6329baa689a"
+    },
+    "spike/app/public/sw.js": {
+      "sha256": "df98efec1a11f483f1e211df6472112bc1f8a635f864dc3899b460f87a61f9ac",
+      "sha256LF": "df98efec1a11f483f1e211df6472112bc1f8a635f864dc3899b460f87a61f9ac"
+    },
+    "spike/app/public/i18n.mjs": {
+      "sha256": "01a8652d46adf7a6c4e5605a8efd3c2d62481c28fd17aa538891cd820555ba66",
+      "sha256LF": "01a8652d46adf7a6c4e5605a8efd3c2d62481c28fd17aa538891cd820555ba66"
+    },
+    "spike/app/test/offline-edit.browser.mjs": {
+      "sha256": "3e6c18918a11188fefd5138fb70e49d4c233169490c44c6c0fc47095ae10ff60",
+      "sha256LF": "3e6c18918a11188fefd5138fb70e49d4c233169490c44c6c0fc47095ae10ff60"
+    }
+  },
+  "artifacts": {
+    "docs/reader-evidence/v119-offline-edit/.gitattributes": "46ae9442e216b592f02c166c01c547d20e2bfc138e0074cd84b82ecc178df59b",
+    "docs/reader-evidence/v119-offline-edit/3b2df968-972e-43d2-97e4-bf0677c709ab/epub-offline-edited.png": "ccbe2ba3ecbb52911ccde448fc06dd6dc02d65fef949887fde122ed5a2f6b415",
+    "docs/reader-evidence/v119-offline-edit/3b2df968-972e-43d2-97e4-bf0677c709ab/pdf-offline-edited.png": "3435bf24c9c5ed2b028ec1bd870010c378b214494616d1705a5b73acf07225bd",
+    "docs/reader-evidence/v119-offline-edit/3b2df968-972e-43d2-97e4-bf0677c709ab/results.json": "fdcec10773551747295e86b08209488d2624a464a43cd207d5949732dea1e01f",
+    "docs/reader-evidence/v119-offline-edit/405af3e2-1321-4829-97e1-6f88f2521c90/epub-offline-edited.png": "0b52811c2b5c757b0104231e7276733cc5147020df89b44616cb24cb908e1584",
+    "docs/reader-evidence/v119-offline-edit/405af3e2-1321-4829-97e1-6f88f2521c90/pdf-offline-edited.png": "26fa7ce42fb41d3cdc33863c56029ccd773134326e92d35c99c89923600e6813",
+    "docs/reader-evidence/v119-offline-edit/405af3e2-1321-4829-97e1-6f88f2521c90/results.json": "d2e0e33dacd8397e62a8570052d7866b76e78682efdefbd946a0c69fc1b934b7",
+    "docs/reader-evidence/v119-offline-edit/5b002900-33ae-4e15-8887-32bcc1d5dd51/epub-account-B-private-notes-hidden.png": "6fd5f80ae437c1dacc3ad14fd01e1822183ed422fc7ace6d5825bdcb3d5f3cb4",
+    "docs/reader-evidence/v119-offline-edit/5b002900-33ae-4e15-8887-32bcc1d5dd51/epub-logged-out-private-notes-hidden.png": "b30ff364e0fa184abc2b8cff913d9bc6f2683f18f1fbe9926dd5ac5460ae4c83",
+    "docs/reader-evidence/v119-offline-edit/5b002900-33ae-4e15-8887-32bcc1d5dd51/epub-offline-edited.png": "a6f945c0f8a453e8745bf7a20df048833e38584b3db16d0acd4bc3c5ce864758",
+    "docs/reader-evidence/v119-offline-edit/5b002900-33ae-4e15-8887-32bcc1d5dd51/pdf-account-B-private-notes-hidden.png": "ee9c8833af4ff5e1e62ffdaf7f5598841a881408cc2d0420e6a3de7c79b20b8c",
+    "docs/reader-evidence/v119-offline-edit/5b002900-33ae-4e15-8887-32bcc1d5dd51/pdf-logged-out-private-notes-hidden.png": "a087e7d0b36fad4bfb133e38265364ea7aed2c87e099cf2be47b2c150a9e67f7",
+    "docs/reader-evidence/v119-offline-edit/5b002900-33ae-4e15-8887-32bcc1d5dd51/pdf-offline-edited.png": "dfe2710c66a4af1bba28808eba3c873ac53184ec212b08a5f33cc87b983627ff",
+    "docs/reader-evidence/v119-offline-edit/5b002900-33ae-4e15-8887-32bcc1d5dd51/results.json": "b4f5a569c5a6b4a2c3c56a7b445ca3e60e436ef5497ad04927a812044e02c843",
+    "docs/reader-evidence/v119-offline-edit/5cc90a2c-ef40-432e-a6cd-5b317e7fd797/epub-logged-out-private-notes-hidden.png": "d6fa5f25cafec56d36e69ed0d8c3e571e6224ac2489c86679a3e4e86f2f79a7d",
+    "docs/reader-evidence/v119-offline-edit/5cc90a2c-ef40-432e-a6cd-5b317e7fd797/epub-offline-edited.png": "f6f7f542901da4d5eccf0dc46fab76003e935004c301dd6705a50d802fd02ddc",
+    "docs/reader-evidence/v119-offline-edit/5cc90a2c-ef40-432e-a6cd-5b317e7fd797/failure.png": "1245a4b6ec9f929430107f0f236f135cfea3b80775cffe9d40072c1c1c911770",
+    "docs/reader-evidence/v119-offline-edit/5cc90a2c-ef40-432e-a6cd-5b317e7fd797/pdf-account-B-private-notes-hidden.png": "79d8961bb45a638c57e57db47948ff9a8d63c5e82a53ed73a181754039d15b33",
+    "docs/reader-evidence/v119-offline-edit/5cc90a2c-ef40-432e-a6cd-5b317e7fd797/pdf-logged-out-private-notes-hidden.png": "d765fb627903d77282acdf6a46a71108671f46cbfe3395d5f3855ef68815179d",
+    "docs/reader-evidence/v119-offline-edit/5cc90a2c-ef40-432e-a6cd-5b317e7fd797/pdf-offline-edited.png": "bb331e8f17c9548078be14662dc8ff12e6323de2e01fff467686b62907b5eede",
+    "docs/reader-evidence/v119-offline-edit/5cc90a2c-ef40-432e-a6cd-5b317e7fd797/results.json": "79f64c60443d54d2a8827ec1556d4454ca024e3b95aa559f2778fc972a24d0e3",
+    "docs/reader-evidence/v119-offline-edit/74053a0e-c190-4320-83c3-f53138378fef/epub-offline-edited.png": "5184990619390bd11d3643b59dc51d01ad1ee4bb44d90fe34f41e6f8d371d8d1",
+    "docs/reader-evidence/v119-offline-edit/74053a0e-c190-4320-83c3-f53138378fef/pdf-offline-edited.png": "c686d8eaacfbef9a8b4ecc6bc868b6d1883e4d6af82bfc0a12ca1b1b421f9aea",
+    "docs/reader-evidence/v119-offline-edit/74053a0e-c190-4320-83c3-f53138378fef/results.json": "0425b8135cac3936e3f0130da2e3feeb097cfce8f72f222d01312cb8f5cd02af",
+    "docs/reader-evidence/v119-offline-edit/74121e41-2e8a-4a7b-bddf-5ca99274b8ae/epub-logged-out-private-notes-hidden.png": "8290c34e943e2a24057a1983746cb104c9b4e3768348797944f254dc7b375871",
+    "docs/reader-evidence/v119-offline-edit/74121e41-2e8a-4a7b-bddf-5ca99274b8ae/epub-offline-edited.png": "26b4a2e900a78ccb750905c20efd3aee7b47cbf8a2a6ff87a07409abcb213f18",
+    "docs/reader-evidence/v119-offline-edit/74121e41-2e8a-4a7b-bddf-5ca99274b8ae/failure.png": "568ab8464522ee74e2b37f8eab32a88a25574d32d1e85583f7f567f2268f0c3a",
+    "docs/reader-evidence/v119-offline-edit/74121e41-2e8a-4a7b-bddf-5ca99274b8ae/pdf-account-B-private-notes-hidden.png": "9b9adfd3e22a04ec8e492052df1850ad740e60fe3fed618163e549e999d9ad1a",
+    "docs/reader-evidence/v119-offline-edit/74121e41-2e8a-4a7b-bddf-5ca99274b8ae/pdf-logged-out-private-notes-hidden.png": "b78aec612cf43af14346efa5b7bb85a21f8b031a42b281e82c151c21d90ef398",
+    "docs/reader-evidence/v119-offline-edit/74121e41-2e8a-4a7b-bddf-5ca99274b8ae/pdf-offline-edited.png": "8fdec2a3353173a2445fafdefe1c9cb0749bd651daae2d0ddbb75a502b5163ad",
+    "docs/reader-evidence/v119-offline-edit/74121e41-2e8a-4a7b-bddf-5ca99274b8ae/results.json": "009d9f602b559d6bf5acea0341c9aa026e560b165d76ff18f0ec16e01858f209",
+    "docs/reader-evidence/v119-offline-edit/ed8366b9-c489-47b2-8f94-2b79da550ac6/epub-offline-edited.png": "30f59e59454791e9d7bbb052afdfb23e5a62634876a568150a2a62420337680f",
+    "docs/reader-evidence/v119-offline-edit/ed8366b9-c489-47b2-8f94-2b79da550ac6/failure.png": "e912f82aab127c4bbea5e78736a19bd31b1cec2d2651125007839834bb6827b4",
+    "docs/reader-evidence/v119-offline-edit/ed8366b9-c489-47b2-8f94-2b79da550ac6/pdf-offline-edited.png": "d1839511b39ecab1683f032fbfeecfa9ceaec4f348956edc74418f7240d98566",
+    "docs/reader-evidence/v119-offline-edit/ed8366b9-c489-47b2-8f94-2b79da550ac6/results.json": "a17e3a6dfea609dd2336b1cccfb1adcbb0f1cc102dd56ed2cd02785aa1b4b859",
+    "docs/reader-evidence/v119-offline-edit/manifest.json": "eaa54a1136e6da514a9d1b8392dfe04bdb6876510077a30aab40178a4f98af83",
+    "docs/reader-evidence/v119-offline-edit/security.txt": "4176f60cbf8649cfdb8ff0f6bbcc9680012ea6462ab9a8b42b1904d03bb47788"
+  }
+}

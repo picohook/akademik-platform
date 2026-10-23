@@ -8,7 +8,8 @@ Tarih: 2026-10-24. Bu paket kaynak kodudur; üretim v118 olarak kalır. Deploy y
 - Bağlantı ve geçerli oturum gelince değişiklikler sunucuya gönderilir. HTTP/bağlantı hatasında taslak ve kuyruk korunur; eski sunucu cevabı bekleyen taslağı ezmez. Bağlantı dönüşü açık, kaydedilmemiş düzenleyiciyi kapatmaz.
 - Henüz gönderilmemiş notun düzenlenmesi mevcut create işlemini günceller. Create isteği sürerken yeni düzenleme yapılırsa cevap sonrası PATCH gönderilir; silinirse telafi DELETE gönderilir. Silme kuyruğu eski GET cevabından notun geri gelmesini engeller.
 - Yeni işlemler kullanıcı kimliğine bağlıdır. Başka hesap kuyruğu gönderemez; POST/PATCH içindeki ownerId mevcut oturumla uyuşmazsa sunucu 403 döner.
-- Önceki sürümden kalan, sahibi doğrulanamayan yerel kayıtlar okuma/JSON dışa aktarma için korunur. Bunlar otomatik olarak yeni hesaba atanmaz veya gönderilmez; düzenleme uyarı verir. Online sunucu cevabıyla eşleşen kayıtlar doğrulanmış kullanıcı bilgisiyle önbelleklenebilir.
+- Gizlilik düzeltmesi: yerel not okuması kullanıcı kimliği gerektirir; yalnız tam ownerId eşleşmesi görünür. PDF/EPUB offline açılışı aynı filtreyi uygular. Çıkış, hatırlanan offline not kimliğini temizler.
+- Önceki sürümden kalan, sahibi doğrulanamayan yerel kayıtlar IndexedDB'de korunur; normal listede, vurgularda ve dışa aktarmada gösterilmez. Bunlar otomatik olarak yeni hesaba atanmaz veya gönderilmez. Önceki “her hesaba okuma/JSON dışa aktarma” davranışı gizlilik hatasıydı. Sunucudan mevcut kullanıcı için doğrulanabilen temiz kayıtlar yeniden önbelleklenebilir; sahibisiz bekleyen taslakların kurtarma arayüzü bu pakette yoktur.
 
 ## Kapsam sınırı
 
@@ -16,9 +17,9 @@ Bu paket tam çakışma çözümü değildir: mevcut sunucu PATCH davranışı s
 
 ## Kanıt
 
-Uygulayan ajan tarafından gerçek Edge, service worker ve IndexedDB ile izole demo sunucusunda **14/14** kabul; **0** sayfa hatası, **3/3** cleanup. Üretim/geliştirme servisleri veya verileri kullanılmadı. Bu, başka ajan tarafından bağımsız retest veya gerçek ekran okuyucu denetimi değildir.
+İlk paket için uygulayan ajan tarafından gerçek Edge, service worker ve IndexedDB ile izole demo sunucusunda **14/14** kabul; **0** sayfa hatası, **3/3** cleanup. Bu koşu hesaplar arası offline okumayı kapsamıyordu; bağımsız inceleme bu boşlukta bir gizlilik hatası buldu. Üretim/geliştirme servisleri veya verileri kullanılmadı. Bu, başka ajan tarafından bağımsız retest veya gerçek ekran okuyucu denetimi değildir.
 
-Nihai koşu: [results.json](reader-evidence/v119-offline-edit/3b2df968-972e-43d2-97e4-bf0677c709ab/results.json). Önceki 10 ve 12 senaryolu ara koşular aynı kanıt dizininde korunur. Kaynak dosyalarının hash'leri koşu başı/sonu karşılaştırılır.
+İlk paketin koşusu: [results.json](reader-evidence/v119-offline-edit/3b2df968-972e-43d2-97e4-bf0677c709ab/results.json). Önceki 10 ve 12 senaryolu ara koşular aynı kanıt dizininde korunur. Kaynak dosyalarının hash'leri koşu başı/sonu karşılaştırılır. İlk manifest eski kaynaklara aittir; gizlilik düzeltmesinin ayrı retest kaydı bu belgenin sonuna eklenir.
 
 Kabul senaryoları:
 
@@ -46,3 +47,13 @@ node spike/app/test/security.integration.mjs
 ```
 
 İlk test yalnız kendi geçici sunucu/Edge profilini oluşturur; ikinci test Docker'da kendi geçici PostgreSQL konteynerini kullanır. Kaynak/kanıt hash listesi: [manifest.json](reader-evidence/v119-offline-edit/manifest.json).
+
+## Gizlilik düzeltmesi — 2026-10-24
+
+Bağımsız incelemenin HOLD bulgusu için iki offline açılış çağrısına ownerId eklendi. `listLocalAnnotations` artık kimlik verilmezse boş liste döndürür; sahibi bilinmeyen kayıtları her hesaptan saklar. Çıkışta `offlineAnnotationUser` ve bellekteki not listesi temizlenir. Service worker shell cache v11; uygulama v119, prod v118. Veriler silinmedi; migration/deploy yapılmadı.
+
+Uygulayan ajanın nihai retesti **20/20**, **0** sayfa hatası, cleanup **3/3**: [results.json](reader-evidence/v119-offline-edit/5b002900-33ae-4e15-8887-32bcc1d5dd51/results.json). Önceki 14 senaryoya her iki format için gerçek çıkış sonrası offline anonim okuma, aynı profilde B hesabının yalnız kendi notunu okuması ve A hesabının geri dönünce kendi kaydını bulması eklendi. Eksik/null ownerId boş döner; eski sahibisiz kayıt native IndexedDB'de korunurken normal listeden gizlidir.
+
+Testte A notları offline düzenlenip bağlantıda onaylandıktan sonra gerçek online çıkış yapıldı; B offline hard reload ile açtı. PDF/EPUB offline kitaplık düğmesi kullanıldı. İzole demo sunucusunun online not listesi hesaplara ayrılmadığı için hesap değişiminde URL'deki otomatik kitap açılışı temizlendi ve B okuyucusu yalnız offline açıldı. Bu koşu demo sunucusunun online kullanıcı izolasyonu veya PostgreSQL tarayıcı testi iddiası değildir. Üç başarısız hazırlık/ara test koşusu ham kanıtlarıyla korunur; geçti sayılmaz.
+
+Yeni kaynak ve kanıt hash'leri: [privacy-manifest.json](reader-evidence/v119-offline-edit/privacy-manifest.json). Önceki PostgreSQL 68 kontrolü sunucu değişmediği için yeniden çalıştırılmadı. Bağımsız reviewer bu commit'i tekrar incelemelidir; bu kayıt bağımsız onay veya deploy onayı değildir.

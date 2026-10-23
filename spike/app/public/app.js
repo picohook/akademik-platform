@@ -1212,7 +1212,8 @@ async function logout() {
   } catch {
     // Cookie is cleared server-side on the next successful request.
   }
-  state.user = null;
+  setUser(null);
+  state.annotations = [];
   window.location.href = '/';
 }
 
@@ -3071,7 +3072,7 @@ async function openEpubBook(book, options = {}) {
         const saved = JSON.parse(localStorage.getItem(`offlineProgress:${book.id}`) || 'null');
         progress = saved ? { anchor: saved } : null;
       } catch { /* noop */ }
-      state.annotations = await listLocalAnnotations(book.asset_id).catch(() => []);
+      state.annotations = await listLocalAnnotations(book.asset_id, annotationOwnerId()).catch(() => []);
     } else {
       const progressResponse = await fetch(`/api/progress?assetId=${encodeURIComponent(book.asset_id)}`);
       progress = progressResponse.ok ? await progressResponse.json() : null;
@@ -3245,7 +3246,7 @@ async function openBook(book, options = {}) {
         const saved = JSON.parse(localStorage.getItem(`offlineProgress:${book.id}`) || 'null');
         progress = saved ? { anchor: saved } : null;
       } catch { /* noop */ }
-      state.annotations = await listLocalAnnotations(book.asset_id).catch(() => []);
+      state.annotations = await listLocalAnnotations(book.asset_id, annotationOwnerId()).catch(() => []);
     } else {
       const progressResponse = await fetch(`/api/progress?assetId=${encodeURIComponent(book.asset_id)}`);
       progress = progressResponse.ok ? await progressResponse.json() : null;
