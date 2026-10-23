@@ -18,6 +18,7 @@ coverage/
 *.pem
 *.key
 secrets/
+caddy-root.crt
 
 # Runtime data
 data/
