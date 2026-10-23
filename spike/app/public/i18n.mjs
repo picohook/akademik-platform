@@ -265,6 +265,7 @@ const DICT = {
 };
 
 const PATTERNS = [
+  [/^Çok fazla indirme isteği; (\d+) saniye sonra tekrar deneyin\.$/, 'Too many download requests; try again in $1 seconds.'],
   [/^Sayfa (\d+) \/ (\d+)$/, 'Page $1 / $2'],
   [/^Sayfa (\d+)$/, 'Page $1'],
   [/^Sayfa (\d+) · Yer imi$/, 'Page $1 · Bookmark'],

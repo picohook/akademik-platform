@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import JSZip from 'jszip';
-import { PDFDocument, StandardFonts } from 'pdf-lib';
-import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { getDocument, OPS } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { watermarkDownload } from '../social-watermark.mjs';
 
 const auth = {
@@ -100,6 +100,49 @@ test('PDF stamping respects a nonzero crop box', async () => {
       assert.ok(item.transform[4] + item.width <= 260.01);
       assert.ok(item.transform[5] >= 30 && item.transform[5] <= 360);
     }
+  });
+});
+
+test('PDF watermark adds translucent text without painting over dense original footer content', async () => {
+  const pdf = await PDFDocument.create();
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const page = pdf.addPage([595, 842]);
+  // Existing vector art and dense footer text must retain their paint operators.
+  page.drawRectangle({ x: 350, y: 12, width: 140, height: 80, color: rgb(0.7, 0.7, 0.7) });
+  const originals = Array.from({ length: 9 }, (_, index) => `Original dense bottom line ${index + 1}`);
+  originals.forEach((line, index) => page.drawText(line, { x: 18, y: 12 + index * 10, font, size: 8 }));
+  const source = await pdf.save();
+  const paintingOps = new Set([
+    OPS.constructPath, OPS.fill, OPS.eoFill, OPS.fillStroke, OPS.eoFillStroke,
+    OPS.shadingFill, OPS.paintImageXObject, OPS.paintInlineImageXObject,
+    OPS.paintImageMaskXObject, OPS.paintSolidColorImageMask,
+  ].filter(Number.isInteger));
+  const before = [];
+  await pdfText(source, async (_, originalPage) => {
+    const operators = await originalPage.getOperatorList();
+    before.push(...operators.fnArray.filter(op => paintingOps.has(op)));
+  });
+  assert.ok(before.includes(OPS.constructPath), 'fixture must contain original vector art');
+  const result = await watermarkDownload(source, 'pdf', auth);
+  await pdfText(result, async (items, stampedPage) => {
+    const text = items.map(item => item.str).join(' ');
+    for (const original of originals) assert.ok(text.includes(original));
+    assert.ok(text.includes('Akademik Platform'));
+    const operators = await stampedPage.getOperatorList();
+    assert.deepEqual(operators.fnArray.filter(op => paintingOps.has(op)), before,
+      'watermark must not introduce rectangle/fill/image paint over original content');
+    let currentAlpha = 1;
+    let translucentTextRuns = 0;
+    const savedAlpha = [];
+    operators.fnArray.forEach((op, index) => {
+      if (op === OPS.save) savedAlpha.push(currentAlpha);
+      if (op === OPS.restore) currentAlpha = savedAlpha.pop() ?? 1;
+      if (op === OPS.setGState) {
+        for (const [key, value] of operators.argsArray[index][0]) if (key === 'ca') currentAlpha = value;
+      }
+      if (op === OPS.showText && currentAlpha > 0 && currentAlpha <= 0.3) translucentTextRuns++;
+    });
+    assert.ok(translucentTextRuns >= 4, 'every watermark identity line must use translucent text');
   });
 });
 

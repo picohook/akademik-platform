@@ -61,7 +61,11 @@ Run in Chrome and Edge; repeat mobile width once.
 - [ ] Fuzzy/stem result: a close word is marked (e.g. `polluted` for `pollution`); clicking a chapter result lands on the indexed chapter number.
 - [ ] TOC entries jump; theme button changes the EPUB; next/prev works.
 - [ ] Reload the page: progress resumes at the saved CFI.
-- [ ] EPUB download returns a watermarked `.epub` (`application/epub+zip`) when `allow_download` is true and `watermark` is not false; each XHTML contains the user/date stamp.
+- [ ] B2B EPUB download uses POST ticket issuance/consumption and returns a stamped `.epub` even for `watermark=false`; supported XHTML chapters contain user/tenant/date. Only explicit audited admin exceptions skip new stamps.
+- [ ] Offline ↓ uses the same two POSTs for PDF/EPUB, no raw `/file` probe/GET; IndexedDB receives only the delivered blob. Denial/429 leaves storage unchanged.
+- [ ] PDF bottom content is readable; only translucent stamp text is added, without a white rectangle.
+- [ ] More than 10 issue attempts/minute per user returns 429 + Retry-After across app processes; automatic cleanup retains recent/active/other-tenant rows.
+- [ ] Reader `/file` and `/book.epub` still provide original bytes with session/grants/Range; this explicitly unprotected extraction path must not be presented as traceable distribution.
 - [ ] Edit → **Sil**: confirmation, card disappears, file removed from `public/uploads`; seed books show no Sil button.
 
 ### Language

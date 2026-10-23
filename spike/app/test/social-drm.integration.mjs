@@ -5,7 +5,7 @@ import { once } from 'node:events';
 import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import net from 'node:net';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import pg from 'pg';
 import JSZip from 'jszip';
@@ -133,6 +133,11 @@ async function denied(session, token, book = workId) {
 async function ticketRow(token) {
   return (await admin.query('select *, extract(epoch from expires_at-created_at)::numeric as ttl from download_tickets where token_hash=$1', [sha(token)])).rows[0];
 }
+async function resetRateFixture() {
+  // Each existing authorization scenario starts with an unused budget. Keep
+  // the real limiter enabled; dedicated cross-process tests exercise its caps.
+  await admin.query('delete from download_ticket_limits where tenant_id=$1', [tenantId]);
+}
 async function readPdf(bytes) {
   const task = getDocument({ data: new Uint8Array(bytes), useSystemFonts: true });
   const doc = await task.promise;
@@ -156,7 +161,7 @@ async function setup() {
   temporary = await mkdtemp(path.join(tempParent, 'social-drm-'));
   const sandbox = path.join(temporary, 'app');
   await mkdir(path.join(sandbox, 'public/seed'), { recursive: true });
-  for (const file of ['server.mjs', 'indexer.mjs', 'download-tickets.mjs', 'social-watermark.mjs', 'public/search.mjs']) {
+  for (const file of ['server.mjs', 'indexer.mjs', 'download-tickets.mjs', 'social-watermark.mjs', 'public/search.mjs', 'public/downloads.mjs', 'public/offline.mjs']) {
     await copyFile(path.join(appDir, file), path.join(sandbox, file));
     report.source[file] = sha(await readFile(path.join(sandbox, file)));
   }
@@ -182,7 +187,8 @@ async function setup() {
   const schema = await readFile(path.join(repoDir, 'db/schema.sql'), 'utf8');
   const seed = await readFile(path.join(repoDir, 'db/seed.sql'), 'utf8');
   const migration = await readFile(path.join(repoDir, 'db/migrations/013-download-tickets.sql'), 'utf8');
-  for (const [name, text] of [['schema.sql', schema], ['seed.sql', seed], ['013-download-tickets.sql', migration]]) report.source[name] = sha(text);
+  const migration014 = await readFile(path.join(repoDir, 'db/migrations/014-download-ticket-limits.sql'), 'utf8');
+  for (const [name, text] of [['schema.sql', schema], ['seed.sql', seed], ['013-download-tickets.sql', migration], ['014-download-ticket-limits.sql', migration014]]) report.source[name] = sha(text);
   await admin.query(schema);
   await admin.query(seed);
   equal((await admin.query("select to_regclass('download_tickets')::text as name")).rows[0].name, 'download_tickets', 'fresh schema creates download tickets');
@@ -197,6 +203,11 @@ async function setup() {
   equal((await admin.query('select download_grants_required from tenants where id=$1', [tenantId])).rows[0].download_grants_required, true, '013 upgrade adds marker and backfills existing grant tenant');
   await admin.query(migration);
   equal((await admin.query('select download_grants_required from tenants where id=$1', [tenantId])).rows[0].download_grants_required, true, '013 second application preserves durable marker');
+  equal((await admin.query("select to_regclass('download_ticket_limits')::text as name")).rows[0].name, 'download_ticket_limits', 'fresh schema creates shared rate-limit table');
+  await admin.query('drop table download_ticket_limits');
+  await admin.query(migration014);
+  await admin.query(migration014);
+  equal((await admin.query("select to_regclass('download_ticket_limits')::text as name")).rows[0].name, 'download_ticket_limits', '014 upgrade and repeat application create shared limiter');
   checks += 2;
   await admin.query(`alter role akademik_app password '${appPassword}'`);
   const { rows: [role] } = await admin.query("select rolsuper, rolbypassrls from pg_roles where rolname='akademik_app'");
@@ -243,19 +254,43 @@ async function policyAndStamps({ reader, other, administrator }) {
   ok(/\d{4}-\d{2}-\d{2}/.test(text), 'PDF stamp contains date');
   ok((await ticketRow(token)).consumed_at, 'consumed_at persisted');
   await denied(reader, token);
-  const epubTicket = await issue(reader, epubWork);
-  const epub = await consume(reader, epubTicket.token, epubWork);
-  equal(epub.status, 200, 'authorized EPUB ticket consumed');
-  const zip = await JSZip.loadAsync(epub.bytes);
+  const { saveOfflineDownload } = await import(pathToFileURL(path.join(temporary, 'app/public/downloads.mjs')).href);
+  const helperCalls = [];
+  const helperFetch = async (route, options) => {
+    helperCalls.push({ route, method: options.method });
+    const headers = new Headers(options.headers);
+    headers.set('cookie', reader.cookie);
+    headers.set('x-csrf-token', reader.csrf);
+    const response = await fetch(base + route, { ...options, headers, signal: AbortSignal.timeout(20_000) });
+    if (route.endsWith('/download-ticket') && response.ok) tokens.push((await response.clone().json()).ticket);
+    return response;
+  };
+  const saved = [];
+  for (const book of [{ id: workId, format: 'pdf' }, { id: epubWork, format: 'epub' }]) {
+    await saveOfflineDownload(book, {
+      fetch: helperFetch,
+      storageEstimate: async () => ({ usage: 0, quota: 1024 * 1024 * 1024 }),
+      saveOfflineBook: async (savedBook, blob, options) => { saved.push({ book: savedBook, blob, options }); return savedBook; },
+    });
+  }
+  equal(helperCalls.length, 4, 'real offline helper makes issue+consume for PDF and EPUB');
+  ok(helperCalls.every((call) => call.method === 'POST' && !call.route.includes('?') && !call.route.endsWith('/file')), 'offline helper never uses raw file route or URL tokens');
+  ok(saved.every((item) => item.options.downloadProvenance === 'ticketed-download-v1'), 'offline persistence receives download provenance');
+  const offlinePdfText = await readPdf(new Uint8Array(await saved[0].blob.arrayBuffer()));
+  for (const marker of ['Akademik Platform', readerId, tenantId, 'reader@example.edu.tr']) ok(offlinePdfText.includes(marker), 'offline helper saves actual server-watermarked PDF identity');
+  const zip = await JSZip.loadAsync(await saved[1].blob.arrayBuffer());
   const xhtml = await zip.file('OEBPS/chapter.xhtml').async('string');
   for (const marker of ['Original fixture content', 'Akademik Platform', readerId, tenantId, 'reader@example.edu.tr']) ok(xhtml.includes(marker), 'EPUB XHTML retains original and required identity marker despite watermark=false');
   ok(/\d{4}-\d{2}-\d{2}/.test(xhtml), 'EPUB stamp contains date');
   const range = await request(`/api/books/${workId}/file`, reader, { headers: { Range: 'bytes=0-63' } });
   equal(range.status, 206, 'reader Range endpoint remains available');
   equal(range.bytes.length, 64, 'reader Range has requested byte count');
+  const rawRange = new TextDecoder().decode(range.bytes);
+  ok(rawRange.startsWith('%PDF-'), 'reader Range remains original PDF bytes, an explicit social-DRM boundary');
+  equal((await request('/downloads.mjs', reader)).status, 200, 'new browser download helper is in static allowlist');
   equal((await request(`/api/books/${workId}/download-ticket`, reader, { method: 'POST', body: { watermarkOverride: true, overrideReason: 'Institutionally authorized clean distribution fixture' } })).status, 403, 'reader cannot override watermark');
   equal((await request(`/api/books/${workId}/download-ticket`, administrator, { method: 'POST', body: { watermarkOverride: true } })).status, 400, 'admin override requires reason');
-  report.scenarios.push('session/CSRF, token storage/TTL/bindings, stamped PDF+EPUB, reader Range');
+  report.scenarios.push('session/CSRF, token storage/TTL/bindings, real offline helper POST flow saves server-stamped PDF+EPUB, declared raw reader Range boundary');
   console.log('PASS ticket policy and actual PDF/EPUB identity stamps.');
 }
 
@@ -287,6 +322,7 @@ async function rejectionAndOverride({ reader, administrator }) {
   await denied(reader, revoked.token);
   await admin.query('delete from grants where id=$1', [replacement]);
   await admin.query("update grants set status='active' where id=$1", [grantId]);
+  await resetRateFixture(); // Separate fixture for durable last-grant history.
   const rawDeleted = await issue(reader);
   const grantAuditBefore = (await admin.query('select count(*)::int as n from grant_audit')).rows[0].n;
   await admin.query('delete from grants where id=$1', [grantId]);
@@ -300,6 +336,7 @@ async function rejectionAndOverride({ reader, administrator }) {
   await denied(reader, deleted.token);
   equal((await request(`/api/books/${workId}/download-ticket`, reader, { method: 'POST', body: {} })).status, 403, 'deleted final grant history prevents new ticket issue');
   await admin.query("insert into grants(id,tenant_id,subject_type,subject_id,scope_type,status) values($1,$2,'tenant',$2,'all','active')", [grantId, tenantId]);
+  await resetRateFixture(); // Separate fixture for exceptional admin override.
   const bypass = await issue(administrator, workId, { watermarkOverride: true, overrideReason: 'Institutionally authorized clean distribution fixture' });
   const bypassRow = await ticketRow(bypass.token);
   equal(bypassRow.watermark_override, true, 'approved override stored on ticket');
@@ -352,6 +389,10 @@ async function atomicRaceAndRls({ reader }) {
     equal((await client.query('select count(*)::int as n from download_tickets where token_hash=$1', [sha(race.token)])).rows[0].n, 0, 'other tenant cannot select ticket');
     equal((await client.query('update download_tickets set consumed_at=null where token_hash=$1 returning id', [sha(race.token)])).rowCount, 0, 'other tenant cannot update ticket');
     await assert.rejects(client.query('insert into download_tickets(id,token_hash,tenant_id,user_id,asset_id,work_id,grant_ids,expires_at) values($1,$2,$3,$4,$5,$6,$7,now()+interval \'60 seconds\')', [randomUUID(), sha(randomBytes(32)), tenantId, readerId, assetId, workId, [grantId]]), (error) => error.code === '42501');
+    checks++;
+    equal((await client.query('select count(*)::int as n from download_ticket_limits where tenant_id=$1', [tenantId])).rows[0].n, 0, 'other tenant cannot read rate budget rows');
+    equal((await client.query('update download_ticket_limits set request_count=1 where tenant_id=$1 returning kind', [tenantId])).rowCount, 0, 'other tenant cannot reset rate budget');
+    await assert.rejects(client.query("insert into download_ticket_limits(tenant_id,user_id,kind,window_start,request_count) values($1,$2,'issue',now(),1)", [tenantId, otherId]), (error) => error.code === '42501');
     checks++;
   } finally { await client.end(); }
   report.scenarios.push('two-process DB-barrier race: exactly one consumer; forced RLS cross-tenant select/update/insert');
@@ -413,17 +454,130 @@ async function auditAtomicityAndClock({ reader }) {
   console.log('PASS audit rollback guarantees and expiry while blocked on row lock.');
 }
 
+async function crossProcessRateLimits({ reader }) {
+  await resetRateFixture();
+  const ticketsBefore = (await admin.query('select count(*)::int as n from download_tickets')).rows[0].n;
+  const auditBefore = (await admin.query('select coalesce(max(id),0)::text as id from audit_events')).rows[0].id;
+  const burst = await Promise.all(Array.from({ length: 14 }, (_, index) => request(`/api/books/${workId}/download-ticket`, reader, {
+    method: 'POST', body: {}, target: index % 2 ? peer : base,
+  })));
+  equal(burst.filter((response) => response.status === 201).length, 10, 'two processes share exactly ten issued tickets per user/window');
+  const blocked = burst.filter((response) => response.status === 429);
+  equal(blocked.length, 4, 'remaining cross-process issue burst is rate limited');
+  for (const response of burst.filter((item) => item.status === 201)) {
+    ok(/^[a-f0-9]{64}$/.test(response.data?.ticket), 'rate-approved ticket has valid token');
+    tokens.push(response.data.ticket);
+  }
+  for (const response of blocked) {
+    ok(Number(response.headers.get('retry-after')) >= 1 && Number(response.headers.get('retry-after')) <= 60, 'limited issue includes bounded Retry-After');
+    equal(response.data?.error, 'too many download requests', 'limited issue returns generic rate error');
+  }
+  equal((await admin.query('select count(*)::int as n from download_tickets')).rows[0].n, ticketsBefore + 10, 'issue limit prevents extra ticket inserts');
+  const audits = (await admin.query('select action from audit_events where id>$1', [auditBefore])).rows;
+  equal(audits.filter((row) => row.action === 'download.ticket.issue').length, 10, 'only accepted issues write ticket issue audits');
+  equal(audits.filter((row) => row.action === 'download.rate_limit').length, 1, 'issue overflow writes one summary for its window');
+  equal(audits.length, 11, 'subsequent rejected issues do not amplify audit log');
+  const issueLimit = (await admin.query("select request_count,notified from download_ticket_limits where tenant_id=$1 and user_id=$2 and kind='issue'", [tenantId, readerId])).rows[0];
+  equal(issueLimit.request_count, 11, 'issue counter saturates at limit plus one');
+  equal(issueLimit.notified, true, 'issue summary notification persisted');
+  await admin.query("update download_ticket_limits set window_start=clock_timestamp()-interval '2 minutes' where tenant_id=$1 and user_id=$2", [tenantId, readerId]);
+  await issue(reader);
+
+  await resetRateFixture();
+  const floodAuditBefore = (await admin.query('select coalesce(max(id),0)::text as id from audit_events')).rows[0].id;
+  const noToken = '0'.repeat(64);
+  const flood = await Promise.all(Array.from({ length: 60 }, async (_, index) => {
+    const type = index % 3;
+    const response = await request(`/api/books/${workId}/download${type === 0 ? '?watermark=false' : ''}`, reader, {
+      method: 'POST', body: { ticket: noToken }, csrf: type !== 1, target: index % 2 ? peer : base,
+    });
+    return { type, response };
+  }));
+  equal(flood.filter(({ response }) => response.status === 403).length, 40, 'traffic budget includes invalid tickets, query bypass and CSRF failures');
+  equal(flood.filter(({ response }) => response.status === 429).length, 20, 'traffic overflow is shared across two processes');
+  for (const { response } of flood.filter((item) => item.response.status === 429)) ok(Number(response.headers.get('retry-after')) >= 1, 'traffic overflow has Retry-After');
+  const floodAudits = (await admin.query('select action from audit_events where id>$1', [floodAuditBefore])).rows;
+  equal(floodAudits.filter((row) => row.action === 'download.rate_limit').length, 1, 'traffic flood writes only one overflow summary');
+  equal(floodAudits.filter((row) => row.action === 'download.ticket.deny').length, 40, 'overflow requests do not add per-request denial audits');
+  const queryDenials = flood.filter(({ type, response }) => type === 0 && response.status === 403).length;
+  equal(floodAudits.filter((row) => row.action === 'download.watermark.bypass_attempt').length, queryDenials, 'only admitted query attempts write bypass audit');
+  equal(floodAudits.length, 41 + queryDenials, 'total flood audit growth stays within admitted request budget plus one summary');
+  const trafficLimit = (await admin.query("select request_count,notified from download_ticket_limits where tenant_id=$1 and user_id=$2 and kind='traffic'", [tenantId, readerId])).rows[0];
+  equal(trafficLimit.request_count, 41, 'traffic counter saturates at limit plus one');
+  equal(trafficLimit.notified, true, 'traffic summary notification persisted');
+  await admin.query("update download_ticket_limits set window_start=clock_timestamp()-interval '2 minutes' where tenant_id=$1 and user_id=$2", [tenantId, readerId]);
+  await issue(reader);
+  report.scenarios.push('DB issue10/min and traffic40/min shared across processes; Retry-After, saturating counters, bounded audit and expired-window recovery');
+  console.log('PASS cross-process ticket issue/traffic limits and bounded flood audits.');
+}
+
+async function stopApps() {
+  for (const { child } of children) {
+    if (child.exitCode === null && child.signalCode === null) {
+      const exited = once(child, 'exit').catch(() => {});
+      child.kill();
+      await Promise.race([exited, pause(3000)]);
+      if (child.exitCode === null && child.signalCode === null) { child.kill('SIGKILL'); await exited; }
+    }
+  }
+}
+
+async function maintenanceBounds() {
+  // Stop only our two temporary HTTP processes after their tests. Their real
+  // scheduled workers must not race the explicitly controlled purge fixtures.
+  await stopApps();
+  await resetRateFixture();
+  const { createDownloadService } = await import(pathToFileURL(path.join(temporary, 'app/download-tickets.mjs')).href);
+  const pool = new pg.Pool({ connectionString: appDatabaseUrl, max: 2, statement_timeout: 3000, query_timeout: 5000 });
+  const withTenant = async (fn) => {
+    const client = await pool.connect();
+    try { await client.query("select set_config('app.tenant_id',$1,false)", [tenantId]); return await fn(client); }
+    finally { client.release(); }
+  };
+  const service = createDownloadService({ withTenant, tenantId, b2b: true });
+  const gate = new pg.Client({ connectionString: adminUrl });
+  await gate.connect();
+  const prefix = `purge-${runId}-`;
+  const lockedHash = sha(prefix + 'locked'), recentHash = sha(prefix + 'recent'), foreignHash = sha(prefix + 'foreign');
+  let rowLockHeld = false;
+  try {
+    await gate.query("select pg_advisory_lock(hashtext($1),hashtext('download-maintenance'))", [tenantId]);
+    await admin.query("insert into download_tickets(token_hash,tenant_id,user_id,asset_id,work_id,created_at,expires_at) select encode(sha256(convert_to($1||n::text,'UTF8')),'hex'),$2,$3,$4,$5,now()-interval '121 minutes',now()-interval '120 minutes' from generate_series(1,1005) as n", [prefix, tenantId, readerId, assetId, workId]);
+    for (const [hash, tenant, expiry] of [[lockedHash, tenantId, '120 minutes'], [recentHash, tenantId, '30 minutes'], [foreignHash, otherTenant, '120 minutes']]) {
+      await admin.query("insert into download_tickets(token_hash,tenant_id,user_id,asset_id,work_id,created_at,expires_at) values($1,$2,$3,$4,$5,now()-$6::interval-interval '60 seconds',now()-$6::interval)", [hash, tenant, readerId, assetId, workId, expiry]);
+    }
+    await admin.query("insert into download_ticket_limits(tenant_id,user_id,kind,window_start,request_count,notified) values($1,$2,'issue',now()-interval '2 days',1,false),($1,$3,'traffic',now(),1,false),($4,$2,'traffic',now()-interval '2 days',1,false)", [tenantId, otherId, readerId, otherTenant]);
+    const skipped = await service.maintenance();
+    equal(skipped.skipped, true, 'maintenance skips when another backend owns tenant advisory lock');
+    equal(skipped.ticketsDeleted, 0, 'skipped maintenance deletes no tickets');
+    equal(skipped.limitsDeleted, 0, 'skipped maintenance deletes no counters');
+    await gate.query('begin'); rowLockHeld = true;
+    await gate.query('select id from download_tickets where token_hash=$1 for update', [lockedHash]);
+    await gate.query("select pg_advisory_unlock(hashtext($1),hashtext('download-maintenance'))", [tenantId]);
+    const first = await service.maintenance();
+    equal(first.ticketsDeleted, 1000, 'maintenance ticket batch is capped at 1000');
+    equal(first.limitsDeleted, 1, 'only tenant stale rate rows are removed');
+    const second = await service.maintenance();
+    equal(second.ticketsDeleted, 5, 'second batch removes remaining unlocked aged tickets');
+    ok((await admin.query('select id from download_tickets where token_hash=$1', [lockedHash])).rowCount === 1, 'SKIP LOCKED preserves locked ticket without blocking');
+    await gate.query('rollback'); rowLockHeld = false;
+    equal((await service.maintenance()).ticketsDeleted, 1, 'unlocked aged ticket is removed on next maintenance');
+    equal((await admin.query('select count(*)::int as n from download_tickets where token_hash=any($1::text[])', [[recentHash, foreignHash]])).rows[0].n, 2, 'recently expired and other-tenant tickets are retained');
+    equal((await admin.query("select count(*)::int as n from download_ticket_limits where (tenant_id=$1 and user_id=$2 and kind='traffic') or tenant_id=$3", [tenantId, readerId, otherTenant])).rows[0].n, 2, 'current and other-tenant rate counters are retained');
+    report.scenarios.push('real PostgreSQL maintenance: tenant advisory exclusion, SKIP LOCKED, 1000-row batches, expiry age and tenant boundaries');
+    console.log('PASS bounded tenant maintenance, advisory exclusion and SKIP LOCKED.');
+  } finally {
+    if (rowLockHeld) await gate.query('rollback').catch(() => {});
+    await gate.query("select pg_advisory_unlock(hashtext($1),hashtext('download-maintenance'))", [tenantId]).catch(() => {});
+    await gate.end();
+    await pool.end();
+  }
+}
+
 async function cleanup() {
   if (cleanupPromise) return cleanupPromise;
   cleanupPromise = (async () => {
-    for (const { child } of children) {
-      if (child.exitCode === null && child.signalCode === null) {
-        const exited = once(child, 'exit').catch(() => {});
-        child.kill();
-        await Promise.race([exited, pause(3000)]);
-        if (child.exitCode === null && child.signalCode === null) { child.kill('SIGKILL'); await exited; }
-      }
-    }
+    await stopApps();
     report.cleanup.appsStopped = children.every(({ child }) => child.exitCode !== null || child.signalCode !== null);
     await admin?.end().catch(() => {});
     if (containerCreated) {
@@ -443,10 +597,16 @@ async function cleanup() {
 for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => { void cleanup().finally(() => process.exit(130)); });
 try {
   const context = await setup();
+  await resetRateFixture();
   await policyAndStamps(context);
+  await resetRateFixture();
   await rejectionAndOverride(context);
+  await resetRateFixture();
   await atomicRaceAndRls(context);
+  await resetRateFixture();
   await auditAtomicityAndClock(context);
+  await crossProcessRateLimits(context);
+  await maintenanceBounds();
   await auditChecks();
   report.status = 'passed';
 } catch (error) {

@@ -8,7 +8,7 @@ import Busboy from 'busboy';
 import JSZip from 'jszip';
 import { PDFDocument } from 'pdf-lib';
 import { indexAsset } from './indexer.mjs';
-import { createDownloadService } from './download-tickets.mjs';
+import { createDownloadService, startDownloadMaintenance } from './download-tickets.mjs';
 import { watermarkDownload } from './social-watermark.mjs';
 import {
   buildSnippet,
@@ -44,7 +44,7 @@ const DEMO_EMAIL = process.env.DEMO_EMAIL || 'reader@example.edu.tr';
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'demo1234';
 const BRAND_NAME = process.env.BRAND_NAME || 'Akademik Platform';
 const BRAND_TAGLINE = process.env.BRAND_TAGLINE || 'spike';
-const APP_VERSION = process.env.APP_VERSION || '117';
+const APP_VERSION = process.env.APP_VERSION || '118';
 const BUILD_SHA = process.env.BUILD_SHA || '';
 const BUILD_DATE = process.env.BUILD_DATE || '';
 const APP_ENV = process.env.APP_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'development');
@@ -1906,7 +1906,7 @@ async function serveStatic(req, res, pathname) {
   const relative = '/' + path.relative(PUBLIC_DIR, filePath).split(path.sep).join('/');
   const allowedFiles = new Set([
     '/index.html', '/app.js', '/styles.css', '/i18n.mjs', '/citations.mjs',
-    '/search.mjs', '/epub-engine.mjs', '/offline.mjs', '/sw.js', '/manifest.webmanifest',
+    '/search.mjs', '/epub-engine.mjs', '/offline.mjs', '/downloads.mjs', '/sw.js', '/manifest.webmanifest',
   ]);
   const allowedPrefixes = ['/icons/', '/vendor/'];
   if (relative.includes('..') || (!allowedFiles.has(relative) && !allowedPrefixes.some((prefix) => relative.startsWith(prefix)))) {
@@ -2079,6 +2079,17 @@ const server = http.createServer(async (req, res) => {
       clearSessionCookie(res, isSecureRequest(req));
       json(res, 401, { error: 'session revoked' });
       return;
+    }
+    const downloadRoute = pathname.match(/^\/api\/books\/([^/]+)\/(download-ticket|download)$/);
+    if (downloadRoute && pool) {
+      // Budget all authenticated ticket traffic before CSRF/body/query denial
+      // auditing, so invalid requests cannot grow audit_events without bound.
+      const limited = await downloadService.checkRequest(auth);
+      if (limited) {
+        res.setHeader('retry-after', String(limited.retryAfter));
+        json(res, limited.status, limited.body);
+        return;
+      }
     }
     if (sessionAuth && ['POST', 'PATCH', 'DELETE', 'PUT'].includes(req.method) && !requireCsrf(req, sessionAuth)) {
       if (pool && /^\/api\/books\/[^/]+\/download(?:-ticket)?$/.test(pathname)) {
@@ -2460,6 +2471,7 @@ const server = http.createServer(async (req, res) => {
         ? await downloadService.issue(bookId, auth, body)
         : await downloadService.consume(bookId, auth, body);
       if (result.status !== 200) {
+        if (result.retryAfter) res.setHeader('retry-after', String(result.retryAfter));
         json(res, result.status, result.body);
         return;
       }
@@ -2664,6 +2676,8 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+const stopDownloadMaintenance = pool ? startDownloadMaintenance(downloadService) : () => {};
+server.once('close', stopDownloadMaintenance);
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`[web] http://localhost:${PORT} (${pool ? 'db' : 'demo'} mode)`);
 });

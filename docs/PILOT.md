@@ -2,6 +2,12 @@
 
 Bu doküman tek sunuculu, tek kiracılı bir kurum pilotu içindir. Üretim sertleştirmesi için `docs/PLATFORM-SPEC.md` ve güvenlik açık maddeleri ayrıca kapatılmalıdır.
 
+Sosyal DRM kapsamı uygulamadaki **İndir** ve yeni **Çevrimdışı ↓** kayıtlarıdır.
+`/file` ve `/book.epub` okuyucu akışları oturum/grant kontrolüyle ham dosya verir;
+yetkili okuyucu bunları kaydedebilir. **“Tüm kopyalar izlenebilir” veya “tüm
+indirmeler filigranlı” taahhüdü verilmez.** Eski offline kopyalar geriye dönük
+damgalanamaz. Güncel sınırlar ve migration 013–014: [SOCIAL-DRM.md](SOCIAL-DRM.md).
+
 ## 1. Gereksinimler
 
 - Docker + Docker Compose

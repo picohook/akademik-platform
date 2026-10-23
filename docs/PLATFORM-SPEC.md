@@ -351,8 +351,8 @@ Asset yeni sürüme geçtiğinde çapa, `text_quote` eşleşmesiyle yeniden konu
 ### 6.7 İzinler
 
 - Görüntüleme, indirme, yazdırma, kopyalama ayrı.
-- İndirmede filigran (kullanıcı + tarih).
-- Kopyalama kısıtlıysa seçim engellenir, neden gösterilir.
+- B2B uygulama **İndir / Çevrimdışı ↓** akışlarında kullanıcı + kurum + tarih filigranı; açık ve audit’li admin istisnası ayrı. Ham `/file` ve `/book.epub` okuyucu akışları çıkarılabilir; “tüm kopyalar izlenebilir” iddiası yok (`docs/SOCIAL-DRM.md`).
+- Kopyalama kısıtlıysa copy/cut engellenir; seçim, vurgu ve not alma korunur.
 - Eşzamanlı oturum limiti aşılırsa açıklayıcı mesaj.
 
 ### 6.8 Okuyucu durumları

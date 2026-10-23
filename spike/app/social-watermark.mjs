@@ -67,12 +67,10 @@ async function watermarkPdf(buffer, lines) {
     }
     if (!layout) throw new Error('PDF page is too small for a readable watermark');
     const { wrapped, size, lineHeight } = layout;
-    const blockHeight = (wrapped.length + 1) * lineHeight;
-    page.drawRectangle({ x: x + margin / 2, y: y + margin / 2, width: width - margin, height: blockHeight + margin, color: rgb(1, 1, 1), opacity: 0.85 });
     wrapped.forEach((line, index) => page.drawText(line, {
       x: x + margin,
       y: y + margin + (wrapped.length - index - 1) * lineHeight,
-      size, font, color: rgb(0.2, 0.2, 0.2), opacity: 0.9,
+      size, font, color: rgb(0.2, 0.2, 0.2), opacity: 0.28,
     }));
   }
   return Buffer.from(await pdf.save({ addDefaultPage: false }));

@@ -10,11 +10,11 @@ market AES-in-browser as unbreakable.
 - Download audit events and usage reporting.
 - OPDS/OAI/SUSHI endpoints with environment-gated tokens.
 
-## P0 — Social DRM MVP (v117 source; independent review pending)
+## P0 — Social DRM MVP (v118 remediation; independent review pending)
 
 Goal: traceable, authorized full-file downloads for institutional use.
 
-1. **Forced watermark for downloads**
+1. **Forced watermark for the app's Download and Offline ↓ actions**
    - B2B mode cannot use `watermark=false`; admin override only.
    - PDF and EPUB stamps include user, tenant and date.
 2. **Short-lived, database-backed download tickets**
@@ -41,6 +41,12 @@ downloads carry a traceable stamp unless an explicitly audited administrator
 exception is used. Reader file links retain session/grant checks. Copy controls
 remain UI policy, not protection against deliberate extraction. P0 source does
 not deploy or migrate production automatically.
+
+**Product boundary:** `/file` and `/book.epub` still return original reader bytes.
+An authorized reader can save them. No claim that all copies/downloads are
+traceable is supported. v118 offline saves use the ticketed path; legacy cached
+copies cannot be retroactively stamped. PDF stamps have no opaque backdrop.
+Shared per-user request limits and automatic ticket cleanup are included in v118.
 
 ## P1 — Encryption at rest (3–4 weeks total)
 

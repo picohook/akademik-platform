@@ -1,8 +1,27 @@
-# Social DRM + access control — P0 / v117
+# Social DRM + access control — P0 / v118 remediation
 
-This package adds traceable full-file downloads. It is **social DRM + access
-control**; it does not prevent a reader from extracting a stream, editing an
-EPUB ZIP, removing PDF marks, or taking screenshots. AES at rest belongs to P1.
+This package adds traceable downloads through the app's **Download** and
+**Offline ↓** actions. It is **social DRM + access control**. The reader receives
+the original stream; this is not a promise that every obtainable copy is
+watermarked or traceable. AES at rest belongs to P1.
+
+## Reader-stream boundary and legacy offline copies
+
+`GET /api/books/:id/file` and `GET /api/books/:id/book.epub` keep original,
+session/grant-protected bytes and Range behavior. An authorized reader can save
+or reconstruct them, including when normal download permission is disabled.
+Reader grant semantics are unchanged. These streams bypass full-download tickets
+and stamping: an explicit P0 limitation, not a protected distribution channel.
+**Do not promise “all copies are traceable” or “all downloads are watermarked”.**
+A stronger property needs a separate reader-stream design and performance tests.
+
+New offline saves in v118 use the same two POSTs as normal downloads; no `/file`
+probe or GET. Only delivered blobs are saved, tagged
+`downloadProvenance: 'ticketed-download-v1'`; no token is persisted. In B2B mode,
+offline saves request ordinary stamped tickets, even for administrators. Errors,
+denials, rate limits and quota/actual 300 MiB violations do not save a blob.
+Legacy offline blobs are preserved and cannot be retroactively stamped or
+revoked. Remove and redownload them if stamped offline copies are required.
 
 ## Download contract
 
@@ -54,7 +73,11 @@ ticket. No failed watermark operation falls back to the original file.
 `watermark=false` never disables full-download stamps. PDF pages and supported
 EPUB chapter bodies contain platform name, user UUID, tenant UUID, email and UTC
 time. PDF uses canonical UUIDs and reversible ASCII Unicode escapes for email
-characters that Helvetica cannot encode. EPUB identities are XML escaped.
+characters that Helvetica cannot encode. PDF stamps add only 28%-opacity text;
+no white rectangle, background fill or image covers original content. Crop bounds
+and small-page readability checks remain; unstampable pages fail closed. A text
+stamp may overlap content; blank margins cannot be assumed. EPUB identities are
+XML escaped.
 
 An administrator can explicitly request an exception when issuing a ticket:
 
@@ -96,28 +119,51 @@ the raw ticket or its hash. Anonymous/invalid-session requests remain at the
 existing authentication gate. Rendering failure is audited as a denial after
 consumption; a consume event does not claim successful delivery to a device.
 
+## Request limits and automatic retention
+
+Migration 014 adds forced-RLS counters shared across processes/sessions by
+**tenant + user**:
+
+- **10 ticket-issue attempts per 60-second window**.
+- **40 authenticated requests to either download route per 60-second window**,
+  including invalid methods, query parameters and CSRF failures. This gate runs
+  before rejection auditing.
+- Excess requests receive **429** with `Retry-After`/`retryAfter`. Counters are
+  capped. `download.rate_limit` is recorded once per kind/window; further excess
+  requests create no audit row. The UI shows the wait in Turkish/English.
+
+Database-backed servers run cleanup immediately and every **60 seconds**,
+deleting tickets expired for **over one hour** and limiter rows inactive for
+**over one day**, at most **1,000 of each per tick**. Cleanup is tenant-scoped,
+with an advisory try-lock across processes and `FOR UPDATE SKIP LOCKED`. Recent,
+locked, active and other-tenant rows survive. Ticks do not overlap; failures are
+retried next tick; closing the server stops its timer. Large backlogs can take
+multiple ticks: retention is best effort, not a hard database-size cap. Audit
+retention is separate; this worker preserves usage/security audit history.
+
 ## Migration / operations
 
-Source v117 requires **migration 013 before starting its server** on an existing
+Source v118 requires **migrations 013 and 014 before starting its server** on an existing
 database. This package does not deploy or migrate production; production remains
 v116 until reviewed. Back up first and run as the database administrator:
 
 ```powershell
 docker compose --env-file .env.production -f docker-compose.prod.yml exec -T db psql -v ON_ERROR_STOP=1 -U <db-admin> -d <database> -f /migrations/013-download-tickets.sql
+docker compose --env-file .env.production -f docker-compose.prod.yml exec -T db psql -v ON_ERROR_STOP=1 -U <db-admin> -d <database> -f /migrations/014-download-ticket-limits.sql
 ```
 
-Migration 013 is transactional and repeatable; fresh `db/schema.sql` includes the
-same table, forced tenant RLS, marker and trigger. Keep the marker on application
+Migrations 013 and 014 are transactional and repeatable; fresh `db/schema.sql` includes
+the ticket/limiter tables, forced tenant RLS, marker and trigger. Keep the marker on application
 rollback. Tickets may be deleted once expired; a scheduled tenant-scoped purge
 can keep a short diagnostic retention window, for example:
 
 ```sql
 delete from download_tickets
  where tenant_id = current_setting('app.tenant_id')::uuid
-   and expires_at < clock_timestamp() - interval '1 day';
+   and expires_at < clock_timestamp() - interval '1 hour';
 ```
 
-The app does not schedule this purge. The separate audit trail remains intact.
+The worker schedules bounded cleanup automatically. The audit trail remains intact.
 Do not log HTTP request/response bodies at the proxy/APM layer for these routes.
 
 ## Validation
@@ -129,38 +175,49 @@ npm run test:social-drm
 npm run test:security
 node test/citations.test.mjs
 node test/epub-copy-policy.test.mjs
+node test/downloads.test.mjs
+node test/download-maintenance.test.mjs
 ```
 
 The social-DRM integration harness owns an isolated temporary PostgreSQL 16
 container and two app processes, exercises non-superuser forced RLS, and removes
 its environment. It accepts no external database or target URL. Validation
 results and source hashes are recorded in the
-[v117 evidence manifest](security-evidence/v117-2026-10-23/manifest.json).
+[v118 evidence manifest](security-evidence/v118-2026-10-23/manifest.json).
 
 Final validation on 2026-10-23:
 
 | Check | Result |
 |---|---|
-| Citation / v116 EPUB copy policy / watermark units | **17 + 7 + 13 = 37 passed** |
-| Social-DRM PostgreSQL integration | **189 checks / 5 scenarios passed** |
+| Citation / EPUB copy / watermark / download / scheduler units | **17 + 7 + 14 + 15 + 2 = 55 passed** |
+| Social-DRM PostgreSQL integration | **295 checks / 7 scenarios passed** |
 | Existing PostgreSQL security regression | **68 checks / 3 scenarios passed** |
 | Source hashes against tested app/schema/migration | Matched |
 | Temporary app, DB container and directory cleanup | All passed |
 
-[Integration results](security-evidence/v117-2026-10-23/social-drm-results.json)
+[Integration results](security-evidence/v118-2026-10-23/social-drm-results.json)
 cover actual PDF text and EPUB XHTML, hash-only storage, 60-second expiry,
 wrong user/tenant/asset, replay, concurrent consumption on two processes,
 grant/permission revocation, final-grant SQL and API deletion, admin role changes,
 and raw-token/hash exclusion from audit. Failure injection verifies issue and
 consume rollback when audit inserts are denied. A row-lock barrier verifies
 expiry during lock wait. Migration validation covers fresh schema, reconstructing
-the pre-013 layout with existing grants, backfill and repeat application.
-[Existing security output](security-evidence/v117-2026-10-23/security-validation.txt)
+the pre-013 layout with existing grants, backfill and repeat application, plus
+the 013→014 upgrade and repeat application. v118 also covers real helper-to-HTTP
+stamped PDF/EPUB delivery, two-process issue/traffic limits, capped counters,
+429/Retry-After, bounded flood auditing and window recovery. Maintenance tests
+cover 1,000-row batches, remaining rows, SKIP LOCKED, advisory exclusion and
+age/tenant boundaries. Scheduler tests exercise startup, repetition, no overlap,
+stop and recovery from error. The dense-footer PDF test compares paint operators
+and verifies no added rectangle/fill/image plus translucent stamp text.
+[Existing security output](security-evidence/v118-2026-10-23/security-validation.txt)
 covers publisher isolation, grant SQL failure and cross-process login limits.
 
-Static peer review found and closed the last-grant deletion and EPUB spine/body
-coverage issues. **Independent review is pending.** No new full browser
-acceptance test or production deployment is claimed by this package. The earlier
-160-check integration run preceded these fixes and is superseded by the final
-189-check report. The manifest records the tested source Git blobs for checking
-the resulting commit, including LF/CRLF normalization.
+Static peer review reported no concrete blocker in rate/purge implementation.
+**Independent rereview is pending.** Storage callbacks were injected in the
+offline helper integration; real IndexedDB/browser acceptance was not run.
+No production deployment is claimed. Historical v117 37/189/68 results remain
+unchanged in their evidence folder and are superseded by v118's 55/295/68 for
+this remediation. The manifest records tested source Git blobs, including
+LF/CRLF normalization. Original reader-byte extraction is tested and documented
+as an explicit limitation, not a closed security property.

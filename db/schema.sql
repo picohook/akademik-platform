@@ -250,6 +250,17 @@ create table if not exists download_tickets (
 );
 create index if not exists download_tickets_expiry on download_tickets (tenant_id, expires_at);
 
+create table if not exists download_ticket_limits (
+  tenant_id uuid not null references tenants(id) on delete cascade,
+  user_id uuid not null references users(id) on delete cascade,
+  kind text not null check (kind in ('issue', 'traffic')),
+  window_start timestamptz not null,
+  request_count integer not null check (request_count > 0),
+  notified boolean not null default false,
+  primary key (tenant_id, user_id, kind)
+);
+create index if not exists download_ticket_limits_expiry on download_ticket_limits (tenant_id, window_start);
+
 create table if not exists audit_events (
   id bigserial primary key,
   tenant_id uuid references tenants(id) on delete set null,
@@ -277,6 +288,7 @@ alter table tenants enable row level security;
 alter table users enable row level security;
 alter table user_sessions enable row level security;
 alter table download_tickets enable row level security;
+alter table download_ticket_limits enable row level security;
 
 -- The application connects as the table owner; without FORCE, the owner bypasses RLS.
 alter table works force row level security;
@@ -294,6 +306,7 @@ alter table tenants force row level security;
 alter table users force row level security;
 alter table user_sessions force row level security;
 alter table download_tickets force row level security;
+alter table download_ticket_limits force row level security;
 
 create policy works_tenant on works
   using (tenant_id is null or tenant_id = current_setting('app.tenant_id', true)::uuid);
@@ -328,6 +341,9 @@ create policy users_tenant on users
 create policy user_sessions_tenant on user_sessions
   using (tenant_id = current_setting('app.tenant_id', true)::uuid);
 create policy download_tickets_tenant on download_tickets
+  using (tenant_id = current_setting('app.tenant_id', true)::uuid)
+  with check (tenant_id = current_setting('app.tenant_id', true)::uuid);
+create policy download_ticket_limits_tenant on download_ticket_limits
   using (tenant_id = current_setting('app.tenant_id', true)::uuid)
   with check (tenant_id = current_setting('app.tenant_id', true)::uuid);
 

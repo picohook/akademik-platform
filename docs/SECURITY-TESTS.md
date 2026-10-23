@@ -1,11 +1,15 @@
 # PostgreSQL security integration tests
 
-v117 adapts full-download checks to POST ticket issuance/consumption, verifies
+v117 adapted full-download checks to POST ticket issuance/consumption, verifies
 legacy GET rejection, and retains the publisher/grant/concurrency scenarios:
 **68 HTTP/DB checks passed**. The separate social-DRM suite adds **189 checks**,
 including actual PDF/EPUB stamps, single-use races, audit rollback, expiry while
 waiting for a lock and migration 013. See [SOCIAL-DRM.md](SOCIAL-DRM.md) for the
-contract and permanent evidence. Production was not changed by these tests.
+contract and permanent evidence. v118 remediation now passes **295 DRM checks**
+plus the same **68 security checks**, with shared issue/traffic limits and
+automatic cleanup. **55 unit tests** include non-obscuring PDF stamps, offline
+POST delivery and scheduler behavior. Real IndexedDB/browser acceptance is
+still separate. Production was not changed by these tests.
 
 Requires Node.js 22+, installed `spike/app` dependencies, and Docker Desktop
 running Linux containers. The runner uses `postgres:16-alpine` (Docker downloads

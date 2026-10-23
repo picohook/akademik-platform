@@ -2,8 +2,8 @@ import * as pdfjsLib from '/vendor/pdfjs/pdf.mjs';
 import { formatCitation, normalizePdfPageLabels, pdfPageLabel, pdfPageDescription, pdfCitationPage, formatCopiedSelection } from '/citations.mjs';
 import { EpubEngine } from '/epub-engine.mjs';
 import { initializeLanguage, toggleLanguage, t, translateDom, getLang } from '/i18n.mjs';
+import { fetchDownloadBlob, saveOfflineDownload } from '/downloads.mjs';
 import {
-  saveOfflineBook,
   listOfflineBooks,
   getOfflineBook,
   deleteOfflineBook,
@@ -487,31 +487,23 @@ async function handleOfflineDownload(book) {
     return;
   }
   toast(t('Çevrimdışı kaydediliyor…'));
-  const url = `/api/books/${encodeURIComponent(book.id)}/file`;
-  const probe = await fetch(url, { headers: { range: 'bytes=0-0' } });
-  if (!probe.ok && probe.status !== 206) {
-    const payload = await probe.json().catch(() => ({}));
-    throw new Error(payload.error || `HTTP ${probe.status}`);
+  try {
+    await saveOfflineDownload(book);
+  } catch (error) {
+    if (error.status === 429) {
+      toast(t(`Çok fazla indirme isteği; ${error.retryAfter} saniye sonra tekrar deneyin.`));
+      return;
+    }
+    if (error.code === 'DOWNLOAD_TOO_LARGE') {
+      toast(t('Dosya 300 MB sınırını aşıyor; çevrimdışı kaydedilemez'));
+      return;
+    }
+    if (error.code === 'OFFLINE_QUOTA') {
+      toast(t('Çevrimdışı alan yetersiz'));
+      return;
+    }
+    throw error;
   }
-  const range = probe.headers.get('content-range') || '';
-  const total = Number(range.split('/')[1]) || Number(probe.headers.get('content-length')) || 0;
-  probe.body?.cancel();
-  if (total > 300 * 1024 * 1024) {
-    toast(t('Dosya 300 MB sınırını aşıyor; çevrimdışı kaydedilemez'));
-    return;
-  }
-  const response = await fetch(url);
-  if (!response.ok) {
-    const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.error || `HTTP ${response.status}`);
-  }
-  const blob = await response.blob();
-  const estimate = await storageEstimate();
-  if (estimate?.quota && estimate.usage + blob.size > estimate.quota * 0.95) {
-    toast(t('Çevrimdışı alan yetersiz'));
-    return;
-  }
-  await saveOfflineBook(book, blob);
   toast(t('Çevrimdışı kaydedildi'));
   if (!offlineModal.hidden) await renderOfflineModal();
 }
@@ -4004,35 +3996,18 @@ pageInput.addEventListener('change', () => goToPage(pageInput.value));
 bookmarkBtn.addEventListener('click', toggleBookmark);
 $('citeBook').addEventListener('click', openCite);
 downloadBtn.addEventListener('click', async () => {
-  if (!state.book) return;
+  const book = state.book;
+  if (!book) return;
   const original = downloadBtn.textContent;
   downloadBtn.disabled = true;
   downloadBtn.textContent = t('İndiriliyor…');
   try {
-    const endpoint = `/api/books/${encodeURIComponent(state.book.id)}`;
-    const issued = await fetch(`${endpoint}/download-ticket`, {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}',
-      cache: 'no-store', referrerPolicy: 'no-referrer',
-    });
-    if (!issued.ok) {
-      const payload = await issued.json().catch(() => ({}));
-      throw new Error(payload.error || 'download failed');
-    }
-    const { ticket } = await issued.json();
-    const response = await fetch(`${endpoint}/download`, {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ticket }),
-      cache: 'no-store', referrerPolicy: 'no-referrer',
-    });
-    if (!response.ok) {
-      const payload = await response.json().catch(() => ({}));
-      throw new Error(payload.error || 'download failed');
-    }
-    const blob = await response.blob();
+    const blob = await fetchDownloadBlob(book);
     const url = URL.createObjectURL(blob);
-    const extension = state.book.format === 'epub' ? 'epub' : 'pdf';
+    const extension = book.format === 'epub' ? 'epub' : 'pdf';
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `${state.book.title.replace(/[^\p{L}\p{N}._-]+/gu, '-').slice(0, 80) || 'kitap'}.${extension}`;
+    anchor.download = `${book.title.replace(/[^\p{L}\p{N}._-]+/gu, '-').slice(0, 80) || 'kitap'}.${extension}`;
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
@@ -4040,9 +4015,11 @@ downloadBtn.addEventListener('click', async () => {
     toast(t(extension === 'epub' ? 'EPUB indirildi' : 'PDF indirildi'));
   } catch (error) {
     console.error(error);
-    toast(error.message === 'download disabled for this title'
-      ? t('Bu kitapta indirme kapalı')
-      : t(state.book?.format === 'epub' ? 'EPUB indirilemedi' : 'PDF indirilemedi'));
+    toast(error.status === 429
+      ? t(`Çok fazla indirme isteği; ${error.retryAfter} saniye sonra tekrar deneyin.`)
+      : error.code === 'DOWNLOAD_DISABLED'
+        ? t('Bu kitapta indirme kapalı')
+        : t(book.format === 'epub' ? 'EPUB indirilemedi' : 'PDF indirilemedi'));
   } finally {
     downloadBtn.disabled = false;
     downloadBtn.textContent = original;

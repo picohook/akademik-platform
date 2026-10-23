@@ -54,7 +54,7 @@ async function readAll(storeName, indexName = null, key = null) {
   return value || [];
 }
 
-export async function saveOfflineBook(book, blob) {
+export async function saveOfflineBook(book, blob, { downloadProvenance } = {}) {
   const entry = {
     id: book.id,
     book: {
@@ -72,6 +72,7 @@ export async function saveOfflineBook(book, blob) {
     },
     size: blob.size,
     savedAt: new Date().toISOString(),
+    ...(downloadProvenance ? { downloadProvenance } : {}),
     blob,
   };
   await write(BOOKS, (store) => store.put(entry));

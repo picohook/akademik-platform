@@ -1,0 +1,35 @@
+{
+  "runId": "6a0849e5-e5c7-4394-bbf7-a3ccbd5cc10b",
+  "startedAt": "2026-10-23T17:43:35.999Z",
+  "status": "passed",
+  "source": {
+    "server.mjs": "2bc3323a61d6b959b89f7b6e84d0218c68ac39499ae3188bd4324d51f5c9e86c",
+    "indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+    "download-tickets.mjs": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+    "social-watermark.mjs": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+    "public/search.mjs": "88ac22ab469fc2cc5bf8d0476754a245e6ed9f44b475cbf349dbbaca52145cdc",
+    "public/downloads.mjs": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+    "public/offline.mjs": "d1660751a9c67d4f847fdb87c31f0ed8ff19b742f5cac884c6b2be258e4c3c85",
+    "schema.sql": "a2aef0ad519ea7ef4c18c37fa145b69bec33454acf25440a58760d9b9eb55c66",
+    "seed.sql": "b8d845cea00579ccd0b13fcbb94e9d050c42d1fff736ec4dd36e1137f67ce587",
+    "013-download-tickets.sql": "acea4b1d91ab2772342a616beb09d590f3d2d69d3c7aabaeee80bbda1c0a7259",
+    "014-download-ticket-limits.sql": "62d586de6bb0051024a54911b2112db7dcd446cd53cb47c6ed0e609e5fa11029"
+  },
+  "scenarios": [
+    "session/CSRF, token storage/TTL/bindings, real offline helper POST flow saves server-stamped PDF+EPUB, declared raw reader Range boundary",
+    "expiry/replay/user/tenant/asset/policy/grant binding; override injection and current DB admin role",
+    "two-process DB-barrier race: exactly one consumer; forced RLS cross-tenant select/update/insert",
+    "audit INSERT failure atomically rolls back issue/consume; DB-clock expiry enforced after lock wait",
+    "DB issue10/min and traffic40/min shared across processes; Retry-After, saturating counters, bounded audit and expired-window recovery",
+    "real PostgreSQL maintenance: tenant advisory exclusion, SKIP LOCKED, 1000-row batches, expiry age and tenant boundaries",
+    "required audit actions present; raw tokens and token hashes absent from audit payloads"
+  ],
+  "cleanup": {
+    "appsStopped": true,
+    "databaseRemoved": true,
+    "temporaryAppRemoved": true
+  },
+  "postgresImage": "sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea",
+  "checks": 295,
+  "finishedAt": "2026-10-23T17:45:11.368Z"
+}
