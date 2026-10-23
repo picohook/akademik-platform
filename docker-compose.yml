@@ -31,8 +31,8 @@ services:
       PORT: 3000
     volumes:
       - ./incoming:/app/incoming
-      - ./data/uploads:/app/public/uploads
-      - ./data/ocr:/app/public/ocr
+      - ./data/dev-uploads:/app/public/uploads
+      - ./data/dev-ocr:/app/public/ocr
     depends_on:
       db:
         condition: service_healthy
@@ -56,3 +56,4 @@ volumes:
   pgdata:
   caddydata:
   caddyconfig:
+

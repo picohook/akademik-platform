@@ -1,0 +1,21 @@
+{
+  "savedCfi": "epubcfi(/6/2!/4/50/1:0)",
+  "currentCfi": "epubcfi(/6/2!/4/36/1:0)",
+  "starBefore": "false",
+  "before": [
+    {
+      "id": "205a8224-c8ff-4d27-ad46-ebdd4e990090",
+      "cfi": "epubcfi(/6/2!/4/50/1:0)"
+    }
+  ],
+  "after": [
+    {
+      "id": "205a8224-c8ff-4d27-ad46-ebdd4e990090",
+      "cfi": "epubcfi(/6/2!/4/50/1:0)"
+    },
+    {
+      "id": "4ec6afe2-7dc1-4c3f-9e86-0334eecdc71d",
+      "cfi": "epubcfi(/6/2!/4/36/1:0)"
+    }
+  ]
+}

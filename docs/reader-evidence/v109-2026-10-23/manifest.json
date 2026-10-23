@@ -1,0 +1,108 @@
+{
+  "scope": "Independent package 1 browser acceptance review; isolated demo server, no production writes",
+  "gitHead": "b8adce970a5d319f2a1e39a106c4b04f28dbd7aa",
+  "frontend": "109",
+  "browser": "155.0.4283.45",
+  "sources": [
+    {
+      "file": "spike/app/server.mjs",
+      "sha256": "93ecceb67b7d490093c170a32896b600ea71dd1cd66cafaad418efcaeda5a960"
+    },
+    {
+      "file": "spike/app/indexer.mjs",
+      "sha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f"
+    },
+    {
+      "file": "spike/app/public/app.js",
+      "sha256": "dd35c792fcf07d5e11e1f09c0b73abb7cc02841c53cd41602b0c9f3dc5decffc"
+    },
+    {
+      "file": "spike/app/public/index.html",
+      "sha256": "293af56df26b0a29ce473dec3fd6da91ffa33e29bd8283c4c43dea1d5a0e8322"
+    },
+    {
+      "file": "spike/app/public/i18n.mjs",
+      "sha256": "d7fa6521656ee47416511d2dd88e681d578ae8afe77e21452fcc4a9dbce53310"
+    },
+    {
+      "file": "spike/app/public/epub-engine.mjs",
+      "sha256": "8299599cd7a245d6d2916b211b99f8e5d69bc536e27490f2ae0c7b12f1472306"
+    },
+    {
+      "file": "spike/app/public/styles.css",
+      "sha256": "a8fa7fd5eb2278cd84128d95ae6b0d0ee9114649c1aed245b491167f0afbf02f"
+    },
+    {
+      "file": "spike/app/public/offline.mjs",
+      "sha256": "442d4f6d549f89ea9e761c67517b5bfcc3743e87f49c604b33e813d26d908ed4"
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "browser-console.json",
+      "bytes": 12406,
+      "sha256": "5e0909bb418d66672eaaea5429309a584c59d7587e6b56045aa54cd2b13e3bcc"
+    },
+    {
+      "file": "browser-harness.mjs",
+      "bytes": 23330,
+      "sha256": "41ce88686f69811a034738afbee278b518281825dc589307b717e79eeef18d8b"
+    },
+    {
+      "file": "epub-bookmark-created.png",
+      "bytes": 148985,
+      "sha256": "26ae5745d7548f9d2c45c70427a5890d44c3ad03cf2c19d45dcc0c1f276c2497"
+    },
+    {
+      "file": "epub-bookmark-reopened.png",
+      "bytes": 111898,
+      "sha256": "e40ee6c7c954eadfce7310b8ccbe76b1950fa4c9b059bbe708eed65c372c128b"
+    },
+    {
+      "file": "epub-returned-bookmark-toggle-failure.png",
+      "bytes": 118830,
+      "sha256": "6c59893063ac9f939e6a39a8fc003eaf8651486ef40cbdc2fc8ab60a19717725"
+    },
+    {
+      "file": "epub-settings-reopened.png",
+      "bytes": 235987,
+      "sha256": "a78582c9b63f89445cbcd9acf42d038b8e991939888bc741f4fb9d900df8ca74"
+    },
+    {
+      "file": "long-fixture.epub",
+      "bytes": 16353,
+      "sha256": "190aaf33db4da9f9c3fc79756ebe6fc7d7613f4bf9dac932ba0344ab8290727c"
+    },
+    {
+      "file": "offline-bookmark-excluded.png",
+      "bytes": 240516,
+      "sha256": "8db952402c93b9ec32e06b8772c54a63e1974e8c62c81eb4ce9826fba756840a"
+    },
+    {
+      "file": "results.json",
+      "bytes": 14606,
+      "sha256": "135ee1862388f4455a9f91545d25221d132bc082e0d7bad14f230d1f36598599"
+    },
+    {
+      "file": "returned-bookmark-after-toggle.png",
+      "bytes": 118830,
+      "sha256": "6c59893063ac9f939e6a39a8fc003eaf8651486ef40cbdc2fc8ab60a19717725"
+    },
+    {
+      "file": "returned-bookmark-before-toggle.png",
+      "bytes": 111898,
+      "sha256": "e40ee6c7c954eadfce7310b8ccbe76b1950fa4c9b059bbe708eed65c372c128b"
+    },
+    {
+      "file": "returned-bookmark-toggle.json",
+      "bytes": 459,
+      "sha256": "fd0c3866dc521edf488a3017e674834a3069cd5b1612e1bf209e19f50d07d6b6"
+    },
+    {
+      "file": "settings-scoped-to-user-or-book-failure.png",
+      "bytes": 236101,
+      "sha256": "f4861827dc153cb39c078f121b7ce7644df1d904bc07e3dc2a3dea402f6aa0b7"
+    }
+  ],
+  "method": "Playwright with real headless Microsoft Edge; 1440x1000 viewport; isolated demo source snapshot; CFI range projected into the clipped parent viewport; no production writes"
+}

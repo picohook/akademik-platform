@@ -53,6 +53,7 @@ Thumbs.db
 # Temporary
 tmp/
 .cache/
+*.bak
 
 # Tesseract language data (downloaded at runtime)
 *.traineddata

@@ -1193,6 +1193,26 @@ function updateViewControls() {
   fitToggle.classList.toggle('active', fitPage);
 }
 
+function storageUserKey() {
+  return state.user?.id || 'offline';
+}
+
+function themeStorageKey() {
+  return `readerTheme:${storageUserKey()}`;
+}
+
+function epubFontStorageKey(bookId = state.book?.id) {
+  return `readerEpubFontSize:${storageUserKey()}:${bookId || 'book'}`;
+}
+
+function storedTheme() {
+  try {
+    return localStorage.getItem(themeStorageKey()) || 'light';
+  } catch {
+    return 'light';
+  }
+}
+
 function applyTheme(theme) {
   const next = ['light', 'sepia', 'dark'].includes(theme) ? theme : 'light';
   state.theme = next;
@@ -1200,7 +1220,7 @@ function applyTheme(theme) {
   themeBtn.textContent = next === 'dark' ? '☾' : next === 'sepia' ? '◐' : '☀';
   themeBtn.title = t(next === 'dark' ? 'Koyu tema' : next === 'sepia' ? 'Sepia tema' : 'Açık tema');
   try {
-    localStorage.setItem('readerTheme', next);
+    localStorage.setItem(themeStorageKey(), next);
   } catch {
     // Private mode may block storage.
   }
@@ -1456,11 +1476,20 @@ function currentEpubCfi() {
 
 function bookmarkForEpubCfi(cfi = currentEpubCfi()) {
   if (!cfi) return null;
-  return state.annotations.find(
-    (annotation) => annotation.color === 'bookmark'
-      && annotation.anchor?.type === 'epub'
-      && annotation.anchor?.cfi === cfi,
-  );
+  const progress = state.epubProgress || {};
+  const candidates = state.annotations.filter((annotation) => {
+    if (annotation.color !== 'bookmark' || annotation.anchor?.type !== 'epub') return false;
+    if (annotation.anchor.cfi === cfi) return true;
+    if (annotation.anchor.href && progress.href && annotation.anchor.href !== progress.href) return false;
+    const saved = Number(annotation.anchor.percent);
+    const current = Number(progress.percent);
+    return Number.isFinite(saved) && Number.isFinite(current) && Math.abs(saved - current) <= 1.5;
+  });
+  return candidates.sort((a, b) => {
+    const av = Math.abs(Number(a.anchor.percent) - Number(progress.percent));
+    const bv = Math.abs(Number(b.anchor.percent) - Number(progress.percent));
+    return av - bv;
+  })[0] || null;
 }
 
 function updateBookmarkUi() {
@@ -1489,22 +1518,30 @@ async function goToPage(value) {
   await renderPage();
 }
 
-function storedEpubFontSize() {
+function storedEpubFontSize(bookId = state.book?.id) {
   try {
-    const value = Number(localStorage.getItem('readerEpubFontSize'));
-    return Number.isFinite(value) && value >= 70 && value <= 200 ? value : 100;
+    const keys = [
+      epubFontStorageKey(bookId),
+      `readerEpubFontSize:${storageUserKey()}`,
+    ];
+    for (const key of keys) {
+      const value = Number(localStorage.getItem(key));
+      if (Number.isFinite(value) && value >= 70 && value <= 200) return value;
+    }
+    return 100;
   } catch {
     return 100;
   }
 }
 
-function applyEpubFontSize(value, persist = true) {
+function applyEpubFontSize(value, persist = true, bookId = state.book?.id) {
   state.epubFontSize = Math.min(200, Math.max(70, Math.round(Number(value) || 100)));
   state.epubEngine?.setFontSize(state.epubFontSize);
   updateZoomLabel();
   if (persist) {
     try {
-      localStorage.setItem('readerEpubFontSize', String(state.epubFontSize));
+      localStorage.setItem(epubFontStorageKey(bookId), String(state.epubFontSize));
+      localStorage.setItem(`readerEpubFontSize:${storageUserKey()}`, String(state.epubFontSize));
     } catch { /* private mode */ }
   }
 }
@@ -2454,7 +2491,7 @@ function renderPending(rects, container = highlightsEl, scale = state.viewport?.
 }
 
 const COLOR_ORDER = ['yellow', 'green', 'blue', 'pink'];
-const COLOR_LABELS = { yellow: 'Sarı', green: 'Yeşil', blue: 'Mavi', pink: 'Pembe', bookmark: 'Yer imi' };
+const COLOR_LABELS = { yellow: 'Sarı', green: 'Yeşil', blue: 'Mavi', pink: 'Pembe', bookmark: t('Yer imi') };
 
 function formatNoteDate(value) {
   const date = new Date(value);
@@ -2541,7 +2578,7 @@ function exportAnnotations(format) {
     const page = annotation.anchor?.page || '—';
     lines.push(`## Sayfa ${page}`, '');
     if (annotation.color === 'bookmark') {
-      lines.push('*Yer imi*', '');
+      lines.push(`*${t('Yer imi')}*`, '');
     } else {
       if (annotation.selected_text) lines.push(`> ${annotation.selected_text.replace(/\n/g, '\n> ')}`, '');
       if (annotation.note) lines.push(annotation.note, '');
@@ -2646,8 +2683,8 @@ function renderNotes() {
     page.className = 'note-page';
     const epubAnchor = annotation.anchor?.type === 'epub';
     page.textContent = epubAnchor
-      ? `EPUB${isBookmark ? ' · Yer imi' : ''}`
-      : `Sayfa ${annotation.anchor?.page || '—'}${isBookmark ? ' · Yer imi' : ''}`;
+      ? `EPUB${isBookmark ? ` · ${t('Yer imi')}` : ''}`
+      : `Sayfa ${annotation.anchor?.page || '—'}${isBookmark ? ` · ${t('Yer imi')}` : ''}`;
     item.appendChild(page);
     const createdAt = annotation.created_at ? new Date(annotation.created_at) : null;
     const updatedAt = annotation.updated_at ? new Date(annotation.updated_at) : null;
@@ -2899,12 +2936,10 @@ async function openEpubBook(book, options = {}) {
     pageLabel.textContent = `${state.epubProgress.percent}%`;
     const metaPrefix = [book.publisher, book.publication_year].filter(Boolean).join(' · ');
     readerMeta.textContent = t(`${metaPrefix ? `${metaPrefix} · ` : ''}EPUB · ${engine.getSpineCount()} bölüm`);
-    const savedTheme = (() => {
-      try { return localStorage.getItem('readerTheme') || 'light'; } catch { return 'light'; }
-    })();
+    const savedTheme = storedTheme();
     applyTheme(savedTheme);
     engine.setTheme(savedTheme);
-    applyEpubFontSize(storedEpubFontSize(), false);
+    applyEpubFontSize(storedEpubFontSize(book.id), false, book.id);
     state.annotations
       .filter((annotation) => annotation.anchor?.type === 'epub' && annotation.anchor?.cfi)
       .forEach((annotation) => engine.addAnnotation({
@@ -2968,8 +3003,7 @@ async function openBook(book, options = {}) {
   textLayer2.replaceChildren();
   highlights2.replaceChildren();
   updateViewControls();
-  let savedTheme = 'light';
-  try { savedTheme = localStorage.getItem('readerTheme') || 'light'; } catch { /* noop */ }
+  let savedTheme = storedTheme();
   applyTheme(savedTheme);
   state.annotations = [];
   state.outline = [];

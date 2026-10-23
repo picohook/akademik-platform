@@ -434,7 +434,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
 .note-edit-actions { display: flex; gap: 6px; margin-top: 6px; }
 .note-edit-actions button { padding: 5px 8px; font-size: 11px; }
 .note-item:hover { border-color: #c9bfa9; }
-.note-item .note-page { font-size: 10.5px; color: var(--accent-2); text-transform: uppercase; letter-spacing: 0.08em; }
+.note-item .note-page { font-size: 10.5px; color: var(--accent-2); letter-spacing: 0.04em; }
 .note-item .note-date { font-size: 9.5px; color: var(--muted); margin-top: 2px; }
 .note-item .note-text { font-size: 12.5px; margin: 4px 0 0; }
 .note-item .note-body { font-size: 12px; color: var(--muted); margin: 5px 0 0; }
