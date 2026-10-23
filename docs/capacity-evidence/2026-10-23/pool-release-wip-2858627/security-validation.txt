@@ -1,0 +1,11 @@
+Isolated PostgreSQL 16, non-superuser app role, two Node servers ready.
+PASS publisher: real uploads, persisted ownership, edit/delete isolation, restricted management endpoints.
+PASS grants: real SQL permission error blocks catalog/search/files/download/OCR/OPDS; auth stays valid; access recovers.
+  wave 1: 8 blocked contenders, 8 requests across 2 servers -> 2 accepted / 6 rejected / 2 DB sessions
+  wave 2: 8 blocked contenders, 8 requests across 2 servers -> 2 accepted / 6 rejected / 2 DB sessions
+  wave 3: 8 blocked contenders, 8 requests across 2 servers -> 2 accepted / 6 rejected / 2 DB sessions
+PASS concurrency: 3 synchronized waves, tenant cap held across processes; per-user cap also held.
+
+3 security integration scenarios passed (60 HTTP/DB checks).
+Temporary app files and PostgreSQL container removed.
+

@@ -6,8 +6,8 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 - Web: **v116** (`spike/app/public/index.html`), stiller **v44**
 - DB migration: **001–012** (`db/migrations/`)
-- Prod: **v114** (2026-10-23), kaynak **0a14f45**, imaj `sha256:0fed8327…`; smoke **16/16**, health/restart `healthy/0`. Page-label Edge kabulü **4/4** (uygulayan AI; bağımsız değil). Rollback: v113 image. Kayıt: `docs/deployments/2026-10-23-v114.md`.
-- Son test edilen kod commit’i: **0a14f45** — v114, page-label browser kabulü 4/4 + citation 15/15.
+- Prod: **v116** (2026-10-23), kaynak **8e1347c**, imaj `sha256:fff613f6…`; HTTPS smoke **16/16**, health/restart `healthy/0`. Kopyalama paketi + giriş havuzu düzeltmesi canlı. Rollback: dağıtım öncesi salt okunur doğrulanan v115 imajı (`sha256:163465e8…`); eski kayıt v114 diyordu. Kayıt: `docs/deployments/2026-10-23-v116.md`. Migration yok; 001–012 korundu.
+- Son test edilen kod commit’i: **8e1347c** — v116 kopyalama 24 birim + 13 uygulayan AI Edge kabulü (arayüz aynı), güvenlik 3 senaryo/60 kontrol; izole kısa kapasite 10/25/50/100 kullanıcı ve 6200 API isteği hatasız. Üretim kapasitesi garantisi değil.
 - Bağımlılık: `npm audit --omit=dev` **0**; tam audit’te yalnız dev-only `epubjs/@xmldom` (2 uyarı).
 - EPUB kararı: **ADR-012** — MVP/V1a için epub.js, `EpubEngine` adapter arkasında, pinli; Readium/R2D2BC geçiş eşikleri yazılı.
 
@@ -33,8 +33,8 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Güncel geliştirme sırası
 
-- Kopyalama paketi v116: PDF/EPUB izin tutarlılığı, seçimden Kopyala / Atıfla kopyala. Citation 17/17 + EPUB izin 7/7 birim testi ve gerçek Edge kabulü 13/13 geçti. Kanıtlar: `docs/COPYING-TESTS.md`. Bu çalışma prod deploy etmedi.
-- Kapasite aracı ve izole API taraması tamamlandı: 10 ve 25 kullanıcı basamakları hatasız; 50 eşzamanlı girişten biri 10 sn timeout (49 kabul), API işlemleri hatasız; 100 atlandı. Giriş p95: 4,19 / 6,05 / 9,99 sn. Bu, prod kapasitesi garantisi değildir. Önce giriş gecikmesi profillenecek; `scryptSync` ve tenant kilidi olası etkenler. Kanıt: `docs/CAPACITY-TEST.md`.
+- Kopyalama paketi v116 canlı: PDF/EPUB izin tutarlılığı, seçimden Kopyala / Atıfla kopyala. Citation 17/17 + EPUB izin 7/7 birim testi ve gerçek Edge kabulü 13/13 geçti (uygulayan AI). Seçim/vurgu/not korunur. Kanıtlar: `docs/COPYING-TESTS.md`.
+- Kapasite retesti geçti: yalnız async scrypt yeterli olmadı; parola doğrulaması `withTenant` dışına taşınıp havuz bağlantısı erken bırakıldı (`8e1347c`). Tenant/user advisory lock ve seat limit korundu; güvenlik 60/60. Aynı kısa taramada 10/25/50/100 girişlerin tamamı kabul, 6200 API isteğinde 0 hata; 50/100 giriş p95 **2,637 / 5,182 sn**. Bu, prod kapasitesi garantisi değildir. Önceki başarısız koşular değişmeden korundu. Kanıt: `docs/CAPACITY-TEST.md`.
 - Manuel NVDA/VoiceOver ve tam EPUB iframe denetimi paralel; gerçek ekran okuyucu gözlemi olmadan ACR tam uyum iddiası yok.
 - Sonraki büyük kod paketi: çevrimdışı not düzenleme + yer imi kuyruğu + çakışma çözümü.
 - Müşteriye bağlı: ilk istenen SSO protokolü; sertifikalı COUNTER alım şartıysa ayrı iş paketi.

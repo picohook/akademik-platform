@@ -1,0 +1,3 @@
+* -text
+# Preserve captured console output, including CRLF and terminal blank lines.
+security-validation.txt -whitespace

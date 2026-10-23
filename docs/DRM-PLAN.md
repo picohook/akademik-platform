@@ -23,9 +23,12 @@ Goal: safe enough for a first B2B library contract.
    - Do not expose raw upload paths; current `/file` keeps session/range
      behavior for the reader.
 3. **Copy policy parity**
-   - EPUB iframe copy/cut/context-menu blocked when `allow_copy=false`.
-   - PDF already blocks copy/cut; add context-menu/selection handling.
-   - Visible copy button and “copy with citation” can follow separately.
+   - Implemented in v116 (`1540136`): PDF and EPUB iframe copy/cut policy,
+     visible copy and copy-with-citation buttons; 24 unit checks and 13 author-run
+     Edge acceptance checks. See [COPYING-TESTS.md](COPYING-TESTS.md).
+   - Text selection remains available for notes/highlights when copying is
+     denied. Do not disable selection or all context menus as a blanket policy.
+   - These UI controls do not prevent extraction through browser developer tools.
 4. **Audit**
    - Record download ticket issue/consume, denied copy, denied print.
 5. **Tests**

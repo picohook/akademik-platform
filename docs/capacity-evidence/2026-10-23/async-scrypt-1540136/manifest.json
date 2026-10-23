@@ -1,0 +1,33 @@
+{
+  "recordedAt": "2026-10-23T15:51:22.443Z",
+  "sourceCommit": "15401362210b91ba1338e2952e507c2e8bd03cf8",
+  "asyncScryptCommit": "7d0282e2c1d4dd550df5e30f65dc2ad98db8075f",
+  "pinnedServerGitBlob": "9538b0a0d5e208ef63ad3e71c33bf97013fcdefb",
+  "serverWorkingTreeMatchesPinnedBlob": true,
+  "serverRawSha256": "f8e37fcb7f767d8429214b3edc6bfb18e13ebb922ba1cc9b7c692df0638efea4",
+  "command": "node scripts/load-capacity.mjs --run --stages 10,25,50,100 --duration 10 --books 20",
+  "status": "failed",
+  "error": "Stage 25 failed; higher stages skipped",
+  "baseline": "../screening.json",
+  "baselineSha256": "a06a7ecf70d0232c7775362e90880dd9f1074d47d891527f364e08acb9c8f6a7",
+  "artifacts": [
+    {
+      "path": "results.json",
+      "sha256": "6d015f5f2d699f9023749f01235e1b7894e230a22239d2dd3305407283c3ad70"
+    },
+    {
+      "path": "../../../../scripts/load-capacity.mjs",
+      "sha256": "21fac923da380e6eeca2c68d9c1d8d013dba364c8f4a67d851d57bbdb5a29dc0"
+    }
+  ],
+  "cleanup": {
+    "appStopped": true,
+    "databaseRemoved": true,
+    "temporaryAppRemoved": true
+  },
+  "limitations": [
+    "One short synthetic run per version, shared Windows/Docker host; not production capacity or statistically controlled regression proof.",
+    "25-user stage failed admission (9/25); 50 and100 were not executed.",
+    "No deployment, application mutation or additional load run performed."
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "server.mjs": "2c278cbcca16f9d1709b83cce1ab344ffc87461452a5375557261a16936555e4",
+  "indexer.mjs": "10bd599125fc9253d970b0b6f847c55eb5b90b31da46cb9b0c3b7c0f1d2c8da8",
+  "public/index.html": "510d185a917adf3fb283b72732e44f024b7bdfca26ee24f62760fb44023cc4ad",
+  "public/app.js": "2be42778a4b606a5607919b2cc96af3dc8ec0e80c770a533dc782dade47383e0",
+  "public/styles.css": "0204b500974a1aeac05ca9d6644e4d15ea0eb8903cae9336fc1ca50f1d4ca9da",
+  "public/epub-engine.mjs": "592673961842453dd3bdf4479d642f4250a74fdc0a9e8f7692e7d061e54f0ab4",
+  "public/citations.mjs": "96b00fa2be1be8cdc582dd1a2dfcff1d67435eb0c1a6d6e161bd7e8873c4a015",
+  "public/i18n.mjs": "8035a73bedb07ff1c148d1e7cfebf7ed390b24aef303bf9f50bd38a4308b347b",
+  "public/offline.mjs": "8372e4aaf63c403e9076ac4889e18e7fb1401a8822fd28f67019967ae95ba1f4",
+  "public/sw.js": "e21cb58a0f4b0730e9e0e2650f7dc2054540e660cd1cc6ef34ccd3b986e24298"
+}

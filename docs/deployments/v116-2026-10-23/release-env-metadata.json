@@ -1,0 +1,14 @@
+{
+  "before": {
+    "APP_VERSION": [],
+    "BUILD_SHA": [],
+    "BUILD_DATE": [],
+    "APP_ENV": []
+  },
+  "after": {
+    "APP_VERSION": "116",
+    "BUILD_SHA": "8e1347c60d1b3f1009b0fff1684f377fb4ff32e6",
+    "BUILD_DATE": "2026-10-23 19:21",
+    "APP_ENV": "production"
+  }
+}

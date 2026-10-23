@@ -1,0 +1,38 @@
+{
+  "recordedAt": "2026-10-23T16:06:00.002Z",
+  "sourceAtRun": {
+    "baseCommit": "15401362210b91ba1338e2952e507c2e8bd03cf8",
+    "uncommittedServerChange": true,
+    "serverGitBlob": "28586273dbfe60779b60b466c442c544edf45c20",
+    "serverRawSha256": "cca2ed11efc65618c08da42acd38da654b48114f0f0875e4c80eb7c742002400",
+    "change": "Release withTenant client after user lookup, before awaiting verifyPassword; no session-lock or security-rule changes."
+  },
+  "command": "node scripts/load-capacity.mjs --run --stages 10,25,50,100 --duration 10 --books 20",
+  "status": "passed",
+  "baseline": "../screening.json",
+  "asyncOnlyComparison": "../async-scrypt-1540136/results.json",
+  "artifacts": [
+    {
+      "path": "results.json",
+      "sha256": "a188be61c9cb4ac0f55ed280da8d4e3dbac496c6f8d5e58104dcff04b8aa06de"
+    },
+    {
+      "path": "server.mjs",
+      "sha256": "cca2ed11efc65618c08da42acd38da654b48114f0f0875e4c80eb7c742002400"
+    },
+    {
+      "path": "../../../../scripts/load-capacity.mjs",
+      "sha256": "21fac923da380e6eeca2c68d9c1d8d013dba364c8f4a67d851d57bbdb5a29dc0"
+    }
+  ],
+  "cleanup": {
+    "appStopped": true,
+    "databaseRemoved": true,
+    "temporaryAppRemoved": true
+  },
+  "limitations": [
+    "One short synthetic run per version, shared Windows/Docker host; not production capacity or a sustained SLA.",
+    "Captured exact uncommitted server bytes; base commit alone does not reproduce this run.",
+    "No deploy or application-source edit by this measurement task."
+  ]
+}

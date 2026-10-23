@@ -1,0 +1,24 @@
+{
+  "metadata": {
+    "version": "115",
+    "commit": "",
+    "date": "",
+    "environment": "production"
+  },
+  "html": [
+    "styles.css?v=43",
+    "app.js?v=115"
+  ],
+  "hashes": {
+    "server.mjs": "72aaa42c5442b75e2ecd50fd518a78cabd8e4d3700a754d9457d85c379b61649",
+    "indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+    "public/index.html": "7f4d9cdd3d322066048cdaba3fe64fae0026a08202476a23c2874fe7a021f60a",
+    "public/app.js": "277f1c5bb677e33069cd1af651c26eaf20a180453f77a3841eeff5f3132867e2",
+    "public/styles.css": "93600f8e3483243ffece7e15c0011eb2795a030fc78e74d812b2cb7d988016c9",
+    "public/epub-engine.mjs": "c3419e27feed41fba66176f590dbe7e2484126c1950655febcab158e87c830f0",
+    "public/citations.mjs": "92018db3430915d2f3c009f7556d820ff04e005f7be4449a6d264218da83bf06",
+    "public/i18n.mjs": "b1d55eb143cf519846895d88df13bda7643661d2fc5b79a48408fde428ae107a",
+    "public/offline.mjs": "442d4f6d549f89ea9e761c67517b5bfcc3743e87f49c604b33e813d26d908ed4",
+    "public/sw.js": "17ea5415f70dda0f66199b8812f962e0da8acbff9bacd80b70325007354cb9b0"
+  }
+}

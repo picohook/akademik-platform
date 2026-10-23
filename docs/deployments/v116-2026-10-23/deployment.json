@@ -1,0 +1,36 @@
+{
+  "sourceCommit": "8e1347c60d1b3f1009b0fff1684f377fb4ff32e6",
+  "sourcePath": "C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\tmp\\deploy-v116\\source-8e1347c\\spike\\app",
+  "frontend": "v116",
+  "stylesheet": 44,
+  "runDirectory": "C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\tmp\\deploy-v116\\run-20261023-191727-8daa3b",
+  "startedAt": "2026-10-23T16:17:27.8808832Z",
+  "deployed": true,
+  "rolledBack": false,
+  "migrations": "none",
+  "releaseProof": "tmp/deploy-v116/release-proof.json",
+  "before": {
+    "image": "sha256:163465e86cfcb3e538e615c18f75af4832dccbc1537d5710a01f771a58fdd2de",
+    "status": "running",
+    "health": "healthy",
+    "restarts": 0
+  },
+  "previousImage": "sha256:163465e86cfcb3e538e615c18f75af4832dccbc1537d5710a01f771a58fdd2de",
+  "releaseTag": "akademik-platform-prod-web:v116-8e1347c",
+  "rollbackTag": "akademik-platform-prod-web:rollback-v115-pre-v116-20261023-191727-8daa3b",
+  "releaseImage": "sha256:fff613f678235691108f1626be791e9bb51e60ac33928bedc8cebc69612c1488",
+  "backups": [
+    "backups/akademik-pre-v116-20261023-191727-8daa3b.dump",
+    "backups/files-pre-v116-20261023-191727-8daa3b.tgz"
+  ],
+  "prepared": true,
+  "preparedAt": "2026-10-23T16:19:33.8048634Z",
+  "smokeChecks": 16,
+  "after": {
+    "image": "sha256:fff613f678235691108f1626be791e9bb51e60ac33928bedc8cebc69612c1488",
+    "status": "running",
+    "health": "healthy",
+    "restarts": 0
+  },
+  "completedAt": "2026-10-23T16:22:47.3715366Z"
+}
