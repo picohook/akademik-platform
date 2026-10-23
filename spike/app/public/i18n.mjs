@@ -69,6 +69,8 @@ const DICT = {
   'Yakınlaştır': 'Zoom in',
   'Uzaklaştır': 'Zoom out',
   'Yer imi': 'Bookmark',
+  'Yer imi eklendi': 'Bookmark added',
+  'Yer imi çevrimdışı eklenemiyor': 'Bookmark cannot be added offline',
   'Yer imi ekle': 'Add bookmark',
   'PDF indir': 'Download PDF',
   'İndir': 'Download',

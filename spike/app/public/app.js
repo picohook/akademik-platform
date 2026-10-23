@@ -1411,8 +1411,9 @@ function updatePageUi() {
   if (state.epubMode) {
     pageInput.hidden = true;
     pageTotal.hidden = true;
-    bookmarkBtn.hidden = true;
+    bookmarkBtn.hidden = false;
     pageLabel.textContent = `${state.epubProgress?.percent || 0}%`;
+    updateBookmarkUi();
     return;
   }
   pageInput.hidden = false;
@@ -1449,8 +1450,21 @@ function bookmarkForPage() {
   );
 }
 
+function currentEpubCfi() {
+  return state.epubEngine?.getCurrentCfi() || state.epubProgress?.cfi || null;
+}
+
+function bookmarkForEpubCfi(cfi = currentEpubCfi()) {
+  if (!cfi) return null;
+  return state.annotations.find(
+    (annotation) => annotation.color === 'bookmark'
+      && annotation.anchor?.type === 'epub'
+      && annotation.anchor?.cfi === cfi,
+  );
+}
+
 function updateBookmarkUi() {
-  const hasBookmark = Boolean(bookmarkForPage());
+  const hasBookmark = Boolean(state.epubMode ? bookmarkForEpubCfi() : bookmarkForPage());
   bookmarkBtn.textContent = hasBookmark ? '★' : '☆';
   bookmarkBtn.classList.toggle('active', hasBookmark);
   bookmarkBtn.setAttribute('aria-pressed', hasBookmark ? 'true' : 'false');
@@ -1475,8 +1489,73 @@ async function goToPage(value) {
   await renderPage();
 }
 
+function storedEpubFontSize() {
+  try {
+    const value = Number(localStorage.getItem('readerEpubFontSize'));
+    return Number.isFinite(value) && value >= 70 && value <= 200 ? value : 100;
+  } catch {
+    return 100;
+  }
+}
+
+function applyEpubFontSize(value, persist = true) {
+  state.epubFontSize = Math.min(200, Math.max(70, Math.round(Number(value) || 100)));
+  state.epubEngine?.setFontSize(state.epubFontSize);
+  updateZoomLabel();
+  if (persist) {
+    try {
+      localStorage.setItem('readerEpubFontSize', String(state.epubFontSize));
+    } catch { /* private mode */ }
+  }
+}
+
 async function toggleBookmark() {
-  if (!state.book || !state.pdf) return;
+  if (!state.book) return;
+  if (state.epubMode) {
+    const cfi = currentEpubCfi();
+    if (!cfi) return;
+    const existing = bookmarkForEpubCfi(cfi);
+    if (existing) {
+      await deleteAnnotation(existing.id, { silent: true });
+      toast('Yer imi kaldırıldı');
+      return;
+    }
+    if (state.offlineMode) {
+      toast(t('Yer imi çevrimdışı eklenemiyor'));
+      return;
+    }
+    try {
+      const response = await fetch('/api/annotations', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          assetId: state.book.asset_id,
+          anchor: {
+            asset_version_id: state.book.asset_id,
+            type: 'epub',
+            cfi,
+            href: state.epubProgress?.href || null,
+            percent: state.epubProgress?.percent || 0,
+            text_quote: 'Yer imi',
+          },
+          color: 'bookmark',
+          note: 'Yer imi',
+          selectedText: null,
+        }),
+      });
+      if (!response.ok) throw new Error('bookmark failed');
+      const saved = await response.json();
+      state.annotations.push(saved);
+      renderNotes();
+      updateBookmarkUi();
+      toast('Yer imi eklendi');
+    } catch (error) {
+      console.error(error);
+      toast('Yer imi eklenemedi');
+    }
+    return;
+  }
+  if (!state.pdf) return;
   const existing = bookmarkForPage();
   if (existing) {
     await deleteAnnotation(existing.id, { silent: true });
@@ -2567,7 +2646,7 @@ function renderNotes() {
     page.className = 'note-page';
     const epubAnchor = annotation.anchor?.type === 'epub';
     page.textContent = epubAnchor
-      ? 'EPUB'
+      ? `EPUB${isBookmark ? ' · Yer imi' : ''}`
       : `Sayfa ${annotation.anchor?.page || '—'}${isBookmark ? ' · Yer imi' : ''}`;
     item.appendChild(page);
     const createdAt = annotation.created_at ? new Date(annotation.created_at) : null;
@@ -2760,7 +2839,7 @@ async function openEpubBook(book, options = {}) {
   showTocTab('toc');
   pageInput.hidden = true;
   pageTotal.hidden = true;
-  bookmarkBtn.hidden = true;
+  bookmarkBtn.hidden = false;
   pageLabel.textContent = 'EPUB';
 
   try {
@@ -2785,6 +2864,7 @@ async function openEpubBook(book, options = {}) {
         state.epubProgress = next;
         pageLabel.textContent = `${next.percent}%`;
         labelEpubFrames();
+        updateBookmarkUi();
         updateUrl();
         saveProgress();
         if (state.searchQuery) {
@@ -2824,9 +2904,7 @@ async function openEpubBook(book, options = {}) {
     })();
     applyTheme(savedTheme);
     engine.setTheme(savedTheme);
-    state.epubFontSize = 100;
-    engine.setFontSize(state.epubFontSize);
-    updateZoomLabel();
+    applyEpubFontSize(storedEpubFontSize(), false);
     state.annotations
       .filter((annotation) => annotation.anchor?.type === 'epub' && annotation.anchor?.cfi)
       .forEach((annotation) => engine.addAnnotation({
@@ -3755,9 +3833,7 @@ $('nextPage').addEventListener('click', () => changePage(1));
 $('zoomIn').addEventListener('click', () => {
   state.initialFit = false;
   if (state.epubMode) {
-    state.epubFontSize = Math.min(200, state.epubFontSize + 10);
-    state.epubEngine?.setFontSize(state.epubFontSize);
-    updateZoomLabel();
+    applyEpubFontSize(state.epubFontSize + 10);
     return;
   }
   state.scale = Math.min(3, state.scale + 0.2);
@@ -3768,9 +3844,7 @@ $('zoomIn').addEventListener('click', () => {
 $('zoomOut').addEventListener('click', () => {
   state.initialFit = false;
   if (state.epubMode) {
-    state.epubFontSize = Math.max(70, state.epubFontSize - 10);
-    state.epubEngine?.setFontSize(state.epubFontSize);
-    updateZoomLabel();
+    applyEpubFontSize(state.epubFontSize - 10);
     return;
   }
   state.scale = Math.max(0.5, state.scale - 0.2);
