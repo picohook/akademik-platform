@@ -4,7 +4,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web: **v115** (`spike/app/public/index.html`), stiller **v43**
+- Web: **v116** (`spike/app/public/index.html`), stiller **v44**
 - DB migration: **001–012** (`db/migrations/`)
 - Prod: **v114** (2026-10-23), kaynak **0a14f45**, imaj `sha256:0fed8327…`; smoke **16/16**, health/restart `healthy/0`. Page-label Edge kabulü **4/4** (uygulayan AI; bağımsız değil). Rollback: v113 image. Kayıt: `docs/deployments/2026-10-23-v114.md`.
 - Son test edilen kod commit’i: **0a14f45** — v114, page-label browser kabulü 4/4 + citation 15/15.
@@ -31,14 +31,24 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - PostgreSQL güvenlik testleri (2026-10-23): `cd spike/app; npm run test:security` — publisher API uçtan uca, gerçek grant SQL hatası, iki Node sürecinden eşzamanlı login; **3 senaryo / 60 kontrol geçti**. OPDS grant hatasında başlıklar erken gönderildiği için oluşan süreç kapanması düzeltildi. Test ortamı geçici Docker konteynerinde; ayrıntı `docs/SECURITY-TESTS.md`.
 - İçerik limiti: PDF/EPUB upload **300 MB**; 2.000 sayfa test edildi. SLO ve 500 MB kararı `docs/CONTENT-LIMITS.md`.
 
+## Güncel geliştirme sırası
+
+- Kopyalama paketi v116: PDF/EPUB izin tutarlılığı, seçimden Kopyala / Atıfla kopyala. Citation 17/17 + EPUB izin 7/7 birim testi ve gerçek Edge kabulü 13/13 geçti. Kanıtlar: `docs/COPYING-TESTS.md`. Bu çalışma prod deploy etmedi.
+- Kapasite aracı ve izole API taraması tamamlandı: 10 ve 25 kullanıcı basamakları hatasız; 50 eşzamanlı girişten biri 10 sn timeout (49 kabul), API işlemleri hatasız; 100 atlandı. Giriş p95: 4,19 / 6,05 / 9,99 sn. Bu, prod kapasitesi garantisi değildir. Önce giriş gecikmesi profillenecek; `scryptSync` ve tenant kilidi olası etkenler. Kanıt: `docs/CAPACITY-TEST.md`.
+- Manuel NVDA/VoiceOver ve tam EPUB iframe denetimi paralel; gerçek ekran okuyucu gözlemi olmadan ACR tam uyum iddiası yok.
+- Sonraki büyük kod paketi: çevrimdışı not düzenleme + yer imi kuyruğu + çakışma çözümü.
+- Müşteriye bağlı: ilk istenen SSO protokolü; sertifikalı COUNTER alım şartıysa ayrı iş paketi.
+- Sonraki okuyucu işleri: not içe aktarma / açıklamalı PDF, EPUB görünüm seçenekleri; El aracı küçük P2 iş. Fixed-layout/MathML/RTL içerikle doğrulanacak. 500 MB görsel PDF kapsam dışında.
+
 ## Açık işler (sırayla)
 
 1. **WCAG 2.2 AA manuel denetimi:** NVDA/VoiceOver, tam EPUB iframe axe ve native kontrast teması; hedefli F1–F5/zoom retestleri geçti.
-2. **Görsel ağırlıklı >300 MB:** kapsam dışı; yalnızca gerçek yayıncı talebi olursa önizleme/derivative pipeline.
-3. **EPUB filigran:** XHTML filigranı açık; şifreli EPUB 409 döner, lisans metni kararı kaldı.
-4. **Interop:** OPDS/OAI/MARC/SUSHI/CSV hazır; sertifikalı COUNTER, OAI resumption/set ve OPDS auth kaldı (`docs/INTEROP.md`).
-5. **Mobil/PWA:** shell + swipe + çevrimdışı kitaplık ve not kuyruğu hazır; çakışma/çoklu cihaz çözümü ve native kararı kaldı.
-6. **Grant grup/audit:** group subject, kullanım raporu, grant geçmişi.
+2. **DRM / içerik koruma:** önce **P0 sosyal DRM** (zorunlu filigran, tek kullanımlık imzalı indirme, EPUB copy policy, audit), 5–8 iş günü. AES at-rest +1–2 hafta; chunked range/LCP yalnız gerçek yayıncı şartıyla. `docs/DRM-PLAN.md`.
+3. **Görsel ağırlıklı >300 MB:** kapsam dışı; yalnızca gerçek yayıncı talebi olursa önizleme/derivative pipeline.
+4. **Interop:** OPDS/OAI/MARC/SUSHI/CSV/OPDS API-key hazır; sertifikalı COUNTER ve OAI resumption/set kaldı (`docs/INTEROP.md`).
+5. **Mobil/PWA:** shell + swipe + çevrimdışı kitaplık ve not kuyruğu hazır; çevrimdışı not düzenleme, yer imi kuyruğu ve çakışma çözümü kaldı.
+6. **Okuyucu paketi 2:** not içe aktarma, açıklamalı PDF, EPUB sürekli/çift sayfa; El aracı küçük P2.
+7. **Kuruma bağlı:** ilk istenen SSO protokolü; sertifikalı COUNTER alım şartıysa ayrı paket.
 
 ## Bilinen açıklar / riskler
 

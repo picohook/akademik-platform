@@ -1,0 +1,6 @@
+[
+  "Cannot use the same canvas during multiple render() operations. Use different canvas or ensure previous operations were cancelled or completed.",
+  "Cannot use the same canvas during multiple render() operations. Use different canvas or ensure previous operations were cancelled or completed.",
+  "Cannot read properties of undefined (reading 'resize')",
+  "Cannot read properties of undefined (reading 'resize')"
+]

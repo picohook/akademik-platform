@@ -2,7 +2,7 @@
 // EPUB adapter (ADR-012). UI must depend on this contract, not on epub.js
 // iframe/DOM details. Keep annotations and search in our own shapes.
 
-import { findFuzzyWord, foldChars } from '/search.mjs?v=1';
+import { findFuzzyWord, foldChars } from './search.mjs?v=1';
 
 const THEMES = {
   light: { body: { background: '#ffffff', color: '#222222' } },
@@ -27,12 +27,62 @@ function normalize(value) {
   return String(value || '').toLocaleLowerCase('tr').replace(/\s+/g, ' ').trim();
 }
 
+function isEditable(node) {
+  const element = node?.nodeType === 1 ? node : node?.parentElement;
+  if (!element) return false;
+  if (element.closest?.('input, textarea') || element.isContentEditable) return true;
+  const editable = element.closest?.('[contenteditable]');
+  return !!editable && editable.getAttribute('contenteditable') !== 'false';
+}
+
+// Listen inside each chapter document: clipboard events do not cross iframes.
+// Keep selection available for annotations, even when copying is disallowed.
+export function bindEpubCopyPolicy(doc, {
+  canCopy = () => true,
+  onCopyBlocked = () => {},
+  onDeselected = () => {},
+  onDispose = () => {},
+} = {}) {
+  // Parent-document pointer events cannot observe clicks inside this iframe.
+  // Clear cached toolbar selections before a new chapter interaction starts;
+  // a subsequent selection is delivered through rendition's selected event.
+  const handlePointerDown = (event) => onDeselected(event);
+  const handleCopy = (event) => {
+    if (canCopy() || isEditable(event.target) || isEditable(doc.activeElement)) return;
+    const selection = doc.getSelection?.() || doc.defaultView?.getSelection?.();
+    if (!selection || selection.isCollapsed || !String(selection).trim()) return;
+    if (isEditable(selection.anchorNode) || isEditable(selection.focusNode)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    onCopyBlocked(event);
+  };
+  let disposed = false;
+  const dispose = () => {
+    if (disposed) return;
+    disposed = true;
+    doc.removeEventListener('copy', handleCopy, true);
+    doc.removeEventListener('cut', handleCopy, true);
+    doc.removeEventListener('pointerdown', handlePointerDown, true);
+    doc.defaultView?.removeEventListener('pagehide', dispose);
+    onDispose();
+  };
+  doc.addEventListener('copy', handleCopy, true);
+  doc.addEventListener('cut', handleCopy, true);
+  doc.addEventListener('pointerdown', handlePointerDown, true);
+  doc.defaultView?.addEventListener('pagehide', dispose, { once: true });
+  return dispose;
+}
+
 export class EpubEngine {
-  constructor(container, { onRelocated, onSelected, onSwipe } = {}) {
+  constructor(container, { onRelocated, onSelected, onDeselected, onSwipe, canCopy, onCopyBlocked } = {}) {
     this.container = container;
     this.onRelocated = onRelocated || (() => {});
     this.onSelected = onSelected || (() => {});
+    this.onDeselected = onDeselected || (() => {});
     this.onSwipe = onSwipe || (() => {});
+    this.canCopy = canCopy || (() => true);
+    this.onCopyBlocked = onCopyBlocked || (() => {});
+    this.copyPolicyDisposers = new Set();
     this.book = null;
     this.rendition = null;
     this.toc = [];
@@ -78,6 +128,13 @@ export class EpubEngine {
     this.rendition.hooks.content.register((contents) => {
       let start = null;
       const doc = contents.document;
+      const dispose = bindEpubCopyPolicy(doc, {
+        canCopy: () => this.canCopy(),
+        onCopyBlocked: (event) => this.onCopyBlocked(event),
+        onDeselected: (event) => this.onDeselected(event),
+        onDispose: () => this.copyPolicyDisposers.delete(dispose),
+      });
+      this.copyPolicyDisposers.add(dispose);
       doc.addEventListener('touchstart', (event) => {
         if (event.touches.length !== 1 || event.target.closest('a, button, input, select, textarea')) {
           start = null;
@@ -112,6 +169,7 @@ export class EpubEngine {
 
   destroy() {
     this.disposed = true;
+    for (const dispose of this.copyPolicyDisposers) dispose();
     if (this.resizeObserver) this.resizeObserver.disconnect();
     if (this.resizeHandler) window.removeEventListener('resize', this.resizeHandler);
     try { this.rendition?.destroy(); } catch { /* noop */ }

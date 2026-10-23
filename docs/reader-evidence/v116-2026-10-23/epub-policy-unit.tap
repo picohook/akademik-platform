@@ -1,0 +1,52 @@
+TAP version 13
+# Subtest: denied chapter copy and cut are stopped in capture phase without changing selection
+ok 1 - denied chapter copy and cut are stopped in capture phase without changing selection
+  ---
+  duration_ms: 3.2885
+  type: 'test'
+  ...
+# Subtest: permission is read for every event, including policy changes after opening
+ok 2 - permission is read for every event, including policy changes after opening
+  ---
+  duration_ms: 0.3817
+  type: 'test'
+  ...
+# Subtest: user text in inputs, textareas and contenteditable remains copyable
+ok 3 - user text in inputs, textareas and contenteditable remains copyable
+  ---
+  duration_ms: 0.3341
+  type: 'test'
+  ...
+# Subtest: collapsed or empty selections do not trigger a blocked-copy notification
+ok 4 - collapsed or empty selections do not trigger a blocked-copy notification
+  ---
+  duration_ms: 0.3801
+  type: 'test'
+  ...
+# Subtest: explicit cleanup and iframe pagehide remove handlers once
+ok 5 - explicit cleanup and iframe pagehide remove handlers once
+  ---
+  duration_ms: 0.3935
+  type: 'test'
+  ...
+# Subtest: chapter pointerdown dismisses stale selection, parent-toolbar interaction does not
+ok 6 - chapter pointerdown dismisses stale selection, parent-toolbar interaction does not
+  ---
+  duration_ms: 0.4434
+  type: 'test'
+  ...
+# Subtest: each newly rendered chapter receives policy and engine destruction removes handlers
+ok 7 - each newly rendered chapter receives policy and engine destruction removes handlers
+  ---
+  duration_ms: 2.1437
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 29.8107

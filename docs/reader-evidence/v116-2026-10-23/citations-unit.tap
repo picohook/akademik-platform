@@ -1,0 +1,112 @@
+TAP version 13
+# Subtest: citation tr-single
+ok 1 - citation tr-single
+  ---
+  duration_ms: 6.4908
+  type: 'test'
+  ...
+# Subtest: citation en-two
+ok 2 - citation en-two
+  ---
+  duration_ms: 1.8233
+  type: 'test'
+  ...
+# Subtest: citation en-three-doi
+ok 3 - citation en-three-doi
+  ---
+  duration_ms: 0.8555
+  type: 'test'
+  ...
+# Subtest: citation editor
+ok 4 - citation editor
+  ---
+  duration_ms: 0.5207
+  type: 'test'
+  ...
+# Subtest: citation place-isbn
+ok 5 - citation place-isbn
+  ---
+  duration_ms: 2.8115
+  type: 'test'
+  ...
+# Subtest: citation missing
+ok 6 - citation missing
+  ---
+  duration_ms: 0.3958
+  type: 'test'
+  ...
+# Subtest: CSL-JSON keeps structured authors
+ok 7 - CSL-JSON keeps structured authors
+  ---
+  duration_ms: 2.1655
+  type: 'test'
+  ...
+# Subtest: missing metadata produces warnings
+ok 8 - missing metadata produces warnings
+  ---
+  duration_ms: 0.3502
+  type: 'test'
+  ...
+# Subtest: PDF PageLabels preserve roman, decimal and prefixed labels without offsets
+ok 9 - PDF PageLabels preserve roman, decimal and prefixed labels without offsets
+  ---
+  duration_ms: 2.1279
+  type: 'test'
+  ...
+# Subtest: absent label maps never imply printed pages
+ok 10 - absent label maps never imply printed pages
+  ---
+  duration_ms: 1.4804
+  type: 'test'
+  ...
+# Subtest: duplicate and custom labels are preserved rather than renumbered
+ok 11 - duplicate and custom labels are preserved rather than renumbered
+  ---
+  duration_ms: 0.5462
+  type: 'test'
+  ...
+# Subtest: all text citation styles use roman page labels and explicit PDF fallback
+ok 12 - all text citation styles use roman page labels and explicit PDF fallback
+  ---
+  duration_ms: 2.1367
+  type: 'test'
+  ...
+# Subtest: roman ranges remain editable; BibTeX explicitly warns about omitted locators
+ok 13 - roman ranges remain editable; BibTeX explicitly warns about omitted locators
+  ---
+  duration_ms: 1.5677
+  type: 'test'
+  ...
+# Subtest: hyphens in custom PDF labels are not converted to page ranges
+ok 14 - hyphens in custom PDF labels are not converted to page ranges
+  ---
+  duration_ms: 0.5455
+  type: 'test'
+  ...
+# Subtest: partial labels retain valid pages and fall back only at missing entries
+ok 15 - partial labels retain valid pages and fall back only at missing entries
+  ---
+  duration_ms: 0.3916
+  type: 'test'
+  ...
+# Subtest: copied PDF quotations cite the selection page, including mapped and fallback locators
+ok 16 - copied PDF quotations cite the selection page, including mapped and fallback locators
+  ---
+  duration_ms: 1.0315
+  type: 'test'
+  ...
+# Subtest: EPUB quotations use chapter locators without inventing PDF or printed pages
+ok 17 - EPUB quotations use chapter locators without inventing PDF or printed pages
+  ---
+  duration_ms: 2.7823
+  type: 'test'
+  ...
+1..17
+# tests 17
+# suites 0
+# pass 17
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 87.569

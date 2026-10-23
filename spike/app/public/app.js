@@ -1,5 +1,5 @@
 import * as pdfjsLib from '/vendor/pdfjs/pdf.mjs';
-import { formatCitation, normalizePdfPageLabels, pdfPageLabel, pdfPageDescription, pdfCitationPage } from '/citations.mjs';
+import { formatCitation, normalizePdfPageLabels, pdfPageLabel, pdfPageDescription, pdfCitationPage, formatCopiedSelection } from '/citations.mjs';
 import { EpubEngine } from '/epub-engine.mjs';
 import { initializeLanguage, toggleLanguage, t, translateDom, getLang } from '/i18n.mjs';
 import {
@@ -214,6 +214,8 @@ const searchFuzzy = $('searchFuzzy');
 const hlBar = $('hlBar');
 const hlColors = $('hlColors');
 const hlNote = $('hlNote');
+const hlCopy = $('hlCopy');
+const hlCopyCite = $('hlCopyCite');
 const toastEl = $('toast');
 const perfPanel = $('perfPanel');
 const perfBody = $('perfBody');
@@ -460,9 +462,9 @@ function trapModalFocus(event) {
 
 function trapReaderFocus(event) {
   if (event.key !== 'Tab' || reader.hidden) return false;
-  const focusable = [...reader.querySelectorAll(
+  const focusable = [reader, ...(!hlBar.hidden ? [hlBar] : [])].flatMap((root) => [...root.querySelectorAll(
     'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], iframe, [tabindex]:not([tabindex="-1"])',
-  )].filter((element) => element.offsetParent !== null);
+  )]).filter((element) => element.offsetParent !== null);
   if (!focusable.length) return false;
   const first = focusable[0];
   const last = focusable[focusable.length - 1];
@@ -852,19 +854,63 @@ function renderCitation() {
   citeWarning.textContent = warnings.map((warning) => t(warning)).join(' ');
 }
 
-async function copyCitation() {
-  const text = citeOutput.textContent || '';
+async function writeClipboard(text) {
   try {
+    if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
     await navigator.clipboard.writeText(text);
-    toast('Atıf kopyalandı');
+    return;
   } catch {
+    const active = document.activeElement;
     const area = document.createElement('textarea');
     area.value = text;
+    area.readOnly = true;
+    area.style.cssText = 'position:fixed;left:-10000px;top:0';
     document.body.appendChild(area);
-    area.select();
-    document.execCommand('copy');
-    area.remove();
+    try {
+      area.focus();
+      area.select();
+      if (!document.execCommand('copy')) throw new Error('copy failed');
+    } finally {
+      area.remove();
+      active?.focus({ preventScroll: true });
+    }
+  }
+}
+
+async function copyCitation() {
+  try {
+    await writeClipboard(citeOutput.textContent || '');
     toast('Atıf kopyalandı');
+  } catch {
+    toast('Kopyalanamadı; metni seçip kopyalayın.');
+  }
+}
+
+function updateCopyControls() {
+  const blocked = state.book?.allow_copy === false;
+  for (const button of [hlCopy, hlCopyCite]) {
+    button.disabled = blocked;
+    button.title = blocked ? t('Bu kitapta kopyalama kapalı') : button.textContent;
+  }
+}
+
+async function copySelectedText(withCitation = false) {
+  if (!state.book || reader.hidden || hlBar.hidden) return;
+  if (state.book.allow_copy === false) {
+    toast('Bu kitapta kopyalama kapalı');
+    return;
+  }
+  const selected = state.epubMode ? state.epubSelection : state.pending;
+  if (!selected?.text) return;
+  const locator = state.epubMode
+    ? { type: 'epub', chapter: selected.chapter, language: getLang() }
+    : { type: 'pdf', labels: state.pdfPageLabels, page: selected.anchor.page, language: getLang() };
+  const text = withCitation ? formatCopiedSelection(state.book, selected.text, locator) : selected.text;
+  try {
+    await writeClipboard(text);
+    toast(withCitation ? 'Atıfla kopyalandı' : 'Metin kopyalandı');
+  } catch {
+    toast('Kopyalanamadı; metni seçip kopyalayın.');
   }
 }
 
@@ -1589,6 +1635,12 @@ async function goToPage(value) {
   }
   const target = Math.min(state.numPages, Math.max(1, Math.trunc(requested)));
   if (target !== requested) toast('Sayfa aralığı dışında');
+  if (target !== state.page) {
+    state.pending = null;
+    hlBar.hidden = true;
+    clearPending(highlightsEl);
+    clearPending(highlights2);
+  }
   if (state.scrollMode) {
     scrollToPage(target);
     return;
@@ -2938,6 +2990,9 @@ async function openEpubBook(book, options = {}) {
   }
   resetSearch();
   state.book = book;
+  state.pending = null;
+  state.epubSelection = null;
+  hlBar.hidden = true;
   state.activeBookmarkId = null;
   state.bookmarkJump = false;
   state.readerReturnFocus = document.activeElement;
@@ -2990,6 +3045,8 @@ async function openEpubBook(book, options = {}) {
     const params = new URLSearchParams(window.location.search);
     const initialCfi = params.get('book') === book.id ? params.get('cfi') : progress?.anchor?.cfi;
     const engine = new EpubEngine(epubView, {
+      canCopy: () => state.book?.allow_copy !== false,
+      onCopyBlocked: () => toast('Bu kitapta kopyalama kapalı'),
       onRelocated: (next) => {
         state.epubProgress = next;
         pageLabel.textContent = `${next.percent}%`;
@@ -3012,6 +3069,10 @@ async function openEpubBook(book, options = {}) {
         }
       },
       onSelected: handleEpubSelection,
+      onDeselected: () => {
+        state.epubSelection = null;
+        hlBar.hidden = true;
+      },
       onSwipe: (delta) => changePage(delta),
     });
     state.epubEngine = engine;
@@ -3068,6 +3129,9 @@ async function openBook(book, options = {}) {
   state.offlineMode = Boolean(offlineBlob) || !navigator.onLine;
   state.offlineBlob = offlineBlob;
   state.book = book;
+  state.pending = null;
+  state.epubSelection = null;
+  hlBar.hidden = true;
   state.activeBookmarkId = null;
   state.bookmarkJump = false;
   state.readerReturnFocus = document.activeElement;
@@ -3229,6 +3293,8 @@ async function closeReader() {
   resetSearch();
   state.epubMode = false;
   state.epubProgress = null;
+  state.pending = null;
+  state.epubSelection = null;
   reader.classList.remove('epub-mode');
   tabPages.hidden = false;
   epubView.hidden = true;
@@ -3292,7 +3358,8 @@ async function closeReader() {
 
 function handleEpubSelection({ cfiRange, text, contents }) {
   if (!cfiRange || !text) return;
-  state.epubSelection = { cfiRange, text };
+  const href = state.epubEngine?.getCurrentRange?.().href || state.epubProgress?.href || '';
+  state.epubSelection = { cfiRange, text, chapter: epubChapterLabel(href) };
   let rect = null;
   try {
     const selection = contents.window.getSelection();
@@ -3309,15 +3376,18 @@ function handleEpubSelection({ cfiRange, text, contents }) {
   } catch {
     /* selection geometry is best-effort */
   }
-  updateSelectionBar(rect || { left: window.innerWidth / 2, top: 100, width: 0 });
   hlNote.value = '';
   hlBar.hidden = false;
+  updateCopyControls();
+  updateSelectionBar(rect || { left: window.innerWidth / 2, top: 100, width: 0 });
 }
 
 function updateSelectionBar(rect) {
-  const barWidth = 320;
-  const left = Math.min(Math.max(12, rect.left + rect.width / 2 - barWidth / 2), window.innerWidth - barWidth - 12);
-  const top = Math.max(12, rect.top - 58);
+  const barWidth = hlBar.getBoundingClientRect().width || 320;
+  const barHeight = hlBar.getBoundingClientRect().height || 48;
+  const left = Math.max(12, Math.min(rect.left + rect.width / 2 - barWidth / 2, window.innerWidth - barWidth - 12));
+  const preferredTop = rect.top - barHeight - 8;
+  const top = Math.max(12, Math.min(preferredTop < 12 ? rect.top + 24 : preferredTop, window.innerHeight - barHeight - 12));
   hlBar.style.left = `${left}px`;
   hlBar.style.top = `${top}px`;
 }
@@ -3391,9 +3461,9 @@ function onSelection(pane = {}) {
     },
   };
   hlNote.value = '';
-  updateSelectionBar(built.last);
   hlBar.hidden = false;
-  hlNote.focus();
+  updateCopyControls();
+  updateSelectionBar(built.last);
 }
 
 function primaryPaneRef() {
@@ -3670,6 +3740,8 @@ async function deleteAnnotation(id, options = {}) {
 
 function changePage(delta) {
   if (state.epubMode) {
+    state.epubSelection = null;
+    hlBar.hidden = true;
     state.activeBookmarkId = null;
     state.bookmarkJump = false;
     if (delta > 0) state.epubEngine?.next();
@@ -4074,6 +4146,8 @@ $('closeNotes').addEventListener('click', () => {
   setNotesOpen(false);
 });
 $('hlSave').addEventListener('click', saveHighlight);
+hlCopy.addEventListener('click', () => copySelectedText(false));
+hlCopyCite.addEventListener('click', () => copySelectedText(true));
 hlColors.addEventListener('click', (event) => {
   const button = event.target.closest('.hl-color');
   if (button) setHighlightColor(button.dataset.color);
@@ -4126,18 +4200,29 @@ document.addEventListener('selectionchange', () => {
   selectionFrame = requestAnimationFrame(updateLiveSelection);
 });
 
+function selectedPdfContent(event) {
+  const target = event.target;
+  if (target?.closest?.('input, textarea, select') || target?.isContentEditable) return null;
+  if (!state.book || reader.hidden || state.epubMode) return null;
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed || !selection.rangeCount) return null;
+  const inText = (node) => {
+    const element = node?.nodeType === 1 ? node : node?.parentElement;
+    return Boolean(element?.closest?.('.textLayer'));
+  };
+  if (!inText(selection.anchorNode) && !inText(selection.focusNode)) return null;
+  return { selection, pane: paneForNode(selection.anchorNode) };
+}
+
 document.addEventListener('copy', (event) => {
-  if (state.book && state.book.allow_copy === false) {
+  const selected = selectedPdfContent(event);
+  if (!selected) return;
+  if (state.book.allow_copy === false) {
     event.preventDefault();
     toast('Bu kitapta kopyalama kapalı');
     return;
   }
-  const selection = window.getSelection();
-  if (!selection || selection.isCollapsed || !selection.anchorNode) return;
-  const inPrimary = textLayerEl.contains(selection.anchorNode);
-  const inSecondary = textLayer2.contains(selection.anchorNode);
-  if (!inPrimary && !inSecondary) return;
-  const pane = inSecondary ? secondaryPaneRef() : primaryPaneRef();
+  const { selection, pane } = selected;
   const words = selectedOcrSpans(selection, pane.textLayer)
     .map((span) => span.textContent.trim())
     .filter(Boolean);
@@ -4147,7 +4232,7 @@ document.addEventListener('copy', (event) => {
 });
 
 document.addEventListener('cut', (event) => {
-  if (state.book && state.book.allow_copy === false) {
+  if (selectedPdfContent(event) && state.book.allow_copy === false) {
     event.preventDefault();
     toast('Bu kitapta kopyalama kapalı');
   }
@@ -4157,8 +4242,9 @@ document.addEventListener('mousedown', (event) => {
   if (!hlBar.hidden && !hlBar.contains(event.target)) {
     hlBar.hidden = true;
     state.pending = null;
+    state.epubSelection = null;
     clearPending(highlightsEl);
-  clearPending(highlights2);
+    clearPending(highlights2);
   }
 });
 

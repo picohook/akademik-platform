@@ -1,0 +1,104 @@
+{
+  "frontend": 116,
+  "css": 44,
+  "browser": "155.0.4283.45",
+  "scope": "Selection clipboard/policy browser acceptance; isolated demo, no production writes",
+  "sourceIdentification": "Working-tree v116 snapshot based on 87202ef; per-file SHA256 retained",
+  "sources": [
+    {
+      "file": "public/offline.mjs",
+      "sha256": "442d4f6d549f89ea9e761c67517b5bfcc3743e87f49c604b33e813d26d908ed4"
+    },
+    {
+      "file": "server.mjs",
+      "sha256": "72aaa42c5442b75e2ecd50fd518a78cabd8e4d3700a754d9457d85c379b61649"
+    },
+    {
+      "file": "indexer.mjs",
+      "sha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f"
+    },
+    {
+      "file": "public/app.js",
+      "sha256": "d9bc82634bb40009f6431970875556c03e10ad9a637d2e55ea99a8041ddb2b08"
+    },
+    {
+      "file": "public/citations.mjs",
+      "sha256": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86"
+    },
+    {
+      "file": "public/index.html",
+      "sha256": "fff162c56809d9290c3046bc0b1743dbc8f1d118d6ca0382eb5af80537d0a9cc"
+    },
+    {
+      "file": "public/i18n.mjs",
+      "sha256": "bcb4369aea42c2e6fe1b2b3b2e436db2941763e204600f305e56edce129ef90e"
+    },
+    {
+      "file": "public/sw.js",
+      "sha256": "545a52f423e4187c33b512e2280987b30bc58a0c8c7425b31327c52143a8e044"
+    },
+    {
+      "file": "public/epub-engine.mjs",
+      "sha256": "0624f03f8fe4a5fa806589f97dfe50df29f0f99fe411d290523c84faab2ab680"
+    },
+    {
+      "file": "public/styles.css",
+      "sha256": "e856d63b7800ac2f32c6e7798c1e6b61fc3773c6656de5fff52e16cb0cd62699"
+    }
+  ],
+  "passed": 13,
+  "total": 13,
+  "artifacts": [
+    {
+      "file": "browser-console.json",
+      "bytes": 420,
+      "sha256": "84adbf5e8025c473d0e7259070814dce868756a49f50183482d65a1dc6158d0a"
+    },
+    {
+      "file": "browser-harness.mjs",
+      "bytes": 14429,
+      "sha256": "eac51673e2827db0f45bf5f296caeccf2a15d20e920f4962f8128f895d7c36a6"
+    },
+    {
+      "file": "citations-unit.tap",
+      "bytes": 2883,
+      "sha256": "e2eb6ea2238249c3bc3b18f6479201dc9e0b3bff8fdcf5cdbe5a2bfa79936f76"
+    },
+    {
+      "file": "copy-toolbar-320px.png",
+      "bytes": 25686,
+      "sha256": "7a217f218e777e56b8cf30f78177b6573017bf66fab599ec3abef2c5b3c8d75c"
+    },
+    {
+      "file": "copy-toolbar-english.png",
+      "bytes": 53692,
+      "sha256": "a48d7e89cdba9159ac01c3858ec388662d36c93d57b98f016c97150e912a3d5d"
+    },
+    {
+      "file": "epub-policy-unit.tap",
+      "bytes": 1635,
+      "sha256": "2d18f3583db9fdeafc312c95d5ed4afc1388a753cfec8b2bd9adcdd19a7e0dc1"
+    },
+    {
+      "file": "page-labels.pdf",
+      "bytes": 1993,
+      "sha256": "c2fa8354f536e18fcb798384591cce86dedc7f240a88cd765c12547111b397ee"
+    },
+    {
+      "file": "results.json",
+      "bytes": 3688,
+      "sha256": "a32b549600a5fde34693b3d59cfbbb61676916bdc00c69d7ee0c18d08437ce7d"
+    },
+    {
+      "file": "sample.epub",
+      "bytes": 2489,
+      "sha256": "ca3900456e770dddc90308538b179819d8a2e3349f6b7377983221f017aed80d"
+    }
+  ],
+  "productionChanged": false,
+  "unitTests": {
+    "citation": 17,
+    "epubCopyPolicy": 7,
+    "passed": 24
+  }
+}

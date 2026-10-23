@@ -463,10 +463,15 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
 
 .hl-bar {
   position: fixed; z-index: 60; display: flex; align-items: center; gap: 6px;
+  flex-wrap: wrap; width: max-content; max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px); overflow-y: auto;
   background: var(--ink); padding: 6px; border-radius: 10px; box-shadow: var(--shadow);
 }
 .hl-bar[hidden] { display: none; }
-.hl-bar input { width: 180px; border: 0; border-radius: 6px; padding: 7px 9px; font: inherit; font-size: 12.5px; outline: none; }
+.hl-bar .copy-btn { min-height: 32px; padding: 6px 9px; border: 1px solid #aaa; border-radius: 6px; background: transparent; color: #fff; font: inherit; cursor: pointer; }
+.hl-bar .copy-btn:disabled { color: #bbb; cursor: default; }
+.hl-bar .copy-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.hl-bar input { flex: 1 1 120px; min-width: 80px; width: 140px; border: 0; border-radius: 6px; padding: 7px 9px; font: inherit; font-size: 12.5px; outline: none; }
 .hl-bar .icon-btn { background: transparent; color: #fff; border-color: rgba(255,255,255,0.22); }
 .hl-colors { display: flex; align-items: center; gap: 4px; padding: 0 3px; }
 .hl-color {

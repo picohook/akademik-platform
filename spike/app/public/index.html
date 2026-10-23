@@ -9,7 +9,7 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/icons/icon-180.png" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=43" />
+  <link rel="stylesheet" href="/styles.css?v=44" />
   <link rel="prefetch" href="/vendor/pdfjs/pdf.worker.mjs" as="script" />
 </head>
 <body>
@@ -393,6 +393,8 @@
       <button class="hl-color pink" data-color="pink" type="button" aria-label="Pembe"></button>
     </div>
     <input id="hlNote" type="text" placeholder="Not (opsiyonel)" aria-label="Vurgu notu" maxlength="280" />
+    <button class="copy-btn" id="hlCopy" type="button">Kopyala</button>
+    <button class="copy-btn" id="hlCopyCite" type="button">Atıfla kopyala</button>
     <button class="primary" id="hlSave">Vurgula</button>
     <button class="icon-btn" id="hlCancel" aria-label="İptal">✕</button>
   </div>
@@ -408,6 +410,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=115"></script>
+  <script type="module" src="/app.js?v=116"></script>
 </body>
 </html>

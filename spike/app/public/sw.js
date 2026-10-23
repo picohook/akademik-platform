@@ -1,4 +1,4 @@
-const CACHE = 'akademik-shell-v6';
+const CACHE = 'akademik-shell-v7';
 const SHELL = [
   '/',
   '/styles.css',

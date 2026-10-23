@@ -1,0 +1,1031 @@
+{
+  "runId": "b5cf4e07-2cb3-47e7-add9-2edabe9dfb68",
+  "startedAt": "2026-10-23T15:29:03.914Z",
+  "status": "failed",
+  "isolation": "fresh PostgreSQL container + application copy; no existing target",
+  "workload": {
+    "stages": [
+      10,
+      25,
+      50,
+      100
+    ],
+    "durationSeconds": 10,
+    "thinkMs": 500,
+    "timeoutMs": 10000,
+    "books": 20,
+    "pagesPerBook": 6,
+    "pdf": "bundled six-page sample",
+    "range": "first up to 65536 bytes",
+    "model": "closed-loop; one request per user at a time"
+  },
+  "host": {
+    "platform": "win32",
+    "node": "v22.16.0",
+    "logicalCpus": 8,
+    "totalMemoryBytes": 16876609536
+  },
+  "stages": [
+    {
+      "users": 10,
+      "startedAt": "2026-10-23T15:29:16.157Z",
+      "login": {
+        "requests": 10,
+        "errors": 0,
+        "errorRate": 0,
+        "bytes": 1350,
+        "p50Ms": 4089.52,
+        "p95Ms": 4189.81,
+        "p99Ms": 4189.81,
+        "maxMs": 4189.81,
+        "statuses": {
+          "200": 10
+        },
+        "errorExamples": []
+      },
+      "endpoints": {
+        "catalog": {
+          "requests": 73,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 835996,
+          "p50Ms": 83.03,
+          "p95Ms": 348.76,
+          "p99Ms": 898.95,
+          "maxMs": 898.95,
+          "statuses": {
+            "200": 73
+          },
+          "errorExamples": []
+        },
+        "catalogSearch": {
+          "requests": 73,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 890016,
+          "p50Ms": 99.52,
+          "p95Ms": 828.7,
+          "p99Ms": 929.73,
+          "maxMs": 929.73,
+          "statuses": {
+            "200": 73
+          },
+          "errorExamples": []
+        },
+        "bookSearch": {
+          "requests": 73,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 89644,
+          "p50Ms": 131.04,
+          "p95Ms": 1090.89,
+          "p99Ms": 1175.94,
+          "maxMs": 1175.94,
+          "statuses": {
+            "200": 73
+          },
+          "errorExamples": []
+        },
+        "pdfRange": {
+          "requests": 73,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 968272,
+          "p50Ms": 96.4,
+          "p95Ms": 433.49,
+          "p99Ms": 835.4,
+          "maxMs": 835.4,
+          "statuses": {
+            "206": 73
+          },
+          "errorExamples": []
+        },
+        "progressWrite": {
+          "requests": 73,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 16362,
+          "p50Ms": 57.18,
+          "p95Ms": 119.21,
+          "p99Ms": 643.12,
+          "maxMs": 643.12,
+          "statuses": {
+            "200": 73
+          },
+          "errorExamples": []
+        },
+        "progressRead": {
+          "requests": 73,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 16362,
+          "p50Ms": 52.6,
+          "p95Ms": 112.28,
+          "p99Ms": 376.97,
+          "maxMs": 376.97,
+          "statuses": {
+            "200": 73
+          },
+          "errorExamples": []
+        },
+        "annotationCreate": {
+          "requests": 73,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 31098,
+          "p50Ms": 61.46,
+          "p95Ms": 164.8,
+          "p99Ms": 179.99,
+          "maxMs": 179.99,
+          "statuses": {
+            "201": 73
+          },
+          "errorExamples": []
+        },
+        "annotationPatch": {
+          "requests": 73,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 28908,
+          "p50Ms": 54.88,
+          "p95Ms": 139.93,
+          "p99Ms": 175.23,
+          "maxMs": 175.23,
+          "statuses": {
+            "200": 73
+          },
+          "errorExamples": []
+        },
+        "annotationList": {
+          "requests": 73,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 29054,
+          "p50Ms": 55.04,
+          "p95Ms": 129.86,
+          "p99Ms": 159.71,
+          "maxMs": 159.71,
+          "statuses": {
+            "200": 73
+          },
+          "errorExamples": []
+        },
+        "annotationDelete": {
+          "requests": 73,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 803,
+          "p50Ms": 40.55,
+          "p95Ms": 100.63,
+          "p99Ms": 169.72,
+          "maxMs": 169.72,
+          "statuses": {
+            "200": 73
+          },
+          "errorExamples": []
+        }
+      },
+      "completedCycles": 73,
+      "failedCycles": 0,
+      "admittedUsers": 10,
+      "elapsedSeconds": 10.946,
+      "total": {
+        "requests": 730,
+        "errors": 0,
+        "errorRate": 0,
+        "bytes": 2906515,
+        "p50Ms": 67.1,
+        "p95Ms": 241.9,
+        "p99Ms": 929.73,
+        "maxMs": 1175.94,
+        "statuses": {},
+        "errorExamples": []
+      },
+      "requestsPerSecond": 66.69,
+      "functionalPass": true,
+      "logout": {
+        "requests": 10,
+        "errors": 0,
+        "errorRate": 0,
+        "bytes": 110,
+        "p50Ms": 48.52,
+        "p95Ms": 58.64,
+        "p99Ms": 58.64,
+        "maxMs": 58.64,
+        "statuses": {
+          "200": 10
+        },
+        "errorExamples": []
+      },
+      "postgresStats": {
+        "BlockIO": "0B / 8.19kB",
+        "CPUPerc": "0.09%",
+        "Container": "akademik-capacity-b5cf4e07-2cb3-47e7-add9-2edabe9dfb68",
+        "ID": "deea9c2ccd73",
+        "MemPerc": "1.20%",
+        "MemUsage": "93.2MiB / 7.615GiB",
+        "Name": "akademik-capacity-b5cf4e07-2cb3-47e7-add9-2edabe9dfb68",
+        "NetIO": "1.97MB / 2.4MB",
+        "PIDs": "12"
+      }
+    },
+    {
+      "users": 25,
+      "startedAt": "2026-10-23T15:29:35.370Z",
+      "login": {
+        "requests": 25,
+        "errors": 0,
+        "errorRate": 0,
+        "bytes": 3405,
+        "p50Ms": 5566.74,
+        "p95Ms": 6048.07,
+        "p99Ms": 6078.26,
+        "maxMs": 6078.26,
+        "statuses": {
+          "200": 25
+        },
+        "errorExamples": []
+      },
+      "endpoints": {
+        "catalog": {
+          "requests": 159,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 1820868,
+          "p50Ms": 94.91,
+          "p95Ms": 339.12,
+          "p99Ms": 374.5,
+          "maxMs": 376.14,
+          "statuses": {
+            "200": 159
+          },
+          "errorExamples": []
+        },
+        "catalogSearch": {
+          "requests": 159,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 1938528,
+          "p50Ms": 128.5,
+          "p95Ms": 435.7,
+          "p99Ms": 450.82,
+          "maxMs": 460.4,
+          "statuses": {
+            "200": 159
+          },
+          "errorExamples": []
+        },
+        "bookSearch": {
+          "requests": 159,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 195252,
+          "p50Ms": 169.87,
+          "p95Ms": 449.65,
+          "p99Ms": 466.54,
+          "maxMs": 476.71,
+          "statuses": {
+            "200": 159
+          },
+          "errorExamples": []
+        },
+        "pdfRange": {
+          "requests": 159,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 2108976,
+          "p50Ms": 132.11,
+          "p95Ms": 296.64,
+          "p99Ms": 339.69,
+          "maxMs": 361.15,
+          "statuses": {
+            "206": 159
+          },
+          "errorExamples": []
+        },
+        "progressWrite": {
+          "requests": 159,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 35641,
+          "p50Ms": 95.63,
+          "p95Ms": 218.55,
+          "p99Ms": 233.9,
+          "maxMs": 235.99,
+          "statuses": {
+            "200": 159
+          },
+          "errorExamples": []
+        },
+        "progressRead": {
+          "requests": 159,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 35641,
+          "p50Ms": 90.56,
+          "p95Ms": 128.99,
+          "p99Ms": 191.3,
+          "maxMs": 216.04,
+          "statuses": {
+            "200": 159
+          },
+          "errorExamples": []
+        },
+        "annotationCreate": {
+          "requests": 159,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 67734,
+          "p50Ms": 91.96,
+          "p95Ms": 186.2,
+          "p99Ms": 229.4,
+          "maxMs": 244.91,
+          "statuses": {
+            "201": 159
+          },
+          "errorExamples": []
+        },
+        "annotationPatch": {
+          "requests": 159,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 62964,
+          "p50Ms": 76.01,
+          "p95Ms": 465.87,
+          "p99Ms": 519.63,
+          "maxMs": 534.1,
+          "statuses": {
+            "200": 159
+          },
+          "errorExamples": []
+        },
+        "annotationList": {
+          "requests": 159,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 63282,
+          "p50Ms": 69.82,
+          "p95Ms": 412.76,
+          "p99Ms": 496.29,
+          "maxMs": 497.93,
+          "statuses": {
+            "200": 159
+          },
+          "errorExamples": []
+        },
+        "annotationDelete": {
+          "requests": 159,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 1749,
+          "p50Ms": 58.59,
+          "p95Ms": 222.1,
+          "p99Ms": 237.52,
+          "maxMs": 242.1,
+          "statuses": {
+            "200": 159
+          },
+          "errorExamples": []
+        }
+      },
+      "completedCycles": 159,
+      "failedCycles": 0,
+      "admittedUsers": 25,
+      "elapsedSeconds": 11.019,
+      "total": {
+        "requests": 1590,
+        "errors": 0,
+        "errorRate": 0,
+        "bytes": 6330635,
+        "p50Ms": 102.8,
+        "p95Ms": 357.16,
+        "p99Ms": 460.21,
+        "maxMs": 534.1,
+        "statuses": {},
+        "errorExamples": []
+      },
+      "requestsPerSecond": 144.3,
+      "functionalPass": true,
+      "logout": {
+        "requests": 25,
+        "errors": 0,
+        "errorRate": 0,
+        "bytes": 275,
+        "p50Ms": 25.52,
+        "p95Ms": 30.94,
+        "p99Ms": 30.96,
+        "maxMs": 30.96,
+        "statuses": {
+          "200": 25
+        },
+        "errorExamples": []
+      },
+      "postgresStats": {
+        "BlockIO": "0B / 8.19kB",
+        "CPUPerc": "0.05%",
+        "Container": "akademik-capacity-b5cf4e07-2cb3-47e7-add9-2edabe9dfb68",
+        "ID": "deea9c2ccd73",
+        "MemPerc": "1.21%",
+        "MemUsage": "94.33MiB / 7.615GiB",
+        "Name": "akademik-capacity-b5cf4e07-2cb3-47e7-add9-2edabe9dfb68",
+        "NetIO": "5.89MB / 7.55MB",
+        "PIDs": "12"
+      }
+    },
+    {
+      "users": 50,
+      "startedAt": "2026-10-23T15:29:54.593Z",
+      "login": {
+        "requests": 50,
+        "errors": 1,
+        "errorRate": 0.02,
+        "bytes": 6693,
+        "p50Ms": 9741.18,
+        "p95Ms": 9992.09,
+        "p99Ms": 10008.31,
+        "maxMs": 10008.31,
+        "statuses": {
+          "200": 49,
+          "network": 1
+        },
+        "errorExamples": [
+          "The operation was aborted due to timeout"
+        ]
+      },
+      "endpoints": {
+        "catalog": {
+          "requests": 196,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 2244592,
+          "p50Ms": 229.94,
+          "p95Ms": 599.16,
+          "p99Ms": 621.34,
+          "maxMs": 627.08,
+          "statuses": {
+            "200": 196
+          },
+          "errorExamples": []
+        },
+        "catalogSearch": {
+          "requests": 196,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 2389632,
+          "p50Ms": 384.22,
+          "p95Ms": 508.7,
+          "p99Ms": 617.01,
+          "maxMs": 621.99,
+          "statuses": {
+            "200": 196
+          },
+          "errorExamples": []
+        },
+        "bookSearch": {
+          "requests": 196,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 240688,
+          "p50Ms": 442.95,
+          "p95Ms": 568.32,
+          "p99Ms": 694.89,
+          "maxMs": 702.4,
+          "statuses": {
+            "200": 196
+          },
+          "errorExamples": []
+        },
+        "pdfRange": {
+          "requests": 196,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 2599744,
+          "p50Ms": 384.82,
+          "p95Ms": 500.46,
+          "p99Ms": 516.26,
+          "maxMs": 628.23,
+          "statuses": {
+            "206": 196
+          },
+          "errorExamples": []
+        },
+        "progressWrite": {
+          "requests": 196,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 43904,
+          "p50Ms": 221.72,
+          "p95Ms": 293.44,
+          "p99Ms": 496.22,
+          "maxMs": 504.44,
+          "statuses": {
+            "200": 196
+          },
+          "errorExamples": []
+        },
+        "progressRead": {
+          "requests": 196,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 43904,
+          "p50Ms": 203.33,
+          "p95Ms": 350.86,
+          "p99Ms": 358.78,
+          "maxMs": 481.89,
+          "statuses": {
+            "200": 196
+          },
+          "errorExamples": []
+        },
+        "annotationCreate": {
+          "requests": 196,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 83496,
+          "p50Ms": 197.44,
+          "p95Ms": 311.62,
+          "p99Ms": 352.23,
+          "maxMs": 493.62,
+          "statuses": {
+            "201": 196
+          },
+          "errorExamples": []
+        },
+        "annotationPatch": {
+          "requests": 196,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 77616,
+          "p50Ms": 199.38,
+          "p95Ms": 287.79,
+          "p99Ms": 348.54,
+          "maxMs": 350.3,
+          "statuses": {
+            "200": 196
+          },
+          "errorExamples": []
+        },
+        "annotationList": {
+          "requests": 196,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 78008,
+          "p50Ms": 170.61,
+          "p95Ms": 255.44,
+          "p99Ms": 360.59,
+          "maxMs": 382.8,
+          "statuses": {
+            "200": 196
+          },
+          "errorExamples": []
+        },
+        "annotationDelete": {
+          "requests": 196,
+          "errors": 0,
+          "errorRate": 0,
+          "bytes": 2156,
+          "p50Ms": 171.76,
+          "p95Ms": 253.62,
+          "p99Ms": 304.38,
+          "maxMs": 308.35,
+          "statuses": {
+            "200": 196
+          },
+          "errorExamples": []
+        }
+      },
+      "completedCycles": 196,
+      "failedCycles": 0,
+      "admittedUsers": 49,
+      "elapsedSeconds": 12.661,
+      "total": {
+        "requests": 1960,
+        "errors": 0,
+        "errorRate": 0,
+        "bytes": 7803740,
+        "p50Ms": 223.87,
+        "p95Ms": 485.8,
+        "p99Ms": 599.16,
+        "maxMs": 702.4,
+        "statuses": {},
+        "errorExamples": []
+      },
+      "requestsPerSecond": 154.81,
+      "functionalPass": false,
+      "logout": {
+        "requests": 49,
+        "errors": 0,
+        "errorRate": 0,
+        "bytes": 539,
+        "p50Ms": 48.04,
+        "p95Ms": 62.26,
+        "p99Ms": 63.01,
+        "maxMs": 63.01,
+        "statuses": {
+          "200": 49
+        },
+        "errorExamples": []
+      },
+      "postgresStats": {
+        "BlockIO": "0B / 8.19kB",
+        "CPUPerc": "0.27%",
+        "Container": "akademik-capacity-b5cf4e07-2cb3-47e7-add9-2edabe9dfb68",
+        "ID": "deea9c2ccd73",
+        "MemPerc": "1.24%",
+        "MemUsage": "96.39MiB / 7.615GiB",
+        "Name": "akademik-capacity-b5cf4e07-2cb3-47e7-add9-2edabe9dfb68",
+        "NetIO": "10.8MB / 13.9MB",
+        "PIDs": "12"
+      }
+    }
+  ],
+  "source": {
+    "server.mjs": "72aaa42c5442b75e2ecd50fd518a78cabd8e4d3700a754d9457d85c379b61649",
+    "indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+    "public/search.mjs": "88ac22ab469fc2cc5bf8d0476754a245e6ed9f44b475cbf349dbbaca52145cdc",
+    "public/seed/sample.pdf": "3df79d34abbca99308e79cb94461c1893582604d68329a41fd4bec1885e6adb4",
+    "db/schema.sql": "fcdb08cc2ee21199524554e01410fcd83f83c3e255debabb17e54660f4e7740c",
+    "db/seed.sql": "b8d845cea00579ccd0b13fcbb94e9d050c42d1fff736ec4dd36e1137f67ce587"
+  },
+  "telemetry": [
+    {
+      "at": 1792769355771,
+      "rss": 86118400,
+      "cpuPercent": 86.0876706262589,
+      "eventLoopP95Ms": 1660.944383
+    },
+    {
+      "at": 1792769357976,
+      "rss": 87801856,
+      "cpuPercent": 53.128395952550854,
+      "eventLoopP95Ms": 217.972735
+    },
+    {
+      "at": 1792769359603,
+      "rss": 87867392,
+      "cpuPercent": 51.855903748561296,
+      "eventLoopP95Ms": 1329.594367
+    },
+    {
+      "at": 1792769360603,
+      "rss": 91168768,
+      "cpuPercent": 18.792747878593648,
+      "eventLoopP95Ms": 32.620543
+    },
+    {
+      "at": 1792769361637,
+      "rss": 96825344,
+      "cpuPercent": 42.547569302152695,
+      "eventLoopP95Ms": 34.013183
+    },
+    {
+      "at": 1792769362631,
+      "rss": 97636352,
+      "cpuPercent": 32.78034490519486,
+      "eventLoopP95Ms": 35.782655
+    },
+    {
+      "at": 1792769363631,
+      "rss": 98873344,
+      "cpuPercent": 39.09598093316005,
+      "eventLoopP95Ms": 31.997951
+    },
+    {
+      "at": 1792769364633,
+      "rss": 100757504,
+      "cpuPercent": 42.14079639514448,
+      "eventLoopP95Ms": 32.260095
+    },
+    {
+      "at": 1792769365638,
+      "rss": 107298816,
+      "cpuPercent": 41.98859999560214,
+      "eventLoopP95Ms": 31.473663
+    },
+    {
+      "at": 1792769366638,
+      "rss": 108724224,
+      "cpuPercent": 56.311617086604954,
+      "eventLoopP95Ms": 27.000831
+    },
+    {
+      "at": 1792769367638,
+      "rss": 114388992,
+      "cpuPercent": 32.78593155676895,
+      "eventLoopP95Ms": 31.490047
+    },
+    {
+      "at": 1792769368662,
+      "rss": 115994624,
+      "cpuPercent": 33.50427023157314,
+      "eventLoopP95Ms": 31.899647
+    },
+    {
+      "at": 1792769369680,
+      "rss": 114761728,
+      "cpuPercent": 6.18831757620692,
+      "eventLoopP95Ms": 91.357183
+    },
+    {
+      "at": 1792769370688,
+      "rss": 114954240,
+      "cpuPercent": 3.073717258466309,
+      "eventLoopP95Ms": 97.976319
+    },
+    {
+      "at": 1792769371691,
+      "rss": 114761728,
+      "cpuPercent": 29.617594965527445,
+      "eventLoopP95Ms": 32.849919
+    },
+    {
+      "at": 1792769372698,
+      "rss": 114761728,
+      "cpuPercent": 0,
+      "eventLoopP95Ms": 39.813119
+    },
+    {
+      "at": 1792769373710,
+      "rss": 114761728,
+      "cpuPercent": 0,
+      "eventLoopP95Ms": 34.570239
+    },
+    {
+      "at": 1792769374722,
+      "rss": 114397184,
+      "cpuPercent": 1.5810257932500438,
+      "eventLoopP95Ms": 32.489471
+    },
+    {
+      "at": 1792769375759,
+      "rss": 114405376,
+      "cpuPercent": 36.134575566166205,
+      "eventLoopP95Ms": 33.030143
+    },
+    {
+      "at": 1792769376781,
+      "rss": 114405376,
+      "cpuPercent": 74.95221307172477,
+      "eventLoopP95Ms": 517.210111
+    },
+    {
+      "at": 1792769377916,
+      "rss": 114405376,
+      "cpuPercent": 95.00727933788208,
+      "eventLoopP95Ms": 387.186687
+    },
+    {
+      "at": 1792769378933,
+      "rss": 114409472,
+      "cpuPercent": 95.23089014615076,
+      "eventLoopP95Ms": 365.953023
+    },
+    {
+      "at": 1792769380074,
+      "rss": 114446336,
+      "cpuPercent": 94.46349292698025,
+      "eventLoopP95Ms": 448.528383
+    },
+    {
+      "at": 1792769381078,
+      "rss": 85045248,
+      "cpuPercent": 51.3735863303251,
+      "eventLoopP95Ms": 26.525695
+    },
+    {
+      "at": 1792769382081,
+      "rss": 86609920,
+      "cpuPercent": 56.06308833198445,
+      "eventLoopP95Ms": 30.572543
+    },
+    {
+      "at": 1792769383081,
+      "rss": 90898432,
+      "cpuPercent": 49.99679520542735,
+      "eventLoopP95Ms": 26.558463
+    },
+    {
+      "at": 1792769384080,
+      "rss": 92762112,
+      "cpuPercent": 42.23537212415389,
+      "eventLoopP95Ms": 31.342591
+    },
+    {
+      "at": 1792769385081,
+      "rss": 93761536,
+      "cpuPercent": 39.04319215541395,
+      "eventLoopP95Ms": 31.522815
+    },
+    {
+      "at": 1792769386081,
+      "rss": 101183488,
+      "cpuPercent": 65.62779337049221,
+      "eventLoopP95Ms": 22.478847
+    },
+    {
+      "at": 1792769387085,
+      "rss": 101953536,
+      "cpuPercent": 35.763145172368844,
+      "eventLoopP95Ms": 22.626303
+    },
+    {
+      "at": 1792769388085,
+      "rss": 101400576,
+      "cpuPercent": 51.56170512160643,
+      "eventLoopP95Ms": 31.014911
+    },
+    {
+      "at": 1792769389086,
+      "rss": 108933120,
+      "cpuPercent": 68.65068821065826,
+      "eventLoopP95Ms": 21.413887
+    },
+    {
+      "at": 1792769390086,
+      "rss": 114847744,
+      "cpuPercent": 51.605444374381385,
+      "eventLoopP95Ms": 30.670847
+    },
+    {
+      "at": 1792769391086,
+      "rss": 115167232,
+      "cpuPercent": 40.581223068086544,
+      "eventLoopP95Ms": 24.477695
+    },
+    {
+      "at": 1792769392086,
+      "rss": 114913280,
+      "cpuPercent": 50.03077392904353,
+      "eventLoopP95Ms": 25.247743
+    },
+    {
+      "at": 1792769393095,
+      "rss": 115568640,
+      "cpuPercent": 23.28031991716562,
+      "eventLoopP95Ms": 31.866879
+    },
+    {
+      "at": 1792769394111,
+      "rss": 115568640,
+      "cpuPercent": 1.4768442634249102,
+      "eventLoopP95Ms": 31.965183
+    },
+    {
+      "at": 1792769395280,
+      "rss": 115625984,
+      "cpuPercent": 54.817636432844736,
+      "eventLoopP95Ms": 32.292863
+    },
+    {
+      "at": 1792769396592,
+      "rss": 115650560,
+      "cpuPercent": 97.70564733306597,
+      "eventLoopP95Ms": 609.222655
+    },
+    {
+      "at": 1792769397821,
+      "rss": 115650560,
+      "cpuPercent": 100.38866616030003,
+      "eventLoopP95Ms": 362.283007
+    },
+    {
+      "at": 1792769398890,
+      "rss": 115662848,
+      "cpuPercent": 92.07275112071709,
+      "eventLoopP95Ms": 375.128063
+    },
+    {
+      "at": 1792769399975,
+      "rss": 115671040,
+      "cpuPercent": 80.66191071749725,
+      "eventLoopP95Ms": 233.701375
+    },
+    {
+      "at": 1792769401099,
+      "rss": 115675136,
+      "cpuPercent": 62.54101752189371,
+      "eventLoopP95Ms": 354.156543
+    },
+    {
+      "at": 1792769402227,
+      "rss": 115683328,
+      "cpuPercent": 95.5898411940605,
+      "eventLoopP95Ms": 211.288063
+    },
+    {
+      "at": 1792769403392,
+      "rss": 115695616,
+      "cpuPercent": 93.92641251930891,
+      "eventLoopP95Ms": 239.992831
+    },
+    {
+      "at": 1792769404392,
+      "rss": 115875840,
+      "cpuPercent": 73.50323414230238,
+      "eventLoopP95Ms": 197.394431
+    },
+    {
+      "at": 1792769405391,
+      "rss": 116473856,
+      "cpuPercent": 53.129635710799604,
+      "eventLoopP95Ms": 23.314431
+    },
+    {
+      "at": 1792769406393,
+      "rss": 118210560,
+      "cpuPercent": 59.32005436273501,
+      "eventLoopP95Ms": 23.838719
+    },
+    {
+      "at": 1792769407394,
+      "rss": 118906880,
+      "cpuPercent": 57.696907166275615,
+      "eventLoopP95Ms": 31.555583
+    },
+    {
+      "at": 1792769408399,
+      "rss": 118173696,
+      "cpuPercent": 38.79904809022616,
+      "eventLoopP95Ms": 31.522815
+    },
+    {
+      "at": 1792769409399,
+      "rss": 118804480,
+      "cpuPercent": 61.01071348128745,
+      "eventLoopP95Ms": 22.560767
+    },
+    {
+      "at": 1792769410399,
+      "rss": 119033856,
+      "cpuPercent": 57.80746294346591,
+      "eventLoopP95Ms": 21.938175
+    },
+    {
+      "at": 1792769411399,
+      "rss": 118251520,
+      "cpuPercent": 43.69825206991716,
+      "eventLoopP95Ms": 23.035903
+    },
+    {
+      "at": 1792769412401,
+      "rss": 118599680,
+      "cpuPercent": 26.560045723218547,
+      "eventLoopP95Ms": 23.265279
+    },
+    {
+      "at": 1792769413400,
+      "rss": 118489088,
+      "cpuPercent": 39.031021856171414,
+      "eventLoopP95Ms": 23.789567
+    },
+    {
+      "at": 1792769414400,
+      "rss": 118861824,
+      "cpuPercent": 65.56378911926923,
+      "eventLoopP95Ms": 22.413311
+    },
+    {
+      "at": 1792769415400,
+      "rss": 118829056,
+      "cpuPercent": 29.81877688380366,
+      "eventLoopP95Ms": 29.114367
+    },
+    {
+      "at": 1792769416401,
+      "rss": 119083008,
+      "cpuPercent": 46.745359349456564,
+      "eventLoopP95Ms": 26.623999
+    },
+    {
+      "at": 1792769417416,
+      "rss": 118706176,
+      "cpuPercent": 44.75033698285138,
+      "eventLoopP95Ms": 27.033599
+    },
+    {
+      "at": 1792769418428,
+      "rss": 118706176,
+      "cpuPercent": 0,
+      "eventLoopP95Ms": 32.718847
+    }
+  ],
+  "cleanup": {
+    "appStopped": true,
+    "databaseRemoved": true,
+    "temporaryAppRemoved": true
+  },
+  "limitations": [
+    "Synthetic small PDF; no browser rendering, EPUB, download watermark, TLS/proxy, large file, network or offline-sync benchmark.",
+    "Node client, Node server and Docker PostgreSQL share this host; results are not production capacity.",
+    "API p95 excludes login/logout; login burst is reported separately. Warm-cache closed-loop results are workload specific."
+  ],
+  "postgresImage": "sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea",
+  "fixtureBytes": 13264,
+  "databaseRole": {
+    "superuser": false,
+    "bypassRls": false,
+    "applicationPoolMax": 5
+  },
+  "error": "Stage 50 failed; higher stages skipped",
+  "finishedAt": "2026-10-23T15:30:22.995Z"
+}

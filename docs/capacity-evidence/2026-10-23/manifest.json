@@ -1,0 +1,27 @@
+{
+  "date": "2026-10-23",
+  "scope": "fresh PostgreSQL container + application copy; no existing target",
+  "harness": "scripts/load-capacity.mjs",
+  "harnessSha256": "21fac923da380e6eeca2c68d9c1d8d013dba364c8f4a67d851d57bbdb5a29dc0",
+  "source": {
+    "server.mjs": "72aaa42c5442b75e2ecd50fd518a78cabd8e4d3700a754d9457d85c379b61649",
+    "indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+    "public/search.mjs": "88ac22ab469fc2cc5bf8d0476754a245e6ed9f44b475cbf349dbbaca52145cdc",
+    "public/seed/sample.pdf": "3df79d34abbca99308e79cb94461c1893582604d68329a41fd4bec1885e6adb4",
+    "db/schema.sql": "fcdb08cc2ee21199524554e01410fcd83f83c3e255debabb17e54660f4e7740c",
+    "db/seed.sql": "b8d845cea00579ccd0b13fcbb94e9d050c42d1fff736ec4dd36e1137f67ce587"
+  },
+  "artifacts": [
+    {
+      "file": "screening.json",
+      "bytes": 25122,
+      "sha256": "a06a7ecf70d0232c7775362e90880dd9f1074d47d891527f364e08acb9c8f6a7"
+    },
+    {
+      "file": "smoke.json",
+      "bytes": 13425,
+      "sha256": "92ad9ea0766a9a6b4dfc806ee4edb6825a8f2f9acdc713baac3950b9feee945b"
+    }
+  ],
+  "productionCapacityVerified": false
+}

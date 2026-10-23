@@ -1,0 +1,134 @@
+{
+  "version": 116,
+  "startedAt": "2026-10-23T15:35:02.308Z",
+  "scope": "Selection clipboard/policy browser acceptance; isolated demo, no production writes",
+  "sources": [
+    {
+      "file": "public/offline.mjs",
+      "sha256": "442d4f6d549f89ea9e761c67517b5bfcc3743e87f49c604b33e813d26d908ed4"
+    },
+    {
+      "file": "server.mjs",
+      "sha256": "72aaa42c5442b75e2ecd50fd518a78cabd8e4d3700a754d9457d85c379b61649"
+    },
+    {
+      "file": "indexer.mjs",
+      "sha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f"
+    },
+    {
+      "file": "public/app.js",
+      "sha256": "d9bc82634bb40009f6431970875556c03e10ad9a637d2e55ea99a8041ddb2b08"
+    },
+    {
+      "file": "public/citations.mjs",
+      "sha256": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86"
+    },
+    {
+      "file": "public/index.html",
+      "sha256": "fff162c56809d9290c3046bc0b1743dbc8f1d118d6ca0382eb5af80537d0a9cc"
+    },
+    {
+      "file": "public/i18n.mjs",
+      "sha256": "bcb4369aea42c2e6fe1b2b3b2e436db2941763e204600f305e56edce129ef90e"
+    },
+    {
+      "file": "public/sw.js",
+      "sha256": "545a52f423e4187c33b512e2280987b30bc58a0c8c7425b31327c52143a8e044"
+    },
+    {
+      "file": "public/epub-engine.mjs",
+      "sha256": "0624f03f8fe4a5fa806589f97dfe50df29f0f99fe411d290523c84faab2ab680"
+    },
+    {
+      "file": "public/styles.css",
+      "sha256": "e856d63b7800ac2f32c6e7798c1e6b61fc3773c6656de5fff52e16cb0cd62699"
+    }
+  ],
+  "cases": [
+    {
+      "id": "pdf-plain-copy-real-clipboard",
+      "status": "PASS",
+      "text": "Visual page 3"
+    },
+    {
+      "id": "pdf-copy-with-mapped-citation",
+      "status": "PASS",
+      "clipboard": "Visual page 3\n\nSelection PDF fixture. (t.y.)., p. 1."
+    },
+    {
+      "id": "pdf-secondary-pane-cites-selection-page",
+      "status": "PASS",
+      "clipboard": "Visual page 4\n\nSelection PDF fixture. (t.y.)., p. 2."
+    },
+    {
+      "id": "clipboard-api-failure-falls-back",
+      "status": "PASS"
+    },
+    {
+      "id": "pdf-keyboard-navigation-dismisses-selection-copy",
+      "status": "PASS"
+    },
+    {
+      "id": "pdf-copy-policy-keeps-highlights-and-own-notes",
+      "status": "PASS",
+      "copy": {
+        "blocked": true,
+        "text": "Visual page 3"
+      },
+      "cut": {
+        "blocked": true,
+        "text": "Visual page 3"
+      },
+      "annotationCount": 1
+    },
+    {
+      "id": "bibliographic-citation-copy-allowed-when-book-copy-disabled",
+      "status": "PASS"
+    },
+    {
+      "id": "epub-copy-and-chapter-citation",
+      "status": "PASS",
+      "clipboard": "Bu dosya, EPUB motoru adaptörünü denemek için\n\nSelection EPUB fixture. (t.y.).. · Bölüm: Akademik okuma"
+    },
+    {
+      "id": "epub-deselection-dismisses-cached-copy",
+      "status": "PASS"
+    },
+    {
+      "id": "epub-iframe-copy-policy-preserves-selection-and-highlights",
+      "status": "PASS",
+      "copy": {
+        "blocked": true,
+        "text": "Bu dosya, EPUB motoru adaptörünü denemek için"
+      },
+      "cut": {
+        "blocked": true,
+        "text": "Bu dosya, EPUB motoru adaptörünü denemek için"
+      }
+    },
+    {
+      "id": "epub-policy-persists-in-next-chapter",
+      "status": "PASS"
+    },
+    {
+      "id": "toolbar-keyboard-and-320px-layout",
+      "status": "PASS",
+      "toolbar": {
+        "x": 12,
+        "y": 72.53125,
+        "width": 296,
+        "height": 126.75
+      }
+    },
+    {
+      "id": "english-copy-labels-and-toast",
+      "status": "PASS"
+    }
+  ],
+  "browser": "155.0.4283.45",
+  "completed": true,
+  "sourceUnchanged": true,
+  "passed": 13,
+  "total": 13,
+  "completedAt": "2026-10-23T15:35:31.960Z"
+}

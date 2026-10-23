@@ -35,6 +35,19 @@ export function pdfCitationPage(labels, page, language = 'tr') {
   return pdfPageLabel(labels, page) || pdfPageDescription(null, page, language);
 }
 
+// Keep EPUB chapter locators separate from PDF/printed-page locators.
+export function formatCopiedSelection(book, text, { type = 'pdf', labels = null, page, chapter = '', language = 'tr' } = {}) {
+  const quote = String(text || '').trim();
+  if (!quote) return '';
+  if (type === 'epub') {
+    const source = formatCitation(book, 'apa').text;
+    const locator = chapter ? `${language === 'en' ? 'Chapter' : 'Bölüm'}: ${chapter}` : 'EPUB';
+    return `${quote}\n\n${source} · ${locator}`;
+  }
+  const locator = pdfCitationPage(labels, Number(page), language);
+  return `${quote}\n\n${formatCitation(book, 'apa', locator).text}`;
+}
+
 export function normalizeAuthors(value) {
   const list = Array.isArray(value) ? value : [];
   return list.map((author) => {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatCitation, toCslJson, normalizePdfPageLabels, pdfPageLabel, pdfPageDescription, pdfCitationPage } from '../public/citations.mjs';
+import { formatCitation, toCslJson, normalizePdfPageLabels, pdfPageLabel, pdfPageDescription, pdfCitationPage, formatCopiedSelection } from '../public/citations.mjs';
 
 const examples = {
   'tr-single': {
@@ -249,4 +249,21 @@ test('partial labels retain valid pages and fall back only at missing entries', 
   const short = normalizePdfPageLabels(['ii']);
   assert.equal(pdfCitationPage(short, 1), 'ii');
   assert.equal(pdfCitationPage(short, 2), 'PDF sayfası 2');
+});
+
+
+test('copied PDF quotations cite the selection page, including mapped and fallback locators', () => {
+  const book = examples['en-two'].book;
+  assert.match(formatCopiedSelection(book, 'Selected text', {page: 3, labels: ['i','ii','125']}), /Selected text\n\n.*p\. 125\./);
+  assert.match(formatCopiedSelection(book, 'Selected text', {page: 3, language: 'en'}), /PDF page 3\./);
+  assert.match(formatCopiedSelection(book, 'Selected text', {page: 3}), /PDF sayfası 3\./);
+});
+
+test('EPUB quotations use chapter locators without inventing PDF or printed pages', () => {
+  const result = formatCopiedSelection(examples['en-two'].book, 'EPUB quote', {type:'epub',chapter:'Methods',language:'en'});
+  assert.match(result, /EPUB quote\n\n/);
+  assert.match(result, /Chapter: Methods$/);
+  assert.doesNotMatch(result, /PDF page|p\. Methods|epubcfi/);
+  assert.match(formatCopiedSelection(examples['en-two'].book,'Text',{type:'epub'}), / · EPUB$/);
+  assert.equal(formatCopiedSelection(examples['en-two'].book,'  ',{}),'');
 });
