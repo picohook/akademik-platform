@@ -1,0 +1,1 @@
+All eight behavioral checks passed, but strict acceptance remained FAILED due to a browser resize pageerror and a report status-field collision. Full cleanup succeeded. Retained for diagnosis; not final acceptance.

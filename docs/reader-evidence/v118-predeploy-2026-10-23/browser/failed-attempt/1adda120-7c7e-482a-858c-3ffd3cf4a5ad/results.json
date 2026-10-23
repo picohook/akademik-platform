@@ -1,0 +1,361 @@
+{
+  "runId": "1adda120-7c7e-482a-858c-3ffd3cf4a5ad",
+  "startedAt": "2026-10-23T18:36:54.862Z",
+  "version": 118,
+  "status": "failed",
+  "source": {
+    "server.mjs": "2bc3323a61d6b959b89f7b6e84d0218c68ac39499ae3188bd4324d51f5c9e86c",
+    "indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+    "download-tickets.mjs": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+    "social-watermark.mjs": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+    "public/app.js": "813d058796534256df77de2028a737bebf69b00a2db9707b6b6fd7cacb562021",
+    "public/index.html": "325ce8dacbe4fcc502ea50ba39f603cc2d75457f562df17c43d66d18fe980082",
+    "public/offline.mjs": "d1660751a9c67d4f847fdb87c31f0ed8ff19b742f5cac884c6b2be258e4c3c85",
+    "public/downloads.mjs": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+    "public/sw.js": "8bb94547be02116a58d537f3b2a26732ba0e00bfd55880b22952a5ebc50047e6",
+    "public/epub-engine.mjs": "0624f03f8fe4a5fa806589f97dfe50df29f0f99fe411d290523c84faab2ab680",
+    "public/styles.css": "e856d63b7800ac2f32c6e7798c1e6b61fc3773c6656de5fff52e16cb0cd62699",
+    "public/i18n.mjs": "b50204c9cc79ade96105943d03db58be764fbaaf5f499c992a5a5b0f72c54ba3",
+    "public/citations.mjs": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+    "db/schema.sql": "a2aef0ad519ea7ef4c18c37fa145b69bec33454acf25440a58760d9b9eb55c66",
+    "db/seed.sql": "b8d845cea00579ccd0b13fcbb94e9d050c42d1fff736ec4dd36e1137f67ce587"
+  },
+  "cases": [
+    {
+      "bookId": "33333333-3333-3333-3333-333333333333",
+      "sha256": "efbcc9dddc4cea1c4a5fb103ca1705f96bab66afd308a0f04973178e48346ca6",
+      "bytes": 1561,
+      "nativeIndexedDBBlob": true,
+      "stampMarkers": [
+        "user UUID",
+        "tenant UUID",
+        "email",
+        "platform",
+        "original text"
+      ],
+      "requests": [
+        {
+          "phase": "pdf-card-native-indexeddb-stamped-bytes",
+          "method": "POST",
+          "path": "/api/books/33333333-3333-3333-3333-333333333333/download-ticket"
+        },
+        {
+          "phase": "pdf-card-native-indexeddb-stamped-bytes",
+          "method": "POST",
+          "path": "/api/books/33333333-3333-3333-3333-333333333333/download"
+        }
+      ],
+      "downloadProvenance": "ticketed-download-v1",
+      "id": "pdf-card-native-indexeddb-stamped-bytes",
+      "status": "PASS"
+    },
+    {
+      "bookId": "6f7ce968-0d95-48e5-bef4-9ef055f170b2",
+      "sha256": "94a55de1a17e366ab4e47fa83d1303b588198fb49c673474e438a8448381048a",
+      "bytes": 1477,
+      "nativeIndexedDBBlob": true,
+      "stampMarkers": [
+        "user UUID",
+        "tenant UUID",
+        "email",
+        "platform",
+        "original text"
+      ],
+      "requests": [
+        {
+          "phase": "epub-card-native-indexeddb-stamped-bytes",
+          "method": "POST",
+          "path": "/api/books/6f7ce968-0d95-48e5-bef4-9ef055f170b2/download-ticket"
+        },
+        {
+          "phase": "epub-card-native-indexeddb-stamped-bytes",
+          "method": "POST",
+          "path": "/api/books/6f7ce968-0d95-48e5-bef4-9ef055f170b2/download"
+        }
+      ],
+      "downloadProvenance": "ticketed-download-v1",
+      "id": "epub-card-native-indexeddb-stamped-bytes",
+      "status": "PASS"
+    },
+    {
+      "cache": "akademik-shell-v9",
+      "controller": true,
+      "id": "serviceworker-v9-complete-shell",
+      "status": "PASS"
+    },
+    {
+      "prefillStatuses": [
+        201,
+        201,
+        201,
+        201,
+        201,
+        201,
+        201,
+        201,
+        201,
+        201
+      ],
+      "httpStatus": 429,
+      "retryAfter": 59,
+      "toast": "Çok fazla indirme isteği; 59 saniye sonra tekrar deneyin.",
+      "unchangedBookCount": 2,
+      "id": "real429-ui-wait-no-write",
+      "status": "PASS"
+    },
+    {
+      "hardReload": true,
+      "nativeNetworkOffline": true,
+      "cachedBooks": 2,
+      "id": "hard-reload-network-offline",
+      "status": "PASS"
+    },
+    {
+      "reader": "pdf",
+      "originalAndIdentityRendered": true,
+      "nativeNetworkOffline": true,
+      "id": "offline-pdf-native-render",
+      "status": "PASS"
+    },
+    {
+      "reader": "epub",
+      "originalAndIdentityRendered": true,
+      "nativeNetworkOffline": true,
+      "id": "offline-epub-native-iframe-render",
+      "status": "PASS"
+    },
+    {
+      "browser": "155.0.4283.45",
+      "browserArgs": [
+        "--disable-features=StaticStorageQuota"
+      ],
+      "baseline": {
+        "quota": 1009041057,
+        "usage": 4046470,
+        "usageDetails": {
+          "caches": 3970364,
+          "indexedDB": 73728,
+          "serviceWorkerRegistrations": 2378
+        }
+      },
+      "requestedQuota": 4047494,
+      "observed": {
+        "quota": 4047494,
+        "usage": 4046470,
+        "usageDetails": {
+          "caches": 3970364,
+          "indexedDB": 73728,
+          "serviceWorkerRegistrations": 2378
+        }
+      },
+      "observedNative": {
+        "usage": 4046470,
+        "quota": 4047494,
+        "overrideActive": true,
+        "usageBreakdown": [
+          {
+            "storageType": "file_systems",
+            "usage": 0
+          },
+          {
+            "storageType": "indexeddb",
+            "usage": 73728
+          },
+          {
+            "storageType": "cache_storage",
+            "usage": 3970364
+          },
+          {
+            "storageType": "service_workers",
+            "usage": 2378
+          }
+        ]
+      },
+      "toast": "Çevrimdışı alan yetersiz",
+      "unchangedBooks": [
+        {
+          "id": "33333333-3333-3333-3333-333333333333",
+          "sha256": "650b2c23a71a6d75f9f22923abb42686a421f2d9464ca5a422b499707f6f4e65"
+        }
+      ],
+      "nativeOverride": true,
+      "mockedStorage": false,
+      "coverage": "native quota estimate admission guard; not an IndexedDB transaction QuotaExceededError or physical disk-full test",
+      "id": "controlled-native-quota-admission-no-write",
+      "status": "PASS"
+    }
+  ],
+  "cleanup": {
+    "browser": true,
+    "app": true,
+    "database": true,
+    "temporaryCopy": true
+  },
+  "limitations": [
+    "CDP native origin quota override; not physical disk-full hardware.",
+    "Only generated small PDF and reflowable EPUB; no scan/500MB fixture.",
+    "Isolated loopback app and PostgreSQL; not production or human screen-reader acceptance."
+  ],
+  "postgresImage": "sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea",
+  "databaseRole": {
+    "rolsuper": false,
+    "rolbypassrls": false
+  },
+  "browser": "155.0.4283.45",
+  "login": "real API login with browser cookie jar, followed by actual UI offline card clicks",
+  "fixture": {
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "userId": "4e9a4bdf-5ac2-45e2-826e-6b2f436832ca",
+    "email": "offline-reader@browser.test",
+    "books": [
+      {
+        "id": "33333333-3333-3333-3333-333333333333",
+        "asset": "55555555-5555-5555-5555-555555555555",
+        "title": "Browser PDF fixture",
+        "format": "pdf",
+        "filename": "browser.pdf",
+        "original": "Original offline PDF fixture"
+      },
+      {
+        "id": "6f7ce968-0d95-48e5-bef4-9ef055f170b2",
+        "asset": "78d4894c-a4b7-433e-8988-344e1bdc6a46",
+        "title": "Browser EPUB fixture",
+        "format": "epub",
+        "filename": "browser.epub",
+        "original": "Original offline EPUB fixture"
+      },
+      {
+        "id": "13e98550-2422-4a50-9019-9cb2d8292821",
+        "asset": "8a20102d-e335-491e-b925-2bbd3c0e9d70",
+        "title": "Browser quota rate fixture",
+        "format": "pdf",
+        "filename": "quota.pdf",
+        "original": "Original quota fixture"
+      }
+    ],
+    "b2bEnvironment": "unset; secure default exercised",
+    "watermarkMetadata": false
+  },
+  "completedAt": "2026-10-23T18:37:36.954Z",
+  "requests": [
+    {
+      "phase": "pdf-card-native-indexeddb-stamped-bytes",
+      "method": "POST",
+      "path": "/api/books/33333333-3333-3333-3333-333333333333/download-ticket"
+    },
+    {
+      "phase": "pdf-card-native-indexeddb-stamped-bytes",
+      "method": "POST",
+      "path": "/api/books/33333333-3333-3333-3333-333333333333/download"
+    },
+    {
+      "phase": "epub-card-native-indexeddb-stamped-bytes",
+      "method": "POST",
+      "path": "/api/books/6f7ce968-0d95-48e5-bef4-9ef055f170b2/download-ticket"
+    },
+    {
+      "phase": "epub-card-native-indexeddb-stamped-bytes",
+      "method": "POST",
+      "path": "/api/books/6f7ce968-0d95-48e5-bef4-9ef055f170b2/download"
+    },
+    {
+      "phase": "real429-ui-wait-no-write",
+      "method": "POST",
+      "path": "/api/books/13e98550-2422-4a50-9019-9cb2d8292821/download-ticket"
+    },
+    {
+      "phase": "real429-ui-wait-no-write",
+      "method": "POST",
+      "path": "/api/books/13e98550-2422-4a50-9019-9cb2d8292821/download-ticket"
+    },
+    {
+      "phase": "real429-ui-wait-no-write",
+      "method": "POST",
+      "path": "/api/books/13e98550-2422-4a50-9019-9cb2d8292821/download-ticket"
+    },
+    {
+      "phase": "real429-ui-wait-no-write",
+      "method": "POST",
+      "path": "/api/books/13e98550-2422-4a50-9019-9cb2d8292821/download-ticket"
+    },
+    {
+      "phase": "real429-ui-wait-no-write",
+      "method": "POST",
+      "path": "/api/books/13e98550-2422-4a50-9019-9cb2d8292821/download-ticket"
+    },
+    {
+      "phase": "real429-ui-wait-no-write",
+      "method": "POST",
+      "path": "/api/books/13e98550-2422-4a50-9019-9cb2d8292821/download-ticket"
+    },
+    {
+      "phase": "real429-ui-wait-no-write",
+      "method": "POST",
+      "path": "/api/books/13e98550-2422-4a50-9019-9cb2d8292821/download-ticket"
+    },
+    {
+      "phase": "real429-ui-wait-no-write",
+      "method": "POST",
+      "path": "/api/books/13e98550-2422-4a50-9019-9cb2d8292821/download-ticket"
+    },
+    {
+      "phase": "real429-ui-wait-no-write",
+      "method": "POST",
+      "path": "/api/books/13e98550-2422-4a50-9019-9cb2d8292821/download-ticket"
+    },
+    {
+      "phase": "real429-ui-wait-no-write",
+      "method": "POST",
+      "path": "/api/books/13e98550-2422-4a50-9019-9cb2d8292821/download-ticket"
+    },
+    {
+      "phase": "real429-ui-wait-no-write",
+      "method": "POST",
+      "path": "/api/books/13e98550-2422-4a50-9019-9cb2d8292821/download-ticket"
+    },
+    {
+      "phase": "controlled-native-quota-admission-no-write",
+      "method": "POST",
+      "path": "/api/books/33333333-3333-3333-3333-333333333333/download-ticket"
+    },
+    {
+      "phase": "controlled-native-quota-admission-no-write",
+      "method": "POST",
+      "path": "/api/books/33333333-3333-3333-3333-333333333333/download"
+    },
+    {
+      "phase": "controlled-native-quota-admission-no-write",
+      "method": "POST",
+      "path": "/api/books/13e98550-2422-4a50-9019-9cb2d8292821/download-ticket"
+    },
+    {
+      "phase": "controlled-native-quota-admission-no-write",
+      "method": "POST",
+      "path": "/api/books/13e98550-2422-4a50-9019-9cb2d8292821/download"
+    }
+  ],
+  "browserErrors": [
+    {
+      "phase": "offline-epub-native-iframe-render",
+      "message": "Cannot read properties of undefined (reading 'resize')",
+      "stack": "TypeError: Cannot read properties of undefined (reading 'resize')\n    at b.resize (http://127.0.0.1:52656/vendor/epubjs/epub.min.js:1:86565)\n    at EpubEngine.resize (http://127.0.0.1:52656/epub-engine.mjs:167:20)\n    at ResizeObserver.resizeObserver (http://127.0.0.1:52656/epub-engine.mjs:116:39)"
+    }
+  ],
+  "sourceStillMatches": {
+    "server.mjs": true,
+    "indexer.mjs": true,
+    "download-tickets.mjs": true,
+    "social-watermark.mjs": true,
+    "public/app.js": true,
+    "public/index.html": true,
+    "public/offline.mjs": true,
+    "public/downloads.mjs": true,
+    "public/sw.js": true,
+    "public/epub-engine.mjs": true,
+    "public/styles.css": true,
+    "public/i18n.mjs": true,
+    "public/citations.mjs": true,
+    "db/schema.sql": true,
+    "db/seed.sql": true
+  }
+}

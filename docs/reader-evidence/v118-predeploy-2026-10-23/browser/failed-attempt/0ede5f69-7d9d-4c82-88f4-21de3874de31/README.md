@@ -1,0 +1,1 @@
+Failed isolated browser attempt: default Edge quota override was confirmed, but no native transaction quota toast was observed. Three preceding scenarios passed and all owned resources were cleaned. This is not the final acceptance report.

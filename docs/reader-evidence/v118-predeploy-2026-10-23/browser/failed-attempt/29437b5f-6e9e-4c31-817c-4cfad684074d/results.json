@@ -1,0 +1,177 @@
+{
+  "runId": "29437b5f-6e9e-4c31-817c-4cfad684074d",
+  "startedAt": "2026-10-23T18:26:44.837Z",
+  "version": 118,
+  "status": "failed",
+  "source": {
+    "server.mjs": "2bc3323a61d6b959b89f7b6e84d0218c68ac39499ae3188bd4324d51f5c9e86c",
+    "indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+    "download-tickets.mjs": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+    "social-watermark.mjs": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+    "public/app.js": "813d058796534256df77de2028a737bebf69b00a2db9707b6b6fd7cacb562021",
+    "public/index.html": "325ce8dacbe4fcc502ea50ba39f603cc2d75457f562df17c43d66d18fe980082",
+    "public/offline.mjs": "d1660751a9c67d4f847fdb87c31f0ed8ff19b742f5cac884c6b2be258e4c3c85",
+    "public/downloads.mjs": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+    "public/sw.js": "8bb94547be02116a58d537f3b2a26732ba0e00bfd55880b22952a5ebc50047e6",
+    "public/epub-engine.mjs": "0624f03f8fe4a5fa806589f97dfe50df29f0f99fe411d290523c84faab2ab680",
+    "public/styles.css": "e856d63b7800ac2f32c6e7798c1e6b61fc3773c6656de5fff52e16cb0cd62699",
+    "public/i18n.mjs": "b50204c9cc79ade96105943d03db58be764fbaaf5f499c992a5a5b0f72c54ba3",
+    "public/citations.mjs": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+    "db/schema.sql": "a2aef0ad519ea7ef4c18c37fa145b69bec33454acf25440a58760d9b9eb55c66",
+    "db/seed.sql": "b8d845cea00579ccd0b13fcbb94e9d050c42d1fff736ec4dd36e1137f67ce587"
+  },
+  "cases": [
+    {
+      "id": "33333333-3333-3333-3333-333333333333",
+      "status": "PASS",
+      "sha256": "08ebe37eb48be066e577973d93dd6310f7df98d9cc301c096c31873fd8e31e94",
+      "bytes": 1562,
+      "nativeIndexedDBBlob": true,
+      "stampMarkers": [
+        "user UUID",
+        "tenant UUID",
+        "email",
+        "platform",
+        "original text"
+      ],
+      "requests": [
+        {
+          "phase": "pdf-card-native-indexeddb-stamped-bytes",
+          "method": "POST",
+          "path": "/api/books/33333333-3333-3333-3333-333333333333/download-ticket"
+        },
+        {
+          "phase": "pdf-card-native-indexeddb-stamped-bytes",
+          "method": "POST",
+          "path": "/api/books/33333333-3333-3333-3333-333333333333/download"
+        }
+      ],
+      "downloadProvenance": "ticketed-download-v1"
+    },
+    {
+      "id": "2583dc2f-7daf-4962-8e66-3dddf6574ae2",
+      "status": "PASS",
+      "sha256": "4a0a1270016376f3a31cd7c6c4564af2b5b7541419039480330afcf374c1379b",
+      "bytes": 1477,
+      "nativeIndexedDBBlob": true,
+      "stampMarkers": [
+        "user UUID",
+        "tenant UUID",
+        "email",
+        "platform",
+        "original text"
+      ],
+      "requests": [
+        {
+          "phase": "epub-card-native-indexeddb-stamped-bytes",
+          "method": "POST",
+          "path": "/api/books/2583dc2f-7daf-4962-8e66-3dddf6574ae2/download-ticket"
+        },
+        {
+          "phase": "epub-card-native-indexeddb-stamped-bytes",
+          "method": "POST",
+          "path": "/api/books/2583dc2f-7daf-4962-8e66-3dddf6574ae2/download"
+        }
+      ],
+      "downloadProvenance": "ticketed-download-v1"
+    },
+    {
+      "id": "native-quota-admission-rejection-no-write",
+      "status": "FAIL",
+      "error": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert.ok(observed.quota < baseline.quota)\n\n    at nativeQuota (file:///C:/Users/OWNER/Documents/deepseek-harness/default-workspace/akademik-platform/spike/app/test/offline-browser.integration.mjs:103:90)\n    at async stage (file:///C:/Users/OWNER/Documents/deepseek-harness/default-workspace/akademik-platform/spike/app/test/offline-browser.integration.mjs:42:59)\n    at async file:///C:/Users/OWNER/Documents/deepseek-harness/default-workspace/akademik-platform/spike/app/test/offline-browser.integration.mjs:138:3"
+    }
+  ],
+  "cleanup": {
+    "browser": true,
+    "app": true,
+    "database": true,
+    "temporaryCopy": true
+  },
+  "limitations": [
+    "CDP native origin quota override; not physical disk-full hardware.",
+    "Only generated small PDF and reflowable EPUB; no scan/500MB fixture.",
+    "Isolated loopback app and PostgreSQL; not production or human screen-reader acceptance."
+  ],
+  "postgresImage": "sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea",
+  "databaseRole": {
+    "rolsuper": false,
+    "rolbypassrls": false
+  },
+  "browser": "155.0.4283.45",
+  "login": "real API login with browser cookie jar, followed by actual UI offline card clicks",
+  "fixture": {
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "userId": "84ef391e-f0a0-45db-af8f-69a1f1c368c9",
+    "email": "offline-reader@browser.test",
+    "books": [
+      {
+        "id": "33333333-3333-3333-3333-333333333333",
+        "asset": "55555555-5555-5555-5555-555555555555",
+        "title": "Browser PDF fixture",
+        "format": "pdf",
+        "filename": "browser.pdf",
+        "original": "Original offline PDF fixture"
+      },
+      {
+        "id": "2583dc2f-7daf-4962-8e66-3dddf6574ae2",
+        "asset": "913379da-1952-4b8a-bf93-3164b287c017",
+        "title": "Browser EPUB fixture",
+        "format": "epub",
+        "filename": "browser.epub",
+        "original": "Original offline EPUB fixture"
+      },
+      {
+        "id": "e259a605-a318-4c21-9905-b31b4ce0a5c8",
+        "asset": "5df561f0-36ab-415d-9394-6637877beac7",
+        "title": "Browser quota rate fixture",
+        "format": "pdf",
+        "filename": "quota.pdf",
+        "original": "Original quota fixture"
+      }
+    ],
+    "b2bEnvironment": "unset; secure default exercised",
+    "watermarkMetadata": false
+  },
+  "appLog": "[db] PostgreSQL pool created\n[web] http://localhost:60241 (db mode)\n",
+  "completedAt": "2026-10-23T18:27:22.952Z",
+  "requests": [
+    {
+      "phase": "pdf-card-native-indexeddb-stamped-bytes",
+      "method": "POST",
+      "path": "/api/books/33333333-3333-3333-3333-333333333333/download-ticket"
+    },
+    {
+      "phase": "pdf-card-native-indexeddb-stamped-bytes",
+      "method": "POST",
+      "path": "/api/books/33333333-3333-3333-3333-333333333333/download"
+    },
+    {
+      "phase": "epub-card-native-indexeddb-stamped-bytes",
+      "method": "POST",
+      "path": "/api/books/2583dc2f-7daf-4962-8e66-3dddf6574ae2/download-ticket"
+    },
+    {
+      "phase": "epub-card-native-indexeddb-stamped-bytes",
+      "method": "POST",
+      "path": "/api/books/2583dc2f-7daf-4962-8e66-3dddf6574ae2/download"
+    }
+  ],
+  "browserErrors": [],
+  "sourceStillMatches": {
+    "server.mjs": true,
+    "indexer.mjs": true,
+    "download-tickets.mjs": true,
+    "social-watermark.mjs": true,
+    "public/app.js": true,
+    "public/index.html": true,
+    "public/offline.mjs": true,
+    "public/downloads.mjs": true,
+    "public/sw.js": true,
+    "public/epub-engine.mjs": true,
+    "public/styles.css": true,
+    "public/i18n.mjs": true,
+    "public/citations.mjs": true,
+    "db/schema.sql": true,
+    "db/seed.sql": true
+  }
+}

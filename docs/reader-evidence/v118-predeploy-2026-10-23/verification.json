@@ -1,0 +1,31 @@
+{
+  "status": "passed",
+  "checkedAt": "2026-10-23T18:42:00.135Z",
+  "browserCases": 8,
+  "browserPageErrors": 0,
+  "browserCleanup": {
+    "browser": true,
+    "app": true,
+    "database": true,
+    "temporaryCopy": true
+  },
+  "currentBrowserSourceHashesMatched": 15,
+  "artifactHashesMatched": 14,
+  "historicalManifestUnchangedFiles": 24,
+  "intentionalDelta": [
+    "spike/app/public/epub-engine.mjs"
+  ],
+  "epubEngineSha256": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885",
+  "epubCopyPolicyRetest": {
+    "command": "node test/epub-copy-policy.test.mjs",
+    "exitCode": 0,
+    "passed": 7,
+    "failed": 0
+  },
+  "productionReadonlyCheck": {
+    "version": "116",
+    "healthStatus": 200,
+    "mode": "db",
+    "deployed": false
+  }
+}

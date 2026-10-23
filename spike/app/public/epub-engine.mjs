@@ -159,7 +159,9 @@ export class EpubEngine {
   }
 
   resize() {
-    if (!this.rendition) return;
+    // renderTo() creates its manager asynchronously; ResizeObserver can run first.
+    // The display completion calls resize() again once the manager is ready.
+    if (this.disposed || !this.rendition?.manager) return;
     const width = Math.max(320, Math.floor(this.container.clientWidth || window.innerWidth));
     const height = Math.max(420, Math.floor(this.container.clientHeight || window.innerHeight - 90));
     if (this.lastSize && Math.abs(this.lastSize.width - width) < 2 && Math.abs(this.lastSize.height - height) < 2) return;

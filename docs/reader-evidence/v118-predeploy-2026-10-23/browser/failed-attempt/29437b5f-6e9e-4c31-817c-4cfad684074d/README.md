@@ -1,0 +1,1 @@
+Failed isolated browser attempt: initial native quota assertion incorrectly assumed navigator.storage.estimate reflects the DevTools override. PDF/EPUB IndexedDB saves passed; all owned resources were cleaned. This is not the final acceptance report.

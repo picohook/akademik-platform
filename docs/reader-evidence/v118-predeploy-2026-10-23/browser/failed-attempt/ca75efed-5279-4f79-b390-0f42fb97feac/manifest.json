@@ -1,0 +1,73 @@
+{
+  "runId": "ca75efed-5279-4f79-b390-0f42fb97feac",
+  "source": {
+    "server.mjs": "2bc3323a61d6b959b89f7b6e84d0218c68ac39499ae3188bd4324d51f5c9e86c",
+    "indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+    "download-tickets.mjs": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+    "social-watermark.mjs": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+    "public/app.js": "813d058796534256df77de2028a737bebf69b00a2db9707b6b6fd7cacb562021",
+    "public/index.html": "325ce8dacbe4fcc502ea50ba39f603cc2d75457f562df17c43d66d18fe980082",
+    "public/offline.mjs": "d1660751a9c67d4f847fdb87c31f0ed8ff19b742f5cac884c6b2be258e4c3c85",
+    "public/downloads.mjs": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+    "public/sw.js": "8bb94547be02116a58d537f3b2a26732ba0e00bfd55880b22952a5ebc50047e6",
+    "public/epub-engine.mjs": "0624f03f8fe4a5fa806589f97dfe50df29f0f99fe411d290523c84faab2ab680",
+    "public/styles.css": "e856d63b7800ac2f32c6e7798c1e6b61fc3773c6656de5fff52e16cb0cd62699",
+    "public/i18n.mjs": "b50204c9cc79ade96105943d03db58be764fbaaf5f499c992a5a5b0f72c54ba3",
+    "public/citations.mjs": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+    "db/schema.sql": "a2aef0ad519ea7ef4c18c37fa145b69bec33454acf25440a58760d9b9eb55c66",
+    "db/seed.sql": "b8d845cea00579ccd0b13fcbb94e9d050c42d1fff736ec4dd36e1137f67ce587"
+  },
+  "artifacts": [
+    {
+      "file": "controlled-native-quota-admission.png",
+      "bytes": 240066,
+      "sha256": "eeea95db4dbe0de1fcebba76f264e68157bbc6f40f5bd5d91819350a31d98e35"
+    },
+    {
+      "file": "offline-render-epub.png",
+      "bytes": 29865,
+      "sha256": "cc92aae2ff898efac108c4be4ee60f71067a319f1bc1426c572f892a000ef596"
+    },
+    {
+      "file": "offline-render-pdf.png",
+      "bytes": 30796,
+      "sha256": "d62d3b68bed09b3ab0567fc180473fcf1ddaa3db0cc127c1f70bce246725950f"
+    },
+    {
+      "file": "real-rate-limit.png",
+      "bytes": 241060,
+      "sha256": "39bc2de1ba0a645a2055702c6122110efaf72e3d1ea4878b1e878f1679f40abd"
+    },
+    {
+      "file": "results.json",
+      "bytes": 11485,
+      "sha256": "1ff782045bd1be1d2b1687ca4aa96aab3f1d312784e433d7f0bedd929cf1d505"
+    },
+    {
+      "file": "saved-epub.epub",
+      "bytes": 1476,
+      "sha256": "9ec8117f75f8c0bfd63478a0ba20435fe5d643baa4f20c782b12c0d9bf41d479"
+    },
+    {
+      "file": "saved-epub.png",
+      "bytes": 240452,
+      "sha256": "fe992e04197f8c26dc1d39a20d6184fae27638fad15811362240edaa09e1bfe9"
+    },
+    {
+      "file": "saved-pdf.pdf",
+      "bytes": 1562,
+      "sha256": "2a9cfc79ffd1e639e863b7f0d6e9534eb11f2a1af9bfe62822449fb60cdd589f"
+    },
+    {
+      "file": "saved-pdf.png",
+      "bytes": 239124,
+      "sha256": "6bf7b0f184c07a10aa745617dd97b9197d7b1f52fdfe2f76db830d5bc191844e"
+    }
+  ],
+  "cleanup": {
+    "browser": true,
+    "app": true,
+    "database": true,
+    "temporaryCopy": true
+  }
+}

@@ -1,9 +1,32 @@
-# Social DRM + access control — P0 / v118 remediation
+# Social watermarking + access control — P0 / v118 remediation
 
 This package adds traceable downloads through the app's **Download** and
-**Offline ↓** actions. It is **social DRM + access control**. The reader receives
+**Offline ↓** actions. The product description is **social watermarking + access control**. The reader receives
 the original stream; this is not a promise that every obtainable copy is
 watermarked or traceable. AES at rest belongs to P1.
+
+## Accepted product scope — 2026-10-23
+
+The product owner explicitly accepted the following scope for P0. This is the
+technical scope to carry into sales and contract documentation:
+
+> Platform, indirme düğmesi ve v118 sonrası yeni çevrimdışı kayıtlar için
+> kullanıcı/kurum/tarih filigranı uygular. Okuyucu içi PDF/EPUB akışı oturum ve
+> erişim yetkisiyle korunur; ancak bu akış teknik olarak kaydedilebilir. Her
+> kopyanın izlenebilirliği veya kopyalanamazlığı garanti edilmez. Ekran görüntüsü,
+> fotoğraf ve yetkili kullanıcı tarafından yeniden oluşturma kapsam dışıdır.
+
+Explicit exclusions are the original `/file` and `/book.epub` reader streams,
+offline copies saved before v118, screenshots/photos, resistance to watermark
+removal and traceability of every copy. Existing offline copies are **excluded**;
+this release does not force redownload or retroactively stamp/revoke them.
+Users who require stamped local copies must remove and download them again.
+The audited administrator exception described below remains explicit.
+
+Market this as **“sosyal filigran + erişim kontrolü”**, rather than DRM or a
+copy-prevention guarantee. A publisher requirement for stronger reader-stream
+protection is a separate scoped project; no licensing, timetable or absolute
+copy-protection guarantee is implied here.
 
 ## Reader-stream boundary and legacy offline copies
 
@@ -213,10 +236,22 @@ and verifies no added rectangle/fill/image plus translucent stamp text.
 [Existing security output](security-evidence/v118-2026-10-23/security-validation.txt)
 covers publisher isolation, grant SQL failure and cross-process login limits.
 
-Static peer review reported no concrete blocker in rate/purge implementation.
-**Independent rereview is pending.** Storage callbacks were injected in the
-offline helper integration; real IndexedDB/browser acceptance was not run.
-No production deployment is claimed. Historical v117 37/189/68 results remain
+Independent rereview conditionally passed; the product owner accepted the
+documented reader-stream and legacy-copy boundaries. Follow-up predeployment
+acceptance completed on 2026-10-23: **8/8 Edge cases**, **0 page errors**,
+**4/4 cleanup**, plus the production-backup clone's migration and **15 smoke
+assertions**. Seven browser cases use default Edge and real IndexedDB; the eighth
+uses a separately launched browser with `--disable-features=StaticStorageQuota`
+and native quota override to test the admission guard. Actual transaction-level
+`QuotaExceededError` and physical disk-full behavior were not established.
+See the [accepted scope, results and limitations](V118-PREDEPLOY-2026-10-23.md).
+
+Acceptance found and fixed an EPUB initialization resize race in the adapter;
+its copy-policy units passed again (**7/7**) and the final browser run records
+the patched engine hash. Backend/ticket/migration/watermark code is unchanged
+from the historical integration evidence. No production deployment is claimed;
+production HTTPS still reports **v116**, health **200 / DB**.
+Historical v117 37/189/68 results remain
 unchanged in their evidence folder and are superseded by v118's 55/295/68 for
 this remediation. The manifest records tested source Git blobs, including
 LF/CRLF normalization. Original reader-byte extraction is tested and documented

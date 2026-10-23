@@ -1,0 +1,62 @@
+{
+  "release": "v118 predeploy",
+  "createdAt": "2026-10-23T18:11:54.554Z",
+  "renderer": "PDF.js 5.4.296 + @napi-rs/canvas",
+  "sourceModule": "spike/app/social-watermark.mjs",
+  "sourceSha256": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+  "scope": "Controlled dense text, controlled image-only PDF surrogate, crop/Unicode. No production access. Manual image review recorded separately.",
+  "cases": [
+    {
+      "name": "dense-text",
+      "scale": 2,
+      "dimensions": {
+        "width": 1190,
+        "height": 1684
+      },
+      "originalSourceSha256": "6fed2eefeca1042bba44f6ea83444887a8c20121242f8ddbf255d4459e8b3995",
+      "stampedSha256": "a6f3bcfe21d065c2cc64a34406fb0f468e60bc4874d0dc357f388addbf61a3ae",
+      "pixels": {
+        "originalDark": 126859,
+        "lightenedAbove130": 0,
+        "fraction": 0
+      },
+      "extractedStampText": true
+    },
+    {
+      "name": "image-only-scan-surrogate",
+      "scale": 2,
+      "dimensions": {
+        "width": 1190,
+        "height": 1684
+      },
+      "originalSourceSha256": "db623f234cd21d866121478290427d6cc56fd2e05493fd43383b161111bdac80",
+      "stampedSha256": "c14974d41af18e2dc0b219865e3abf5a8a68430850b0782dde3245b88c3a4d18",
+      "pixels": {
+        "originalDark": 126859,
+        "lightenedAbove130": 0,
+        "fraction": 0
+      },
+      "extractedStampText": true
+    },
+    {
+      "name": "small-crop-unicode",
+      "scale": 3,
+      "dimensions": {
+        "width": 660,
+        "height": 750
+      },
+      "originalSourceSha256": "ed90df074e6771de7066a07c3ea61b35b26f318e005556fa8503d610c251a956",
+      "stampedSha256": "7067ef0a9b44d5b3246a82e173d8d2a2404793fad6c7511b57e23c023b67919e",
+      "pixels": {
+        "originalDark": 9602,
+        "lightenedAbove130": 0,
+        "fraction": 0
+      },
+      "extractedStampText": true
+    }
+  ],
+  "tinyPage": {
+    "status": "FAIL_CLOSED",
+    "error": "PDF page is too narrow for a readable watermark"
+  }
+}

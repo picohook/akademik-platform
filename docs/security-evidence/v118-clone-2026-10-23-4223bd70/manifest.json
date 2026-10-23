@@ -1,0 +1,61 @@
+{
+  "status": "passed",
+  "pinnedCommit": "1c2ab001e60a633d1c4a3241e34b95645d34f020",
+  "backup": {
+    "file": "backups/akademik-pre-v118-clone-2026-10-23T18-11-00-088Z-0f003705.dump",
+    "bytes": 85323,
+    "sha256": "702fe200d563b5c897ec1022801b0beb5a8fdc2ea05761adf3d7048d3b352365",
+    "format": "PostgreSQL custom archive; unchanged full pg_dump including original ACL/owner metadata",
+    "containsProductionData": true,
+    "publish": false,
+    "reusedAfterFixtureCorrection": true
+  },
+  "artifacts": [
+    {
+      "path": "results.json",
+      "sha256": "8ba17fb5fc17eb9202932376428dc2c3dc62363aa53c63e39dda5a0a2e70443c"
+    },
+    {
+      "path": "restored-schema-before.json",
+      "sha256": "5a652f42abbb99ddc69e5591b55b8fda30eda274128d749ad3c131a92536e4c7"
+    },
+    {
+      "path": "clone-check-helper.mjs",
+      "sha256": "30ae887a8110399ab903d97732634eb3393678b94cc0a525ca0f17f98943b91b"
+    },
+    {
+      "path": "README.md",
+      "sha256": "ceba0435557dc2fcba9e0ec719415b9fb3dce1afe19dafa97dfd536c4923eb03"
+    }
+  ],
+  "cloneAppSmokeExplicitAssertions": 15,
+  "migrationExecutions": [
+    "013",
+    "014",
+    "013-repeat",
+    "014-repeat"
+  ],
+  "sourceEvidence": {
+    "report": "../v118-2026-10-23/social-drm-results.json",
+    "sha256": "d016e9f3d3b5515721be12b4c171e9f45de831512077424ea4b4f45e07435ea5",
+    "checks": 295,
+    "sourceBlobsMatchPin": true,
+    "realDatabaseIssueTrafficLimitsAndPurge": [
+      "DB issue10/min and traffic40/min shared across processes; Retry-After, saturating counters, bounded audit and expired-window recovery",
+      "real PostgreSQL maintenance: tenant advisory exclusion, SKIP LOCKED, 1000-row batches, expiry age and tenant boundaries"
+    ],
+    "rerun": false
+  },
+  "productionContainersUnchanged": true,
+  "cleanup": {
+    "appStopped": true,
+    "cloneDatabaseRemoved": true,
+    "temporaryAppRemoved": true
+  },
+  "scope": "Production access limited to readonly pg_dump and Docker inspection. All DDL, sanitization, fixture writes and HTTP smoke affected only the ephemeral clone. No deployment.",
+  "executedHelper": {
+    "path": "tmp/v118-clone-check.mjs",
+    "sha256": "accdbf075f96dd971b224321387cdd5656e0b2128c1aec46da68e6becdc4b29d"
+  },
+  "archivedHelperChange": "Only repository-root URL changed from one parent directory (tmp execution) to three parent directories (evidence-folder execution)."
+}

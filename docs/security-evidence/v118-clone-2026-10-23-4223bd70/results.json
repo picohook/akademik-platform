@@ -1,0 +1,1227 @@
+{
+  "runId": "4223bd70-312b-49f9-b4f3-2ddefe3c6fc1",
+  "sourceCommit": "1c2ab001e60a633d1c4a3241e34b95645d34f020",
+  "startedAt": "2026-10-23T18:16:30.415Z",
+  "status": "passed",
+  "productionAccess": "read-only Docker inspection and pg_dump only; no production SQL writes, migrations, restarts or deploy",
+  "steps": [
+    {
+      "action": "Pinned source and existing 295-check real PostgreSQL evidence verified",
+      "at": "2026-10-23T18:16:59.066Z"
+    },
+    {
+      "action": "Same fresh production backup hash verified; no second pg_dump",
+      "at": "2026-10-23T18:17:36.510Z",
+      "file": "backups/akademik-pre-v118-clone-2026-10-23T18-11-00-088Z-0f003705.dump",
+      "bytes": 85323,
+      "sha256": "702fe200d563b5c897ec1022801b0beb5a8fdc2ea05761adf3d7048d3b352365",
+      "format": "PostgreSQL custom archive; unchanged full pg_dump including original ACL/owner metadata",
+      "containsProductionData": true,
+      "publish": false,
+      "reusedAfterFixtureCorrection": true
+    },
+    {
+      "action": "Production backup restored; effective 001–012 schema confirmed before app startup",
+      "at": "2026-10-23T18:17:54.470Z"
+    },
+    {
+      "action": "Applied pinned migration 013 to clone only",
+      "at": "2026-10-23T18:17:55.368Z"
+    },
+    {
+      "action": "Applied pinned migration 014 to clone only",
+      "at": "2026-10-23T18:17:55.397Z"
+    },
+    {
+      "action": "Applied pinned migration 013-repeat to clone only",
+      "at": "2026-10-23T18:17:55.419Z"
+    },
+    {
+      "action": "Applied pinned migration 014-repeat to clone only",
+      "at": "2026-10-23T18:17:55.437Z"
+    },
+    {
+      "action": "v118 clone app started only after both migrations and idempotency checks",
+      "at": "2026-10-23T18:18:04.979Z"
+    },
+    {
+      "action": "Clone v118 health/login/ticket/download/replay smoke passed",
+      "at": "2026-10-23T18:18:17.608Z"
+    }
+  ],
+  "sources": {
+    "db/migrations/013-download-tickets.sql": "acea4b1d91ab2772342a616beb09d590f3d2d69d3c7aabaeee80bbda1c0a7259",
+    "db/migrations/014-download-ticket-limits.sql": "62d586de6bb0051024a54911b2112db7dcd446cd53cb47c6ed0e609e5fa11029",
+    "spike/app/server.mjs": "2bc3323a61d6b959b89f7b6e84d0218c68ac39499ae3188bd4324d51f5c9e86c",
+    "spike/app/indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+    "spike/app/download-tickets.mjs": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+    "spike/app/social-watermark.mjs": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+    "spike/app/public/search.mjs": "88ac22ab469fc2cc5bf8d0476754a245e6ed9f44b475cbf349dbbaca52145cdc",
+    "spike/app/public/seed/sample.pdf": "3df79d34abbca99308e79cb94461c1893582604d68329a41fd4bec1885e6adb4"
+  },
+  "cleanup": {
+    "appStopped": true,
+    "cloneDatabaseRemoved": true,
+    "temporaryAppRemoved": true
+  },
+  "existingIntegration": {
+    "report": "../v118-2026-10-23/social-drm-results.json",
+    "sha256": "d016e9f3d3b5515721be12b4c171e9f45de831512077424ea4b4f45e07435ea5",
+    "checks": 295,
+    "sourceBlobsMatchPin": true,
+    "realDatabaseIssueTrafficLimitsAndPurge": [
+      "DB issue10/min and traffic40/min shared across processes; Retry-After, saturating counters, bounded audit and expired-window recovery",
+      "real PostgreSQL maintenance: tenant advisory exclusion, SKIP LOCKED, 1000-row batches, expiry age and tenant boundaries"
+    ],
+    "rerun": false
+  },
+  "productionBefore": {
+    "db": "90301242f1eacae5f30e5bf03f60a9f397fe08105094cd1252f09bc213667a36|sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea|2026-10-21T07:30:23.564414916Z|0",
+    "web": "d4215ab5bb4babb9a91315d19f948fc33bfa8e70c9eb4c94e1091c0aad1f5876|sha256:fff613f678235691108f1626be791e9bb51e60ac33928bedc8cebc69612c1488|2026-10-23T16:22:08.758127508Z|0"
+  },
+  "backup": {
+    "file": "backups/akademik-pre-v118-clone-2026-10-23T18-11-00-088Z-0f003705.dump",
+    "bytes": 85323,
+    "sha256": "702fe200d563b5c897ec1022801b0beb5a8fdc2ea05761adf3d7048d3b352365",
+    "format": "PostgreSQL custom archive; unchanged full pg_dump including original ACL/owner metadata",
+    "containsProductionData": true,
+    "publish": false,
+    "reusedAfterFixtureCorrection": true
+  },
+  "baselineSchema": [
+    {
+      "rls": true,
+      "table": "annotations",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notNull": true
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "asset_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "anchor",
+          "type": "jsonb",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "color",
+          "type": "text",
+          "default": "'yellow'::text",
+          "notNull": true
+        },
+        {
+          "name": "note",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "selected_text",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "default": "'active'::text",
+          "notNull": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        },
+        {
+          "name": "tags",
+          "type": "text[]",
+          "default": "'{}'::text[]",
+          "notNull": true
+        }
+      ],
+      "forceRls": true,
+      "policies": [
+        {
+          "name": "annotations_tenant",
+          "check": null,
+          "using": "(tenant_id = (current_setting('app.tenant_id'::text, true))::uuid)"
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "table": "asset_pages",
+      "columns": [
+        {
+          "name": "asset_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "page_no",
+          "type": "integer",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "text_content",
+          "type": "text",
+          "default": "''::text",
+          "notNull": true
+        },
+        {
+          "name": "text_search",
+          "type": "text",
+          "default": "''::text",
+          "notNull": true
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "default": "'pdf'::text",
+          "notNull": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        },
+        {
+          "name": "text_tsv",
+          "type": "tsvector",
+          "default": "to_tsvector('turkish'::regconfig, COALESCE(text_content, ''::text))",
+          "notNull": false
+        },
+        {
+          "name": "text_tsv_en",
+          "type": "tsvector",
+          "default": "to_tsvector('english'::regconfig, COALESCE(text_content, ''::text))",
+          "notNull": false
+        },
+        {
+          "name": "text_fold",
+          "type": "text",
+          "default": "translate(lower(COALESCE(text_content, ''::text)), 'çğıöşü'::text, 'cgiosu'::text)",
+          "notNull": false
+        },
+        {
+          "name": "text_words",
+          "type": "text",
+          "default": "((' '::text || regexp_replace(regexp_replace(translate(lower(COALESCE(text_content, ''::text)), 'çğıöşü'::text, 'cgiosu'::text), '[^[:alnum:] ]+'::text, ' '::text, 'g'::text), ' +'::text, ' '::text, 'g'::text)) || ' '::text)",
+          "notNull": false
+        },
+        {
+          "name": "locator",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        }
+      ],
+      "forceRls": true,
+      "policies": [
+        {
+          "name": "asset_pages_tenant",
+          "check": null,
+          "using": "((tenant_id IS NULL) OR (tenant_id = (current_setting('app.tenant_id'::text, true))::uuid))"
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "table": "assets",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notNull": true
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "edition_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "format",
+          "type": "text",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "storage_key",
+          "type": "text",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "page_count",
+          "type": "integer",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "text_content",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "quality_score",
+          "type": "integer",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "source_system",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "source_id",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "source_url",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "source_checksum",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "harvested_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "access_status",
+          "type": "text",
+          "default": "'open'::text",
+          "notNull": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        },
+        {
+          "name": "search_vector",
+          "type": "tsvector",
+          "default": "to_tsvector('turkish'::regconfig, COALESCE(text_content, ''::text))",
+          "notNull": false
+        },
+        {
+          "name": "allow_copy",
+          "type": "boolean",
+          "default": "true",
+          "notNull": true
+        },
+        {
+          "name": "allow_download",
+          "type": "boolean",
+          "default": "true",
+          "notNull": true
+        },
+        {
+          "name": "allow_print",
+          "type": "boolean",
+          "default": "true",
+          "notNull": true
+        },
+        {
+          "name": "watermark",
+          "type": "boolean",
+          "default": "true",
+          "notNull": true
+        }
+      ],
+      "forceRls": true,
+      "policies": [
+        {
+          "name": "assets_tenant",
+          "check": null,
+          "using": "((tenant_id IS NULL) OR (tenant_id = (current_setting('app.tenant_id'::text, true))::uuid))"
+        }
+      ]
+    },
+    {
+      "rls": false,
+      "table": "audit_events",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "default": "nextval('audit_events_id_seq'::regclass)",
+          "notNull": true
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "actor_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "action",
+          "type": "text",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "object_type",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "object_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "payload",
+          "type": "jsonb",
+          "default": "'{}'::jsonb",
+          "notNull": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        }
+      ],
+      "forceRls": false,
+      "policies": null
+    },
+    {
+      "rls": false,
+      "table": "collection_items",
+      "columns": [
+        {
+          "name": "collection_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "work_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "position",
+          "type": "integer",
+          "default": "0",
+          "notNull": true
+        }
+      ],
+      "forceRls": false,
+      "policies": null
+    },
+    {
+      "rls": true,
+      "table": "collections",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notNull": true
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "visibility",
+          "type": "text",
+          "default": "'tenant'::text",
+          "notNull": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        }
+      ],
+      "forceRls": true,
+      "policies": [
+        {
+          "name": "collections_tenant",
+          "check": null,
+          "using": "((tenant_id IS NULL) OR (tenant_id = (current_setting('app.tenant_id'::text, true))::uuid))"
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "table": "editions",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notNull": true
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "work_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "publisher",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "publication_year",
+          "type": "integer",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "edition",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "isbn13",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "doi",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "handle",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "license_uri",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "license_note",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "rights_note",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        }
+      ],
+      "forceRls": true,
+      "policies": [
+        {
+          "name": "editions_tenant",
+          "check": null,
+          "using": "((tenant_id IS NULL) OR (tenant_id = (current_setting('app.tenant_id'::text, true))::uuid))"
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "table": "grant_audit",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notNull": true
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "grant_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "action",
+          "type": "text",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "actor_user_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "detail",
+          "type": "jsonb",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        }
+      ],
+      "forceRls": true,
+      "policies": [
+        {
+          "name": "grant_audit_tenant",
+          "check": null,
+          "using": "(tenant_id = (current_setting('app.tenant_id'::text, true))::uuid)"
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "table": "grants",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notNull": true
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "subject_type",
+          "type": "text",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "subject_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "scope_type",
+          "type": "text",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "scope_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "valid_from",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        },
+        {
+          "name": "valid_to",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "seat_limit",
+          "type": "integer",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "default": "'manual'::text",
+          "notNull": true
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "default": "'active'::text",
+          "notNull": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        },
+        {
+          "name": "scope_key",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        }
+      ],
+      "forceRls": true,
+      "policies": [
+        {
+          "name": "grants_tenant",
+          "check": null,
+          "using": "(tenant_id = (current_setting('app.tenant_id'::text, true))::uuid)"
+        }
+      ]
+    },
+    {
+      "rls": false,
+      "table": "import_jobs",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notNull": true
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "default": "'queued'::text",
+          "notNull": true
+        },
+        {
+          "name": "payload",
+          "type": "jsonb",
+          "default": "'{}'::jsonb",
+          "notNull": true
+        },
+        {
+          "name": "error",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        }
+      ],
+      "forceRls": false,
+      "policies": null
+    },
+    {
+      "rls": true,
+      "table": "reading_progress",
+      "columns": [
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "asset_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "anchor",
+          "type": "jsonb",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "percent",
+          "type": "numeric(5,2)",
+          "default": "0",
+          "notNull": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        }
+      ],
+      "forceRls": true,
+      "policies": [
+        {
+          "name": "progress_tenant",
+          "check": null,
+          "using": "(tenant_id = (current_setting('app.tenant_id'::text, true))::uuid)"
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "table": "tenants",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notNull": true
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "default": "'active'::text",
+          "notNull": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        }
+      ],
+      "forceRls": true,
+      "policies": [
+        {
+          "name": "tenants_self",
+          "check": null,
+          "using": "(id = (current_setting('app.tenant_id'::text, true))::uuid)"
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "table": "user_group_members",
+      "columns": [
+        {
+          "name": "group_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        }
+      ],
+      "forceRls": true,
+      "policies": [
+        {
+          "name": "user_group_members_tenant",
+          "check": null,
+          "using": "(EXISTS ( SELECT 1\n   FROM user_groups g\n  WHERE ((g.id = user_group_members.group_id) AND (g.tenant_id = (current_setting('app.tenant_id'::text, true))::uuid))))"
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "table": "user_groups",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notNull": true
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        }
+      ],
+      "forceRls": true,
+      "policies": [
+        {
+          "name": "user_groups_tenant",
+          "check": null,
+          "using": "(tenant_id = (current_setting('app.tenant_id'::text, true))::uuid)"
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "table": "user_sessions",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "ip",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "user_agent",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        },
+        {
+          "name": "last_seen_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        }
+      ],
+      "forceRls": true,
+      "policies": [
+        {
+          "name": "user_sessions_tenant",
+          "check": null,
+          "using": "(tenant_id = (current_setting('app.tenant_id'::text, true))::uuid)"
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "table": "users",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notNull": true
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "display_name",
+          "type": "text",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "role",
+          "type": "text",
+          "default": "'reader'::text",
+          "notNull": true
+        },
+        {
+          "name": "password_hash",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "session_version",
+          "type": "integer",
+          "default": "0",
+          "notNull": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        },
+        {
+          "name": "max_sessions",
+          "type": "integer",
+          "default": "3",
+          "notNull": true
+        }
+      ],
+      "forceRls": true,
+      "policies": [
+        {
+          "name": "users_tenant",
+          "check": null,
+          "using": "(tenant_id = (current_setting('app.tenant_id'::text, true))::uuid)"
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "table": "works",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notNull": true
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "content_type",
+          "type": "text",
+          "default": "'monograph'::text",
+          "notNull": true
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "subtitle",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "language",
+          "type": "text",
+          "default": "'tr'::text",
+          "notNull": true
+        },
+        {
+          "name": "abstract",
+          "type": "text",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "subjects",
+          "type": "text[]",
+          "default": "'{}'::text[]",
+          "notNull": true
+        },
+        {
+          "name": "metadata",
+          "type": "jsonb",
+          "default": "'{}'::jsonb",
+          "notNull": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        }
+      ],
+      "forceRls": true,
+      "policies": [
+        {
+          "name": "works_tenant",
+          "check": null,
+          "using": "((tenant_id IS NULL) OR (tenant_id = (current_setting('app.tenant_id'::text, true))::uuid))"
+        }
+      ]
+    }
+  ],
+  "baselineSchemaSha256": "f13ce4f7359ce30432fe7060228e245278e71817f7d5599acc09c9b7b69fdcca",
+  "baselineVersion": {
+    "featureSignature": "001–012 features present; 013/014 tables and marker absent",
+    "formalMigrationLedgerAsserted": false
+  },
+  "migratedState": {
+    "tables": [
+      {
+        "rls": true,
+        "name": "download_ticket_limits",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "name": "download_tickets",
+        "forceRls": true
+      }
+    ],
+    "trigger": true,
+    "limitsPk": "PRIMARY KEY (tenant_id, user_id, kind)",
+    "markerColumn": true,
+    "markedGrantTenants": 1,
+    "configuredGrantTenants": 1
+  },
+  "cloneSmoke": {
+    "health": 200,
+    "mode": "db",
+    "version": "118",
+    "buildSha": "1c2ab001e60a633d1c4a3241e34b95645d34f020",
+    "login": 200,
+    "issue": 201,
+    "ttl": 60,
+    "consume": 200,
+    "replay": 403,
+    "pdfBytes": 13313,
+    "hashedTicketStored": true,
+    "consumedAtStored": true
+  },
+  "productionAfter": {
+    "db": "90301242f1eacae5f30e5bf03f60a9f397fe08105094cd1252f09bc213667a36|sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea|2026-10-21T07:30:23.564414916Z|0",
+    "web": "d4215ab5bb4babb9a91315d19f948fc33bfa8e70c9eb4c94e1091c0aad1f5876|sha256:fff613f678235691108f1626be791e9bb51e60ac33928bedc8cebc69612c1488|2026-10-23T16:22:08.758127508Z|0"
+  },
+  "productionContainersUnchanged": true,
+  "finishedAt": "2026-10-23T18:19:30.085Z"
+}
