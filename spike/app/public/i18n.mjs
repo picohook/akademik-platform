@@ -223,6 +223,7 @@ const DICT = {
   'Yer imi kaldırıldı': 'Bookmark removed',
   'Yer imini kaldır': 'Remove bookmark',
   'Yalnızca yüklenen kitaplar silinebilir': 'Only uploaded titles can be deleted',
+  'Yalnızca platforma yüklenen kitaplar silinebilir': 'Only platform-managed titles can be deleted',
   'Tüm cihazlardaki oturumlar kapatılsın mı?': 'Sign out of all devices?',
   'Yeni parola en az 8 karakter olmalı.': 'New password must be at least 8 characters.',
   'Mevcut parola hatalı.': 'Current password is incorrect.',

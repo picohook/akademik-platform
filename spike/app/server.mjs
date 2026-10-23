@@ -543,7 +543,7 @@ async function deleteUploadedBook(id) {
       [id],
     );
     if (!rows.length) return { status: 'not_found', keys: [] };
-    if (rows.some((row) => row.source_system !== 'upload')) {
+    if (rows.some((row) => !['upload', 'ingest'].includes(row.source_system))) {
       return { status: 'not_uploaded', keys: [] };
     }
     await client.query('delete from works where id = $1', [id]);
@@ -2419,7 +2419,7 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       if (result.status === 'not_uploaded') {
-        json(res, 409, { error: 'only uploaded titles can be deleted' });
+        json(res, 409, { error: 'only platform-managed titles can be deleted' });
         return;
       }
       for (const key of result.keys) {

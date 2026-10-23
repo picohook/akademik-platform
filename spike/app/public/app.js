@@ -810,7 +810,7 @@ function openEdit(book) {
   editAllowDownload.checked = book.allow_download !== false;
   editAllowPrint.checked = book.allow_print !== false;
   editWatermark.checked = book.watermark !== false;
-  deleteBookBtn.hidden = book.source_system !== 'upload';
+  deleteBookBtn.hidden = !['upload', 'ingest'].includes(book.source_system);
   openModal(editModal, editTitle);
 }
 
@@ -3629,8 +3629,8 @@ deleteBookBtn.addEventListener('click', async () => {
     await loadBooks();
   } catch (error) {
     console.error(error);
-    toast(error.message === 'only uploaded titles can be deleted'
-      ? 'Yalnızca yüklenen kitaplar silinebilir'
+    toast(error.message === 'only platform-managed titles can be deleted'
+      ? 'Yalnızca platforma yüklenen kitaplar silinebilir'
       : 'Kitap silinemedi');
   } finally {
     deleteBookBtn.disabled = false;
