@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-10-23T19:25:04.297Z",
+  "method": "Read-only production DB aggregate inspection after API cleanup",
+  "verificationTitlesRemaining": 0,
+  "assetsByFormat": [
+    {
+      "format": "pdf",
+      "count": 2
+    }
+  ],
+  "ownedHeadlessSessionsRemaining": 0,
+  "interruptedAttempt": {
+    "reason": "Local test-browser Service Worker certificate readiness; no production runtime failure",
+    "temporaryFixturesDeleted": 2,
+    "onlyOwnedHeadlessSessionDeleted": 1
+  },
+  "existingCustomerBooksChanged": false
+}

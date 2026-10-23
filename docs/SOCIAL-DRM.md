@@ -167,8 +167,9 @@ retention is separate; this worker preserves usage/security audit history.
 ## Migration / operations
 
 Source v118 requires **migrations 013 and 014 before starting its server** on an existing
-database. This package does not deploy or migrate production; production remains
-v116 until reviewed. Back up first and run as the database administrator:
+database. Production was upgraded in that order after a fresh backup on
+2026-10-23; [v118 deployment record](deployments/2026-10-23-v118.md).
+For an existing installation, back up first and run as the database administrator:
 
 ```powershell
 docker compose --env-file .env.production -f docker-compose.prod.yml exec -T db psql -v ON_ERROR_STOP=1 -U <db-admin> -d <database> -f /migrations/013-download-tickets.sql
@@ -249,8 +250,11 @@ See the [accepted scope, results and limitations](V118-PREDEPLOY-2026-10-23.md).
 Acceptance found and fixed an EPUB initialization resize race in the adapter;
 its copy-policy units passed again (**7/7**) and the final browser run records
 the patched engine hash. Backend/ticket/migration/watermark code is unchanged
-from the historical integration evidence. No production deployment is claimed;
-production HTTPS still reports **v116**, health **200 / DB**.
+from the historical integration evidence. That predeployment acceptance left
+production on v116. The subsequently approved [v118 deployment](deployments/2026-10-23-v118.md)
+completed migrations 013→014, **16/16 HTTPS smoke** and **6/6 live download,
+IndexedDB/offline and 429 scenarios**, with **0 page errors**, health **healthy**
+and **0 restarts**. Original reader-stream boundaries remain accepted.
 Historical v117 37/189/68 results remain
 unchanged in their evidence folder and are superseded by v118's 55/295/68 for
 this remediation. The manifest records tested source Git blobs, including

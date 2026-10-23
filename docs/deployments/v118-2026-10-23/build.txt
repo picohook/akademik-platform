@@ -1,0 +1,62 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 238B 0.1s done
+#1 DONE 0.2s
+
+#2 [internal] load metadata for docker.io/library/node:22-alpine
+#2 DONE 2.7s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 112B 0.0s done
+#3 DONE 0.0s
+
+#4 [internal] load build context
+#4 ...
+
+#5 [1/5] FROM docker.io/library/node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914
+#5 resolve docker.io/library/node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 0.1s done
+#5 DONE 0.2s
+
+#4 [internal] load build context
+#4 transferring context: 5.71MB 2.2s done
+#4 DONE 2.3s
+
+#6 [2/5] WORKDIR /app
+#6 CACHED
+
+#7 [3/5] COPY package.json package-lock.json ./
+#7 DONE 0.3s
+
+#8 [4/5] RUN npm ci --omit=dev
+#8 24.09 
+#8 24.09 added 37 packages, and audited 38 packages in 20s
+#8 24.09 
+#8 24.09 3 packages are looking for funding
+#8 24.09   run `npm fund` for details
+#8 24.10 
+#8 24.10 found 0 vulnerabilities
+#8 24.11 npm notice
+#8 24.11 npm notice New major version of npm available! 10.9.9 -> 12.2.1
+#8 24.11 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+#8 24.11 npm notice To update run: npm install -g npm@12.2.1
+#8 24.11 npm notice
+#8 DONE 25.0s
+
+#9 [5/5] COPY . .
+#9 DONE 0.5s
+
+#10 exporting to image
+#10 exporting layers
+#10 exporting layers 21.8s done
+#10 exporting manifest sha256:6121401da3c56cee94e34d21166293f778c8cea5154506d31341d9162d36b159 0.0s done
+#10 exporting config sha256:59cbe40b13aa3215965293fb071ad02422cf62de20b63a250e78ebccb07698d0 0.0s done
+#10 exporting attestation manifest sha256:d9bea3b59cbc06812f600924e6063813d8779b2f7e0776f0f37d9e1fcf8a06d2
+#10 exporting attestation manifest sha256:d9bea3b59cbc06812f600924e6063813d8779b2f7e0776f0f37d9e1fcf8a06d2 0.0s done
+#10 exporting manifest list sha256:8a5b85625858a0391298613e4fda922c9c8cfff1fa521054ac08bf85d529a1c7 0.0s done
+#10 naming to docker.io/library/akademik-platform-prod-web:v118-3d5f93e 0.0s done
+#10 unpacking to docker.io/library/akademik-platform-prod-web:v118-3d5f93e
+#10 unpacking to docker.io/library/akademik-platform-prod-web:v118-3d5f93e 15.9s done
+#10 DONE 38.1s
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/5b61nzaf5ehbjb0svda0v038g

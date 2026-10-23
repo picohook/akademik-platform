@@ -1,0 +1,47 @@
+{
+  "health": 200,
+  "config": {
+    "version": "118",
+    "buildSha": "3d5f93e6d351abd6bc7214608cec2a96f7a133fc",
+    "environment": "production",
+    "buildDate": "2026-10-23 22:07"
+  },
+  "servedFiles": [
+    {
+      "file": "public/app.js",
+      "sha256": "29e709ccffb4aa8e3051785fa189f9648e4203a65807b5d28a3bd19e3d1be67e"
+    },
+    {
+      "file": "public/index.html",
+      "sha256": "ad5a94cd6e782ce5cd421d88d45c98ee9b5c48fab1badfa9a200e2f4c2644e06"
+    },
+    {
+      "file": "public/offline.mjs",
+      "sha256": "787b5ccb59706fd5f2e8d193a7429c76306cca27932edc4ae70b68eb79f4b837"
+    },
+    {
+      "file": "public/downloads.mjs",
+      "sha256": "7e908a175f0ff0dc521d70f508269a1e6d4bc2c0bf1c34e56802af62a3fafb72"
+    },
+    {
+      "file": "public/sw.js",
+      "sha256": "6863b877170f6cb26fcd154a5f395071840dff5acf51965fd8d29b9f92fc0fb1"
+    },
+    {
+      "file": "public/epub-engine.mjs",
+      "sha256": "f52179b07d83b8f93ca7fbdf67ca8c4d301851e663c63db2667015e71af3ca6b"
+    },
+    {
+      "file": "public/styles.css",
+      "sha256": "0204b500974a1aeac05ca9d6644e4d15ea0eb8903cae9336fc1ca50f1d4ca9da"
+    },
+    {
+      "file": "public/i18n.mjs",
+      "sha256": "e75428f7c4fa690adeaa1ed6cddd0b741b62eda184432f9b00c68a59def71881"
+    },
+    {
+      "file": "public/citations.mjs",
+      "sha256": "96b00fa2be1be8cdc582dd1a2dfcff1d67435eb0c1a6d6e161bd7e8873c4a015"
+    }
+  ]
+}

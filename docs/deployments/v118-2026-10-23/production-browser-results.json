@@ -1,0 +1,97 @@
+{
+  "startedAt": "2026-10-23T19:21:15.071Z",
+  "runId": "035959bd-b34b-491e-b5a4-7e0cec761829",
+  "base": "https://localhost",
+  "sourceCommit": "3d5f93e6d351abd6bc7214608cec2a96f7a133fc",
+  "status": "passed",
+  "cases": [
+    {
+      "httpStatus": 200,
+      "bytes": 1563,
+      "sha256": "2874b55e8191f5583c9632ea870dfac13b8862fe383222f9ed9c6e451c12b7ac",
+      "stampIdentityVerified": true,
+      "id": "full-ticketed-download-pdf",
+      "status": "PASS"
+    },
+    {
+      "httpStatus": 200,
+      "bytes": 2076,
+      "sha256": "22199e0b24ef7740a067ef037e7f9f4967c53fd77065753326346f3c8187e353",
+      "stampIdentityVerified": true,
+      "id": "full-ticketed-download-epub",
+      "status": "PASS"
+    },
+    {
+      "id": "native-offline-save-pdf",
+      "sha256": "56de3bd0e6d03c4b7048b5605ae0be172e959d107edc04f16c1bdfade39d6ae6",
+      "bytes": 1563,
+      "nativeIndexedDBBlob": true,
+      "stampIdentityVerified": true,
+      "status": "PASS"
+    },
+    {
+      "id": "native-offline-save-epub",
+      "sha256": "1f6acd85aa545963e39ca01c8209d264e3aeb0a83023ce7af4033956ea1c5524",
+      "bytes": 2075,
+      "nativeIndexedDBBlob": true,
+      "stampIdentityVerified": true,
+      "status": "PASS"
+    },
+    {
+      "issuedThisRun": 10,
+      "prefillStatuses": [
+        201,
+        201,
+        201,
+        201,
+        201,
+        201,
+        201,
+        201,
+        201,
+        201
+      ],
+      "rejectedAttempt": 11,
+      "httpStatus": 429,
+      "retryAfter": 57,
+      "unchangedBlobs": true,
+      "id": "eleventh-ticket-request-429",
+      "status": "PASS"
+    },
+    {
+      "networkOffline": true,
+      "hardReload": true,
+      "nativeRendered": [
+        "pdf",
+        "epub"
+      ],
+      "swCache": "akademik-shell-v9",
+      "id": "offline-hard-reload-and-render",
+      "status": "PASS"
+    }
+  ],
+  "cleanup": {
+    "pdfFixtureDeleted": true,
+    "epubFixtureDeleted": true,
+    "loggedOut": true,
+    "browserClosed": true
+  },
+  "scope": "Real production HTTPS. Temporary generated PDF/EPUB uploads only; actual downloads, native IndexedDB and offline render. Fixtures removed through API. No grants/counters/customer books modified.",
+  "browser": "155.0.4283.45",
+  "tls": "Dedicated test browser uses --ignore-certificate-errors for the local Caddy CA, including Service Worker registration. Separate Node HTTPS smoke/source checks validate the exported CA. No OS trust or production TLS configuration changed.",
+  "account": "Existing demo librarian; no user creation or permission changes",
+  "fixtures": [
+    {
+      "id": "cd56b5c8-a6d8-4738-a63f-93a4b5450795",
+      "title": "Release v118 verification 035959bd-b34b-491e-b5a4-7e0cec761829 PDF",
+      "format": "pdf"
+    },
+    {
+      "id": "3d5c0196-5134-4b66-9719-6e5da863187c",
+      "title": "Release v118 verification 035959bd-b34b-491e-b5a4-7e0cec761829 EPUB",
+      "format": "epub"
+    }
+  ],
+  "browserErrors": [],
+  "completedAt": "2026-10-23T19:21:37.372Z"
+}

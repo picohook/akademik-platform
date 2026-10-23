@@ -1,0 +1,89 @@
+{
+  "release": "v118-3d5f93e",
+  "status": "deployed",
+  "sourceCommit": "3d5f93e6d351abd6bc7214608cec2a96f7a133fc",
+  "image": "sha256:8a5b85625858a0391298613e4fda922c9c8cfff1fa521054ac08bf85d529a1c7",
+  "completedAt": "2026-10-23T19:22:17.297Z",
+  "artifacts": [
+    {
+      "file": "013-download-tickets.sql.txt",
+      "bytes": 160,
+      "sha256": "e3f59112c761637df75df14db0d91124da2fa3fb4a1c0cff4fefcf077d4069e7"
+    },
+    {
+      "file": "014-download-ticket-limits.sql.txt",
+      "bytes": 95,
+      "sha256": "f10a1ee8a54d759cb0e1b53d00a31df963eea96a302674248c0b67113773e3cb"
+    },
+    {
+      "file": "browser-production-helper.mjs",
+      "bytes": 13256,
+      "sha256": "5eae0b1efbb47e42af876429677ce8bfb5c0962491c7389fe6376aa2feca0190"
+    },
+    {
+      "file": "build.txt",
+      "bytes": 2341,
+      "sha256": "8896e47370736b72c35e0a21f9e367a8465789af4cf7b2288eed473016ca3d47"
+    },
+    {
+      "file": "cleanup-verification.json",
+      "bytes": 530,
+      "sha256": "b131eb48dc541161de34a8a405c97f6edbc21670ef26a3d08fede62b2b8cebfc"
+    },
+    {
+      "file": "deployment.json",
+      "bytes": 9354,
+      "sha256": "a02eed6d10b405ad0a00fa1075a8a53e88dfb642bd9f4b35a706f44b0ec386b3"
+    },
+    {
+      "file": "http-verification.json",
+      "bytes": 1393,
+      "sha256": "2c10b3e2424607a75a372111fe66e9f8234da6005cf3dc1ddd133fde83ddb3c2"
+    },
+    {
+      "file": "image-hashes.json",
+      "bytes": 1180,
+      "sha256": "c30a174da1d308c4e1369309f429342998d6e0821e87223457d9e434c3f88ee3"
+    },
+    {
+      "file": "production-browser-results.json",
+      "bytes": 2980,
+      "sha256": "5bed7068f8e3e8f2eeb95bef42856c17dfcf18fe5d0ede27dfe5a685e7ec8ab5"
+    },
+    {
+      "file": "production-download-epub.epub",
+      "bytes": 2076,
+      "sha256": "22199e0b24ef7740a067ef037e7f9f4967c53fd77065753326346f3c8187e353"
+    },
+    {
+      "file": "production-download-pdf.pdf",
+      "bytes": 1563,
+      "sha256": "2874b55e8191f5583c9632ea870dfac13b8862fe383222f9ed9c6e451c12b7ac"
+    },
+    {
+      "file": "production-offline-epub.png",
+      "bytes": 38027,
+      "sha256": "e519faf87d974b2bd8e9d525eca9d964109eb4724373e09f411dbe135e4d2cd9"
+    },
+    {
+      "file": "production-offline-pdf.png",
+      "bytes": 33347,
+      "sha256": "e2b47612e00537e4312fe019e67af58d2d2b6848cec1f8a42f318118f1de9909"
+    },
+    {
+      "file": "release-env-metadata.json",
+      "bytes": 515,
+      "sha256": "4b4b248214e24f740731798a0c6eda038d640081daedf1cc9f2c64bd55a3dc5d"
+    },
+    {
+      "file": "release-proof.json",
+      "bytes": 4061,
+      "sha256": "f68829cecf8387c41a3abb247ea5c67676b5d12af46f7170f68ff72f3f619141"
+    },
+    {
+      "file": "smoke.txt",
+      "bytes": 423,
+      "sha256": "d6553c9fefe7f4cd32c53031e535791e0fca72209ad9d654d4d4ceaec7aae17c"
+    }
+  ]
+}

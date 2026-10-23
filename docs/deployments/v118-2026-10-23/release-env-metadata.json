@@ -1,0 +1,24 @@
+{
+  "before": {
+    "APP_VERSION": [
+      "APP_VERSION=\"116\""
+    ],
+    "BUILD_SHA": [
+      "BUILD_SHA=\"8e1347c60d1b3f1009b0fff1684f377fb4ff32e6\""
+    ],
+    "BUILD_DATE": [
+      "BUILD_DATE=\"2026-10-23 19:21\""
+    ],
+    "APP_ENV": [
+      "APP_ENV=\"production\""
+    ],
+    "SOCIAL_DRM_B2B": []
+  },
+  "after": {
+    "APP_VERSION": "118",
+    "BUILD_SHA": "3d5f93e6d351abd6bc7214608cec2a96f7a133fc",
+    "BUILD_DATE": "2026-10-23 22:07",
+    "APP_ENV": "production",
+    "SOCIAL_DRM_B2B": "true"
+  }
+}
