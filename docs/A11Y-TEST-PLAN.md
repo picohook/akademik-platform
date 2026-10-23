@@ -4,15 +4,16 @@ This is the manual/automated verification pass on top of `docs/ACCESSIBILITY.md`
 
 ## 1. axe DevTools (automated)
 
-Install the **axe DevTools** extension in Edge or Chrome. Open `http://localhost:8080/?v=80`.
+Install the **axe DevTools** extension in Edge or Chrome. Open `https://localhost/?v=104` (prod) or `http://localhost:8080/?v=104` (dev).
 
 Run **Scan all of my page** on:
 
 1. Login screen.
 2. Catalog (logged in as librarian).
-3. Edit modal, Upload modal, Citation modal, Password modal, Access grants modal.
+3. Edit modal, Upload modal, Citation modal, Password modal, Access grants modal, **Offline books** modal.
 4. PDF reader: TOC, Search, Pages, Notes, highlight bar.
 5. EPUB reader: TOC, search, EPUB content.
+6. **Offline reader** with a downloaded PDF and EPUB.
 
 Expected: **no critical or serious issues**. Minor/moderate findings are logged in the PR/issue.
 
