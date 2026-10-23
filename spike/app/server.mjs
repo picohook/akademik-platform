@@ -450,7 +450,8 @@ async function loginUser(emailValue, passwordValue) {
     return null;
   }
 
-  return withTenant(async (client) => {
+  // Password derivation must not occupy a scarce database connection.
+  const row = await withTenant(async (client) => {
     const { rows } = await client.query(
       `select id, tenant_id, email, display_name, role, password_hash, session_version, max_sessions
          from users
@@ -458,18 +459,18 @@ async function loginUser(emailValue, passwordValue) {
         limit 1`,
       [TENANT_ID, email],
     );
-    const row = rows[0];
-    if (!row || !await verifyPassword(password, row.password_hash)) return null;
-    return {
-      id: row.id,
-      tenant_id: row.tenant_id,
-      email: row.email,
-      display_name: row.display_name,
-      role: row.role,
-      session_version: row.session_version,
-      max_sessions: row.max_sessions,
-    };
+    return rows[0] || null;
   });
+  if (!row || !await verifyPassword(password, row.password_hash)) return null;
+  return {
+    id: row.id,
+    tenant_id: row.tenant_id,
+    email: row.email,
+    display_name: row.display_name,
+    role: row.role,
+    session_version: row.session_version,
+    max_sessions: row.max_sessions,
+  };
 }
 
 
