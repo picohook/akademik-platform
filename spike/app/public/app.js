@@ -3712,17 +3712,20 @@ downloadBtn.addEventListener('click', async () => {
     }
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
+    const extension = state.book.format === 'epub' ? 'epub' : 'pdf';
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `${state.book.title.replace(/[^\p{L}\p{N}._-]+/gu, '-').slice(0, 80) || 'kitap'}.pdf`;
+    anchor.download = `${state.book.title.replace(/[^\p{L}\p{N}._-]+/gu, '-').slice(0, 80) || 'kitap'}.${extension}`;
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast('PDF indirildi');
+    toast(t(extension === 'epub' ? 'EPUB indirildi' : 'PDF indirildi'));
   } catch (error) {
     console.error(error);
-    toast(error.message === 'download disabled for this title' ? 'Bu kitapta indirme kapalı' : 'PDF indirilemedi');
+    toast(error.message === 'download disabled for this title'
+      ? t('Bu kitapta indirme kapalı')
+      : t(state.book?.format === 'epub' ? 'EPUB indirilemedi' : 'PDF indirilemedi'));
   } finally {
     downloadBtn.disabled = false;
     downloadBtn.textContent = original;
