@@ -4009,7 +4009,20 @@ downloadBtn.addEventListener('click', async () => {
   downloadBtn.disabled = true;
   downloadBtn.textContent = t('İndiriliyor…');
   try {
-    const response = await fetch(`/api/books/${encodeURIComponent(state.book.id)}/download`);
+    const endpoint = `/api/books/${encodeURIComponent(state.book.id)}`;
+    const issued = await fetch(`${endpoint}/download-ticket`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}',
+      cache: 'no-store', referrerPolicy: 'no-referrer',
+    });
+    if (!issued.ok) {
+      const payload = await issued.json().catch(() => ({}));
+      throw new Error(payload.error || 'download failed');
+    }
+    const { ticket } = await issued.json();
+    const response = await fetch(`${endpoint}/download`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ticket }),
+      cache: 'no-store', referrerPolicy: 'no-referrer',
+    });
     if (!response.ok) {
       const payload = await response.json().catch(() => ({}));
       throw new Error(payload.error || 'download failed');

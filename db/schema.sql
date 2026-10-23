@@ -9,6 +9,7 @@ create table if not exists tenants (
   name text not null,
   slug text not null unique,
   status text not null default 'active',
+  download_grants_required boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -215,6 +216,40 @@ create table if not exists import_jobs (
   updated_at timestamptz not null default now()
 );
 
+create or replace function remember_download_grant_policy() returns trigger language plpgsql as $$
+begin
+  if TG_OP <> 'INSERT' then
+    update tenants set download_grants_required = true where id = OLD.tenant_id and not download_grants_required;
+  end if;
+  if TG_OP <> 'DELETE' then
+    update tenants set download_grants_required = true where id = NEW.tenant_id and not download_grants_required;
+  end if;
+  return null;
+end
+$$;
+drop trigger if exists remember_download_grant_policy on grants;
+create trigger remember_download_grant_policy after insert or update or delete on grants
+  for each row execute function remember_download_grant_policy();
+
+create table if not exists download_tickets (
+  id uuid primary key default gen_random_uuid(),
+  token_hash text not null unique check (token_hash ~ '^[0-9a-f]{64}$'),
+  tenant_id uuid not null references tenants(id) on delete cascade,
+  user_id uuid not null references users(id) on delete cascade,
+  asset_id uuid not null references assets(id) on delete cascade,
+  work_id uuid not null references works(id) on delete cascade,
+  grant_ids uuid[] not null default '{}',
+  watermark_override boolean not null default false,
+  override_reason text,
+  created_at timestamptz not null default clock_timestamp(),
+  expires_at timestamptz not null,
+  consumed_at timestamptz,
+  check (expires_at > created_at and expires_at <= created_at + interval '60 seconds'),
+  check ((watermark_override and override_reason is not null and length(trim(override_reason)) between 10 and 500)
+      or (not watermark_override and override_reason is null))
+);
+create index if not exists download_tickets_expiry on download_tickets (tenant_id, expires_at);
+
 create table if not exists audit_events (
   id bigserial primary key,
   tenant_id uuid references tenants(id) on delete set null,
@@ -241,6 +276,7 @@ alter table reading_progress enable row level security;
 alter table tenants enable row level security;
 alter table users enable row level security;
 alter table user_sessions enable row level security;
+alter table download_tickets enable row level security;
 
 -- The application connects as the table owner; without FORCE, the owner bypasses RLS.
 alter table works force row level security;
@@ -257,6 +293,7 @@ alter table reading_progress force row level security;
 alter table tenants force row level security;
 alter table users force row level security;
 alter table user_sessions force row level security;
+alter table download_tickets force row level security;
 
 create policy works_tenant on works
   using (tenant_id is null or tenant_id = current_setting('app.tenant_id', true)::uuid);
@@ -290,6 +327,9 @@ create policy users_tenant on users
   using (tenant_id = current_setting('app.tenant_id', true)::uuid);
 create policy user_sessions_tenant on user_sessions
   using (tenant_id = current_setting('app.tenant_id', true)::uuid);
+create policy download_tickets_tenant on download_tickets
+  using (tenant_id = current_setting('app.tenant_id', true)::uuid)
+  with check (tenant_id = current_setting('app.tenant_id', true)::uuid);
 
 -- The app must not connect as the table owner or a superuser, otherwise RLS is bypassed.
 -- Scaffold-only credentials; rotate before any real deployment.

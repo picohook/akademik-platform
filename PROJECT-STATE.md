@@ -4,10 +4,10 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web: **v116** (`spike/app/public/index.html`), stiller **v44**
-- DB migration: **001–012** (`db/migrations/`)
+- Web kaynak: **v117** (`spike/app/public/index.html`), stiller **v44**, SW cache **v8**
+- DB migration kaynak: **001–013** (`db/migrations/`); prod **001–012**, 013 henüz uygulanmadı.
 - Prod: **v116** (2026-10-23), kaynak **8e1347c**, imaj `sha256:fff613f6…`; HTTPS smoke **16/16**, health/restart `healthy/0`. Kopyalama paketi + giriş havuzu düzeltmesi canlı. Rollback: dağıtım öncesi salt okunur doğrulanan v115 imajı (`sha256:163465e8…`); eski kayıt v114 diyordu. Kayıt: `docs/deployments/2026-10-23-v116.md`. Migration yok; 001–012 korundu.
-- Son test edilen kod commit’i: **8e1347c** — v116 kopyalama 24 birim + 13 uygulayan AI Edge kabulü (arayüz aynı), güvenlik 3 senaryo/60 kontrol; izole kısa kapasite 10/25/50/100 kullanıcı ve 6200 API isteği hatasız. Üretim kapasitesi garantisi değil.
+- Son kod doğrulaması: **v117 P0 sosyal DRM** — **37 birim (17 citation + 7 EPUB copy + 13 watermark), 189 sosyal DRM entegrasyon, 68 güvenlik kontrolü** geçti; bağımsız inceleme bekliyor. Tam kaynak hashleri: `docs/security-evidence/v117-2026-10-23/manifest.json`. Prod hâlâ 8e1347c/v116; önceki kapasite sonucu üretim garantisi değil.
 - Bağımlılık: `npm audit --omit=dev` **0**; tam audit’te yalnız dev-only `epubjs/@xmldom` (2 uyarı).
 - EPUB kararı: **ADR-012** — MVP/V1a için epub.js, `EpubEngine` adapter arkasında, pinli; Readium/R2D2BC geçiş eşikleri yazılı.
 
@@ -33,6 +33,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Güncel geliştirme sırası
 
+- **P0 sosyal DRM v117 kaynak hazır; bağımsız inceleme bekliyor, deploy edilmedi.** B2B zorunlu PDF/EPUB filigranı; açık/audit’li admin istisnası; 256-bit random, DB’de hash, 60 sn TTL, kullanıcı/tenant/asset/work bağlı, tek kullanımlı POST biletleri. Issue/consume + audit aynı transaction; grant iptali ve son grant silinmesinde indirme kapalı kalır. OPF/spine ve gerçek XHTML gövdesi doğrulanır; damgalanamayan dosya reddedilir. `/file` + range ve v116 kopyalama politikası korunur. Migration 013 gerekir. Kanıt: `docs/SOCIAL-DRM.md`. AES at-rest P1 olarak kaldı.
 - Kopyalama paketi v116 canlı: PDF/EPUB izin tutarlılığı, seçimden Kopyala / Atıfla kopyala. Citation 17/17 + EPUB izin 7/7 birim testi ve gerçek Edge kabulü 13/13 geçti (uygulayan AI). Seçim/vurgu/not korunur. Kanıtlar: `docs/COPYING-TESTS.md`.
 - Kapasite retesti geçti: yalnız async scrypt yeterli olmadı; parola doğrulaması `withTenant` dışına taşınıp havuz bağlantısı erken bırakıldı (`8e1347c`). Tenant/user advisory lock ve seat limit korundu; güvenlik 60/60. Aynı kısa taramada 10/25/50/100 girişlerin tamamı kabul, 6200 API isteğinde 0 hata; 50/100 giriş p95 **2,637 / 5,182 sn**. Bu, prod kapasitesi garantisi değildir. Önceki başarısız koşular değişmeden korundu. Kanıt: `docs/CAPACITY-TEST.md`.
 - Manuel NVDA/VoiceOver ve tam EPUB iframe denetimi paralel; gerçek ekran okuyucu gözlemi olmadan ACR tam uyum iddiası yok.
@@ -43,7 +44,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 ## Açık işler (sırayla)
 
 1. **WCAG 2.2 AA manuel denetimi:** NVDA/VoiceOver, tam EPUB iframe axe ve native kontrast teması; hedefli F1–F5/zoom retestleri geçti.
-2. **DRM / içerik koruma:** önce **P0 sosyal DRM** (zorunlu filigran, tek kullanımlık imzalı indirme, EPUB copy policy, audit), 5–8 iş günü. AES at-rest +1–2 hafta; chunked range/LCP yalnız gerçek yayıncı şartıyla. `docs/DRM-PLAN.md`.
+2. **Sosyal DRM / erişim kontrolü:** P0 v117 kodu ve testleri hazır; **bağımsız inceleme**, ardından migration 013 ve ayrı deploy kaldı. `docs/SOCIAL-DRM.md`. AES at-rest P1; chunked range/LCP yalnız gerçek yayıncı şartıyla. `docs/DRM-PLAN.md`.
 3. **Görsel ağırlıklı >300 MB:** kapsam dışı; yalnızca gerçek yayıncı talebi olursa önizleme/derivative pipeline.
 4. **Interop:** OPDS/OAI/MARC/SUSHI/CSV/OPDS API-key hazır; sertifikalı COUNTER ve OAI resumption/set kaldı (`docs/INTEROP.md`).
 5. **Mobil/PWA:** shell + swipe + çevrimdışı kitaplık ve not kuyruğu hazır; çevrimdışı not düzenleme, yer imi kuyruğu ve çakışma çözümü kaldı.

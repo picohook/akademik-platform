@@ -10,16 +10,17 @@ market AES-in-browser as unbreakable.
 - Download audit events and usage reporting.
 - OPDS/OAI/SUSHI endpoints with environment-gated tokens.
 
-## P0 — Social DRM MVP (5–8 working days)
+## P0 — Social DRM MVP (v117 source; independent review pending)
 
-Goal: safe enough for a first B2B library contract.
+Goal: traceable, authorized full-file downloads for institutional use.
 
 1. **Forced watermark for downloads**
    - B2B mode cannot use `watermark=false`; admin override only.
    - PDF and EPUB stamps include user, tenant and date.
-2. **Short-lived signed download URL**
-   - `POST /api/books/:id/download-ticket` → one-time token, short TTL.
-   - `/download?ticket=...` validates, consumes, then streams.
+2. **Short-lived, database-backed download tickets**
+   - `POST /api/books/:id/download-ticket` → 256-bit random token, 60-second TTL;
+     only its SHA-256 hash is stored, bound to user/tenant/asset/work.
+   - `POST /api/books/:id/download` consumes `{ticket}` atomically; no token URL.
    - Do not expose raw upload paths; current `/file` keeps session/range
      behavior for the reader.
 3. **Copy policy parity**
@@ -30,13 +31,16 @@ Goal: safe enough for a first B2B library contract.
      denied. Do not disable selection or all context menus as a blanket policy.
    - These UI controls do not prevent extraction through browser developer tools.
 4. **Audit**
-   - Record download ticket issue/consume, denied copy, denied print.
+   - Record download ticket issue/consume/deny and watermark bypass/override.
 5. **Tests**
    - Expired/reused token, wrong user, grant revoked, watermark true/false,
      copy policy in PDF and EPUB.
 
-Acceptance: every download has a traceable stamp; raw direct file links do not
-work without a session/grant; copy policy cannot be bypassed with the in-app UI.
+P0 implementation/review contract: [SOCIAL-DRM.md](SOCIAL-DRM.md). B2B full
+downloads carry a traceable stamp unless an explicitly audited administrator
+exception is used. Reader file links retain session/grant checks. Copy controls
+remain UI policy, not protection against deliberate extraction. P0 source does
+not deploy or migrate production automatically.
 
 ## P1 — Encryption at rest (3–4 weeks total)
 

@@ -135,7 +135,7 @@ async function setup() {
   temporary = await mkdtemp(path.join(tempParent, 'load-capacity-'));
   const sandbox = path.join(temporary, 'app');
   await mkdir(path.join(sandbox, 'public/seed'), { recursive: true });
-  for (const relative of ['server.mjs', 'indexer.mjs', 'public/search.mjs', 'public/seed/sample.pdf']) {
+  for (const relative of ['server.mjs', 'download-tickets.mjs', 'social-watermark.mjs', 'indexer.mjs', 'public/search.mjs', 'public/seed/sample.pdf']) {
     const destination = path.join(sandbox, relative);
     await copyFile(path.join(appDir, relative), destination);
     report.source[relative] = createHash('sha256').update(await readFile(destination)).digest('hex');

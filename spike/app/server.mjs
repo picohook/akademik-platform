@@ -6,8 +6,10 @@ import { fileURLToPath } from 'node:url';
 import { createHash, createHmac, randomBytes, randomUUID, scrypt, scryptSync, timingSafeEqual } from 'node:crypto';
 import Busboy from 'busboy';
 import JSZip from 'jszip';
-import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib';
+import { PDFDocument } from 'pdf-lib';
 import { indexAsset } from './indexer.mjs';
+import { createDownloadService } from './download-tickets.mjs';
+import { watermarkDownload } from './social-watermark.mjs';
 import {
   buildSnippet,
   catalogMatches,
@@ -42,11 +44,13 @@ const DEMO_EMAIL = process.env.DEMO_EMAIL || 'reader@example.edu.tr';
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'demo1234';
 const BRAND_NAME = process.env.BRAND_NAME || 'Akademik Platform';
 const BRAND_TAGLINE = process.env.BRAND_TAGLINE || 'spike';
-const APP_VERSION = process.env.APP_VERSION || '115';
+const APP_VERSION = process.env.APP_VERSION || '117';
 const BUILD_SHA = process.env.BUILD_SHA || '';
 const BUILD_DATE = process.env.BUILD_DATE || '';
 const APP_ENV = process.env.APP_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'development');
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || '';
+// Safe by default: per-title watermark=false never disables B2B download stamps.
+const B2B_DOWNLOADS = process.env.SOCIAL_DRM_B2B !== 'false';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -582,7 +586,7 @@ function grantAllows(book, grants) {
   });
 }
 
-async function activeGrants(auth) {
+async function activeGrants(auth, dbClient = null) {
   if (!auth) return [];
   if (!pool) {
     return demoGrants.filter((grant) => grant.status === 'active'
@@ -594,14 +598,15 @@ async function activeGrants(auth) {
   }
   try {
     const tenantId = auth.tenantId || TENANT_ID;
-    return await withTenant(async (client) => {
+    const grantClock = dbClient ? 'clock_timestamp()' : 'now()';
+    const load = async (client) => {
       const { rows } = await client.query(
         `select id, subject_type, subject_id, scope_type, scope_id, scope_key, seat_limit
            from grants
           where tenant_id = $1
             and status = 'active'
-            and valid_from <= now()
-            and (valid_to is null or valid_to > now())
+            and valid_from <= ${grantClock}
+            and (valid_to is null or valid_to > ${grantClock})
             and ((subject_type = 'tenant' and subject_id = $1)
               or (subject_type = 'user' and subject_id = $2)
               or (subject_type = 'group' and subject_id in (
@@ -610,7 +615,8 @@ async function activeGrants(auth) {
         [tenantId, auth.userId || null],
       );
       return rows;
-    });
+    };
+    return dbClient ? await load(dbClient) : await withTenant(load);
   } catch (error) {
     console.warn('[grants] lookup failed:', error.message);
     throw new Error('grant lookup failed');
@@ -1226,9 +1232,9 @@ async function listBooks(auth) {
   return books.filter((book) => grantAllows(book, grants));
 }
 
-async function getBook(id) {
+async function getBook(id, dbClient = null) {
   if (!pool) return findBook(id) || null;
-  return withTenant(async (client) => {
+  const load = async (client) => {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
               e.publisher, e.publication_year,
@@ -1246,8 +1252,13 @@ async function getBook(id) {
       [id, TENANT_ID],
     );
     return rows[0] || null;
-  });
+  };
+  return dbClient ? load(dbClient) : withTenant(load);
 }
+
+const downloadService = createDownloadService({
+  withTenant, getBook, activeGrants, grantAllows, tenantId: TENANT_ID, b2b: B2B_DOWNLOADS,
+});
 
 async function updateBook(id, body) {
   if (!pool) {
@@ -1833,31 +1844,6 @@ async function handleUpload(req, auth) {
   }
 }
 
-function epubWatermarkMarkup(auth) {
-  const label = `Akademik Platform · ${auth?.email || 'reader'} · ${new Date().toISOString().slice(0, 10)}`;
-  const safe = label.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  return `<div xmlns="http://www.w3.org/1999/xhtml" style="position:fixed;left:0;right:0;bottom:0;z-index:2147483647;padding:4px 10px;background:rgba(255,255,255,.82);color:#174638;font:11px/1.4 sans-serif;border-top:1px solid rgba(23,70,56,.25);pointer-events:none">${safe}</div>`;
-}
-
-async function watermarkEpub(buffer, auth) {
-  const zip = await JSZip.loadAsync(buffer);
-  if (zip.file('META-INF/encryption.xml')) {
-    throw new Error('encrypted EPUB cannot be watermarked');
-  }
-  let count = 0;
-  const files = Object.keys(zip.files).filter((name) => /\.(?:xhtml|html|htm)$/i.test(name));
-  for (const name of files) {
-    const entry = zip.file(name);
-    if (!entry) continue;
-    const content = await entry.async('string');
-    if (!/<\/body\s*>/i.test(content)) continue;
-    zip.file(name, content.replace(/<\/body\s*>/i, `${epubWatermarkMarkup(auth)}</body>`));
-    count += 1;
-  }
-  if (!count) return { buffer, changed: false };
-  return { buffer: await zip.generateAsync({ type: 'nodebuffer', mimeType: 'application/epub+zip' }), changed: true };
-}
-
 async function servePdf(req, res, storageKey) {
   const safePath = path.resolve(PUBLIC_DIR, storageKey);
   if (!safePath.startsWith(PUBLIC_DIR + path.sep)) {
@@ -1967,6 +1953,10 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('referrer-policy', 'strict-origin-when-cross-origin');
   res.setHeader('permissions-policy', 'camera=(), microphone=(), geolocation=()');
   res.setHeader('cross-origin-opener-policy', 'same-origin');
+  if (/\/download(?:-ticket)?$/.test(pathname)) {
+    res.setHeader('referrer-policy', 'no-referrer');
+    res.setHeader('cache-control', 'no-store');
+  }
   res.setHeader(
     'content-security-policy',
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
@@ -2091,6 +2081,9 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (sessionAuth && ['POST', 'PATCH', 'DELETE', 'PUT'].includes(req.method) && !requireCsrf(req, sessionAuth)) {
+      if (pool && /^\/api\/books\/[^/]+\/download(?:-ticket)?$/.test(pathname)) {
+        await downloadService.auditDenied(auth, 'csrf_invalid');
+      }
       json(res, 403, { error: 'csrf token missing or invalid' });
       return;
     }
@@ -2439,6 +2432,66 @@ const server = http.createServer(async (req, res) => {
       res.end(feed);
       return;
     }
+    const ticketRoute = pathname.match(/^\/api\/books\/([^/]+)\/(download-ticket|download)$/);
+    if (ticketRoute) {
+      if (!pool) {
+        json(res, 503, { error: 'downloads require database-backed tickets' });
+        return;
+      }
+      if (req.method !== 'POST' || url.search) {
+        const denied = await downloadService.auditDenied(auth, url.search ? 'url_parameters_forbidden' : 'post_required', true);
+        json(res, denied.status, denied.body);
+        return;
+      }
+      const bookId = ticketRoute[1];
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookId)) {
+        const denied = await downloadService.auditDenied(auth, 'invalid_book_id', false, 400);
+        json(res, denied.status, denied.body);
+        return;
+      }
+      let body;
+      try { body = await readJson(req, 4096); }
+      catch {
+        const denied = await downloadService.auditDenied(auth, 'invalid_body', false, 400);
+        json(res, denied.status, denied.body);
+        return;
+      }
+      const result = ticketRoute[2] === 'download-ticket'
+        ? await downloadService.issue(bookId, auth, body)
+        : await downloadService.consume(bookId, auth, body);
+      if (result.status !== 200) {
+        json(res, result.status, result.body);
+        return;
+      }
+      const book = result.book;
+      const safePath = path.resolve(PUBLIC_DIR, book.storage_key || '');
+      if (!book.storage_key || !safePath.startsWith(PUBLIC_DIR + path.sep)) {
+        await downloadService.auditDenied(auth, 'invalid_storage_key');
+        json(res, 409, { error: 'download unavailable' });
+        return;
+      }
+      const format = book.format === 'epub' ? 'epub' : 'pdf';
+      let payload;
+      try {
+        const source = await readFile(safePath);
+        payload = result.watermark ? await watermarkDownload(source, format, auth) : source;
+      } catch {
+        // No fallback to unwatermarked bytes after a stamp/parse/read failure.
+        await downloadService.auditDenied(auth, 'delivery_failed');
+        json(res, 409, { error: 'download unavailable' });
+        return;
+      }
+      await logUsage('book.download', book, auth);
+      const filename = `${book.title.replace(/[^\p{L}\p{N}._-]+/gu, '-').slice(0, 80) || 'kitap'}.${format}`;
+      res.writeHead(200, {
+        'content-type': format === 'epub' ? 'application/epub+zip' : 'application/pdf',
+        'content-length': payload.length,
+        'content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
+        'cache-control': 'no-store',
+      });
+      res.end(payload);
+      return;
+    }
     if (pathname === '/api/books' && req.method === 'GET') {
       json(res, 200, await listBooks(auth));
       return;
@@ -2491,96 +2544,6 @@ const server = http.createServer(async (req, res) => {
     }
     if (pathname === '/api/search' && req.method === 'GET') {
       json(res, 200, await searchBooks(url.searchParams.get('q'), auth));
-      return;
-    }
-    const downloadMatch = pathname.match(/^\/api\/books\/([^/]+)\/download$/);
-    if (downloadMatch && req.method === 'GET') {
-      const bookId = decodeURIComponent(downloadMatch[1]);
-      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookId)) {
-        json(res, 400, { error: 'invalid book id' });
-        return;
-      }
-      const book = await getBook(bookId);
-      if (!book) {
-        json(res, 404, { error: 'book not found' });
-        return;
-      }
-      if (!await canAccessBook(book, auth)) {
-        json(res, 403, { error: 'yetkiniz yok' });
-        return;
-      }
-      if (book.allow_download === false) {
-        json(res, 403, { error: 'download disabled for this title' });
-        return;
-      }
-      if (book.format === 'epub') {
-        const epubPath = path.resolve(PUBLIC_DIR, book.storage_key || '');
-        if (!book.storage_key || !epubPath.startsWith(PUBLIC_DIR + path.sep)) {
-          json(res, 400, { error: 'invalid storage key' });
-          return;
-        }
-        await logUsage('book.download', book, auth);
-        let buffer = await readFile(epubPath);
-        if (book.watermark !== false) {
-          try {
-            const result = await watermarkEpub(buffer, auth);
-            buffer = result.buffer;
-          } catch (error) {
-            json(res, 409, { error: error.message });
-            return;
-          }
-        }
-        res.writeHead(200, {
-          'content-type': 'application/epub+zip',
-          'content-disposition': `attachment; filename="book-${book.id}.epub"`,
-          'content-length': buffer.length,
-          'cache-control': 'private, max-age=0',
-        });
-        res.end(buffer);
-        return;
-      }
-      await logUsage('book.download', book, auth);
-      const safePath = path.resolve(PUBLIC_DIR, book.storage_key);
-      if (!safePath.startsWith(PUBLIC_DIR + path.sep)) {
-        json(res, 400, { error: 'invalid storage key' });
-        return;
-      }
-      const buffer = await readFile(safePath);
-      let payload = buffer;
-      if (book.watermark !== false) {
-        const pdf = await PDFDocument.load(buffer, { ignoreEncryption: true });
-        const font = await pdf.embedFont(StandardFonts.Helvetica);
-        const stamp = `${auth.email} · ${new Date().toISOString().slice(0, 10)}`;
-        pdf.getPages().forEach((page) => {
-          const { width, height } = page.getSize();
-          page.drawText(stamp, {
-            x: 36,
-            y: 22,
-            size: 8,
-            font,
-            color: rgb(0.45, 0.45, 0.45),
-            opacity: 0.6,
-          });
-          page.drawText(stamp, {
-            x: width * 0.16,
-            y: height * 0.48,
-            size: 16,
-            font,
-            color: rgb(0.45, 0.45, 0.45),
-            opacity: 0.12,
-            rotate: degrees(35),
-          });
-        });
-        payload = Buffer.from(await pdf.save());
-      }
-      const filename = `${book.title.replace(/[^\p{L}\p{N}._-]+/gu, '-').slice(0, 80) || 'kitap'}.pdf`;
-      res.writeHead(200, {
-        'content-type': 'application/pdf',
-        'content-length': payload.length,
-        'content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
-        'cache-control': 'no-store',
-      });
-      res.end(payload);
       return;
     }
     const marcMatch = pathname.match(/^\/api\/books\/([^/]+)\/marc$/);

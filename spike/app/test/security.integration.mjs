@@ -148,7 +148,7 @@ async function setup() {
   const sandboxApp = path.join(tempDir, 'app');
   await mkdir(path.join(sandboxApp, 'public', 'seed'), { recursive: true });
   await mkdir(path.join(sandboxApp, 'public', 'ocr', seedAsset), { recursive: true });
-  for (const file of ['server.mjs', 'indexer.mjs', 'public/search.mjs']) {
+  for (const file of ['server.mjs', 'download-tickets.mjs', 'social-watermark.mjs', 'indexer.mjs', 'public/search.mjs']) {
     await copyFile(path.join(appDir, file), path.join(sandboxApp, file));
   }
   await writeFile(path.join(sandboxApp, 'public', 'seed', 'security.pdf'), await pdfBytes('Security seed'));
@@ -252,12 +252,23 @@ async function grantFailureTest({ base }, hidden) {
   assert.deepEqual(before.data.map((book) => book.id), [seedWork]);
   const protectedRoutes = [
     '/api/search?q=Publisher', `/api/books/${seedWork}/file`,
-    `/api/books/${seedWork}/download`, `/api/books/${seedWork}/search?q=security`,
+    `/api/books/${seedWork}/search?q=security`,
     `/ocr/${seedAsset}/page-001.hocr`, '/opds',
   ];
+  const ticketPath = `/api/books/${seedWork}/download-ticket`;
+  const downloadPath = `/api/books/${seedWork}/download`;
+  async function issueTicket(label) {
+    const issued = status(await request(base, ticketPath, reader, { method: 'POST', body: {} }), 201, label);
+    assert.match(issued.data.ticket, /^[a-f0-9]{64}$/);
+    return issued.data.ticket;
+  }
+  const download = (ticket) => request(base, downloadPath, reader, { method: 'POST', body: { ticket } });
   for (const route of protectedRoutes) {
     status(await request(base, route, reader), 200, `allowed before fault ${route}`);
   }
+  status(await request(base, downloadPath, reader), 403, 'legacy GET download denied before fault');
+  status(await download(await issueTicket('ticket issued before grant fault')), 200, 'ticket download before grant fault');
+  const pendingTicket = await issueTicket('spare ticket issued before grant fault');
   status(await request(base, `/api/books/${hidden.id}/file`, reader), 404, 'hidden file before fault');
   await admin.query('revoke select on grants from akademik_app');
   try {
@@ -269,6 +280,9 @@ async function grantFailureTest({ base }, hidden) {
       assert.match(result.headers.get('content-type'), /application\/json/);
       assert.equal(result.text.includes(hidden.title), false);
     }
+    status(await request(base, ticketPath, reader, { method: 'POST', body: {} }), 500, 'grant SQL fault blocks ticket issue');
+    status(await download(pendingTicket), 500, 'grant SQL fault blocks previously issued ticket consume');
+    status(await request(base, downloadPath, reader), 403, 'legacy GET remains denied during grant SQL fault');
     status(await request(base, '/api/me', reader), 200, 'server and session survive all grant faults');
   } finally {
     await admin.query('grant select on grants to akademik_app');
@@ -278,6 +292,9 @@ async function grantFailureTest({ base }, hidden) {
   for (const route of protectedRoutes) {
     status(await request(base, route, reader), 200, `access recovers ${route}`);
   }
+  status(await download(pendingTicket), 200, 'grant SQL fault did not consume ticket; permission recovery allows it');
+  status(await download(await issueTicket('new ticket issue recovers')), 200, 'new ticket download recovers after SQL permission restored');
+  status(await request(base, downloadPath, reader), 403, 'legacy GET remains denied after recovery');
   await request(base, '/api/logout', reader, { method: 'POST' });
   console.log('PASS grants: real SQL permission error blocks catalog/search/files/download/OCR/OPDS; auth stays valid; access recovers.');
 }

@@ -1,0 +1,30 @@
+{
+  "runId": "5bee06f8-c517-4c27-b12e-94e99e274d14",
+  "startedAt": "2026-10-23T17:08:30.667Z",
+  "status": "passed",
+  "source": {
+    "server.mjs": "b1834a26525d3d2a93e1761bd8d69da8f059e7285bbee74e5d907673766248a2",
+    "indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+    "download-tickets.mjs": "ab77f586d5fe4eb516eb2cf680c611b9b6cbfc576ea43783e629f03ebf50c0c1",
+    "social-watermark.mjs": "728d57c13dc028410c4825cc10074f01d8c2199de2d5f9d52919c8b2edb405a6",
+    "public/search.mjs": "88ac22ab469fc2cc5bf8d0476754a245e6ed9f44b475cbf349dbbaca52145cdc",
+    "schema.sql": "2851c1afcc249e443c283c279fc1b434e3ccbea18ed9ec02885681a6f0418c6e",
+    "seed.sql": "b8d845cea00579ccd0b13fcbb94e9d050c42d1fff736ec4dd36e1137f67ce587",
+    "013-download-tickets.sql": "acea4b1d91ab2772342a616beb09d590f3d2d69d3c7aabaeee80bbda1c0a7259"
+  },
+  "scenarios": [
+    "session/CSRF, token storage/TTL/bindings, stamped PDF+EPUB, reader Range",
+    "expiry/replay/user/tenant/asset/policy/grant binding; override injection and current DB admin role",
+    "two-process DB-barrier race: exactly one consumer; forced RLS cross-tenant select/update/insert",
+    "audit INSERT failure atomically rolls back issue/consume; DB-clock expiry enforced after lock wait",
+    "required audit actions present; raw tokens and token hashes absent from audit payloads"
+  ],
+  "cleanup": {
+    "appsStopped": true,
+    "databaseRemoved": true,
+    "temporaryAppRemoved": true
+  },
+  "postgresImage": "sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea",
+  "checks": 189,
+  "finishedAt": "2026-10-23T17:09:14.598Z"
+}

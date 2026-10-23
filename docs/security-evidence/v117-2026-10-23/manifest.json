@@ -1,0 +1,124 @@
+{
+  "status": "passed",
+  "frontend": "v117",
+  "sourceState": "Tested P0 changes on base 13dcdde before commit; source Git blobs identify the final commit contents.",
+  "units": {
+    "total": 37,
+    "citations": 17,
+    "epubCopyPolicy": 7,
+    "watermarks": 13,
+    "exitCode": 0
+  },
+  "socialDrm": {
+    "checks": 189,
+    "scenarios": 5,
+    "report": "social-drm-results.json",
+    "sha256": "7d7ef638a74c65452ee39598c33925d496c3f33ecf2e752502260962a23e9d1f"
+  },
+  "security": {
+    "checks": 68,
+    "scenarios": 3,
+    "log": "security-validation.txt",
+    "sha256": "49d4bab64e306992b3358fd831a87407ba6abbd539aebe24fe3b021ebdb4ed94"
+  },
+  "review": "Static peer review: last-grant deletion and EPUB spine/namespace findings fixed; no remaining blocker reported. Independent user review pending.",
+  "browser": "No new full browser acceptance run in this package.",
+  "production": "Unchanged v116; migration 013 not applied by this task.",
+  "sources": [
+    {
+      "file": "db/schema.sql",
+      "rawSha256": "2851c1afcc249e443c283c279fc1b434e3ccbea18ed9ec02885681a6f0418c6e",
+      "gitBlobAfterLfNormalization": "d8a97b2364d53a2dbbf0f96bd3ff22fdcdf0d2de"
+    },
+    {
+      "file": "db/migrations/013-download-tickets.sql",
+      "rawSha256": "acea4b1d91ab2772342a616beb09d590f3d2d69d3c7aabaeee80bbda1c0a7259",
+      "gitBlobAfterLfNormalization": "a3509bb08e967c6bfc58d06172bd4f9879cba9cb"
+    },
+    {
+      "file": "spike/app/server.mjs",
+      "rawSha256": "b1834a26525d3d2a93e1761bd8d69da8f059e7285bbee74e5d907673766248a2",
+      "gitBlobAfterLfNormalization": "0290a3f91aba1e6a6be78161a2002822514d1fbb"
+    },
+    {
+      "file": "spike/app/download-tickets.mjs",
+      "rawSha256": "ab77f586d5fe4eb516eb2cf680c611b9b6cbfc576ea43783e629f03ebf50c0c1",
+      "gitBlobAfterLfNormalization": "75e5d79ea8e9fb0e5cb1d668258703bcdfeaac49"
+    },
+    {
+      "file": "spike/app/social-watermark.mjs",
+      "rawSha256": "728d57c13dc028410c4825cc10074f01d8c2199de2d5f9d52919c8b2edb405a6",
+      "gitBlobAfterLfNormalization": "586bf03ad2de2126970abb265c4ae3d4df4cefe4"
+    },
+    {
+      "file": "spike/app/public/app.js",
+      "rawSha256": "a24698ec38accb110350fac53f9104aeb54d8c41ca8d3350e1125cecab92f84a",
+      "gitBlobAfterLfNormalization": "b0c4b71bac48a02d73242b7724d129625c778bd0"
+    },
+    {
+      "file": "spike/app/public/index.html",
+      "rawSha256": "215d9df7187345e68b28b16c7e34a09b6f2b435815a6d8366996c07f92e5ef9e",
+      "gitBlobAfterLfNormalization": "a4b3d3498e2c211b5ae8bbd4d973abe89afbe652"
+    },
+    {
+      "file": "spike/app/public/sw.js",
+      "rawSha256": "d3d40a93dfce81305b450b084326ee53c81dbb9c965be8b0cb6fd2303e92bcdf",
+      "gitBlobAfterLfNormalization": "1c3f5f6762691941aa6a4071d26c01d934d7a282"
+    },
+    {
+      "file": "spike/app/public/epub-engine.mjs",
+      "rawSha256": "0624f03f8fe4a5fa806589f97dfe50df29f0f99fe411d290523c84faab2ab680",
+      "gitBlobAfterLfNormalization": "bfcfe660e0a5cd026795d554ef29cac1a018a26d"
+    },
+    {
+      "file": "spike/app/test/citations.test.mjs",
+      "rawSha256": "2fb0a1c56a8631f82716e8af021611232fc375d825e2b4265217a56fdfd77270",
+      "gitBlobAfterLfNormalization": "f9ef8f3f56b946ba0894481efd38be052a1f649f"
+    },
+    {
+      "file": "spike/app/test/epub-copy-policy.test.mjs",
+      "rawSha256": "bb690c86a1a7c61fc7924f8ec6c0c5f7a788ff141c8da3ab6c75db6eb30ca2aa",
+      "gitBlobAfterLfNormalization": "a6bd1fe0d17bba8a4e1c3c1310abecbb565f3eae"
+    },
+    {
+      "file": "spike/app/test/security.integration.mjs",
+      "rawSha256": "e881ea588af4b748264ed307f3207c0e1d1c7059e6d3f8a20b4b7a645e3e7717",
+      "gitBlobAfterLfNormalization": "a029a3f02abbf0a121aa37d1df89e783d158e853"
+    },
+    {
+      "file": "spike/app/test/social-drm.integration.mjs",
+      "rawSha256": "a2a70c713bb983472d43b9ee7a951bbaffcba0958cacd9784060f50395851f1c",
+      "gitBlobAfterLfNormalization": "3afe33d438135c6f4471b1d0a3790a874a48a0a3"
+    },
+    {
+      "file": "spike/app/test/social-watermark.test.mjs",
+      "rawSha256": "050afcd681d25de25af0c014c56f5de91292b22e634293aa0c0b3d1be889a3b2",
+      "gitBlobAfterLfNormalization": "592c29c49f096e42873347c81f73c62356ff1416"
+    },
+    {
+      "file": "spike/app/package.json",
+      "rawSha256": "91eb2f70f99fa04bd891edb8268160fd664fa48b5286f98db4fbd4599340e9dc",
+      "gitBlobAfterLfNormalization": "5cfb585ae95d617b2e4cbbd5fc53c04c13aff09e"
+    },
+    {
+      "file": "scripts/load-capacity.mjs",
+      "rawSha256": "9bcb407f93fa5440a562529b26b9fa0ba12a85ac9f0d11355e26da6b5a2d1de5",
+      "gitBlobAfterLfNormalization": "41b59b4b08da6c4c6dc4b38476d57d741a99ce03"
+    },
+    {
+      "file": "docker-compose.yml",
+      "rawSha256": "2d40fc41e59fbea876afb2c187039a8369fdc141974b389fc369a230f3000aa7",
+      "gitBlobAfterLfNormalization": "39af4a02e91747d73a918b0ed3c919893ffb4d55"
+    },
+    {
+      "file": "docker-compose.prod.yml",
+      "rawSha256": "e764314eb212578d1a2158135f56311a2db252dc691dfa9c48280cf681b65e8b",
+      "gitBlobAfterLfNormalization": "3a6c84bcb97babf7e0bb2b1d927e24f463a1faa7"
+    },
+    {
+      "file": ".env.production.example",
+      "rawSha256": "4b5f9781584edc640001c7a2fd14e7fcceda7853396b20b310410fb1efac67ca",
+      "gitBlobAfterLfNormalization": "7a1883cc9d3f28bc571300315a90fb37385b760e"
+    }
+  ]
+}

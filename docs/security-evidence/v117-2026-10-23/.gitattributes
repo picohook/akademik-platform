@@ -1,0 +1,3 @@
+* -text
+# Preserve terminal output verbatim.
+*.txt -whitespace
