@@ -1,6 +1,6 @@
 # Çevrimdışı not düzenleme — v119
 
-Tarih: 2026-10-24. Bu paket kaynak kodudur; üretim v118 olarak kalır. Deploy yapılmadı. PostgreSQL migration veya IndexedDB sürüm değişikliği gerekmiyor.
+Tarih: 2026-10-24. v119, bağımsız kod incelemesi PASS sonrası app-only olarak canlıya alındı. PostgreSQL migration veya IndexedDB sürüm değişikliği yok. [Dağıtım kaydı](deployments/2026-10-24-v119.md).
 
 ## Davranış
 
@@ -57,3 +57,7 @@ Uygulayan ajanın nihai retesti **20/20**, **0** sayfa hatası, cleanup **3/3**:
 Testte A notları offline düzenlenip bağlantıda onaylandıktan sonra gerçek online çıkış yapıldı; B offline hard reload ile açtı. PDF/EPUB offline kitaplık düğmesi kullanıldı. İzole demo sunucusunun online not listesi hesaplara ayrılmadığı için hesap değişiminde URL'deki otomatik kitap açılışı temizlendi ve B okuyucusu yalnız offline açıldı. Bu koşu demo sunucusunun online kullanıcı izolasyonu veya PostgreSQL tarayıcı testi iddiası değildir. Üç başarısız hazırlık/ara test koşusu ham kanıtlarıyla korunur; geçti sayılmaz.
 
 Yeni kaynak ve kanıt hash'leri: [privacy-manifest.json](reader-evidence/v119-offline-edit/privacy-manifest.json). Önceki PostgreSQL 68 kontrolü sunucu değişmediği için yeniden çalıştırılmadı. Bağımsız reviewer bu commit'i tekrar incelemelidir; bu kayıt bağımsız onay veya deploy onayı değildir.
+
+## Dağıtım güncellemesi
+
+Kullanıcı bağımsız kod incelemesini PASS olarak bildirdi; bağımsız reviewer tarayıcı koşturamadı. v119 app-only deploy tamam: HTTPS smoke 16/16; gerçek prod PostgreSQL ve Edge üzerinde PDF/EPUB offline edit/relogin ve A→B→A dahil 9/9; 0 JS hatası, cleanup 4/4. Prod v119; önceki bölümlerdeki prod v118/deploy yapılmadı ifadeleri o testlerin tarihsel durumudur. [Kayıt](deployments/2026-10-24-v119.md).

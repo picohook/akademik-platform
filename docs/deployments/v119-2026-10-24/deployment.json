@@ -1,0 +1,163 @@
+{
+  "release": "v119",
+  "sourceCommit": "1b21a72053f0d8164f4c1f06b76f9dee3c91fbf1",
+  "operationsCommit": "1b21a72053f0d8164f4c1f06b76f9dee3c91fbf1",
+  "startedAt": "2026-10-23T23:49:02.467Z",
+  "runId": "2026-10-23T23-49-02-467Z-6b51c8",
+  "buildDate": "2026-10-24 02:49",
+  "before": {
+    "id": "965e0910219cf7959ce1f66badad4c53f7fe72fe2bb99111853a3ae457285036",
+    "image": "sha256:8a5b85625858a0391298613e4fda922c9c8cfff1fa521054ac08bf85d529a1c7",
+    "startedAt": "2026-10-23T19:14:03.282869123Z",
+    "status": "running",
+    "health": "healthy",
+    "restarts": 0
+  },
+  "dbBefore": {
+    "id": "90301242f1eacae5f30e5bf03f60a9f397fe08105094cd1252f09bc213667a36",
+    "image": "sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea",
+    "startedAt": "2026-10-21T07:30:23.564414916Z",
+    "status": "running",
+    "health": "healthy",
+    "restarts": 0
+  },
+  "caddyBefore": {
+    "id": "0fc7980c45658f3692c4723d1bec1435194e7ce3e47bd90250f2aff782bb802d",
+    "image": "sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f",
+    "startedAt": "2026-10-21T07:30:43.898856358Z",
+    "status": "running",
+    "restarts": 0
+  },
+  "previousMetadata": {
+    "APP_ENV": "production",
+    "SOCIAL_DRM_B2B": "true",
+    "BUILD_DATE": "2026-10-23 22:07",
+    "BUILD_SHA": "3d5f93e6d351abd6bc7214608cec2a96f7a133fc",
+    "APP_VERSION": "118"
+  },
+  "releaseTag": "akademik-platform-prod-web:v119-1b21a72",
+  "rollbackTag": "akademik-platform-prod-web:rollback-v118-pre-v119-2026-10-23T23-49-02-467Z-6b51c8",
+  "prepared": true,
+  "migrated": true,
+  "built": true,
+  "deployed": true,
+  "finalized": true,
+  "steps": [
+    {
+      "step": "fresh-backups-validated-and-rollback-retained",
+      "at": "2026-10-23T23:50:11.426Z"
+    },
+    {
+      "step": "pinned-image-built-and-file-hashes-verified",
+      "at": "2026-10-23T23:51:01.101Z"
+    },
+    {
+      "step": "v119-web-started-after-migrations",
+      "at": "2026-10-23T23:51:24.754Z"
+    },
+    {
+      "step": "HTTPS-source-hashes-and-smoke-16-passed",
+      "at": "2026-10-23T23:51:54.328Z"
+    },
+    {
+      "step": "production-offline-edit-privacy-verification-passed-and-public-metadata-persisted",
+      "at": "2026-10-23T23:52:59.639Z"
+    }
+  ],
+  "dbUser": "akademik",
+  "dbName": "akademik",
+  "dbAdmin": {
+    "role": "akademik",
+    "superuser": true,
+    "tickets": "download_tickets",
+    "limits": "download_ticket_limits"
+  },
+  "sourceRoot": "C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\tmp\\deploy-v119\\source-1b21a72",
+  "sourceProof": [
+    {
+      "file": "server.mjs",
+      "sha256": "7e3559dead434152742b200836f0d86137abf1b704743d3f256bee0ed9d8baab",
+      "testedSha256": "d28135b29acac94e2d2051aeadeb493c12bf2bba824bd3ee7a2af6c3ab877b1b",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/app.js",
+      "sha256": "63abe129ffcbe87adc5baa9355e01667e84be7f7468c74b25bdf1882e3772ee6",
+      "testedSha256": "a12ec8859d4fd1e7f70067869513de86b342f3671d9b7253011e40bb1e183847",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/offline.mjs",
+      "sha256": "8387a11c0f21277ab05b7cf26205a2234700b5010a88717ebcc678e6b1c62775",
+      "testedSha256": "75549aa75b94e4cee9456d3f67fcde897a5e2b634fddcca37fab1bd068abdc98",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/index.html",
+      "sha256": "6844e1c90a755c2fde994a56187a7f837c1eb5e2fa483f6f21aae2b98d7217fa",
+      "testedSha256": "ba8c0394e1e17d95139dbe3e00cd00b538e25098d67f007c6455a6329baa689a",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/sw.js",
+      "sha256": "e4c0352aff47c5ddc7258c8a69b0bf013a457bee7c3be5d1a87d4074441652ce",
+      "testedSha256": "df98efec1a11f483f1e211df6472112bc1f8a635f864dc3899b460f87a61f9ac",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/i18n.mjs",
+      "sha256": "35750e40277c27e162635ba8e45c049fb880a414848498a9737767af83420996",
+      "testedSha256": "01a8652d46adf7a6c4e5605a8efd3c2d62481c28fd17aa538891cd820555ba66",
+      "equalAfterLineEndingNormalization": true
+    }
+  ],
+  "backups": [
+    {
+      "file": "backups/akademik-pre-v119-2026-10-23T23-49-02-467Z-6b51c8.dump",
+      "bytes": 97053,
+      "sha256": "bbbae3b69d2d33a269637bd4f4f7f8cec37dbac40551d9b13e39d60359bcae49",
+      "private": true
+    },
+    {
+      "file": "backups/files-pre-v119-2026-10-23T23-49-02-467Z-6b51c8.tgz",
+      "bytes": 154485423,
+      "sha256": "27f1f56bad3d12bf9288a28f396d8b45cedefaa39ca9261db552e0f8de5b1cfe",
+      "private": true
+    }
+  ],
+  "migrationAction": "none; existing 001-014 unchanged",
+  "releaseImage": "sha256:d0e6f011395b8167da0e6a21b044f1128431fdd2e05352226df548220c6096a5",
+  "imageHashes": {
+    "server.mjs": "7e3559dead434152742b200836f0d86137abf1b704743d3f256bee0ed9d8baab",
+    "public/app.js": "63abe129ffcbe87adc5baa9355e01667e84be7f7468c74b25bdf1882e3772ee6",
+    "public/offline.mjs": "8387a11c0f21277ab05b7cf26205a2234700b5010a88717ebcc678e6b1c62775",
+    "public/index.html": "6844e1c90a755c2fde994a56187a7f837c1eb5e2fa483f6f21aae2b98d7217fa",
+    "public/sw.js": "e4c0352aff47c5ddc7258c8a69b0bf013a457bee7c3be5d1a87d4074441652ce",
+    "public/i18n.mjs": "35750e40277c27e162635ba8e45c049fb880a414848498a9737767af83420996"
+  },
+  "after": {
+    "id": "9666f36eaf8cabb11cdf4cdca3e573b2dde869fd18fd5bc3e9061f290b58405d",
+    "image": "sha256:d0e6f011395b8167da0e6a21b044f1128431fdd2e05352226df548220c6096a5",
+    "startedAt": "2026-10-23T23:51:24.190102818Z",
+    "status": "running",
+    "health": "healthy",
+    "restarts": 0
+  },
+  "smokeChecks": 16,
+  "dbAfter": {
+    "id": "90301242f1eacae5f30e5bf03f60a9f397fe08105094cd1252f09bc213667a36",
+    "image": "sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea",
+    "startedAt": "2026-10-21T07:30:23.564414916Z",
+    "status": "running",
+    "health": "healthy",
+    "restarts": 0
+  },
+  "caddyAfter": {
+    "id": "0fc7980c45658f3692c4723d1bec1435194e7ce3e47bd90250f2aff782bb802d",
+    "image": "sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f",
+    "startedAt": "2026-10-21T07:30:43.898856358Z",
+    "status": "running",
+    "restarts": 0
+  },
+  "completedAt": "2026-10-23T23:52:59.639Z"
+}

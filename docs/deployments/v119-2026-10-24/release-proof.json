@@ -1,0 +1,61 @@
+{
+  "release": "v119",
+  "sourceCommit": "1b21a72053f0d8164f4c1f06b76f9dee3c91fbf1",
+  "sourceProof": [
+    {
+      "file": "server.mjs",
+      "sha256": "7e3559dead434152742b200836f0d86137abf1b704743d3f256bee0ed9d8baab",
+      "testedSha256": "d28135b29acac94e2d2051aeadeb493c12bf2bba824bd3ee7a2af6c3ab877b1b",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/app.js",
+      "sha256": "63abe129ffcbe87adc5baa9355e01667e84be7f7468c74b25bdf1882e3772ee6",
+      "testedSha256": "a12ec8859d4fd1e7f70067869513de86b342f3671d9b7253011e40bb1e183847",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/offline.mjs",
+      "sha256": "8387a11c0f21277ab05b7cf26205a2234700b5010a88717ebcc678e6b1c62775",
+      "testedSha256": "75549aa75b94e4cee9456d3f67fcde897a5e2b634fddcca37fab1bd068abdc98",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/index.html",
+      "sha256": "6844e1c90a755c2fde994a56187a7f837c1eb5e2fa483f6f21aae2b98d7217fa",
+      "testedSha256": "ba8c0394e1e17d95139dbe3e00cd00b538e25098d67f007c6455a6329baa689a",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/sw.js",
+      "sha256": "e4c0352aff47c5ddc7258c8a69b0bf013a457bee7c3be5d1a87d4074441652ce",
+      "testedSha256": "df98efec1a11f483f1e211df6472112bc1f8a635f864dc3899b460f87a61f9ac",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/i18n.mjs",
+      "sha256": "35750e40277c27e162635ba8e45c049fb880a414848498a9737767af83420996",
+      "testedSha256": "01a8652d46adf7a6c4e5605a8efd3c2d62481c28fd17aa538891cd820555ba66",
+      "equalAfterLineEndingNormalization": true
+    }
+  ],
+  "imageHashes": {
+    "server.mjs": "7e3559dead434152742b200836f0d86137abf1b704743d3f256bee0ed9d8baab",
+    "public/app.js": "63abe129ffcbe87adc5baa9355e01667e84be7f7468c74b25bdf1882e3772ee6",
+    "public/offline.mjs": "8387a11c0f21277ab05b7cf26205a2234700b5010a88717ebcc678e6b1c62775",
+    "public/index.html": "6844e1c90a755c2fde994a56187a7f837c1eb5e2fa483f6f21aae2b98d7217fa",
+    "public/sw.js": "e4c0352aff47c5ddc7258c8a69b0bf013a457bee7c3be5d1a87d4074441652ce",
+    "public/i18n.mjs": "35750e40277c27e162635ba8e45c049fb880a414848498a9737767af83420996"
+  },
+  "sourceIsPinnedArchive": true,
+  "predeployAcceptance": "../../OFFLINE-NOTE-EDIT-V119.md",
+  "predeployBrowser": 20,
+  "predeployBrowserIndependent": false,
+  "independentCodeReview": "PASS confirmed by user; independent browser unavailable in reviewer sandbox",
+  "productionBrowser": 9,
+  "productionSmoke": 16,
+  "productionMigrationsApplied": [],
+  "existingMigrations": "001-014 unchanged",
+  "migrationAction": "none; app-only deployment",
+  "previousImagePreserved": "akademik-platform-prod-web:rollback-v118-pre-v119-2026-10-23T23-49-02-467Z-6b51c8"
+}

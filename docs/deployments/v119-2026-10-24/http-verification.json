@@ -1,0 +1,31 @@
+{
+  "health": 200,
+  "config": {
+    "version": "119",
+    "buildSha": "1b21a72053f0d8164f4c1f06b76f9dee3c91fbf1",
+    "environment": "production",
+    "buildDate": "2026-10-24 02:49"
+  },
+  "servedFiles": [
+    {
+      "file": "public/app.js",
+      "sha256": "63abe129ffcbe87adc5baa9355e01667e84be7f7468c74b25bdf1882e3772ee6"
+    },
+    {
+      "file": "public/offline.mjs",
+      "sha256": "8387a11c0f21277ab05b7cf26205a2234700b5010a88717ebcc678e6b1c62775"
+    },
+    {
+      "file": "public/index.html",
+      "sha256": "6844e1c90a755c2fde994a56187a7f837c1eb5e2fa483f6f21aae2b98d7217fa"
+    },
+    {
+      "file": "public/sw.js",
+      "sha256": "e4c0352aff47c5ddc7258c8a69b0bf013a457bee7c3be5d1a87d4074441652ce"
+    },
+    {
+      "file": "public/i18n.mjs",
+      "sha256": "35750e40277c27e162635ba8e45c049fb880a414848498a9737767af83420996"
+    }
+  ]
+}

@@ -1,0 +1,100 @@
+{
+  "startedAt": "2026-10-23T23:52:08.266Z",
+  "runId": "b2808d5e-9aab-4b4b-8936-214c864fafaf",
+  "base": "https://localhost",
+  "sourceCommit": "1b21a72053f0d8164f4c1f06b76f9dee3c91fbf1",
+  "status": "passed",
+  "cases": [
+    {
+      "nativeIndexedDBBlob": true,
+      "provenance": "ticketed-download-v1",
+      "sha256": "0e9fe63501d63f48ff809b9a7ee19047ef58eeebf710574c577f4dbfbec3ffcc",
+      "id": "ticketed-offline-save-pdf",
+      "status": "PASS"
+    },
+    {
+      "nativeIndexedDBBlob": true,
+      "provenance": "ticketed-download-v1",
+      "sha256": "ce841a2fdd4cfd2ecae9a1f3f55fa3bfe1b7e5691091b6b4cafddb67fab36826",
+      "id": "ticketed-offline-save-epub",
+      "status": "PASS"
+    },
+    {
+      "offlineReload": true,
+      "realPostgresPatch": true,
+      "draftAcknowledged": true,
+      "id": "offline-edit-reload-reconnect-pdf",
+      "status": "PASS"
+    },
+    {
+      "offlineReload": true,
+      "realPostgresPatch": true,
+      "draftAcknowledged": true,
+      "id": "offline-edit-reload-reconnect-epub",
+      "status": "PASS"
+    },
+    {
+      "logoutClearsIdentity": true,
+      "reloginOwner": "44444444-4444-4444-4444-444444444444",
+      "formats": [
+        "pdf",
+        "epub"
+      ],
+      "id": "A-real-logout-relogin-preserves-notes",
+      "status": "PASS"
+    },
+    {
+      "realAccountSwitch": true,
+      "offlineHardReload": true,
+      "ownNoteVisible": true,
+      "otherAccountAndLegacyHidden": true,
+      "ANoteRetained": true,
+      "id": "B-offline-hides-A-and-unowned-pdf",
+      "status": "PASS"
+    },
+    {
+      "realAccountSwitch": true,
+      "offlineHardReload": true,
+      "ownNoteVisible": true,
+      "otherAccountAndLegacyHidden": true,
+      "ANoteRetained": true,
+      "id": "B-offline-hides-A-and-unowned-epub",
+      "status": "PASS"
+    },
+    {
+      "ownNotePreserved": true,
+      "BAndLegacyHidden": true,
+      "id": "A-return-offline-restores-only-own-pdf",
+      "status": "PASS"
+    },
+    {
+      "ownNotePreserved": true,
+      "BAndLegacyHidden": true,
+      "id": "A-return-offline-restores-only-own-epub",
+      "status": "PASS"
+    }
+  ],
+  "cleanup": {
+    "pdfFixtureDeleted": true,
+    "epubFixtureDeleted": true,
+    "loggedOut": true,
+    "browserClosed": true
+  },
+  "scope": "Real production HTTPS/PostgreSQL; temporary generated books and notes, actual ticketed offline saves, native IndexedDB, offline edits/relogin and A-B-A isolation. Existing customer books/grants unchanged; fixtures removed.",
+  "browser": "155.0.4283.45",
+  "tls": "Dedicated Edge ignores local Caddy certificate errors; separate Node HTTPS smoke validates exported CA. OS trust unchanged.",
+  "fixtures": [
+    {
+      "id": "5610feba-d594-43e1-9c60-e1cee4d38c3a",
+      "title": "Release v119 verification b2808d5e-9aab-4b4b-8936-214c864fafaf PDF",
+      "format": "pdf"
+    },
+    {
+      "id": "10d02ead-711e-4254-b9ab-54ae92630a3a",
+      "title": "Release v119 verification b2808d5e-9aab-4b4b-8936-214c864fafaf EPUB",
+      "format": "epub"
+    }
+  ],
+  "browserErrors": [],
+  "completedAt": "2026-10-23T23:52:42.347Z"
+}
