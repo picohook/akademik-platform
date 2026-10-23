@@ -1,0 +1,166 @@
+﻿{
+    "cases":  21,
+    "sourceArchive":  "git archive d0e01c9",
+    "sourceCommit":  "d0e01c9ccffb22329d6adee3ed9fa08991a4c3f2",
+    "browser":  "155.0.4283.45",
+    "scope":  "Independent pinned v112 R1/R2 retest, account/book settings, English labels, and adjacent EPUB positions; isolated demo, no production writes",
+    "passed":  20,
+    "artifacts":  [
+                      {
+                          "sha256":  "d42bd86a775218ce883d40543f38068eafbec9dcd9c42ead5553314be650b029",
+                          "file":  "adjacent-bookmark-toggle.json",
+                          "bytes":  3118
+                      },
+                      {
+                          "sha256":  "5704a8020e5ab3996da5360d0e7f21453c0be77bea19a35c81eedd1fb30d96a4",
+                          "file":  "adjacent-fixture.epub",
+                          "bytes":  675245
+                      },
+                      {
+                          "sha256":  "1c0c1cdd583970cb6fad35d3bb82f4ef06f004690cc2a9a4cedc4c7c59f7427e",
+                          "file":  "adjacent-page-after-toggle.png",
+                          "bytes":  198391
+                      },
+                      {
+                          "sha256":  "7b319d69a620676b1ab49bc5c48645b8a854de7b0d8f1e39b094411d8236219f",
+                          "file":  "adjacent-page-before-toggle.png",
+                          "bytes":  198020
+                      },
+                      {
+                          "sha256":  "f16bd26a0b9f28de17d8a7c363edf02967a5b9d194f974c732032c2069fcddaa",
+                          "file":  "bookmark-active-through-notes-resize-failure.png",
+                          "bytes":  118582
+                      },
+                      {
+                          "sha256":  "2d5611a8fc603cbcd5a413dc3b11f366261d3863d032c16d7533bd658a629164",
+                          "file":  "bookmark-distinct-labels.png",
+                          "bytes":  178014
+                      },
+                      {
+                          "sha256":  "f16bd26a0b9f28de17d8a7c363edf02967a5b9d194f974c732032c2069fcddaa",
+                          "file":  "bookmark-notes-resized.png",
+                          "bytes":  118582
+                      },
+                      {
+                          "sha256":  "78ea996cdb7bc091ce674e1fe421102a12dacf1dc408b15986ee326abdeb2f22",
+                          "file":  "browser-console.json",
+                          "bytes":  20402
+                      },
+                      {
+                          "sha256":  "d09651bfd805930b90bf4158e368e20a74b935ccb88b20ad9495a11211eba57f",
+                          "file":  "browser-harness.mjs",
+                          "bytes":  29185
+                      },
+                      {
+                          "sha256":  "30d1aaf2bc5535f4c36fbe00e18cafcad2e4f6dda9a352bc25c5beaee57966d2",
+                          "file":  "dev-restart-v110.json",
+                          "bytes":  1373
+                      },
+                      {
+                          "sha256":  "c95bf5aa4d74d480818b2a495d3362f0941b719756125fdc786e03280ddf514c",
+                          "file":  "english-bookmark.png",
+                          "bytes":  197740
+                      },
+                      {
+                          "sha256":  "2b28b353d7ef6cf62f7f85e53ed39ad6658d6a228e7fbfee7a90291f7befa3a3",
+                          "file":  "english-notes.md",
+                          "bytes":  284
+                      },
+                      {
+                          "sha256":  "26ae5745d7548f9d2c45c70427a5890d44c3ad03cf2c19d45dcc0c1f276c2497",
+                          "file":  "epub-bookmark-created.png",
+                          "bytes":  148985
+                      },
+                      {
+                          "sha256":  "e6a97cb4679b3ad06353b2f1ca77075539f9d83d729c80a88f603fd3709cdb96",
+                          "file":  "epub-bookmark-reopened.png",
+                          "bytes":  113222
+                      },
+                      {
+                          "sha256":  "509e8a91647a61076d1f2bcc2b00399dc744f6ae2822f02196e10a509498a14d",
+                          "file":  "epub-settings-reopened.png",
+                          "bytes":  225556
+                      },
+                      {
+                          "sha256":  "273ff41b4d1e3a655716ba9f14dccfeb0bfe3fe0b32d4a1a26d8b57e17d56473",
+                          "file":  "long-fixture.epub",
+                          "bytes":  16353
+                      },
+                      {
+                          "sha256":  "707cd625bb7734460b6d664a5b3ad877f0fbeaae869ed178aa52b5a91c9b9932",
+                          "file":  "offline-bookmark-excluded.png",
+                          "bytes":  229263
+                      },
+                      {
+                          "sha256":  "a0d50381e3411a93665c53a8cf370b61ab51f44ea84ff015cb12a5508a827f56",
+                          "file":  "production-version-observation.json",
+                          "bytes":  1516
+                      },
+                      {
+                          "sha256":  "e41182d533a93024240b22f49fdcbb8fef14ebaa4aad5d4e84ad71ea7d72c9d0",
+                          "file":  "results.json",
+                          "bytes":  22460
+                      },
+                      {
+                          "sha256":  "c3e6590218d6d1b137927a55d90049c06dbda03f804ef0443b260508662f7ca6",
+                          "file":  "returned-bookmark-after-toggle.png",
+                          "bytes":  116487
+                      },
+                      {
+                          "sha256":  "e6a97cb4679b3ad06353b2f1ca77075539f9d83d729c80a88f603fd3709cdb96",
+                          "file":  "returned-bookmark-before-toggle.png",
+                          "bytes":  113222
+                      },
+                      {
+                          "sha256":  "9f53498c91422686e47c98e5768b7d330901316b99675193f240bb6b3c20e0e7",
+                          "file":  "returned-bookmark-toggle.json",
+                          "bytes":  595
+                      },
+                      {
+                          "sha256":  "bcb51d7b6fe047c45a5cd3f12deee77bc77f61e92546544d30e0ba2eb50f0a97",
+                          "file":  "user-A-restored.png",
+                          "bytes":  225564
+                      },
+                      {
+                          "sha256":  "0205f8fa595c768b2f4222c83f2b39db2a4cddafcddecf1149e93b0392eea2c3",
+                          "file":  "user-B-defaults.png",
+                          "bytes":  127995
+                      }
+                  ],
+    "frontend":  "v112",
+    "releaseApproved":  false,
+    "sources":  [
+                    {
+                        "file":  "spike/app/server.mjs",
+                        "sha256":  "93ecceb67b7d490093c170a32896b600ea71dd1cd66cafaad418efcaeda5a960"
+                    },
+                    {
+                        "file":  "spike/app/indexer.mjs",
+                        "sha256":  "10bd599125fc9253d970b0b6f847c55eb5b90b31da46cb9b0c3b7c0f1d2c8da8"
+                    },
+                    {
+                        "file":  "spike/app/public/app.js",
+                        "sha256":  "fe092794136846dfb1fbf27fdc3fab443eb264f8095ca1085390a19fc9418307"
+                    },
+                    {
+                        "file":  "spike/app/public/index.html",
+                        "sha256":  "507e1e40ab6c974a08a29f1a81e2eba5363d9895c712459f77d84e91076998d0"
+                    },
+                    {
+                        "file":  "spike/app/public/i18n.mjs",
+                        "sha256":  "5e632eac04702aca322b2f0f347be5f3dd0f5c127b0a13b2bcbaa002866638a8"
+                    },
+                    {
+                        "file":  "spike/app/public/epub-engine.mjs",
+                        "sha256":  "ecf1f5914907e1202360dca8ef05cb89e4279a88d144cc532892b54e78826f2b"
+                    },
+                    {
+                        "file":  "spike/app/public/styles.css",
+                        "sha256":  "b5083f34f1b5ca7386d015c0fbd4b9decf4d8a3b875c16d6c5444eb84e38f8d0"
+                    },
+                    {
+                        "file":  "spike/app/public/offline.mjs",
+                        "sha256":  "8372e4aaf63c403e9076ac4889e18e7fb1401a8822fd28f67019967ae95ba1f4"
+                    }
+                ]
+}

@@ -1,0 +1,55 @@
+{
+  "sourceCommit": "81a5fc5c152390a66a2cd2c79d39a8a79587a752",
+  "workingTreeChangedDuringRun": true,
+  "method": "Raw snapshot hashes match the test report; snapshot text matches git archive 81a5fc5 with CRLF normalized",
+  "files": [
+    {
+      "file": "spike/app/server.mjs",
+      "testedSha256": "93ecceb67b7d490093c170a32896b600ea71dd1cd66cafaad418efcaeda5a960",
+      "gitArchiveCanonicalSha256": "93ecceb67b7d490093c170a32896b600ea71dd1cd66cafaad418efcaeda5a960",
+      "matchesGitArchiveAfterCRLFNormalization": true
+    },
+    {
+      "file": "spike/app/indexer.mjs",
+      "testedSha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+      "gitArchiveCanonicalSha256": "10bd599125fc9253d970b0b6f847c55eb5b90b31da46cb9b0c3b7c0f1d2c8da8",
+      "matchesGitArchiveAfterCRLFNormalization": true
+    },
+    {
+      "file": "spike/app/public/app.js",
+      "testedSha256": "028c35b8cd79fad44a37583a604d1cb89197f030fb1b0f4b4098532f43524f98",
+      "gitArchiveCanonicalSha256": "028c35b8cd79fad44a37583a604d1cb89197f030fb1b0f4b4098532f43524f98",
+      "matchesGitArchiveAfterCRLFNormalization": true
+    },
+    {
+      "file": "spike/app/public/index.html",
+      "testedSha256": "b5ea635391fe6f27bc61ce301a84aa20486f4707c1335820c66803d9490afd9a",
+      "gitArchiveCanonicalSha256": "f0e1de284bf8e551128d7f0fc922ac5cd7326cbb0606bc76f39db5ed1fb0ebb6",
+      "matchesGitArchiveAfterCRLFNormalization": true
+    },
+    {
+      "file": "spike/app/public/i18n.mjs",
+      "testedSha256": "d7fa6521656ee47416511d2dd88e681d578ae8afe77e21452fcc4a9dbce53310",
+      "gitArchiveCanonicalSha256": "5e632eac04702aca322b2f0f347be5f3dd0f5c127b0a13b2bcbaa002866638a8",
+      "matchesGitArchiveAfterCRLFNormalization": true
+    },
+    {
+      "file": "spike/app/public/epub-engine.mjs",
+      "testedSha256": "8299599cd7a245d6d2916b211b99f8e5d69bc536e27490f2ae0c7b12f1472306",
+      "gitArchiveCanonicalSha256": "d5016298567215d127e368341b79d94e6e4fdd101de87d56621422778cd9b44e",
+      "matchesGitArchiveAfterCRLFNormalization": true
+    },
+    {
+      "file": "spike/app/public/styles.css",
+      "testedSha256": "d750a2f3aee4e7fb0ed2454d27b0337964055186a19e449b90a2252e75a38cfb",
+      "gitArchiveCanonicalSha256": "b5083f34f1b5ca7386d015c0fbd4b9decf4d8a3b875c16d6c5444eb84e38f8d0",
+      "matchesGitArchiveAfterCRLFNormalization": true
+    },
+    {
+      "file": "spike/app/public/offline.mjs",
+      "testedSha256": "442d4f6d549f89ea9e761c67517b5bfcc3743e87f49c604b33e813d26d908ed4",
+      "gitArchiveCanonicalSha256": "8372e4aaf63c403e9076ac4889e18e7fb1401a8822fd28f67019967ae95ba1f4",
+      "matchesGitArchiveAfterCRLFNormalization": true
+    }
+  ]
+}

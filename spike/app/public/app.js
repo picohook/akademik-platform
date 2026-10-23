@@ -1490,6 +1490,27 @@ function epubBookmarkLabel(annotation, isBookmark) {
   return `EPUB${chapter ? ` · ${chapter}` : ''}${Number.isFinite(percent) ? ` · %${Math.round(percent)}` : ''}${isBookmark && number ? ` · ${t('Yer imi')} #${number}` : ''}`;
 }
 
+function cfiCompare(a, b) {
+  const CFI = window.ePub?.EpubCFI || window.ePub?.CFI;
+  if (!CFI || !a || !b) return null;
+  try {
+    return new CFI(a).compare(a, b);
+  } catch {
+    return null;
+  }
+}
+
+function activeBookmarkVisible(annotation) {
+  const anchor = annotation?.anchor;
+  if (!anchor?.cfi) return false;
+  const range = state.epubEngine?.getCurrentRange?.() || {};
+  if (anchor.href && range.href && anchor.href !== range.href) return false;
+  if (anchor.cfi === range.start || anchor.cfi === state.epubProgress?.cfi) return true;
+  const start = cfiCompare(anchor.cfi, range.start);
+  const end = cfiCompare(anchor.cfi, range.end);
+  return start !== null && end !== null && start >= 0 && end <= 0;
+}
+
 function bookmarkForPage() {
   return state.annotations.find(
     (annotation) => annotation.color === 'bookmark' && Number(annotation.anchor?.page) === state.page,
@@ -2944,11 +2965,7 @@ async function openEpubBook(book, options = {}) {
           state.bookmarkJump = false;
         } else if (state.activeBookmarkId) {
           const active = state.annotations.find((annotation) => annotation.id === state.activeBookmarkId);
-          const saved = Number(active?.anchor?.percent);
-          if (!active
-            || (active.anchor?.href && next.href && active.anchor.href !== next.href)
-            || (active.anchor?.cfi !== next.cfi
-              && (!Number.isFinite(saved) || Math.abs(saved - Number(next.percent)) > 1.5))) {
+          if (!active || !activeBookmarkVisible(active)) {
             state.activeBookmarkId = null;
           }
         }

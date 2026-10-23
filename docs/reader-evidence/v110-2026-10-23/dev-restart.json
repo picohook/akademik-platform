@@ -1,0 +1,26 @@
+﻿{
+    "prodAfter":  "sha256:2b653dbc5d4212382a48c25fc56f6d6a3abbfa0aa619a8462decc1c9ac44df02|2026-10-23T11:25:58.609813937Z|0|healthy",
+    "devHealth":  {
+                      "ok":  true,
+                      "mode":  "db",
+                      "tenantId":  "11111111-1111-1111-1111-111111111111"
+                  },
+    "sourceCommit":  "81a5fc5c152390a66a2cd2c79d39a8a79587a752",
+    "mounts":  [
+                   {
+                       "Source":  "C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\incoming",
+                       "Destination":  "/app/incoming"
+                   },
+                   {
+                       "Source":  "C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\data\\dev-ocr",
+                       "Destination":  "/app/public/ocr"
+                   },
+                   {
+                       "Source":  "C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\data\\dev-uploads",
+                       "Destination":  "/app/public/uploads"
+                   }
+               ],
+    "prodBefore":  "sha256:2b653dbc5d4212382a48c25fc56f6d6a3abbfa0aa619a8462decc1c9ac44df02|2026-10-23T11:25:58.609813937Z|0|healthy",
+    "completedAt":  "2026-10-23T11:30:22.3893420Z",
+    "frontend":  "v110"
+}

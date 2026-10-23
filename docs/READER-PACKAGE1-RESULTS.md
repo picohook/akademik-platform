@@ -1,6 +1,10 @@
 # Reader package 1 — independent acceptance review
 
-**Status: HOLD — 12/14 checks pass; two findings remain open.**
+**Status: HOLD — latest v112 retest passes 20/21 checks. R2 is closed; R1 still loses the active star when Notes opens.**
+
+The findings below retain the v109 baseline. Current results, the remaining
+reproduction and deployment decision are in the
+[v110/v112 independent retest](READER-PACKAGE1-RETEST-2026-10-23.md).
 
 - Date: 2026-10-23, Europe/Istanbul.
 - Tested commit: `b8adce970a5d319f2a1e39a106c4b04f28dbd7aa`, frontend v109 / CSS v41.
@@ -96,13 +100,12 @@ The implementing author should address R1/R2 in a follow-up commit. The
 independent reviewer should repeat the affected cases before closing package 1.
 No deployment was performed as part of this review.
 
-## v110 remediation (pending retest)
+## v110/v111 remediation (retested)
 
-- **R1:** EPUB bookmarks are matched by **exact CFI** for creation; selecting a
-  bookmark in Notes records its id as the active bookmark. Opening Notes or
-  relocating no longer duplicates the record: the star stays on the selected
-  bookmark, and two nearby bookmarks remain two distinct CFI records. The star
-  does not merge bookmarks by percentage.
+- **R1:** v113 keeps the selected bookmark active through a reflow while its
+  saved CFI is inside the rendered `currentLocation()` range; when the bookmark
+  leaves that range the star clears. Creation uses exact CFI; nearby bookmarks
+  remain distinct and are labelled with chapter, percent and `#index`.
 - **R2:** EPUB font size is stored per **user + book**
   (`readerEpubFontSize:<userId>:<bookId>`), with a per-user fallback. Theme is
   stored per **user** (`readerTheme:<userId>`). The old browser-global keys are
@@ -110,5 +113,4 @@ No deployment was performed as part of this review.
 - **Translation:** notes get their bookmark suffix from `t('Yer imi')`; the
   uppercase-only CSS transform was removed, so English renders “Bookmark”
   instead of “YER IMI”.
-- Status remains **HOLD** until the independent reviewer repeats the affected
-  cases.
+- Status remains **HOLD**: v112 passed 20/21; its deployment condition was not met.

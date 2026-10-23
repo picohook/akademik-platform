@@ -1,0 +1,354 @@
+[
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "error",
+    "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  },
+  {
+    "type": "error",
+    "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "pageerror",
+    "message": "Cannot read properties of undefined (reading 'resize')"
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/39c7180a-4dfa-410c-969c-bf548cd126e6' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/39c7180a-4dfa-410c-969c-bf548cd126e6' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/39c7180a-4dfa-410c-969c-bf548cd126e6' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/39c7180a-4dfa-410c-969c-bf548cd126e6' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/39c7180a-4dfa-410c-969c-bf548cd126e6' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/39c7180a-4dfa-410c-969c-bf548cd126e6' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/39c7180a-4dfa-410c-969c-bf548cd126e6' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/39c7180a-4dfa-410c-969c-bf548cd126e6' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/39c7180a-4dfa-410c-969c-bf548cd126e6' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "pageerror",
+    "message": "Cannot read properties of undefined (reading 'resize')"
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/854bc16d-07a6-40ff-8f35-5cea11629494' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/854bc16d-07a6-40ff-8f35-5cea11629494' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/854bc16d-07a6-40ff-8f35-5cea11629494' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/854bc16d-07a6-40ff-8f35-5cea11629494' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "pageerror",
+    "message": "Cannot read properties of undefined (reading 'resize')"
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/e6ae1c1c-5629-4b7e-8f91-89258749384d' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/e6ae1c1c-5629-4b7e-8f91-89258749384d' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "pageerror",
+    "message": "Cannot read properties of undefined (reading 'resize')"
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/0393cf9f-3619-4bfe-99bb-ea6e1549777c' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/0393cf9f-3619-4bfe-99bb-ea6e1549777c' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/0393cf9f-3619-4bfe-99bb-ea6e1549777c' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/0393cf9f-3619-4bfe-99bb-ea6e1549777c' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Blocked script execution in 'about:srcdoc' because the document's frame is sandboxed and the 'allow-scripts' permission is not set."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/0393cf9f-3619-4bfe-99bb-ea6e1549777c' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "pageerror",
+    "message": "Cannot read properties of undefined (reading 'resize')"
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/09530421-f991-4423-b6a7-1ecec158b048' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/09530421-f991-4423-b6a7-1ecec158b048' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/09530421-f991-4423-b6a7-1ecec158b048' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "pageerror",
+    "message": "Cannot read properties of undefined (reading 'resize')"
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/42bd5e74-8c59-4c70-9ff9-bdfb4cbd74ed' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/42bd5e74-8c59-4c70-9ff9-bdfb4cbd74ed' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "error",
+    "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "pageerror",
+    "message": "Cannot read properties of undefined (reading 'resize')"
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/837af958-8d8f-4a10-8170-bc60d22eb6a5' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/837af958-8d8f-4a10-8170-bc60d22eb6a5' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "error",
+    "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "pageerror",
+    "message": "Cannot read properties of undefined (reading 'resize')"
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/c4ae8ae6-c7b2-4a48-abe2-865926a6526d' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/c4ae8ae6-c7b2-4a48-abe2-865926a6526d' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "pageerror",
+    "message": "Cannot read properties of undefined (reading 'resize')"
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/4d1ffee3-c02a-46b1-bd6b-f9beca6fde3f' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/4d1ffee3-c02a-46b1-bd6b-f9beca6fde3f' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "pageerror",
+    "message": "Cannot read properties of undefined (reading 'resize')"
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/02eb9225-1d3d-4276-a5ce-fb1e8ff2802e' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/02eb9225-1d3d-4276-a5ce-fb1e8ff2802e' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "pageerror",
+    "message": "Cannot read properties of undefined (reading 'resize')"
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/68fc26ef-3459-41d4-81ff-9ee53f989610' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/68fc26ef-3459-41d4-81ff-9ee53f989610' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "error",
+    "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "pageerror",
+    "message": "Cannot read properties of undefined (reading 'resize')"
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/b2442418-8e38-4348-b4eb-5fa24bc496ec' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/b2442418-8e38-4348-b4eb-5fa24bc496ec' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/b2442418-8e38-4348-b4eb-5fa24bc496ec' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "pageerror",
+    "message": "Cannot read properties of undefined (reading 'resize')"
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/f55118c6-2c7b-4c9b-9486-a4d7f96fbd02' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Error: EPUB görünümü oluşmadı (iframe boyutu 0)\n    at openEpubBook (http://127.0.0.1:54876/app.js?v=112:2973:13)\n    at async openBook (http://127.0.0.1:54876/app.js?v=112:3014:5)\n    at async bootData (http://127.0.0.1:54876/app.js?v=112:1053:15)\n    at async init (http://127.0.0.1:54876/app.js?v=112:4184:5)"
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "pageerror",
+    "message": "Cannot read properties of undefined (reading 'resize')"
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/e4b973f6-4d76-46fc-a347-c862869eac15' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/e4b973f6-4d76-46fc-a347-c862869eac15' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "warning",
+    "message": "Service Worker registration blocked by Playwright"
+  },
+  {
+    "type": "pageerror",
+    "message": "Cannot read properties of undefined (reading 'resize')"
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/9668284c-0204-496f-bed5-b5316f0e7a70' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/9668284c-0204-496f-bed5-b5316f0e7a70' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  },
+  {
+    "type": "error",
+    "message": "Loading the stylesheet 'blob:http://127.0.0.1:54876/9668284c-0204-496f-bed5-b5316f0e7a70' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+  }
+]

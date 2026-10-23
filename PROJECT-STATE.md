@@ -4,10 +4,10 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web: **v112** (`spike/app/public/index.html`), stiller **v42**
+- Web: **v113** (`spike/app/public/index.html`), stiller **v42**
 - DB migration: **001–012** (`db/migrations/`)
-- Prod: **v110** deploy edildi (2026-10-23), kaynak **81a5fc5**, imaj `sha256:2b653dbc…`; smoke **16/16**, health/restart `healthy/0`. v106 rollback imajı korunuyor; package-1 bağımsız retest bekliyor. Kayıt: `docs/deployments/2026-10-23-v110.md`.
-- Son kod commit’i: **44e9eb2** — v108, ingest kitapları silme düzeltmesi; prod kaynağı **cf25965**.
+- Prod: **v110** (2026-10-23), kaynak **81a5fc5**, imaj `sha256:2b653dbc…`; dağıtım kaydında smoke **16/16**, health/restart `healthy/0`. Bağımsız HTTPS kontrolü v110/v42 dosyalarını doğruladı. v112 retest **20/21, HOLD**; v112 deploy edilmedi. Kayıt: `docs/deployments/2026-10-23-v110.md`.
+- Son test edilen kod commit’i: **d0e01c9** — v112, EPUB yer imi etiketleri; prod kaynağı **81a5fc5**.
 - Bağımlılık: `npm audit --omit=dev` **0**; tam audit’te yalnız dev-only `epubjs/@xmldom` (2 uyarı).
 - EPUB kararı: **ADR-012** — MVP/V1a için epub.js, `EpubEngine` adapter arkasında, pinli; Readium/R2D2BC geçiş eşikleri yazılı.
 
@@ -15,12 +15,12 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 - PDF okuyucu: tek/çift sayfa/sürekli kaydırma, küçük resimler, TOC, arama, vurgu/not/etiket/tarih, yer imi, atıf, dışa aktarma, temalar.
 - Yükleme/silme: PDF + EPUB upload; `source_system` **upload** veya **ingest** olan kitaplar librarian/admin/publisher tarafından silinebilir; seed korunur. DB cascade + dosya silme.
-- EPUB: `.epub` upload/format; ana okuyucuda `EpubEngine` (TOC, tema, ± font/zoom, ‹ ›, CFI/ilerleme, seçimden CFI vurgu/not, bölüm arama). EPUB bölüm metni `asset_pages` (`source='epub'`, `locator=href`) olarak indeksleniyor; v72 sonrası XHTML `<body>` dışındaki `<title>` metni indekse girmiyor. Arama DB indeksinden; sonuçta geçerli bölümde eşleşmeler işaretleniyor. EPUB indirme açık; `watermark=false` değilse XHTML sayfalarına kullanıcı/e-posta/tarih filigranı ekleniyor; `allow_download` uygulanıyor. v110–v112: EPUB yer imi (benzersiz CFI + seçili yer imi kimliği, bölüm/yüzde/sıra etiketi) ve kullanıcı/kitap bazlı `readerEpubFontSize` + kullanıcı bazlı `readerTheme` kalıcılığı; İngilizce “Yer imi” metni çevrildi.
+- EPUB: `.epub` upload/format; ana okuyucuda `EpubEngine` (TOC, tema, ± font/zoom, ‹ ›, CFI/ilerleme, seçimden CFI vurgu/not, bölüm arama). EPUB bölüm metni `asset_pages` (`source='epub'`, `locator=href`) olarak indeksleniyor; v72 sonrası XHTML `<body>` dışındaki `<title>` metni indekse girmiyor. Arama DB indeksinden; sonuçta geçerli bölümde eşleşmeler işaretleniyor. EPUB indirme açık; `watermark=false` değilse XHTML sayfalarına kullanıcı/e-posta/tarih filigranı ekleniyor; `allow_download` uygulanıyor. v110–v113: EPUB yer imi (benzersiz CFI + seçili yer imi kimliği + görünür CFI aralığı, bölüm/yüzde/sıra etiketi) ve kullanıcı/kitap bazlı `readerEpubFontSize` + kullanıcı bazlı `readerTheme` kalıcılığı; İngilizce “Yer imi” metni çevrildi.
 - Auth: login, scrypt, CSRF, rate limit, session_version, user_sessions + seat limit (varsayılan 3).
 - Entitlement: `grants` tablosu (all/publisher/subject/collection/title); katalog + dosya/arama/indirme filtreli; `seat_limit` kurum oturum sayısını sınırlar. **Erişim** modalından grant ekle/sil (librarian/admin); collection kapsamı `collection_items` ile uygulanıyor.
 - Interop: `GET /opds`, `/oai` (OAI-PMH oai_dc), `/sushi` (COUNTER-5-shaped IR), `GET /api/books/:id/marc`, `GET /api/reports/usage.csv`. Ayrıntı `docs/INTEROP.md`; OAI/SUSHI sertifikalı değil.
 - Erişilebilirlik: hedefli v105 toolbar axe taraması 0 ihlal; F1–F4 v105, F5 v106 retest geçti (10/10, %100/%400). F1–F5 kapandı; NVDA/VoiceOver ve tam iframe taraması açık. `docs/A11Y-RESULTS.md`.
-- v109 / 1. paket bağımsız Edge testi: **12/14 geçti, HOLD**. EPUB yer imine panelden dönüşte yıldız sönüyor ve düğme ikinci yer imi ekliyor; font/theme kalıcı ancak kitap/kullanıcı yerine tarayıcı genelinde tutuluyor. Uygulama dosyaları değiştirilmedi, prod'a dokunulmadı. Kanıtlar ve yeniden üretim: `docs/READER-PACKAGE1-RESULTS.md`.
+- 1. paket bağımsız Edge retest: v110 **17/19**, sabit v112/d0e01c9 **20/21, HOLD**. Kullanıcı/kitap ayarları, İngilizce Bookmark, yakın farklı konumlar ve etiketler geçti; Notes doğrudan açılınca görünür yer iminin yıldızı hâlâ sönüyor. Dev v110 ayrı uploads/OCR bağlamalarıyla yenilendi; bu retestte prod değiştirilmedi. Kanıtlar: `docs/READER-PACKAGE1-RETEST-2026-10-23.md`.
 - Arayüz **TR/EN**: `i18n.mjs`; header/login `data-lang-toggle`, `localStorage.uiLang`, sayfa yenilenerek uygulanır. Statik metinler + yaygın dinamik etiketler çevrildi; bazı toast/yardım metinleri hâlâ Türkçe.
 - Erişim: kopyalama/indirme/yazdırma/filigran; `/api/books/:id/download`.
 - Arama: sunucu sayfa indeksi (`asset_pages`); diakritik katlama, **tam kelime**, **bulanık** (pg_trgm), **kök** eşleşmesi (tr/en FTS, `text_tsv`/`text_tsv_en`); dil-duyarlı katalog araması (`works.language`), eşleşme sayısı + tür etiketi (`exact`/`folded`/`word`/`stem`/`fuzzy`).

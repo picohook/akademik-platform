@@ -1,0 +1,660 @@
+{
+  "startedAt": "2026-10-23T12:12:09.730Z",
+  "scope": "Independent pinned v112 R1/R2 retest, account/book settings, English labels, and adjacent EPUB positions; isolated demo, no production writes",
+  "cases": [
+    {
+      "status": "PASS",
+      "zoom": "100%",
+      "theme": "light",
+      "bodyFont": "16px",
+      "bodyBackground": "rgb(255, 255, 255)",
+      "keys": {
+        "readerTheme": "dark",
+        "readerEpubFontSize": "180",
+        "readerTheme:44444444-4444-4444-4444-444444444444": "light"
+      },
+      "id": "legacy-global-preferences-ignored"
+    },
+    {
+      "status": "PASS",
+      "label": "Yer imi",
+      "id": "epub-bookmark-visible"
+    },
+    {
+      "status": "PASS",
+      "bookmarkId": "d412cf2e-46fb-4dfb-ad2f-bf1924ea06a7",
+      "cfi": "epubcfi(/6/2!/4/50/1:0)",
+      "location": {
+        "cfi": "epubcfi(/6/2!/4/50/1:0)",
+        "target": "epubcfi(/6/2!/4/50/1:0)",
+        "star": "true",
+        "epubExports": [
+          "VERSION",
+          "Book",
+          "Rendition",
+          "Contents",
+          "CFI",
+          "utils"
+        ],
+        "frames": [
+          {
+            "width": 5632,
+            "height": 909,
+            "body": "Akademik okuma\n\nBu dosya, EPUB motoru adaptörünü denemek için üretilmiş küçük bir kamu malı metindir.\n\nMetin seçimi, vurgu, içindekiler ve arama akışını sınamak için yeterli cümle ",
+            "target": {
+              "rect": {
+                "x": 1466,
+                "y": 20,
+                "width": 8.90625,
+                "height": 17,
+                "top": 20,
+                "right": 1474.90625,
+                "bottom": 37,
+                "left": 1466
+              },
+              "frameRect": {
+                "x": -1392,
+                "y": 75.25,
+                "width": 5632,
+                "height": 909,
+                "top": 75.25,
+                "right": 4240,
+                "bottom": 984.25,
+                "left": -1392
+              },
+              "viewport": {
+                "x": 16,
+                "y": 75.25,
+                "width": 1408,
+                "height": 908.75,
+                "top": 75.25,
+                "right": 1424,
+                "bottom": 984,
+                "left": 16
+              },
+              "absolute": {
+                "left": 74,
+                "right": 82.90625,
+                "top": 95.25,
+                "bottom": 112.25
+              },
+              "text": "Paragraf 21. Akademik okuma konumu ve yer imi kabul testi. Bu uzun bölüm farklı sayfalarda gezinmeyi ve yazı boyutu değişince konumun korunmasını sına",
+              "visible": true
+            }
+          }
+        ]
+      },
+      "id": "epub-bookmark-create"
+    },
+    {
+      "status": "PASS",
+      "toggleRemoved": true,
+      "recreatedCfi": "epubcfi(/6/2!/4/50/1:0)",
+      "id": "epub-bookmark-toggle-remove"
+    },
+    {
+      "id": "bookmark-active-through-notes-resize",
+      "status": "FAIL",
+      "error": "Visible saved bookmark lost its star after opening Notes: {\"cfi\":\"epubcfi(/6/2!/4/36/1:0)\",\"target\":\"epubcfi(/6/2!/4/50/1:0)\",\"star\":\"false\",\"epubExports\":[\"VERSION\",\"Book\",\"Rendition\",\"Contents\",\"CFI\",\"utils\"],\"frames\":[{\"width\":5440,\"height\":909,\"body\":\"Akademik okuma\\n\\nBu dosya, EPUB motoru adaptörünü denemek için üretilmiş küçük bir kamu malı metindir.\\n\\nMetin seçimi, vurgu, içindekiler ve arama akışını sınamak için yeterli cümle \",\"target\":{\"rect\":{\"x\":1133,\"y\":384,\"width\":8.90625,\"height\":17,\"top\":384,\"right\":1141.90625,\"bottom\":401,\"left\":1133},\"frameRect\":{\"x\":-1072,\"y\":75.25,\"width\":5440,\"height\":909,\"top\":75.25,\"right\":4368,\"bottom\":984.25,\"left\":-1072},\"viewport\":{\"x\":16,\"y\":75.25,\"width\":1088,\"height\":908.75,\"top\":75.25,\"right\":1104,\"bottom\":984,\"left\":16},\"absolute\":{\"left\":61,\"right\":69.90625,\"top\":459.25,\"bottom\":476.25},\"text\":\"Paragraf 21. Akademik okuma konumu ve yer imi kabul testi. Bu uzun bölüm farklı sayfalarda gezinmeyi ve yazı boyutu değişince konumun korunmasını sına\",\"visible\":true}}]}\n\n'false' !== 'true'\n",
+      "location": {
+        "cfi": "epubcfi(/6/2!/4/36/1:0)",
+        "target": "epubcfi(/6/2!/4/50/1:0)",
+        "star": "false",
+        "epubExports": [
+          "VERSION",
+          "Book",
+          "Rendition",
+          "Contents",
+          "CFI",
+          "utils"
+        ],
+        "frames": [
+          {
+            "width": 5440,
+            "height": 909,
+            "body": "Akademik okuma\n\nBu dosya, EPUB motoru adaptörünü denemek için üretilmiş küçük bir kamu malı metindir.\n\nMetin seçimi, vurgu, içindekiler ve arama akışını sınamak için yeterli cümle ",
+            "target": {
+              "rect": {
+                "x": 1133,
+                "y": 384,
+                "width": 8.90625,
+                "height": 17,
+                "top": 384,
+                "right": 1141.90625,
+                "bottom": 401,
+                "left": 1133
+              },
+              "frameRect": {
+                "x": -1072,
+                "y": 75.25,
+                "width": 5440,
+                "height": 909,
+                "top": 75.25,
+                "right": 4368,
+                "bottom": 984.25,
+                "left": -1072
+              },
+              "viewport": {
+                "x": 16,
+                "y": 75.25,
+                "width": 1088,
+                "height": 908.75,
+                "top": 75.25,
+                "right": 1104,
+                "bottom": 984,
+                "left": 16
+              },
+              "absolute": {
+                "left": 61,
+                "right": 69.90625,
+                "top": 459.25,
+                "bottom": 476.25
+              },
+              "text": "Paragraf 21. Akademik okuma konumu ve yer imi kabul testi. Bu uzun bölüm farklı sayfalarda gezinmeyi ve yazı boyutu değişince konumun korunmasını sına",
+              "visible": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "status": "PASS",
+      "returnedCfi": "epubcfi(/6/2!/4/36/1:0)",
+      "location": {
+        "cfi": "epubcfi(/6/2!/4/36/1:0)",
+        "target": "epubcfi(/6/2!/4/50/1:0)",
+        "star": "true",
+        "epubExports": [
+          "VERSION",
+          "Book",
+          "Rendition",
+          "Contents",
+          "CFI",
+          "utils"
+        ],
+        "frames": [
+          {
+            "width": 5440,
+            "height": 909,
+            "body": "Akademik okuma\n\nBu dosya, EPUB motoru adaptörünü denemek için üretilmiş küçük bir kamu malı metindir.\n\nMetin seçimi, vurgu, içindekiler ve arama akışını sınamak için yeterli cümle ",
+            "target": {
+              "rect": {
+                "x": 1133,
+                "y": 384,
+                "width": 8.90625,
+                "height": 17,
+                "top": 384,
+                "right": 1141.90625,
+                "bottom": 401,
+                "left": 1133
+              },
+              "frameRect": {
+                "x": -1072,
+                "y": 75.25,
+                "width": 5440,
+                "height": 909,
+                "top": 75.25,
+                "right": 4368,
+                "bottom": 984.25,
+                "left": -1072
+              },
+              "viewport": {
+                "x": 16,
+                "y": 75.25,
+                "width": 1088,
+                "height": 908.75,
+                "top": 75.25,
+                "right": 1104,
+                "bottom": 984,
+                "left": 16
+              },
+              "absolute": {
+                "left": 61,
+                "right": 69.90625,
+                "top": 459.25,
+                "bottom": 476.25
+              },
+              "text": "Paragraf 21. Akademik okuma konumu ve yer imi kabul testi. Bu uzun bölüm farklı sayfalarda gezinmeyi ve yazı boyutu değişince konumun korunmasını sına",
+              "visible": true
+            }
+          }
+        ]
+      },
+      "starAfterReturn": "true",
+      "id": "epub-bookmark-return-from-panel"
+    },
+    {
+      "status": "PASS",
+      "cfi": "epubcfi(/6/2!/4/36/1:0)",
+      "readerVisible": true,
+      "location": {
+        "cfi": "epubcfi(/6/2!/4/36/1:0)",
+        "target": "epubcfi(/6/2!/4/50/1:0)",
+        "star": "true",
+        "epubExports": [
+          "VERSION",
+          "Book",
+          "Rendition",
+          "Contents",
+          "CFI",
+          "utils"
+        ],
+        "frames": [
+          {
+            "width": 5440,
+            "height": 909,
+            "body": "Akademik okuma\n\nBu dosya, EPUB motoru adaptörünü denemek için üretilmiş küçük bir kamu malı metindir.\n\nMetin seçimi, vurgu, içindekiler ve arama akışını sınamak için yeterli cümle ",
+            "target": {
+              "rect": {
+                "x": 1133,
+                "y": 384,
+                "width": 8.90625,
+                "height": 17,
+                "top": 384,
+                "right": 1141.90625,
+                "bottom": 401,
+                "left": 1133
+              },
+              "frameRect": {
+                "x": -1072,
+                "y": 75.25,
+                "width": 5440,
+                "height": 909,
+                "top": 75.25,
+                "right": 4368,
+                "bottom": 984.25,
+                "left": -1072
+              },
+              "viewport": {
+                "x": 16,
+                "y": 75.25,
+                "width": 1088,
+                "height": 908.75,
+                "top": 75.25,
+                "right": 1104,
+                "bottom": 984,
+                "left": 16
+              },
+              "absolute": {
+                "left": 61,
+                "right": 69.90625,
+                "top": 459.25,
+                "bottom": 476.25
+              },
+              "text": "Paragraf 21. Akademik okuma konumu ve yer imi kabul testi. Bu uzun bölüm farklı sayfalarda gezinmeyi ve yazı boyutu değişince konumun korunmasını sına",
+              "visible": true
+            }
+          }
+        ]
+      },
+      "id": "epub-bookmark-reopen"
+    },
+    {
+      "status": "PASS",
+      "savedPercent": 30,
+      "currentProgress": {
+        "asset_id": "966ef457-ab43-4eda-a8da-1e411ab1e6f7",
+        "anchor": {
+          "asset_version_id": "966ef457-ab43-4eda-a8da-1e411ab1e6f7",
+          "type": "epub",
+          "cfi": "epubcfi(/6/2!/4/36/1:0)",
+          "href": "ch1.xhtml"
+        },
+        "percent": 20,
+        "updated_at": "2026-10-23T12:12:36.669Z"
+      },
+      "savedCfi": "epubcfi(/6/2!/4/50/1:0)",
+      "currentCfi": "epubcfi(/6/2!/4/36/1:0)",
+      "starBefore": "true",
+      "before": [
+        {
+          "id": "10d92d63-acff-435e-9809-11537219763a",
+          "cfi": "epubcfi(/6/2!/4/50/1:0)"
+        }
+      ],
+      "after": [],
+      "id": "epub-returned-bookmark-toggle"
+    },
+    {
+      "status": "PASS",
+      "before": {
+        "zoom": "120%",
+        "theme": "dark",
+        "bodyFont": "19.2px",
+        "bodyBackground": "rgb(27, 26, 23)",
+        "keys": {
+          "readerEpubFontSize": "180",
+          "readerTheme": "dark",
+          "readerEpubFontSize:44444444-4444-4444-4444-444444444444": "120",
+          "readerEpubFontSize:44444444-4444-4444-4444-444444444444:9dba3d99-9c22-444f-85dd-a3c5fe1d84c6": "120",
+          "readerTheme:44444444-4444-4444-4444-444444444444": "dark"
+        }
+      },
+      "after": {
+        "zoom": "120%",
+        "theme": "dark",
+        "bodyFont": "19.2px",
+        "bodyBackground": "rgb(27, 26, 23)",
+        "keys": {
+          "readerEpubFontSize": "180",
+          "readerTheme": "dark",
+          "readerEpubFontSize:44444444-4444-4444-4444-444444444444": "120",
+          "readerEpubFontSize:44444444-4444-4444-4444-444444444444:9dba3d99-9c22-444f-85dd-a3c5fe1d84c6": "120",
+          "readerTheme:44444444-4444-4444-4444-444444444444": "dark"
+        }
+      },
+      "id": "epub-font-theme-reopen"
+    },
+    {
+      "status": "PASS",
+      "before": {
+        "zoom": "120%",
+        "theme": "dark",
+        "bodyFont": "19.2px",
+        "bodyBackground": "rgb(27, 26, 23)",
+        "keys": {
+          "readerEpubFontSize": "180",
+          "readerTheme": "dark",
+          "readerEpubFontSize:44444444-4444-4444-4444-444444444444": "120",
+          "readerEpubFontSize:44444444-4444-4444-4444-444444444444:9dba3d99-9c22-444f-85dd-a3c5fe1d84c6": "120",
+          "readerTheme:44444444-4444-4444-4444-444444444444": "dark"
+        }
+      },
+      "after": {
+        "zoom": "120%",
+        "theme": "dark",
+        "bodyFont": "19.2px",
+        "bodyBackground": "rgb(27, 26, 23)",
+        "keys": {
+          "readerEpubFontSize": "180",
+          "readerTheme": "dark",
+          "readerEpubFontSize:44444444-4444-4444-4444-444444444444": "120",
+          "readerEpubFontSize:44444444-4444-4444-4444-444444444444:9dba3d99-9c22-444f-85dd-a3c5fe1d84c6": "120",
+          "readerTheme:44444444-4444-4444-4444-444444444444": "dark"
+        }
+      },
+      "id": "epub-font-theme-reload"
+    },
+    {
+      "status": "PASS",
+      "remainingBookmarks": 0,
+      "id": "epub-bookmark-remove"
+    },
+    {
+      "status": "PASS",
+      "highlightId": "647ff2b3-6df2-4ec2-a0ba-1e0a298dce2c",
+      "bookmarkId": "32d0c8d0-574f-4b03-b24b-5a39e6bd409e",
+      "id": "epub-highlight-with-bookmark"
+    },
+    {
+      "status": "PASS",
+      "pdfBookmarksAddedAndRemoved": true,
+      "epubRows": 2,
+      "id": "pdf-epub-bookmark-isolation"
+    },
+    {
+      "status": "PASS",
+      "queuedBefore": 0,
+      "queuedAfter": 0,
+      "message": "Yer imi çevrimdışı eklenemiyor",
+      "id": "offline-bookmark-create-remains-excluded"
+    },
+    {
+      "status": "PASS",
+      "queuedOps": 1,
+      "id": "offline-note-create-remains-functional"
+    },
+    {
+      "status": "PASS",
+      "zoom": "100%",
+      "theme": "light",
+      "bodyFont": "16px",
+      "bodyBackground": "rgb(255, 255, 255)",
+      "keys": {
+        "readerEpubFontSize": "180",
+        "readerTheme:22222222-2222-2222-2222-222222222222": "light",
+        "readerTheme": "dark",
+        "readerEpubFontSize:44444444-4444-4444-4444-444444444444": "120",
+        "readerEpubFontSize:44444444-4444-4444-4444-444444444444:9dba3d99-9c22-444f-85dd-a3c5fe1d84c6": "120",
+        "readerTheme:44444444-4444-4444-4444-444444444444": "dark"
+      },
+      "id": "settings-user-B-defaults"
+    },
+    {
+      "status": "PASS",
+      "zoom": "120%",
+      "theme": "dark",
+      "bodyFont": "19.2px",
+      "bodyBackground": "rgb(27, 26, 23)",
+      "keys": {
+        "readerEpubFontSize": "180",
+        "readerTheme:22222222-2222-2222-2222-222222222222": "light",
+        "readerTheme": "dark",
+        "readerEpubFontSize:44444444-4444-4444-4444-444444444444": "120",
+        "readerEpubFontSize:44444444-4444-4444-4444-444444444444:9dba3d99-9c22-444f-85dd-a3c5fe1d84c6": "120",
+        "readerTheme:44444444-4444-4444-4444-444444444444": "dark"
+      },
+      "id": "settings-user-A-restored"
+    },
+    {
+      "status": "PASS",
+      "fallback": "120%",
+      "firstBook": {
+        "zoom": "120%",
+        "theme": "dark",
+        "bodyFont": "19.2px",
+        "bodyBackground": "rgb(27, 26, 23)",
+        "keys": {
+          "readerTheme:22222222-2222-2222-2222-222222222222": "light",
+          "readerEpubFontSize:44444444-4444-4444-4444-444444444444:83ff62e8-95de-45f3-9ae2-42bc6191aaee": "150",
+          "readerEpubFontSize": "180",
+          "readerTheme": "dark",
+          "readerEpubFontSize:44444444-4444-4444-4444-444444444444": "150",
+          "readerEpubFontSize:44444444-4444-4444-4444-444444444444:9dba3d99-9c22-444f-85dd-a3c5fe1d84c6": "120",
+          "readerTheme:44444444-4444-4444-4444-444444444444": "dark"
+        }
+      },
+      "secondBook": {
+        "zoom": "150%",
+        "theme": "dark",
+        "bodyFont": "24px",
+        "bodyBackground": "rgb(27, 26, 23)",
+        "keys": {
+          "readerTheme:22222222-2222-2222-2222-222222222222": "light",
+          "readerEpubFontSize:44444444-4444-4444-4444-444444444444:83ff62e8-95de-45f3-9ae2-42bc6191aaee": "150",
+          "readerEpubFontSize": "180",
+          "readerTheme": "dark",
+          "readerEpubFontSize:44444444-4444-4444-4444-444444444444": "150",
+          "readerEpubFontSize:44444444-4444-4444-4444-444444444444:9dba3d99-9c22-444f-85dd-a3c5fe1d84c6": "120",
+          "readerTheme:44444444-4444-4444-4444-444444444444": "dark"
+        }
+      },
+      "id": "settings-book-specific-and-user-fallback"
+    },
+    {
+      "status": "PASS",
+      "label": "EPUB · Akademik okuma · %0 · Bookmark #1",
+      "textTransform": "none",
+      "download": "ındependent-epub-acceptance-notlar.md",
+      "id": "english-bookmark-label-and-export"
+    },
+    {
+      "status": "PASS",
+      "saved": {
+        "asset_version_id": "ff2aa5e9-ee2d-4c28-8155-e110bbb48349",
+        "type": "epub",
+        "cfi": "epubcfi(/6/2!/4/2/1:0)",
+        "href": "ch1.xhtml",
+        "percent": 0,
+        "text_quote": "Yer imi"
+      },
+      "currentProgress": {
+        "asset_id": "ff2aa5e9-ee2d-4c28-8155-e110bbb48349",
+        "anchor": {
+          "asset_version_id": "ff2aa5e9-ee2d-4c28-8155-e110bbb48349",
+          "type": "epub",
+          "cfi": "epubcfi(/6/2!/4/24/1:0)",
+          "href": "ch1.xhtml"
+        },
+        "percent": 0,
+        "updated_at": "2026-10-23T12:13:18.471Z"
+      },
+      "currentCfi": "epubcfi(/6/2!/4/24/1:0)",
+      "starBefore": "false",
+      "savedTarget": {
+        "cfi": "epubcfi(/6/2!/4/24/1:0)",
+        "target": "epubcfi(/6/2!/4/2/1:0)",
+        "star": "false",
+        "epubExports": [
+          "VERSION",
+          "Book",
+          "Rendition",
+          "Contents",
+          "CFI",
+          "utils"
+        ],
+        "frames": [
+          {
+            "width": 11264,
+            "height": 909,
+            "body": "Akademik okuma\n\nBu dosya, EPUB motoru adaptörünü denemek için üretilmiş küçük bir kamu malı metindir.\n\nMetin seçimi, vurgu, içindekiler ve arama akışını sınamak için yeterli cümle ",
+            "target": {
+              "rect": {
+                "x": 58,
+                "y": 53.15625,
+                "width": 34.671875,
+                "height": 53,
+                "top": 53.15625,
+                "right": 92.671875,
+                "bottom": 106.15625,
+                "left": 58
+              },
+              "frameRect": {
+                "x": -1392,
+                "y": 75.25,
+                "width": 11264,
+                "height": 909,
+                "top": 75.25,
+                "right": 9872,
+                "bottom": 984.25,
+                "left": -1392
+              },
+              "viewport": {
+                "x": 16,
+                "y": 75.25,
+                "width": 1408,
+                "height": 908.75,
+                "top": 75.25,
+                "right": 1424,
+                "bottom": 984,
+                "left": 16
+              },
+              "absolute": {
+                "left": -1334,
+                "right": -1299.328125,
+                "top": 128.40625,
+                "bottom": 181.40625
+              },
+              "text": "Akademik okuma",
+              "visible": false
+            }
+          }
+        ]
+      },
+      "before": [
+        {
+          "id": "427f0620-fe44-47e6-90e9-b0d210801edb",
+          "anchor": {
+            "asset_version_id": "ff2aa5e9-ee2d-4c28-8155-e110bbb48349",
+            "type": "epub",
+            "cfi": "epubcfi(/6/2!/4/2/1:0)",
+            "href": "ch1.xhtml",
+            "percent": 0,
+            "text_quote": "Yer imi"
+          }
+        }
+      ],
+      "after": [
+        {
+          "id": "427f0620-fe44-47e6-90e9-b0d210801edb",
+          "anchor": {
+            "asset_version_id": "ff2aa5e9-ee2d-4c28-8155-e110bbb48349",
+            "type": "epub",
+            "cfi": "epubcfi(/6/2!/4/2/1:0)",
+            "href": "ch1.xhtml",
+            "percent": 0,
+            "text_quote": "Yer imi"
+          }
+        },
+        {
+          "id": "62375e9d-adf9-4b9b-aa2e-9aef69f01d4f",
+          "anchor": {
+            "asset_version_id": "ff2aa5e9-ee2d-4c28-8155-e110bbb48349",
+            "type": "epub",
+            "cfi": "epubcfi(/6/2!/4/24/1:0)",
+            "href": "ch1.xhtml",
+            "percent": 0,
+            "text_quote": "Yer imi"
+          }
+        }
+      ],
+      "id": "adjacent-pages-remain-distinct-bookmarks"
+    },
+    {
+      "status": "PASS",
+      "labels": [
+        "EPUB · Akademik okuma · %0 · Yer imi #1",
+        "EPUB · Akademik okuma · %0 · Yer imi #2"
+      ],
+      "id": "bookmark-labels-distinguish-positions"
+    }
+  ],
+  "sources": [
+    {
+      "file": "spike/app/server.mjs",
+      "sha256": "93ecceb67b7d490093c170a32896b600ea71dd1cd66cafaad418efcaeda5a960"
+    },
+    {
+      "file": "spike/app/indexer.mjs",
+      "sha256": "10bd599125fc9253d970b0b6f847c55eb5b90b31da46cb9b0c3b7c0f1d2c8da8"
+    },
+    {
+      "file": "spike/app/public/app.js",
+      "sha256": "fe092794136846dfb1fbf27fdc3fab443eb264f8095ca1085390a19fc9418307"
+    },
+    {
+      "file": "spike/app/public/index.html",
+      "sha256": "507e1e40ab6c974a08a29f1a81e2eba5363d9895c712459f77d84e91076998d0"
+    },
+    {
+      "file": "spike/app/public/i18n.mjs",
+      "sha256": "5e632eac04702aca322b2f0f347be5f3dd0f5c127b0a13b2bcbaa002866638a8"
+    },
+    {
+      "file": "spike/app/public/epub-engine.mjs",
+      "sha256": "ecf1f5914907e1202360dca8ef05cb89e4279a88d144cc532892b54e78826f2b"
+    },
+    {
+      "file": "spike/app/public/styles.css",
+      "sha256": "b5083f34f1b5ca7386d015c0fbd4b9decf4d8a3b875c16d6c5444eb84e38f8d0"
+    },
+    {
+      "file": "spike/app/public/offline.mjs",
+      "sha256": "8372e4aaf63c403e9076ac4889e18e7fb1401a8822fd28f67019967ae95ba1f4"
+    }
+  ],
+  "gitHead": "d0e01c9ccffb22329d6adee3ed9fa08991a4c3f2",
+  "sourceArchive": "git archive d0e01c9",
+  "gitStatus": "?? docs/reader-evidence/v110-2026-10-23/",
+  "workspaceProductStatus": "",
+  "productGitStatus": "",
+  "frontend": "112",
+  "url": "http://127.0.0.1:54876",
+  "browser": "155.0.4283.45",
+  "completed": true,
+  "pass": false,
+  "currentGitHead": "d0e01c9ccffb22329d6adee3ed9fa08991a4c3f2",
+  "sourceUnchangedSinceSnapshot": true,
+  "releaseApproved": false,
+  "completedAt": "2026-10-23T12:13:24.846Z"
+}

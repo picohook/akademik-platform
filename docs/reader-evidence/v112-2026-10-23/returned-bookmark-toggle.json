@@ -1,0 +1,24 @@
+{
+  "savedPercent": 30,
+  "currentProgress": {
+    "asset_id": "966ef457-ab43-4eda-a8da-1e411ab1e6f7",
+    "anchor": {
+      "asset_version_id": "966ef457-ab43-4eda-a8da-1e411ab1e6f7",
+      "type": "epub",
+      "cfi": "epubcfi(/6/2!/4/36/1:0)",
+      "href": "ch1.xhtml"
+    },
+    "percent": 20,
+    "updated_at": "2026-10-23T12:12:36.669Z"
+  },
+  "savedCfi": "epubcfi(/6/2!/4/50/1:0)",
+  "currentCfi": "epubcfi(/6/2!/4/36/1:0)",
+  "starBefore": "true",
+  "before": [
+    {
+      "id": "10d92d63-acff-435e-9809-11537219763a",
+      "cfi": "epubcfi(/6/2!/4/50/1:0)"
+    }
+  ],
+  "after": []
+}

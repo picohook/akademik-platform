@@ -1,0 +1,35 @@
+{
+  "files": [
+    {
+      "matches": false,
+      "sourceSha256": "b0d24a9150f7d980952951663ec11f69e8e4e1b9aa263c4a85ee8ec4739817cc",
+      "file": "spike/app/public/index.html",
+      "servedSha256": "b5ea635391fe6f27bc61ce301a84aa20486f4707c1335820c66803d9490afd9a",
+      "testedV110Sha256": "b5ea635391fe6f27bc61ce301a84aa20486f4707c1335820c66803d9490afd9a",
+      "matchesTestedV110": true
+    },
+    {
+      "matches": false,
+      "sourceSha256": "f4f4bda50a8719ce5fafe28e2446cf78e44c2662716e904a16b96666935ba848",
+      "file": "spike/app/public/app.js",
+      "servedSha256": "028c35b8cd79fad44a37583a604d1cb89197f030fb1b0f4b4098532f43524f98",
+      "testedV110Sha256": "028c35b8cd79fad44a37583a604d1cb89197f030fb1b0f4b4098532f43524f98",
+      "matchesTestedV110": true
+    },
+    {
+      "matches": true,
+      "sourceSha256": "d750a2f3aee4e7fb0ed2454d27b0337964055186a19e449b90a2252e75a38cfb",
+      "file": "spike/app/public/styles.css",
+      "servedSha256": "d750a2f3aee4e7fb0ed2454d27b0337964055186a19e449b90a2252e75a38cfb",
+      "testedV110Sha256": "d750a2f3aee4e7fb0ed2454d27b0337964055186a19e449b90a2252e75a38cfb",
+      "matchesTestedV110": true
+    }
+  ],
+  "url": "https://localhost",
+  "stylesheet": 42,
+  "method": "Read-only HTTPS with Caddy CA verification",
+  "observedAt": "2026-10-23T11:52:54.9390270Z",
+  "deployedByReviewer": false,
+  "frontend": "v110",
+  "note": "Initial comparison used the moving working tree; matchesTestedV110 compares to the isolated v110 snapshot instead."
+}
