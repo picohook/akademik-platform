@@ -98,6 +98,8 @@ const state = {
   epubProgress: null,
   epubFontSize: 100,
   epubSelection: null,
+  activeBookmarkId: null,
+  bookmarkJump: false,
   epubFrameObserver: null,
   offlineMode: false,
   offlineLibrary: false,
@@ -1476,24 +1478,23 @@ function currentEpubCfi() {
 
 function bookmarkForEpubCfi(cfi = currentEpubCfi()) {
   if (!cfi) return null;
-  const progress = state.epubProgress || {};
-  const candidates = state.annotations.filter((annotation) => {
-    if (annotation.color !== 'bookmark' || annotation.anchor?.type !== 'epub') return false;
-    if (annotation.anchor.cfi === cfi) return true;
-    if (annotation.anchor.href && progress.href && annotation.anchor.href !== progress.href) return false;
-    const saved = Number(annotation.anchor.percent);
-    const current = Number(progress.percent);
-    return Number.isFinite(saved) && Number.isFinite(current) && Math.abs(saved - current) <= 1.5;
-  });
-  return candidates.sort((a, b) => {
-    const av = Math.abs(Number(a.anchor.percent) - Number(progress.percent));
-    const bv = Math.abs(Number(b.anchor.percent) - Number(progress.percent));
-    return av - bv;
-  })[0] || null;
+  return state.annotations.find(
+    (annotation) => annotation.color === 'bookmark'
+      && annotation.anchor?.type === 'epub'
+      && annotation.anchor?.cfi === cfi,
+  ) || null;
 }
 
 function updateBookmarkUi() {
-  const hasBookmark = Boolean(state.epubMode ? bookmarkForEpubCfi() : bookmarkForPage());
+  let activeBookmark = state.epubMode && state.activeBookmarkId
+    ? state.annotations.find((annotation) => annotation.id === state.activeBookmarkId)
+    : null;
+  if (activeBookmark && activeBookmark.anchor?.href && state.epubProgress?.href
+      && activeBookmark.anchor.href !== state.epubProgress.href) {
+    state.activeBookmarkId = null;
+    activeBookmark = null;
+  }
+  const hasBookmark = Boolean(activeBookmark || (state.epubMode ? bookmarkForEpubCfi() : bookmarkForPage()));
   bookmarkBtn.textContent = hasBookmark ? '★' : '☆';
   bookmarkBtn.classList.toggle('active', hasBookmark);
   bookmarkBtn.setAttribute('aria-pressed', hasBookmark ? 'true' : 'false');
@@ -1551,9 +1552,14 @@ async function toggleBookmark() {
   if (state.epubMode) {
     const cfi = currentEpubCfi();
     if (!cfi) return;
-    const existing = bookmarkForEpubCfi(cfi);
+    const active = state.activeBookmarkId
+      ? state.annotations.find((annotation) => annotation.id === state.activeBookmarkId
+        && annotation.color === 'bookmark' && annotation.anchor?.type === 'epub')
+      : null;
+    const existing = active || bookmarkForEpubCfi(cfi);
     if (existing) {
       await deleteAnnotation(existing.id, { silent: true });
+      state.activeBookmarkId = null;
       toast('Yer imi kaldırıldı');
       return;
     }
@@ -1583,6 +1589,7 @@ async function toggleBookmark() {
       if (!response.ok) throw new Error('bookmark failed');
       const saved = await response.json();
       state.annotations.push(saved);
+      state.activeBookmarkId = saved.id;
       renderNotes();
       updateBookmarkUi();
       toast('Yer imi eklendi');
@@ -2753,6 +2760,12 @@ function renderNotes() {
     }
 
     item.addEventListener('click', async () => {
+      if (isBookmark) {
+        state.activeBookmarkId = annotation.id;
+        state.bookmarkJump = true;
+      } else {
+        state.activeBookmarkId = null;
+      }
       if (annotation.anchor?.type === 'epub' && annotation.anchor?.cfi) {
         await state.epubEngine?.goToCfi(annotation.anchor.cfi);
       } else {
@@ -2847,6 +2860,8 @@ async function openEpubBook(book, options = {}) {
   }
   resetSearch();
   state.book = book;
+  state.activeBookmarkId = null;
+  state.bookmarkJump = false;
   state.readerReturnFocus = document.activeElement;
   state.epubMode = true;
   state.scrollMode = false;
@@ -2901,6 +2916,18 @@ async function openEpubBook(book, options = {}) {
         state.epubProgress = next;
         pageLabel.textContent = `${next.percent}%`;
         labelEpubFrames();
+        if (state.bookmarkJump) {
+          state.bookmarkJump = false;
+        } else if (state.activeBookmarkId) {
+          const active = state.annotations.find((annotation) => annotation.id === state.activeBookmarkId);
+          const saved = Number(active?.anchor?.percent);
+          if (!active
+            || (active.anchor?.href && next.href && active.anchor.href !== next.href)
+            || (active.anchor?.cfi !== next.cfi
+              && (!Number.isFinite(saved) || Math.abs(saved - Number(next.percent)) > 1.5))) {
+            state.activeBookmarkId = null;
+          }
+        }
         updateBookmarkUi();
         updateUrl();
         saveProgress();
@@ -2967,6 +2994,8 @@ async function openBook(book, options = {}) {
   state.offlineMode = Boolean(offlineBlob) || !navigator.onLine;
   state.offlineBlob = offlineBlob;
   state.book = book;
+  state.activeBookmarkId = null;
+  state.bookmarkJump = false;
   state.readerReturnFocus = document.activeElement;
   if (state.epubEngine) {
     state.epubEngine.destroy();
@@ -3111,6 +3140,8 @@ async function closeReader() {
   }
   state.offlineMode = false;
   state.offlineBlob = null;
+  state.activeBookmarkId = null;
+  state.bookmarkJump = false;
   resetSearch();
   state.epubMode = false;
   state.epubProgress = null;
@@ -3514,6 +3545,7 @@ async function saveHighlight() {
 }
 
 async function deleteAnnotation(id, options = {}) {
+  if (state.activeBookmarkId === id) state.activeBookmarkId = null;
   if (state.offlineMode) {
     const annotation = state.annotations.find((item) => item.id === id);
     if (!annotation) return;
@@ -3553,6 +3585,8 @@ async function deleteAnnotation(id, options = {}) {
 
 function changePage(delta) {
   if (state.epubMode) {
+    state.activeBookmarkId = null;
+    state.bookmarkJump = false;
     if (delta > 0) state.epubEngine?.next();
     else state.epubEngine?.prev();
     return;

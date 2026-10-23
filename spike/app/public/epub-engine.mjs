@@ -195,6 +195,15 @@ export class EpubEngine {
     return this.currentCfi;
   }
 
+  getCurrentRange() {
+    const location = this.rendition?.currentLocation?.();
+    return {
+      start: location?.start?.cfi || this.currentCfi || null,
+      end: location?.end?.cfi || null,
+      href: location?.start?.href || this.currentHref || null,
+    };
+  }
+
   getProgress() {
     const percent = this.locationsReady && this.currentCfi
       ? Math.round(this.book.locations.percentageFromCfi(this.currentCfi) * 100)

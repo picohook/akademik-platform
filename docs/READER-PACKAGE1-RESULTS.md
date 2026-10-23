@@ -98,10 +98,11 @@ No deployment was performed as part of this review.
 
 ## v110 remediation (pending retest)
 
-- **R1:** EPUB bookmark matching now accepts an exact CFI **or** the same
-  `href` with a progress difference of ≤1.5 percentage points, choosing the
-  nearest bookmark. Opening Notes should no longer create a duplicate
-  immediately; the star should remain active after returning to the bookmark.
+- **R1:** EPUB bookmarks are matched by **exact CFI** for creation; selecting a
+  bookmark in Notes records its id as the active bookmark. Opening Notes or
+  relocating no longer duplicates the record: the star stays on the selected
+  bookmark, and two nearby bookmarks remain two distinct CFI records. The star
+  does not merge bookmarks by percentage.
 - **R2:** EPUB font size is stored per **user + book**
   (`readerEpubFontSize:<userId>:<bookId>`), with a per-user fallback. Theme is
   stored per **user** (`readerTheme:<userId>`). The old browser-global keys are
