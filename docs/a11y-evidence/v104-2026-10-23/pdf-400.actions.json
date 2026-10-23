@@ -1,0 +1,69 @@
+[
+  {
+    "action": {
+      "op": "press",
+      "keys": "Escape"
+    },
+    "result": {
+      "width": 320,
+      "height": 190,
+      "dpr": 5,
+      "scrollWidth": 316,
+      "scrollHeight": 1063,
+      "active": {
+        "id": "",
+        "tag": "BUTTON",
+        "name": "Düzenle"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#grid .open-btn[aria-label^='Diş']"
+    },
+    "result": {
+      "width": 320,
+      "height": 190,
+      "dpr": 5,
+      "scrollWidth": 320,
+      "scrollHeight": 1047,
+      "active": {
+        "id": "",
+        "tag": "BODY",
+        "name": "İçeriğe atla\n  \n    \n      A\n      Akademik Platform\n      EN\n      \n        Okuyucu: reader@example"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "eval",
+      "code": "({width:innerWidth,height:innerHeight,dpr:devicePixelRatio,toolbar:document.querySelector('.reader-top').getBoundingClientRect().toJSON(),area:document.querySelector('#pageArea').getBoundingClientRect().toJSON()})"
+    },
+    "result": {
+      "width": 320,
+      "height": 190,
+      "dpr": 5,
+      "toolbar": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 137,
+        "top": 0,
+        "right": 320,
+        "bottom": 137,
+        "left": 0
+      },
+      "area": {
+        "x": 0,
+        "y": 137,
+        "width": 320,
+        "height": 53.60000228881836,
+        "top": 137,
+        "right": 320,
+        "bottom": 190.60000228881836,
+        "left": 0
+      }
+    }
+  }
+]

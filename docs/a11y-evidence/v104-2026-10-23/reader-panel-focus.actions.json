@@ -1,0 +1,107 @@
+[
+  {
+    "action": {
+      "op": "oskeys",
+      "keys": "{ESC}"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1265,
+      "scrollHeight": 886,
+      "active": {
+        "id": "offlineBtn",
+        "tag": "BUTTON",
+        "name": "Çevrimdışı"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "zoom",
+      "percent": 400
+    },
+    "result": {
+      "width": 320,
+      "height": 190,
+      "dpr": 5,
+      "scrollWidth": 316,
+      "scrollHeight": 1063,
+      "active": {
+        "id": "offlineBtn",
+        "tag": "BUTTON",
+        "name": "Çevrimdışı"
+      },
+      "baselineDpr": 1.25
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#grid .open-btn[aria-label^='Diş']"
+    },
+    "result": {
+      "width": 320,
+      "height": 190,
+      "dpr": 5,
+      "scrollWidth": 320,
+      "scrollHeight": 1047,
+      "active": {
+        "id": "",
+        "tag": "BODY",
+        "name": "İçeriğe atla\n  \n    \n      A\n      Akademik Platform\n      EN\n      \n        Okuyucu: reader@example"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#toggleNotes"
+    },
+    "result": {
+      "width": 320,
+      "height": 190,
+      "dpr": 5,
+      "scrollWidth": 320,
+      "scrollHeight": 1071,
+      "active": {
+        "id": "toggleNotes",
+        "tag": "BUTTON",
+        "name": "Notlar 2"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "eval",
+      "code": "(()=>{const t=document.querySelector('#toggleNotes');const p=document.querySelector('#notesPanel');const r=t.getBoundingClientRect();return {active:document.activeElement.id,toggle:r.toJSON(),panel:p.getBoundingClientRect().toJSON(),atToggleCenter:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.outerHTML,width:innerWidth,height:innerHeight}})()"
+    },
+    "result": {
+      "active": "toggleNotes",
+      "toggle": {
+        "x": 218.93125915527344,
+        "y": 88,
+        "width": 85.0687484741211,
+        "height": 38,
+        "top": 88,
+        "right": 304.00000762939453,
+        "bottom": 126,
+        "left": 218.93125915527344
+      },
+      "panel": {
+        "x": 38.400001525878906,
+        "y": 0,
+        "width": 281.6000061035156,
+        "height": 190.60000610351562,
+        "top": 0,
+        "right": 320.00000762939453,
+        "bottom": 190.60000610351562,
+        "left": 38.400001525878906
+      },
+      "atToggleCenter": "<div class=\"notes-list\" id=\"notesList\" role=\"region\" aria-label=\"Not listesi\" tabindex=\"0\"><div class=\"note-item\"><button type=\"button\" class=\"note-color bookmark\" title=\"Rengi değiştir\" aria-label=\"Rengi değiştir\"></button><div class=\"note-page\">Sayfa 1 · Yer imi</div><div class=\"note-date\" title=\"Oluşturuldu: 23.10.2026 09:47:10\">20 dk önce</div><button type=\"button\" class=\"note-delete\" title=\"Sil\">×</button></div><div class=\"note-item\"><button type=\"button\" class=\"note-color yellow\" title=\"Rengi değiştir\" aria-label=\"Rengi değiştir\"></button><div class=\"note-page\">Sayfa 1</div><div class=\"note-date\" title=\"Oluşturuldu: 23.10.2026 09:59:54\">8 dk önce</div><p class=\"note-text\">Dummy PDF file</p><p class=\"note-body\">Erişilebilirlik test notu</p><button type=\"button\" class=\"note-delete\" title=\"Sil\">×</button><button type=\"button\" class=\"note-edit-btn\" title=\"Notu düzenle\">✎</button></div></div>",
+      "width": 320,
+      "height": 190
+    }
+  }
+]

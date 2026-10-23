@@ -1,0 +1,93 @@
+[
+  {
+    "url": "http://127.0.0.1:45841/vendor/a11y-epub-snapshot.html",
+    "violations": [
+      {
+        "id": "html-has-lang",
+        "impact": "serious",
+        "tags": [
+          "cat.language",
+          "wcag2a",
+          "wcag311",
+          "TTv5",
+          "TT11.a",
+          "EN-301-549",
+          "EN-9.3.1.1",
+          "ACT",
+          "RGAAv4",
+          "RGAA-8.3.1"
+        ],
+        "description": "Ensure every HTML document has a lang attribute",
+        "help": "<html> element must have a lang attribute",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/html-has-lang?application=axeAPI",
+        "nodes": [
+          {
+            "any": [
+              {
+                "id": "has-lang",
+                "data": {
+                  "messageKey": "noXHTML"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "The xml:lang attribute is not valid on HTML pages, use the lang attribute."
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"tr\">",
+            "target": [
+              "html"
+            ],
+            "failureSummary": "Fix any of the following:\n  The xml:lang attribute is not valid on HTML pages, use the lang attribute."
+          }
+        ]
+      },
+      {
+        "id": "meta-viewport",
+        "impact": "moderate",
+        "tags": [
+          "cat.sensory-and-visual-cues",
+          "wcag2aa",
+          "wcag144",
+          "EN-301-549",
+          "EN-9.1.4.4",
+          "ACT",
+          "RGAAv4",
+          "RGAA-10.4.2"
+        ],
+        "description": "Ensure <meta name=\"viewport\"> does not disable text scaling and zooming",
+        "help": "Zooming and scaling must not be disabled",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/meta-viewport?application=axeAPI",
+        "nodes": [
+          {
+            "any": [
+              {
+                "id": "meta-viewport",
+                "data": "user-scalable=no",
+                "relatedNodes": [],
+                "impact": "moderate",
+                "message": "user-scalable=no on <meta> tag disables zooming on mobile devices"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "moderate",
+            "html": "<meta name=\"viewport\" content=\"width=1248, height=671, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no\">",
+            "target": [
+              "meta[name=\"viewport\"]"
+            ],
+            "failureSummary": "Fix any of the following:\n  user-scalable=no on <meta> tag disables zooming on mobile devices"
+          }
+        ]
+      }
+    ],
+    "incomplete": [],
+    "passes": 5,
+    "testEngine": {
+      "name": "axe-core",
+      "version": "4.13.0"
+    }
+  }
+]

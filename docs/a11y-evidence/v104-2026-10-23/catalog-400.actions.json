@@ -1,0 +1,33 @@
+[
+  {
+    "action": {
+      "op": "click",
+      "selector": "#closeReader"
+    },
+    "result": {
+      "width": 320,
+      "height": 190,
+      "dpr": 5,
+      "scrollWidth": 316,
+      "scrollHeight": 1063,
+      "active": {
+        "id": "",
+        "tag": "BUTTON",
+        "name": "EPUB access audit fixture kitabını oku"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "eval",
+      "code": "({focus:document.activeElement.getAttribute('aria-label'),width:innerWidth,height:innerHeight,scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth})"
+    },
+    "result": {
+      "focus": "EPUB access audit fixture kitabını oku",
+      "width": 320,
+      "height": 190,
+      "scrollWidth": 316,
+      "clientWidth": 316
+    }
+  }
+]

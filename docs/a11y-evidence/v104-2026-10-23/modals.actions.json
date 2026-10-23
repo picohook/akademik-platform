@@ -1,0 +1,326 @@
+[
+  {
+    "action": {
+      "op": "click",
+      "selector": "#grid .edit-btn:not(.offline-card-btn)"
+    },
+    "result": {
+      "width": 1258,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1243,
+      "scrollHeight": 886,
+      "active": {
+        "id": "editTitle",
+        "tag": "INPUT",
+        "name": ""
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "axe",
+      "name": "edit-modal"
+    },
+    "result": [
+      {
+        "url": "http://127.0.0.1:45841/",
+        "violations": [],
+        "incomplete": 1
+      }
+    ]
+  },
+  {
+    "action": {
+      "op": "snapshot",
+      "name": "edit-modal-100"
+    },
+    "result": {
+      "width": 1258,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1243,
+      "scrollHeight": 886,
+      "active": {
+        "id": "editTitle",
+        "tag": "INPUT",
+        "name": ""
+      },
+      "screenshot": "C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\tmp\\a11y-audit\\evidence\\edit-modal-100.png"
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#closeEdit"
+    },
+    "result": {
+      "width": 1258,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1243,
+      "scrollHeight": 886,
+      "active": {
+        "id": "",
+        "tag": "BUTTON",
+        "name": "Düzenle"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#openUpload"
+    },
+    "result": {
+      "width": 1258,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1243,
+      "scrollHeight": 886,
+      "active": {
+        "id": "uploadFile",
+        "tag": "INPUT",
+        "name": ""
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "axe",
+      "name": "upload-modal"
+    },
+    "result": [
+      {
+        "url": "http://127.0.0.1:45841/",
+        "violations": [],
+        "incomplete": 1
+      }
+    ]
+  },
+  {
+    "action": {
+      "op": "uploadEpub"
+    },
+    "result": {
+      "width": 1258,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1243,
+      "scrollHeight": 886,
+      "active": {
+        "id": "openUpload",
+        "tag": "BUTTON",
+        "name": "+ Kitap ekle"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#passwordBtn"
+    },
+    "result": {
+      "width": 1258,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1243,
+      "scrollHeight": 886,
+      "active": {
+        "id": "passwordCurrent",
+        "tag": "INPUT",
+        "name": ""
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "axe",
+      "name": "password-modal"
+    },
+    "result": [
+      {
+        "url": "http://127.0.0.1:45841/",
+        "violations": [],
+        "incomplete": 1
+      }
+    ]
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#closePassword"
+    },
+    "result": {
+      "width": 1258,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1243,
+      "scrollHeight": 886,
+      "active": {
+        "id": "passwordBtn",
+        "tag": "BUTTON",
+        "name": "Parola"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#grantsBtn"
+    },
+    "result": {
+      "width": 1258,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1243,
+      "scrollHeight": 886,
+      "active": {
+        "id": "grantSubjectType",
+        "tag": "SELECT",
+        "name": "Tüm kurum\n              Tek kullanıcı\n              Grup"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "axe",
+      "name": "grants-modal"
+    },
+    "result": [
+      {
+        "url": "http://127.0.0.1:45841/",
+        "violations": [],
+        "incomplete": 1
+      }
+    ]
+  },
+  {
+    "action": {
+      "op": "snapshot",
+      "name": "grants-modal-100"
+    },
+    "result": {
+      "width": 1258,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1243,
+      "scrollHeight": 886,
+      "active": {
+        "id": "grantSubjectType",
+        "tag": "SELECT",
+        "name": "Tüm kurum\n              Tek kullanıcı\n              Grup"
+      },
+      "screenshot": "C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\tmp\\a11y-audit\\evidence\\grants-modal-100.png"
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#closeGrants"
+    },
+    "result": {
+      "width": 1258,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1243,
+      "scrollHeight": 886,
+      "active": {
+        "id": "grantsBtn",
+        "tag": "BUTTON",
+        "name": "Erişim"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#offlineBtn"
+    },
+    "result": {
+      "width": 1258,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1243,
+      "scrollHeight": 886,
+      "active": {
+        "id": "offlineBtn",
+        "tag": "BUTTON",
+        "name": "Çevrimdışı"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "axe",
+      "name": "offline-empty"
+    },
+    "result": [
+      {
+        "url": "http://127.0.0.1:45841/",
+        "violations": [],
+        "incomplete": 1
+      }
+    ]
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#closeOffline"
+    },
+    "result": {
+      "width": 1258,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1243,
+      "scrollHeight": 886,
+      "active": {
+        "id": "offlineBtn",
+        "tag": "BUTTON",
+        "name": "Çevrimdışı"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "eval",
+      "code": "Array.from(document.querySelectorAll('#grid .card')).map(e=>({text:e.innerText.slice(0,250),buttons:[...e.querySelectorAll('button')].map(b=>({text:b.textContent,class:b.className}))}))"
+    },
+    "result": [
+      {
+        "text": "AKADEMİK\nE\nEPUB access audit fixture\n\nEPUB access audit fixture\n\nTR · —\n\nEPUB\nOku↓Düzenle",
+        "buttons": [
+          {
+            "text": "Oku",
+            "class": "open-btn"
+          },
+          {
+            "text": "↓",
+            "class": "edit-btn offline-card-btn"
+          },
+          {
+            "text": "Düzenle",
+            "class": "edit-btn"
+          }
+        ]
+      },
+      {
+        "text": "DİŞ HEKİMLİĞİ\nD\nDiş Hekimliğinde İmplant Komplikasyonları\nDemo Akademik Yayıncılık\n\nKlinik değerlendirme ve yönetim\n\nTR · 2026\n\nPDF\nDiş Hekimliği\nImplantoloji\nOku↓Düzenle",
+        "buttons": [
+          {
+            "text": "Oku",
+            "class": "open-btn"
+          },
+          {
+            "text": "↓",
+            "class": "edit-btn offline-card-btn"
+          },
+          {
+            "text": "Düzenle",
+            "class": "edit-btn"
+          }
+        ]
+      }
+    ]
+  }
+]

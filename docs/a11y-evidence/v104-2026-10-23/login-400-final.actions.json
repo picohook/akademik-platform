@@ -1,0 +1,52 @@
+[
+  {
+    "action": {
+      "op": "zoom",
+      "percent": 400
+    },
+    "result": {
+      "width": 320,
+      "height": 190,
+      "dpr": 5,
+      "scrollWidth": 316,
+      "scrollHeight": 566,
+      "active": {
+        "id": "",
+        "tag": "BUTTON",
+        "name": "Giriş yap"
+      },
+      "baselineDpr": 1.25
+    }
+  },
+  {
+    "action": {
+      "op": "eval",
+      "code": "(()=>{const b=document.querySelector('#loginForm button[type=submit]');b.focus();window.scrollTo(0,10000);return {width:innerWidth,height:innerHeight,dpr:devicePixelRatio,button:b.getBoundingClientRect().toJSON(),login:document.querySelector('.login-card').getBoundingClientRect().toJSON()}})()"
+    },
+    "result": {
+      "width": 320,
+      "height": 190,
+      "dpr": 5,
+      "button": {
+        "x": 41,
+        "y": 375.75,
+        "width": 234.1999969482422,
+        "height": 41.5,
+        "top": 375.75,
+        "right": 275.1999969482422,
+        "bottom": 417.25,
+        "left": 41
+      },
+      "login": {
+        "x": 20,
+        "y": 20,
+        "width": 276.20001220703125,
+        "height": 418.25,
+        "top": 20,
+        "right": 296.20001220703125,
+        "bottom": 438.25,
+        "left": 20
+      }
+    }
+  }
+]

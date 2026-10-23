@@ -1,0 +1,414 @@
+[
+  {
+    "url": "http://127.0.0.1:45841/?book=33333333-3333-3333-3333-333333333333&page=1",
+    "violations": [
+      {
+        "id": "target-size",
+        "impact": "serious",
+        "tags": [
+          "cat.sensory-and-visual-cues",
+          "wcag22aa",
+          "wcag258"
+        ],
+        "description": "Ensure touch targets have sufficient size and space",
+        "help": "All touch targets must be 24px large, or leave sufficient space",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/target-size?application=axeAPI",
+        "nodes": [
+          {
+            "any": [
+              {
+                "id": "target-size",
+                "data": {
+                  "minSize": 24,
+                  "width": 17,
+                  "height": 17
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Target has insufficient size (17px by 17px, should be at least 24px by 24px)"
+              },
+              {
+                "id": "target-offset",
+                "data": {
+                  "closestOffset": 18,
+                  "minOffset": 24
+                },
+                "relatedNodes": [
+                  {
+                    "html": "<button class=\"hl-color green\" data-color=\"green\" type=\"button\" aria-label=\"Yeşil\"></button>",
+                    "target": [
+                      ".green"
+                    ]
+                  }
+                ],
+                "impact": "serious",
+                "message": "Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 18px instead of at least 24px."
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<button class=\"hl-color yellow active\" data-color=\"yellow\" type=\"button\" aria-label=\"Sarı\"></button>",
+            "target": [
+              "button[data-color=\"yellow\"]"
+            ],
+            "failureSummary": "Fix any of the following:\n  Target has insufficient size (17px by 17px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 18px instead of at least 24px."
+          },
+          {
+            "any": [
+              {
+                "id": "target-size",
+                "data": {
+                  "minSize": 24,
+                  "width": 17,
+                  "height": 17
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Target has insufficient size (17px by 17px, should be at least 24px by 24px)"
+              },
+              {
+                "id": "target-offset",
+                "data": {
+                  "closestOffset": 18,
+                  "minOffset": 24
+                },
+                "relatedNodes": [
+                  {
+                    "html": "<button class=\"hl-color yellow active\" data-color=\"yellow\" type=\"button\" aria-label=\"Sarı\"></button>",
+                    "target": [
+                      "button[data-color=\"yellow\"]"
+                    ]
+                  },
+                  {
+                    "html": "<button class=\"hl-color blue\" data-color=\"blue\" type=\"button\" aria-label=\"Mavi\"></button>",
+                    "target": [
+                      ".blue"
+                    ]
+                  }
+                ],
+                "impact": "serious",
+                "message": "Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 18px instead of at least 24px."
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<button class=\"hl-color green\" data-color=\"green\" type=\"button\" aria-label=\"Yeşil\"></button>",
+            "target": [
+              ".green"
+            ],
+            "failureSummary": "Fix any of the following:\n  Target has insufficient size (17px by 17px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 18px instead of at least 24px."
+          },
+          {
+            "any": [
+              {
+                "id": "target-size",
+                "data": {
+                  "minSize": 24,
+                  "width": 17,
+                  "height": 17
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Target has insufficient size (17px by 17px, should be at least 24px by 24px)"
+              },
+              {
+                "id": "target-offset",
+                "data": {
+                  "closestOffset": 18,
+                  "minOffset": 24
+                },
+                "relatedNodes": [
+                  {
+                    "html": "<button class=\"hl-color green\" data-color=\"green\" type=\"button\" aria-label=\"Yeşil\"></button>",
+                    "target": [
+                      ".green"
+                    ]
+                  },
+                  {
+                    "html": "<button class=\"hl-color pink\" data-color=\"pink\" type=\"button\" aria-label=\"Pembe\"></button>",
+                    "target": [
+                      ".pink"
+                    ]
+                  }
+                ],
+                "impact": "serious",
+                "message": "Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 18px instead of at least 24px."
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<button class=\"hl-color blue\" data-color=\"blue\" type=\"button\" aria-label=\"Mavi\"></button>",
+            "target": [
+              ".blue"
+            ],
+            "failureSummary": "Fix any of the following:\n  Target has insufficient size (17px by 17px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 18px instead of at least 24px."
+          },
+          {
+            "any": [
+              {
+                "id": "target-size",
+                "data": {
+                  "minSize": 24,
+                  "width": 17,
+                  "height": 17
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Target has insufficient size (17px by 17px, should be at least 24px by 24px)"
+              },
+              {
+                "id": "target-offset",
+                "data": {
+                  "closestOffset": 18,
+                  "minOffset": 24
+                },
+                "relatedNodes": [
+                  {
+                    "html": "<button class=\"hl-color blue\" data-color=\"blue\" type=\"button\" aria-label=\"Mavi\"></button>",
+                    "target": [
+                      ".blue"
+                    ]
+                  }
+                ],
+                "impact": "serious",
+                "message": "Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 18px instead of at least 24px."
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<button class=\"hl-color pink\" data-color=\"pink\" type=\"button\" aria-label=\"Pembe\"></button>",
+            "target": [
+              ".pink"
+            ],
+            "failureSummary": "Fix any of the following:\n  Target has insufficient size (17px by 17px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 18px instead of at least 24px."
+          }
+        ]
+      }
+    ],
+    "incomplete": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "tags": [
+          "cat.color",
+          "wcag2aa",
+          "wcag143",
+          "TTv5",
+          "TT13.c",
+          "EN-301-549",
+          "EN-9.1.4.3",
+          "ACT",
+          "RGAAv4",
+          "RGAA-3.2.1"
+        ],
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=axeAPI",
+        "nodes": [
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "messageKey": "nonBmp"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element content contains only non-text characters"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<button class=\"icon-btn\" id=\"closeReader\" aria-label=\"Kapat\">✕</button>",
+            "target": [
+              "#closeReader"
+            ],
+            "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+          },
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "messageKey": "nonBmp"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element content contains only non-text characters"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<button class=\"ghost-btn\" id=\"toggleToc\" type=\"button\" title=\"İçindekiler\" aria-label=\"İçindekiler\" aria-controls=\"tocPanel\" aria-expanded=\"false\">☰</button>",
+            "target": [
+              "#toggleToc"
+            ],
+            "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+          },
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "messageKey": "nonBmp"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element content contains only non-text characters"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<button class=\"ghost-btn\" id=\"fullscreenBtn\" type=\"button\" title=\"Tam ekran\">⛶</button>",
+            "target": [
+              "#fullscreenBtn"
+            ],
+            "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+          },
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "messageKey": "nonBmp"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element content contains only non-text characters"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<button class=\"ghost-btn\" id=\"spreadBtn\" type=\"button\" title=\"Çift sayfa\" aria-pressed=\"false\">▥</button>",
+            "target": [
+              "#spreadBtn"
+            ],
+            "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+          },
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "messageKey": "nonBmp"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element content contains only non-text characters"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<button class=\"ghost-btn\" id=\"scrollBtn\" type=\"button\" title=\"Sürekli kaydırma\" aria-pressed=\"false\">≣</button>",
+            "target": [
+              "#scrollBtn"
+            ],
+            "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+          },
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "messageKey": "nonBmp"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element content contains only non-text characters"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<button class=\"icon-btn\" id=\"zoomOut\" aria-label=\"Uzaklaştır\">−</button>",
+            "target": [
+              "#zoomOut"
+            ],
+            "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+          },
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "messageKey": "nonBmp"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element content contains only non-text characters"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<button class=\"ghost-btn active\" id=\"bookmarkBtn\" type=\"button\" title=\"Yer imini kaldır\" aria-label=\"Yer imi\" aria-pressed=\"true\">★</button>",
+            "target": [
+              "#bookmarkBtn"
+            ],
+            "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+          },
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "contrastRatio": 0,
+                  "fontSize": "15.7pt (20.93px)",
+                  "fontWeight": "normal",
+                  "messageKey": "bgOverlap",
+                  "expectedContrastRatio": "4.5:1"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element's background color could not be determined because it is overlapped by another element"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<span role=\"presentation\" dir=\"ltr\" style=\"left: 9.55%; top: 8.4%; font-size: calc(var(--total-scale-factor) *16.10px); font-family: sans-serif; transform: scaleX(1.05327);\">Dummy PDF file</span>",
+            "target": [
+              "span[role=\"presentation\"]"
+            ],
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+          },
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "messageKey": "nonBmp"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element content contains only non-text characters"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<button class=\"icon-btn\" id=\"hlCancel\" aria-label=\"İptal\">✕</button>",
+            "target": [
+              "#hlCancel"
+            ],
+            "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+          }
+        ]
+      }
+    ],
+    "passes": 26,
+    "testEngine": {
+      "name": "axe-core",
+      "version": "4.13.0"
+    }
+  }
+]

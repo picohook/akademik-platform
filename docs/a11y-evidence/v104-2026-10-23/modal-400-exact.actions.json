@@ -1,0 +1,223 @@
+[
+  {
+    "action": {
+      "op": "eval",
+      "code": "__auditModal()"
+    },
+    "result": {
+      "id": "offlineModal",
+      "width": 640,
+      "height": 381,
+      "dpr": 2.5,
+      "overflow": "visible",
+      "scrollTop": 0,
+      "card": {
+        "x": 56.20000076293945,
+        "y": 97.7750015258789,
+        "width": 520,
+        "height": 185.65000915527344,
+        "top": 97.7750015258789,
+        "right": 576.2000007629395,
+        "bottom": 283.42501068115234,
+        "left": 56.20000076293945
+      },
+      "controls": [
+        {
+          "id": "closeOffline",
+          "text": "✕",
+          "top": 115.7750015258789,
+          "bottom": 147.7750015258789
+        },
+        {
+          "id": "",
+          "text": "Aç",
+          "top": 173.5749969482422,
+          "bottom": 197.5749969482422
+        },
+        {
+          "id": "",
+          "text": "Sil",
+          "top": 173.5749969482422,
+          "bottom": 197.5749969482422
+        },
+        {
+          "id": "",
+          "text": "Aç",
+          "top": 212.375,
+          "bottom": 236.375
+        },
+        {
+          "id": "",
+          "text": "Sil",
+          "top": 212.375,
+          "bottom": 236.375
+        }
+      ]
+    }
+  },
+  {
+    "action": {
+      "op": "press",
+      "keys": "Escape"
+    },
+    "result": {
+      "width": 640,
+      "height": 381,
+      "dpr": 2.5,
+      "scrollWidth": 632,
+      "scrollHeight": 1003,
+      "active": {
+        "id": "offlineBtn",
+        "tag": "BUTTON",
+        "name": "Çevrimdışı"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "zoom",
+      "percent": 400
+    },
+    "result": {
+      "width": 320,
+      "height": 190,
+      "dpr": 5,
+      "scrollWidth": 316,
+      "scrollHeight": 1063,
+      "active": {
+        "id": "offlineBtn",
+        "tag": "BUTTON",
+        "name": "Çevrimdışı"
+      },
+      "baselineDpr": 1.25
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#grid .card:has(.open-btn[aria-label^='Diş']) .edit-btn:not(.offline-card-btn)"
+    },
+    "result": {
+      "width": 320,
+      "height": 190,
+      "dpr": 5,
+      "scrollWidth": 316,
+      "scrollHeight": 1063,
+      "active": {
+        "id": "editTitle",
+        "tag": "INPUT",
+        "name": ""
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "eval",
+      "code": "__auditModal()"
+    },
+    "result": {
+      "id": "editModal",
+      "width": 320,
+      "height": 190,
+      "dpr": 5,
+      "overflow": "visible",
+      "scrollTop": 0,
+      "card": {
+        "x": 10,
+        "y": 10,
+        "width": 296.20001220703125,
+        "height": 710.5,
+        "top": 10,
+        "right": 306.20001220703125,
+        "bottom": 720.5,
+        "left": 10
+      },
+      "controls": [
+        {
+          "id": "closeEdit",
+          "text": "✕",
+          "top": 24,
+          "bottom": 56
+        },
+        {
+          "id": "editTitle",
+          "text": null,
+          "top": 92,
+          "bottom": 130
+        },
+        {
+          "id": "editSubtitle",
+          "text": null,
+          "top": 162,
+          "bottom": 200
+        },
+        {
+          "id": "editAuthors",
+          "text": null,
+          "top": 232,
+          "bottom": 270
+        },
+        {
+          "id": "editAllowCopy",
+          "text": null,
+          "top": 282.125,
+          "bottom": 295.125
+        },
+        {
+          "id": "editAllowDownload",
+          "text": null,
+          "top": 309.375,
+          "bottom": 322.375
+        },
+        {
+          "id": "editAllowPrint",
+          "text": null,
+          "top": 336.625,
+          "bottom": 349.625
+        },
+        {
+          "id": "editWatermark",
+          "text": null,
+          "top": 363.875,
+          "bottom": 376.875
+        },
+        {
+          "id": "editLanguage",
+          "text": null,
+          "top": 401,
+          "bottom": 439
+        },
+        {
+          "id": "editYear",
+          "text": null,
+          "top": 481,
+          "bottom": 519
+        },
+        {
+          "id": "editPublisher",
+          "text": null,
+          "top": 551,
+          "bottom": 589
+        },
+        {
+          "id": "editSubjects",
+          "text": null,
+          "top": 621,
+          "bottom": 659
+        },
+        {
+          "id": "cancelEdit",
+          "text": "Vazgeç",
+          "top": 669,
+          "bottom": 706.5
+        },
+        {
+          "id": "",
+          "text": "Kaydet",
+          "top": 669,
+          "bottom": 706.5
+        }
+      ]
+    }
+  }
+]

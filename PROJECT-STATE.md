@@ -4,7 +4,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web: **v104** (`spike/app/public/index.html`), stiller **v40**
+- Web: **v105** (`spike/app/public/index.html`), stiller **v41**
 - DB migration: **001–012** (`db/migrations/`)
 - Prod: **v104** deploy edildi (2026-10-23), kaynak **04e741e**, imaj `sha256:2142e01e…`; smoke **16/16**, EPUB filigran testi geçti, health/restart `healthy/0`. v103 güvenlik dağıtımı ve migration 009–012 geçmişi `docs/deployments/2026-10-23-v103.md`; v104 kaydı `docs/deployments/2026-10-23-v104.md`.
 - Son commit: **241a23f** — v104, EPUB filigranı, a11y hedefleri, `epubjs` devDependency.

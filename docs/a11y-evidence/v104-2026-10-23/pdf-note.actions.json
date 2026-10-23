@@ -1,0 +1,191 @@
+[
+  {
+    "action": {
+      "op": "click",
+      "selector": "#grid .open-btn[aria-label^='Diş']"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1280,
+      "scrollHeight": 886,
+      "active": {
+        "id": "",
+        "tag": "BODY",
+        "name": "İçeriğe atla\n  \n    \n      A\n      Akademik Platform\n      EN\n      \n        Okuyucu: reader@example"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "eval",
+      "code": "(()=>{const e=document.querySelector('#textLayer'); const range=document.createRange();range.selectNodeContents(e);const s=getSelection();s.removeAllRanges();s.addRange(range);e.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));return {selected:s.toString()}})()"
+    },
+    "result": {
+      "selected": "Dummy PDF file"
+    }
+  },
+  {
+    "action": {
+      "op": "axe",
+      "name": "pdf-highlight-toolbar"
+    },
+    "result": [
+      {
+        "url": "http://127.0.0.1:45841/?book=33333333-3333-3333-3333-333333333333&page=1",
+        "violations": [
+          {
+            "id": "target-size",
+            "impact": "serious",
+            "nodes": [
+              {
+                "target": [
+                  "button[data-color=\"yellow\"]"
+                ],
+                "summary": "Fix any of the following:\n  Target has insufficient size (17px by 17px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 18px instead of at least 24px."
+              },
+              {
+                "target": [
+                  ".green"
+                ],
+                "summary": "Fix any of the following:\n  Target has insufficient size (17px by 17px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 18px instead of at least 24px."
+              },
+              {
+                "target": [
+                  ".blue"
+                ],
+                "summary": "Fix any of the following:\n  Target has insufficient size (17px by 17px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 18px instead of at least 24px."
+              },
+              {
+                "target": [
+                  ".pink"
+                ],
+                "summary": "Fix any of the following:\n  Target has insufficient size (17px by 17px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 18px instead of at least 24px."
+              }
+            ]
+          }
+        ],
+        "incomplete": 1
+      }
+    ]
+  },
+  {
+    "action": {
+      "op": "snapshot",
+      "name": "pdf-highlight-toolbar"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1280,
+      "scrollHeight": 910,
+      "active": {
+        "id": "hlNote",
+        "tag": "INPUT",
+        "name": "Vurgu notu"
+      },
+      "screenshot": "C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\tmp\\a11y-audit\\evidence\\pdf-highlight-toolbar.png"
+    }
+  },
+  {
+    "action": {
+      "op": "fill",
+      "selector": "#hlNote",
+      "value": "Erişilebilirlik test notu"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1280,
+      "scrollHeight": 910,
+      "active": {
+        "id": "hlNote",
+        "tag": "INPUT",
+        "name": "Vurgu notu"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#hlSave"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1280,
+      "scrollHeight": 910,
+      "active": {
+        "id": "",
+        "tag": "BODY",
+        "name": "İçeriğe atla\n  \n    \n      A\n      Akademik Platform\n      EN\n      \n        Okuyucu: reader@example"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "snapshot",
+      "name": "pdf-note-saved"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1280,
+      "scrollHeight": 910,
+      "active": {
+        "id": "",
+        "tag": "BODY",
+        "name": "İçeriğe atla\n  \n    \n      A\n      Akademik Platform\n      EN\n      \n        Okuyucu: reader@example"
+      },
+      "screenshot": "C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\tmp\\a11y-audit\\evidence\\pdf-note-saved.png"
+    }
+  },
+  {
+    "action": {
+      "op": "eval",
+      "code": "[...document.querySelectorAll('#notesList .note-item')].map(e=>({text:e.innerText,buttons:[...e.querySelectorAll('button')].map(b=>({text:b.textContent,aria:b.getAttribute('aria-label'),title:b.title}))}))"
+    },
+    "result": [
+      {
+        "text": "SAYFA 1 · YER İMİ\n12 dk önce\n×",
+        "buttons": [
+          {
+            "text": "",
+            "aria": "Rengi değiştir",
+            "title": "Rengi değiştir"
+          },
+          {
+            "text": "×",
+            "aria": null,
+            "title": "Sil"
+          }
+        ]
+      },
+      {
+        "text": "SAYFA 1\naz önce\n\nDummy PDF file\n\nErişilebilirlik test notu\n\n×\n✎",
+        "buttons": [
+          {
+            "text": "",
+            "aria": "Rengi değiştir",
+            "title": "Rengi değiştir"
+          },
+          {
+            "text": "×",
+            "aria": null,
+            "title": "Sil"
+          },
+          {
+            "text": "✎",
+            "aria": null,
+            "title": "Notu düzenle"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,252 @@
+[
+  {
+    "url": "http://127.0.0.1:45841/?book=33333333-3333-3333-3333-333333333333&page=1",
+    "violations": [],
+    "incomplete": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "tags": [
+          "cat.color",
+          "wcag2aa",
+          "wcag143",
+          "TTv5",
+          "TT13.c",
+          "EN-301-549",
+          "EN-9.1.4.3",
+          "ACT",
+          "RGAAv4",
+          "RGAA-3.2.1"
+        ],
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=axeAPI",
+        "nodes": [
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "messageKey": "nonBmp"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element content contains only non-text characters"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<button class=\"icon-btn\" id=\"closeReader\" aria-label=\"Kapat\">✕</button>",
+            "target": [
+              "#closeReader"
+            ],
+            "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+          },
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "messageKey": "nonBmp"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element content contains only non-text characters"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<button class=\"ghost-btn\" id=\"toggleToc\" type=\"button\" title=\"İçindekiler\" aria-label=\"İçindekiler\" aria-controls=\"tocPanel\" aria-expanded=\"true\">☰</button>",
+            "target": [
+              "#toggleToc"
+            ],
+            "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+          },
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "messageKey": "nonBmp"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element content contains only non-text characters"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<button class=\"ghost-btn\" id=\"fullscreenBtn\" type=\"button\" title=\"Tam ekran\">⛶</button>",
+            "target": [
+              "#fullscreenBtn"
+            ],
+            "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+          },
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "messageKey": "nonBmp"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element content contains only non-text characters"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<button class=\"ghost-btn\" id=\"spreadBtn\" type=\"button\" title=\"Çift sayfa\" aria-pressed=\"false\">▥</button>",
+            "target": [
+              "#spreadBtn"
+            ],
+            "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+          },
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "messageKey": "nonBmp"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element content contains only non-text characters"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<button class=\"ghost-btn\" id=\"scrollBtn\" type=\"button\" title=\"Sürekli kaydırma\" aria-pressed=\"false\">≣</button>",
+            "target": [
+              "#scrollBtn"
+            ],
+            "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+          },
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "messageKey": "nonBmp"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element content contains only non-text characters"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<button class=\"icon-btn\" id=\"zoomOut\" aria-label=\"Uzaklaştır\">−</button>",
+            "target": [
+              "#zoomOut"
+            ],
+            "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+          },
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "messageKey": "nonBmp"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element content contains only non-text characters"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<button class=\"ghost-btn\" id=\"bookmarkBtn\" type=\"button\" title=\"Yer imi ekle\" aria-label=\"Yer imi\" aria-pressed=\"false\">☆</button>",
+            "target": [
+              "#bookmarkBtn"
+            ],
+            "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+          },
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "messageKey": "nonBmp"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element content contains only non-text characters"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<button class=\"icon-btn\" id=\"closeToc\" type=\"button\" aria-label=\"Kapat\">✕</button>",
+            "target": [
+              "#closeToc"
+            ],
+            "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+          },
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "contrastRatio": 0,
+                  "fontSize": "15.7pt (20.93px)",
+                  "fontWeight": "normal",
+                  "messageKey": "bgOverlap",
+                  "expectedContrastRatio": "4.5:1"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element's background color could not be determined because it is overlapped by another element"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<span role=\"presentation\" dir=\"ltr\" style=\"left: 9.55%; top: 8.4%; font-size: calc(var(--total-scale-factor) *16.10px); font-family: sans-serif; transform: scaleX(1.05327);\"><mark class=\"search-hit\">Dummy</mark> PDF file</span>",
+            "target": [
+              "span[role=\"presentation\"]"
+            ],
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+          },
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "contrastRatio": 0,
+                  "fontSize": "15.7pt (20.93px)",
+                  "fontWeight": "normal",
+                  "messageKey": "bgOverlap",
+                  "expectedContrastRatio": "4.5:1"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element's background color could not be determined because it is overlapped by another element"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<mark class=\"search-hit\">Dummy</mark>",
+            "target": [
+              "mark"
+            ],
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+          }
+        ]
+      }
+    ],
+    "passes": 28,
+    "testEngine": {
+      "name": "axe-core",
+      "version": "4.13.0"
+    }
+  }
+]

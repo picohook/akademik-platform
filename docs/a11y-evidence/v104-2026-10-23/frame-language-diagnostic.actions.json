@@ -1,0 +1,102 @@
+[
+  {
+    "action": {
+      "op": "offline",
+      "enabled": true
+    },
+    "result": {
+      "offline": true
+    }
+  },
+  {
+    "action": {
+      "op": "eval",
+      "code": "fetch('/api/health?offlineProbe='+Date.now(),{cache:'no-store'}).then(r=>({online:navigator.onLine,status:r.status,networkBlocked:false})).catch(e=>({online:navigator.onLine,networkBlocked:true,error:e.message}))"
+    },
+    "result": {
+      "online": false,
+      "networkBlocked": true,
+      "error": "Failed to fetch"
+    }
+  },
+  {
+    "action": {
+      "op": "offline",
+      "enabled": false
+    },
+    "result": {
+      "offline": false
+    }
+  },
+  {
+    "action": {
+      "op": "eval",
+      "code": "location.href='/vendor/a11y-epub-snapshot.html'"
+    },
+    "result": "/vendor/a11y-epub-snapshot.html"
+  },
+  {
+    "action": {
+      "op": "axe",
+      "name": "epub-content-standalone"
+    },
+    "result": [
+      {
+        "url": "http://127.0.0.1:45841/vendor/a11y-epub-snapshot.html",
+        "violations": [
+          {
+            "id": "html-has-lang",
+            "impact": "serious",
+            "nodes": [
+              {
+                "target": [
+                  "html"
+                ],
+                "summary": "Fix any of the following:\n  The xml:lang attribute is not valid on HTML pages, use the lang attribute."
+              }
+            ]
+          },
+          {
+            "id": "meta-viewport",
+            "impact": "moderate",
+            "nodes": [
+              {
+                "target": [
+                  "meta[name=\"viewport\"]"
+                ],
+                "summary": "Fix any of the following:\n  user-scalable=no on <meta> tag disables zooming on mobile devices"
+              }
+            ]
+          }
+        ],
+        "incomplete": 0
+      }
+    ]
+  },
+  {
+    "action": {
+      "op": "snapshot",
+      "name": "epub-content-standalone"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1280,
+      "scrollHeight": 762,
+      "active": {
+        "id": "",
+        "tag": "BODY",
+        "name": "Akademik okuma\n  Bu dosya, EPUB motoru adaptörünü denemek için üretilmiş küçük bir kamu malı metindi"
+      },
+      "screenshot": "C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\tmp\\a11y-audit\\evidence\\epub-content-standalone.png"
+    }
+  },
+  {
+    "action": {
+      "op": "eval",
+      "code": "location.href='/'"
+    },
+    "result": "/"
+  }
+]

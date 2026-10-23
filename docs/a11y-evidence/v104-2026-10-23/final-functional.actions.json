@@ -1,0 +1,364 @@
+[
+  {
+    "action": {
+      "op": "press",
+      "keys": "n"
+    },
+    "result": {
+      "width": 320,
+      "height": 190,
+      "dpr": 5,
+      "scrollWidth": 320,
+      "scrollHeight": 1071,
+      "active": {
+        "id": "toggleNotes",
+        "tag": "BUTTON",
+        "name": "Notlar 2"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#closeReader"
+    },
+    "result": {
+      "width": 320,
+      "height": 190,
+      "dpr": 5,
+      "scrollWidth": 316,
+      "scrollHeight": 1063,
+      "active": {
+        "id": "",
+        "tag": "BUTTON",
+        "name": "Diş Hekimliğinde İmplant Komplikasyonları kitabını oku"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "zoom",
+      "percent": 100
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1265,
+      "scrollHeight": 886,
+      "active": {
+        "id": "",
+        "tag": "BUTTON",
+        "name": "Diş Hekimliğinde İmplant Komplikasyonları kitabını oku"
+      },
+      "baselineDpr": 1.25
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#passwordBtn"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1265,
+      "scrollHeight": 886,
+      "active": {
+        "id": "passwordCurrent",
+        "tag": "INPUT",
+        "name": ""
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "media",
+      "forcedColors": "active"
+    },
+    "result": {
+      "forcedColors": "active"
+    }
+  },
+  {
+    "action": {
+      "op": "press",
+      "keys": "Tab"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1265,
+      "scrollHeight": 886,
+      "active": {
+        "id": "passwordNew",
+        "tag": "INPUT",
+        "name": ""
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "snapshot",
+      "name": "password-forced-colors"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1265,
+      "scrollHeight": 886,
+      "active": {
+        "id": "passwordNew",
+        "tag": "INPUT",
+        "name": ""
+      },
+      "screenshot": "C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\tmp\\a11y-audit\\evidence\\password-forced-colors.png"
+    }
+  },
+  {
+    "action": {
+      "op": "eval",
+      "code": "({forcedColors:matchMedia('(forced-colors: active)').matches,active:document.activeElement.id,focused:{outline:getComputedStyle(document.activeElement).outline,boxShadow:getComputedStyle(document.activeElement).boxShadow,border:getComputedStyle(document.activeElement).borderColor},unfocused:{outline:getComputedStyle(document.querySelector('#passwordCurrent')).outline,border:getComputedStyle(document.querySelector('#passwordCurrent')).borderColor}})"
+    },
+    "result": {
+      "forcedColors": true,
+      "active": "passwordNew",
+      "focused": {
+        "outline": "rgb(55, 0, 110) none 2.4px",
+        "boxShadow": "none",
+        "border": "rgb(55, 0, 110)"
+      },
+      "unfocused": {
+        "outline": "rgb(0, 0, 0) none 2.4px",
+        "border": "rgb(0, 0, 0)"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "media",
+      "forcedColors": "none"
+    },
+    "result": {
+      "forcedColors": "none"
+    }
+  },
+  {
+    "action": {
+      "op": "press",
+      "keys": "Escape"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1265,
+      "scrollHeight": 886,
+      "active": {
+        "id": "passwordBtn",
+        "tag": "BUTTON",
+        "name": "Parola"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#offlineBtn"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1265,
+      "scrollHeight": 886,
+      "active": {
+        "id": "offlineBtn",
+        "tag": "BUTTON",
+        "name": "Çevrimdışı"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "offline",
+      "enabled": true
+    },
+    "result": {
+      "offline": true
+    }
+  },
+  {
+    "action": {
+      "op": "eval",
+      "code": "fetch('/api/health?probe='+Date.now(),{cache:'no-store'}).then(r=>({blocked:false,status:r.status})).catch(e=>({blocked:true,online:navigator.onLine,error:e.message}))"
+    },
+    "result": {
+      "blocked": true,
+      "online": false,
+      "error": "Failed to fetch"
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#offlineList .grant-row:has-text('· PDF ·') button:text-is('Aç')"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1265,
+      "scrollHeight": 886,
+      "active": {
+        "id": "",
+        "tag": "BUTTON",
+        "name": "Aç"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "snapshot",
+      "name": "offline-pdf-confirmed"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1280,
+      "scrollHeight": 910,
+      "active": {
+        "id": "closeReader",
+        "tag": "BUTTON",
+        "name": "Kapat"
+      },
+      "screenshot": "C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\tmp\\a11y-audit\\evidence\\offline-pdf-confirmed.png"
+    }
+  },
+  {
+    "action": {
+      "op": "eval",
+      "code": "({online:navigator.onLine,text:document.querySelector('#textLayer').innerText})"
+    },
+    "result": {
+      "online": true,
+      "text": "Dummy PDF file"
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#closeReader"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1265,
+      "scrollHeight": 886,
+      "active": {
+        "id": "offlineBtn",
+        "tag": "BUTTON",
+        "name": "Çevrimdışı"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#offlineBtn"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1265,
+      "scrollHeight": 886,
+      "active": {
+        "id": "closeOffline",
+        "tag": "BUTTON",
+        "name": "Kapat"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#offlineList .grant-row:has-text('· EPUB ·') button:text-is('Aç')"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1265,
+      "scrollHeight": 886,
+      "active": {
+        "id": "",
+        "tag": "BUTTON",
+        "name": "Aç"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "snapshot",
+      "name": "offline-epub-confirmed"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1280,
+      "scrollHeight": 886,
+      "active": {
+        "id": "closeReader",
+        "tag": "BUTTON",
+        "name": "Kapat"
+      },
+      "screenshot": "C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\tmp\\a11y-audit\\evidence\\offline-epub-confirmed.png"
+    }
+  },
+  {
+    "action": {
+      "op": "frameEval",
+      "code": "({online:navigator.onLine,heading:document.querySelector('h1')?.innerText,lang:document.documentElement.lang,xmlLang:document.documentElement.getAttribute('xml:lang')})"
+    },
+    "result": {
+      "online": true,
+      "heading": "Akademik okuma",
+      "lang": "",
+      "xmlLang": "tr"
+    }
+  },
+  {
+    "action": {
+      "op": "offline",
+      "enabled": false
+    },
+    "result": {
+      "offline": false
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#closeReader"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1265,
+      "scrollHeight": 886,
+      "active": {
+        "id": "offlineBtn",
+        "tag": "BUTTON",
+        "name": "Çevrimdışı"
+      }
+    }
+  }
+]

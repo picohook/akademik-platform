@@ -1384,13 +1384,25 @@ function syncPanelA11y() {
   $('toggleNotes').setAttribute('aria-expanded', notesPanel.hidden ? 'false' : 'true');
 }
 
+function setNotesOpen(open) {
+  const next = Boolean(open);
+  notesPanel.hidden = !next;
+  syncPanelA11y();
+  if (next) {
+    if (window.innerWidth < 820) tocPanel.hidden = true;
+    setTimeout(() => $('noteFilter').focus(), 0);
+  } else if (notesPanel.contains(document.activeElement)) {
+    $('toggleNotes').focus();
+  }
+}
+
 function toggleToc(show) {
   const next = typeof show === 'boolean' ? show : tocPanel.hidden;
   tocPanel.hidden = !next;
   syncPanelA11y();
   if (next) {
     renderToc();
-    if (window.innerWidth < 820) notesPanel.hidden = true;
+    if (window.innerWidth < 820) setNotesOpen(false);
   }
 }
 
@@ -2630,7 +2642,7 @@ function renderNotes() {
         const target = Number(annotation.anchor?.page) || 1;
         await goToPage(target);
       }
-      if (window.innerWidth < 820) notesPanel.hidden = true;
+      if (window.innerWidth < 820) setNotesOpen(false);
     });
     notesList.appendChild(item);
   });
@@ -2692,10 +2704,18 @@ async function saveProgress() {
 
 function labelEpubFrames() {
   for (const frame of epubView.querySelectorAll('iframe')) {
+    const lang = state.book?.language === 'en' ? 'en' : 'tr';
     frame.setAttribute('title', t('EPUB içeriği'));
     frame.setAttribute('aria-label', t('EPUB içeriği'));
+    frame.setAttribute('lang', lang);
+    if (!frame.dataset.a11yBound) {
+      frame.dataset.a11yBound = '1';
+      frame.addEventListener('load', labelEpubFrames);
+    }
     try {
-      frame.contentDocument.documentElement.lang = state.book?.language === 'en' ? 'en' : 'tr';
+      frame.contentDocument.documentElement.lang = lang;
+      frame.contentDocument.documentElement.setAttribute('lang', lang);
+      frame.contentDocument.documentElement.setAttribute('xml:lang', lang);
     } catch { /* sandboxed frame */ }
   }
 }
@@ -2763,6 +2783,7 @@ async function openEpubBook(book, options = {}) {
       onRelocated: (next) => {
         state.epubProgress = next;
         pageLabel.textContent = `${next.percent}%`;
+        labelEpubFrames();
         updateUrl();
         saveProgress();
         if (state.searchQuery) {
@@ -3514,7 +3535,7 @@ document.addEventListener('keydown', (event) => {
   switch (event.key) {
     case 'Escape':
       if (!tocPanel.hidden) toggleToc(false);
-      else if (!notesPanel.hidden) notesPanel.hidden = true;
+      else if (!notesPanel.hidden) setNotesOpen(false);
       else closeReader();
       break;
     case 'ArrowLeft':
@@ -3526,9 +3547,7 @@ document.addEventListener('keydown', (event) => {
       changePage(1);
       break;
     case 'n':
-      notesPanel.hidden = !notesPanel.hidden;
-      syncPanelA11y();
-      if (!notesPanel.hidden && window.innerWidth < 820) tocPanel.hidden = true;
+      setNotesOpen(notesPanel.hidden);
       break;
     case 'b':
       toggleBookmark();
@@ -3812,9 +3831,10 @@ scrollBtn.addEventListener('click', () => {
   });
 });
 $('toggleNotes').addEventListener('click', () => {
-  notesPanel.hidden = !notesPanel.hidden;
-  syncPanelA11y();
-  if (!notesPanel.hidden && window.innerWidth < 820) tocPanel.hidden = true;
+  setNotesOpen(notesPanel.hidden);
+});
+$('closeNotes').addEventListener('click', () => {
+  setNotesOpen(false);
 });
 $('hlSave').addEventListener('click', saveHighlight);
 hlColors.addEventListener('click', (event) => {

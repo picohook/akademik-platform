@@ -1,0 +1,343 @@
+[
+  {
+    "action": {
+      "op": "press",
+      "keys": "Escape"
+    },
+    "result": {
+      "width": 640,
+      "height": 381,
+      "dpr": 2.5,
+      "scrollWidth": 632,
+      "scrollHeight": 1003,
+      "active": {
+        "id": "",
+        "tag": "BUTTON",
+        "name": "Düzenle"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "zoom",
+      "percent": 100
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1265,
+      "scrollHeight": 886,
+      "active": {
+        "id": "",
+        "tag": "BUTTON",
+        "name": "Düzenle"
+      },
+      "baselineDpr": 1.25
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#offlineBtn"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1265,
+      "scrollHeight": 886,
+      "active": {
+        "id": "offlineBtn",
+        "tag": "BUTTON",
+        "name": "Çevrimdışı"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "offline",
+      "enabled": true
+    },
+    "result": {
+      "offline": true
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#offlineList .grant-row:has-text('· PDF ·') button:text-is('Aç')"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1265,
+      "scrollHeight": 886,
+      "active": {
+        "id": "",
+        "tag": "BUTTON",
+        "name": "Aç"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "eval",
+      "code": "fetch('/api/health?probe='+Date.now(),{cache:'no-store'}).then(r=>({networkBlocked:false,status:r.status})).catch(e=>({networkBlocked:true,online:navigator.onLine,text:document.querySelector('#textLayer').innerText,canvasWidth:document.querySelector('#canvas').width}))"
+    },
+    "result": {
+      "networkBlocked": true,
+      "online": false,
+      "text": "Dummy PDF file",
+      "canvasWidth": 966
+    }
+  },
+  {
+    "action": {
+      "op": "snapshot",
+      "name": "offline-pdf-final"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1280,
+      "scrollHeight": 910,
+      "active": {
+        "id": "closeReader",
+        "tag": "BUTTON",
+        "name": "Kapat"
+      },
+      "screenshot": "C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\tmp\\a11y-audit\\evidence\\offline-pdf-final.png"
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#closeReader"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1265,
+      "scrollHeight": 910,
+      "active": {
+        "id": "closeReader",
+        "tag": "BUTTON",
+        "name": "Kapat"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#offlineBtn"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1265,
+      "scrollHeight": 886,
+      "active": {
+        "id": "offlineBtn",
+        "tag": "BUTTON",
+        "name": "Çevrimdışı"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "offline",
+      "enabled": true
+    },
+    "result": {
+      "offline": true
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#offlineList .grant-row:has-text('· EPUB ·') button:text-is('Aç')"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1265,
+      "scrollHeight": 886,
+      "active": {
+        "id": "",
+        "tag": "BUTTON",
+        "name": "Aç"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "eval",
+      "code": "fetch('/api/health?probe='+Date.now(),{cache:'no-store'}).then(r=>({networkBlocked:false,status:r.status})).catch(e=>({networkBlocked:true,online:navigator.onLine,heading:document.querySelector('#epubView iframe').contentDocument.querySelector('h1')?.innerText}))"
+    },
+    "result": {
+      "networkBlocked": true,
+      "online": true,
+      "heading": "Akademik okuma"
+    }
+  },
+  {
+    "action": {
+      "op": "snapshot",
+      "name": "offline-epub-final"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1280,
+      "scrollHeight": 886,
+      "active": {
+        "id": "closeReader",
+        "tag": "BUTTON",
+        "name": "Kapat"
+      },
+      "screenshot": "C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\tmp\\a11y-audit\\evidence\\offline-epub-final.png"
+    }
+  },
+  {
+    "action": {
+      "op": "offline",
+      "enabled": false
+    },
+    "result": {
+      "offline": false
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#closeReader"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1265,
+      "scrollHeight": 886,
+      "active": {
+        "id": "offlineBtn",
+        "tag": "BUTTON",
+        "name": "Çevrimdışı"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#logoutBtn"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1265,
+      "scrollHeight": 886,
+      "active": {
+        "id": "logoutBtn",
+        "tag": "BUTTON",
+        "name": "Çıkış"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "fill",
+      "selector": "#loginPassword",
+      "value": "wrong-a11y-probe"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1280,
+      "scrollHeight": 762,
+      "active": {
+        "id": "loginPassword",
+        "tag": "INPUT",
+        "name": ""
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "press",
+      "keys": "Enter"
+    },
+    "result": {
+      "width": 1280,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1280,
+      "scrollHeight": 762,
+      "active": {
+        "id": "loginPassword",
+        "tag": "INPUT",
+        "name": ""
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "zoom",
+      "percent": 200
+    },
+    "result": {
+      "width": 640,
+      "height": 381,
+      "dpr": 2.5,
+      "scrollWidth": 632,
+      "scrollHeight": 448,
+      "active": {
+        "id": "loginPassword",
+        "tag": "INPUT",
+        "name": ""
+      },
+      "baselineDpr": 1.25
+    }
+  },
+  {
+    "action": {
+      "op": "eval",
+      "code": "(()=>{const e=document.querySelector('#loginScreen');const b=document.querySelector('#loginForm button[type=submit]');b.focus();e.scrollTop=10000;window.scrollTo(0,10000);return {width:innerWidth,height:innerHeight,dpr:devicePixelRatio,error:document.querySelector('#loginError').innerText,card:document.querySelector('.login-card').getBoundingClientRect().toJSON(),button:b.getBoundingClientRect().toJSON(),screenScroll:e.scrollTop,overflow:getComputedStyle(e).overflow}})()"
+    },
+    "result": {
+      "width": 640,
+      "height": 381,
+      "dpr": 2.5,
+      "error": "E-posta veya parola hatalı.",
+      "card": {
+        "x": 126.20000457763672,
+        "y": 20,
+        "width": 380,
+        "height": 424.0500183105469,
+        "top": 20,
+        "right": 506.2000045776367,
+        "bottom": 444.0500183105469,
+        "left": 126.20000457763672
+      },
+      "button": {
+        "x": 151,
+        "y": 378.1499938964844,
+        "width": 330.3999938964844,
+        "height": 41.10000228881836,
+        "top": 378.1499938964844,
+        "right": 481.3999938964844,
+        "bottom": 419.24999618530273,
+        "left": 151
+      },
+      "screenScroll": 0,
+      "overflow": "visible"
+    }
+  }
+]

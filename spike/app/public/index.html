@@ -9,7 +9,7 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/icons/icon-180.png" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=40" />
+  <link rel="stylesheet" href="/styles.css?v=41" />
   <link rel="prefetch" href="/vendor/pdfjs/pdf.worker.mjs" as="script" />
 </head>
 <body>
@@ -352,6 +352,7 @@
           <strong>Notlar ve vurgular</strong>
           <div class="notes-head-right">
             <span id="pageLabel" aria-live="polite">1 / 1</span>
+            <button class="mini-btn" id="closeNotes" type="button" aria-label="Notları kapat">✕</button>
             <button class="mini-btn" id="exportMd" type="button" title="Markdown olarak indir">MD</button>
             <button class="mini-btn" id="exportJson" type="button" title="JSON olarak indir">JSON</button>
           </div>
@@ -398,6 +399,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=104"></script>
+  <script type="module" src="/app.js?v=105"></script>
 </body>
 </html>

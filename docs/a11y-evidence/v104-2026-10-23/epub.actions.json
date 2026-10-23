@@ -1,0 +1,137 @@
+[
+  {
+    "action": {
+      "op": "press",
+      "keys": "Escape"
+    },
+    "result": {
+      "width": 314,
+      "height": 190,
+      "dpr": 5,
+      "scrollWidth": 310,
+      "scrollHeight": 1091,
+      "active": {
+        "id": "",
+        "tag": "BUTTON",
+        "name": "Düzenle"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "zoom",
+      "percent": 100
+    },
+    "result": {
+      "width": 1258,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1243,
+      "scrollHeight": 886,
+      "active": {
+        "id": "",
+        "tag": "BUTTON",
+        "name": "Düzenle"
+      },
+      "baselineDpr": 1.25
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#grid .open-btn[aria-label^='EPUB']"
+    },
+    "result": {
+      "width": 1258,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1258,
+      "scrollHeight": 886,
+      "active": {
+        "id": "",
+        "tag": "BODY",
+        "name": "İçeriğe atla\n  \n    \n      A\n      Akademik Platform\n      EN\n      \n        Okuyucu: reader@example"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "snapshot",
+      "name": "epub-100"
+    },
+    "result": {
+      "width": 1258,
+      "height": 762,
+      "dpr": 1.25,
+      "scrollWidth": 1258,
+      "scrollHeight": 886,
+      "active": {
+        "id": "closeReader",
+        "tag": "BUTTON",
+        "name": "Kapat"
+      },
+      "screenshot": "C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\tmp\\a11y-audit\\evidence\\epub-100.png"
+    }
+  },
+  {
+    "action": {
+      "op": "axe",
+      "name": "epub-frames"
+    },
+    "result": [
+      {
+        "url": "http://127.0.0.1:45841/?book=a1defff4-759a-4928-b598-64ec06cdd307&cfi=epubcfi%28%2F6%2F2%21%2F4%2F2%2F1%3A0%29",
+        "violations": [],
+        "incomplete": 1
+      },
+      {
+        "url": "about:srcdoc",
+        "error": "frame.evaluate: Frame was detached"
+      }
+    ]
+  },
+  {
+    "action": {
+      "op": "eval",
+      "code": "({frames:[...document.querySelectorAll('#epubView iframe')].map(e=>({title:e.title,lang:e.lang,sandbox:e.getAttribute('sandbox'),rect:e.getBoundingClientRect().toJSON()})),readerText:document.querySelector('#readerMeta').innerText})"
+    },
+    "result": {
+      "frames": [
+        {
+          "title": "EPUB içeriği",
+          "lang": "",
+          "sandbox": "allow-same-origin",
+          "rect": {
+            "x": 16,
+            "y": 75.05000305175781,
+            "width": 1248,
+            "height": 671,
+            "top": 75.05000305175781,
+            "right": 1264,
+            "bottom": 746.0500030517578,
+            "left": 16
+          }
+        }
+      ],
+      "readerText": "EPUB · 2 bölüm"
+    }
+  },
+  {
+    "action": {
+      "op": "frameEval",
+      "code": "({lang:document.documentElement.lang,title:document.title,text:document.body.innerText.slice(0,1200),headings:[...document.querySelectorAll('h1,h2,h3')].map(e=>({tag:e.tagName,text:e.textContent})),links:[...document.querySelectorAll('a')].map(e=>({text:e.textContent,href:e.getAttribute('href')}))})"
+    },
+    "result": {
+      "lang": "",
+      "title": "Akademik okuma",
+      "text": "Akademik okuma\n\nBu dosya, EPUB motoru adaptörünü denemek için üretilmiş küçük bir kamu malı metindir.\n\nMetin seçimi, vurgu, içindekiler ve arama akışını sınamak için yeterli cümle içerir.\n\nAkademik okuma; kaynağı anlamak, not almak ve atıf vermekle ilgilidir.",
+      "headings": [
+        {
+          "tag": "H1",
+          "text": "Akademik okuma"
+        }
+      ],
+      "links": []
+    }
+  }
+]

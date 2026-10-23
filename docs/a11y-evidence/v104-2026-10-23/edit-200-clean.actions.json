@@ -1,0 +1,167 @@
+[
+  {
+    "action": {
+      "op": "press",
+      "keys": "Escape"
+    },
+    "result": {
+      "width": 320,
+      "height": 190,
+      "dpr": 5,
+      "scrollWidth": 316,
+      "scrollHeight": 1063,
+      "active": {
+        "id": "",
+        "tag": "BUTTON",
+        "name": "Düzenle"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "zoom",
+      "percent": 200
+    },
+    "result": {
+      "width": 640,
+      "height": 381,
+      "dpr": 2.5,
+      "scrollWidth": 632,
+      "scrollHeight": 1003,
+      "active": {
+        "id": "",
+        "tag": "BUTTON",
+        "name": "Düzenle"
+      },
+      "baselineDpr": 1.25
+    }
+  },
+  {
+    "action": {
+      "op": "click",
+      "selector": "#grid .card:has(.open-btn[aria-label^='Diş']) .edit-btn:not(.offline-card-btn)"
+    },
+    "result": {
+      "width": 640,
+      "height": 381,
+      "dpr": 2.5,
+      "scrollWidth": 632,
+      "scrollHeight": 1003,
+      "active": {
+        "id": "",
+        "tag": "BUTTON",
+        "name": "Düzenle"
+      }
+    }
+  },
+  {
+    "action": {
+      "op": "eval",
+      "code": "__auditModal()"
+    },
+    "result": {
+      "id": "editModal",
+      "width": 640,
+      "height": 381,
+      "dpr": 2.5,
+      "overflow": "visible",
+      "scrollTop": 0,
+      "card": {
+        "x": 56.20000076293945,
+        "y": 20,
+        "width": 520,
+        "height": 581.2000122070312,
+        "top": 20,
+        "right": 576.2000007629395,
+        "bottom": 601.2000122070312,
+        "left": 56.20000076293945
+      },
+      "controls": [
+        {
+          "id": "closeEdit",
+          "text": "✕",
+          "top": 38,
+          "bottom": 70
+        },
+        {
+          "id": "editTitle",
+          "text": null,
+          "top": 106,
+          "bottom": 143.60000228881836
+        },
+        {
+          "id": "editSubtitle",
+          "text": null,
+          "top": 175.60000610351562,
+          "bottom": 213.20000839233398
+        },
+        {
+          "id": "editAuthors",
+          "text": null,
+          "top": 245.1999969482422,
+          "bottom": 282.79999923706055
+        },
+        {
+          "id": "editAllowCopy",
+          "text": null,
+          "top": 294.9250183105469,
+          "bottom": 307.9250183105469
+        },
+        {
+          "id": "editAllowDownload",
+          "text": null,
+          "top": 294.9250183105469,
+          "bottom": 307.9250183105469
+        },
+        {
+          "id": "editAllowPrint",
+          "text": null,
+          "top": 322.1750183105469,
+          "bottom": 335.1750183105469
+        },
+        {
+          "id": "editWatermark",
+          "text": null,
+          "top": 322.1750183105469,
+          "bottom": 335.1750183105469
+        },
+        {
+          "id": "editLanguage",
+          "text": null,
+          "top": 359.3000183105469,
+          "bottom": 396.5000190734863
+        },
+        {
+          "id": "editYear",
+          "text": null,
+          "top": 359.3000183105469,
+          "bottom": 396.90002059936523
+        },
+        {
+          "id": "editPublisher",
+          "text": null,
+          "top": 428.8999938964844,
+          "bottom": 466.49999618530273
+        },
+        {
+          "id": "editSubjects",
+          "text": null,
+          "top": 498.5,
+          "bottom": 536.1000022888184
+        },
+        {
+          "id": "cancelEdit",
+          "text": "Vazgeç",
+          "top": 546.1000366210938,
+          "bottom": 583.2000389099121
+        },
+        {
+          "id": "",
+          "text": "Kaydet",
+          "top": 546.1000366210938,
+          "bottom": 583.2000389099121
+        }
+      ]
+    }
+  }
+]
