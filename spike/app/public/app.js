@@ -1386,12 +1386,13 @@ function syncPanelA11y() {
 
 function setNotesOpen(open) {
   const next = Boolean(open);
+  const hadFocus = notesPanel.contains(document.activeElement);
   notesPanel.hidden = !next;
   syncPanelA11y();
   if (next) {
     if (window.innerWidth < 820) tocPanel.hidden = true;
     setTimeout(() => $('noteFilter').focus(), 0);
-  } else if (notesPanel.contains(document.activeElement)) {
+  } else if (hadFocus) {
     $('toggleNotes').focus();
   }
 }
@@ -3525,8 +3526,13 @@ document.addEventListener('keydown', (event) => {
   }
   if (typing) {
     if (event.key === 'Escape') {
-      event.target.blur();
-      if (!tocPanel.hidden) toggleToc(false);
+      if (!notesPanel.hidden && notesPanel.contains(event.target)) {
+        event.preventDefault();
+        setNotesOpen(false);
+      } else {
+        event.target.blur();
+        if (!tocPanel.hidden) toggleToc(false);
+      }
     }
     return;
   }

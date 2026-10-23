@@ -1,0 +1,143 @@
+{
+  "date": "2026-10-23",
+  "frontend": "v105",
+  "gitHead": "90ed1a28df9f9bab96f1ed8a069796a7a7e0320e",
+  "browser": "155.0.4283.45",
+  "url": "http://127.0.0.1:47660/?v=105",
+  "method": "Native Edge browser zoom with measured DPR; screenshot through CDP without clipping; local demo copy; no screen-reader claim",
+  "sources": [
+    {
+      "file": "spike/app/server.mjs",
+      "sha256": "13fcf43c188ea016651f0235553e0601e54c2625c1a7094254dc524f8b33a4f3"
+    },
+    {
+      "file": "spike/app/indexer.mjs",
+      "sha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f"
+    },
+    {
+      "file": "spike/app/public/index.html",
+      "sha256": "0aedd8cc11ef2b4b03e547825b309b2c9c2c1fe4c4bdcf50df5652e90c0e7df2"
+    },
+    {
+      "file": "spike/app/public/app.js",
+      "sha256": "5adcb12ab3c219dbabe725194c7ef24e954a0dbb207d4bc95298138d04f5da9e"
+    },
+    {
+      "file": "spike/app/public/styles.css",
+      "sha256": "a8fa7fd5eb2278cd84128d95ae6b0d0ee9114649c1aed245b491167f0afbf02f"
+    },
+    {
+      "file": "spike/app/public/epub-engine.mjs",
+      "sha256": "8299599cd7a245d6d2916b211b99f8e5d69bc536e27490f2ae0c7b12f1472306"
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "browser-console.json",
+      "bytes": 7518,
+      "sha256": "e29611460ed88181a7332c165af3f271a5f792b1b6e80f0aaf552ccd39310b40"
+    },
+    {
+      "file": "edit-200.png",
+      "bytes": 179617,
+      "sha256": "71c45ac3211efc8a1af7d7858ddce278b90080983953115c90255565815f87fe"
+    },
+    {
+      "file": "edit-400.png",
+      "bytes": 134727,
+      "sha256": "707e1e63fb30f77df6f7c5222fa4dd407e94013d6d652e414cc163e72ef4ba28"
+    },
+    {
+      "file": "epub-chapter-2.png",
+      "bytes": 46379,
+      "sha256": "0c652601b95e192fa4a77507c68cb6b1ba1aadb470b96040cc79c173d5e53001"
+    },
+    {
+      "file": "epub-initial.png",
+      "bytes": 46005,
+      "sha256": "ba20087e932eee9f67b2a6213e84694954f4b83f96615fb5d8b31f92bf2f5d33"
+    },
+    {
+      "file": "epub-zoom-100.png",
+      "bytes": 45631,
+      "sha256": "83b91778955e942a09591bbb10ce813258c243718b196191bfac83479e195b1a"
+    },
+    {
+      "file": "epub-zoom-200.png",
+      "bytes": 86113,
+      "sha256": "02334292e57250aa8c2845bdb9f6fcf04f2214bf6797503aef7ef973f8b8d0cf"
+    },
+    {
+      "file": "epub-zoom-400.png",
+      "bytes": 51949,
+      "sha256": "0470da51dc50ae47e069db1c0787ee2e0b4dc2664e3308dd8a2ad43c254b282d"
+    },
+    {
+      "file": "grants-200.png",
+      "bytes": 148742,
+      "sha256": "62ee5c177b900d2fcf8873841a9c2c4806e6619c3218361da341a2e35fc775c0"
+    },
+    {
+      "file": "grants-400.png",
+      "bytes": 69510,
+      "sha256": "6e0d6fb06eee9995f9671316730e2034c2f7f2e75c0c142f1a26e23e727d8d08"
+    },
+    {
+      "file": "login-error-200.png",
+      "bytes": 182818,
+      "sha256": "a676ac1fd6459e5be77e6adb81ced76faa3d8938b5c7801a42da60265e53ec30"
+    },
+    {
+      "file": "login-error-400.png",
+      "bytes": 99396,
+      "sha256": "05da7e8c2b939fccb20a171d9c6189a14053141dd14cc76915a3bd6a95d609b1"
+    },
+    {
+      "file": "notes-closed-400.png",
+      "bytes": 59743,
+      "sha256": "a364e54dc02fea564f591500d92099fd8a234ef7a8f9c93546af6faab0c39d15"
+    },
+    {
+      "file": "notes-escape-400.png",
+      "bytes": 64001,
+      "sha256": "ec2c5f1f43d3f7da2a29768da81ffc3d7e8dd6b175f71a03da18a2ec2a03cb9c"
+    },
+    {
+      "file": "notes-open-400.png",
+      "bytes": 67812,
+      "sha256": "e6b8387ce72e676d1c133557aa538630088dc5e1b9bfce4b2ed5d438233f677e"
+    },
+    {
+      "file": "pdf-highlight-toolbar.axe.json",
+      "bytes": 8434,
+      "sha256": "2068f6ba999246ae2000954f6b62df654236084ee5433afc472a76fc4752b8be"
+    },
+    {
+      "file": "pdf-highlight-toolbar.png",
+      "bytes": 49687,
+      "sha256": "602840837f524fc76a6f6947649fea9eae7213d320e6ef978646ce702a655d71"
+    },
+    {
+      "file": "production-version.json",
+      "bytes": 338,
+      "sha256": "b154ac1f53f3aa6921775390b64f370881d49332de3e5259dbd6676a704b0bd9"
+    },
+    {
+      "file": "results.json",
+      "bytes": 40391,
+      "sha256": "b6ce166a57123b64231b5319aff431336577cc56372b73c5b6117b7daad58da9"
+    },
+    {
+      "file": "upload-200.png",
+      "bytes": 123073,
+      "sha256": "a2bfcf5d510e1e7aca065f1d26f6cb60c31343b55c25f8208aa1d201dbf32207"
+    },
+    {
+      "file": "upload-400.png",
+      "bytes": 119959,
+      "sha256": "d6047337c8fbe19f630c5ab7823e19fe56f9496e2ca9fc72f668f717b78d5b39"
+    }
+  ],
+  "deployGatePass": false,
+  "productionVersion": "v104; read-only verification; no deployment"
+}

@@ -1,0 +1,1638 @@
+{
+  "date": "2026-10-23",
+  "frontend": "v105",
+  "stylesheet": 41,
+  "scope": "F1-F5 local retest; no NVDA/VoiceOver or full iframe axe pass",
+  "cases": [
+    {
+      "id": "F3-login-200",
+      "status": "PASS",
+      "initial": {
+        "width": 640,
+        "height": 381,
+        "dpr": 2.5,
+        "scrollTop": 0,
+        "scrollHeight": 464,
+        "clientHeight": 381,
+        "scrollWidth": 625,
+        "clientWidth": 625,
+        "overflowY": "auto",
+        "button": {
+          "x": 147.1999969482422,
+          "y": 378.1499938964844,
+          "width": 330.3999938964844,
+          "height": 41.10000228881836,
+          "top": 378.1499938964844,
+          "right": 477.59999084472656,
+          "bottom": 419.24999618530273,
+          "left": 147.1999969482422
+        },
+        "fullyVisible": false,
+        "active": "loginPassword",
+        "focusVisible": true
+      },
+      "keyboard": {
+        "width": 640,
+        "height": 381,
+        "dpr": 2.5,
+        "scrollTop": 38,
+        "scrollHeight": 464,
+        "clientHeight": 381,
+        "scrollWidth": 625,
+        "clientWidth": 625,
+        "overflowY": "auto",
+        "button": {
+          "x": 147.1999969482422,
+          "y": 340.1499938964844,
+          "width": 330.3999938964844,
+          "height": 41.10000228881836,
+          "top": 340.1499938964844,
+          "right": 477.59999084472656,
+          "bottom": 381.24999618530273,
+          "left": 147.1999969482422
+        },
+        "fullyVisible": true,
+        "active": "",
+        "focusVisible": true
+      },
+      "wheel": {
+        "width": 640,
+        "height": 381,
+        "dpr": 2.5,
+        "scrollTop": 82.80000305175781,
+        "scrollHeight": 464,
+        "clientHeight": 381,
+        "scrollWidth": 625,
+        "clientWidth": 625,
+        "overflowY": "auto",
+        "button": {
+          "x": 147.1999969482422,
+          "y": 295.3500061035156,
+          "width": 330.3999938964844,
+          "height": 41.10000228881836,
+          "top": 295.3500061035156,
+          "right": 477.59999084472656,
+          "bottom": 336.450008392334,
+          "left": 147.1999969482422
+        },
+        "fullyVisible": true,
+        "active": "",
+        "focusVisible": true
+      },
+      "pass": true,
+      "screenshot": {
+        "file": "login-error-200.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 640,
+        "height": 381,
+        "dpr": 2.5,
+        "documentWidth": 632,
+        "active": "",
+        "focusVisible": true
+      }
+    },
+    {
+      "id": "F3-login-400",
+      "status": "PASS",
+      "initial": {
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "scrollTop": 0,
+        "scrollHeight": 458,
+        "clientHeight": 191,
+        "scrollWidth": 312,
+        "clientWidth": 312,
+        "overflowY": "auto",
+        "button": {
+          "x": 41,
+          "y": 375.75,
+          "width": 230.40000915527344,
+          "height": 41.5,
+          "top": 375.75,
+          "right": 271.40000915527344,
+          "bottom": 417.25,
+          "left": 41
+        },
+        "fullyVisible": false,
+        "active": "",
+        "focusVisible": true
+      },
+      "keyboard": {
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "scrollTop": 226.60000610351562,
+        "scrollHeight": 458,
+        "clientHeight": 191,
+        "scrollWidth": 312,
+        "clientWidth": 312,
+        "overflowY": "auto",
+        "button": {
+          "x": 41,
+          "y": 149.15000915527344,
+          "width": 230.40000915527344,
+          "height": 41.5,
+          "top": 149.15000915527344,
+          "right": 271.40000915527344,
+          "bottom": 190.65000915527344,
+          "left": 41
+        },
+        "fullyVisible": true,
+        "active": "",
+        "focusVisible": true
+      },
+      "wheel": {
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "scrollTop": 267.6000061035156,
+        "scrollHeight": 458,
+        "clientHeight": 191,
+        "scrollWidth": 312,
+        "clientWidth": 312,
+        "overflowY": "auto",
+        "button": {
+          "x": 41,
+          "y": 108.1500015258789,
+          "width": 230.40000915527344,
+          "height": 41.5,
+          "top": 108.1500015258789,
+          "right": 271.40000915527344,
+          "bottom": 149.6500015258789,
+          "left": 41
+        },
+        "fullyVisible": true,
+        "active": "",
+        "focusVisible": true
+      },
+      "pass": true,
+      "screenshot": {
+        "file": "login-error-400.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "documentWidth": 316,
+        "active": "",
+        "focusVisible": true
+      }
+    },
+    {
+      "id": "F4-edit-200",
+      "status": "PASS",
+      "initial": {
+        "width": 640,
+        "height": 381,
+        "dpr": 2.5,
+        "scrollTop": 0,
+        "scrollHeight": 621,
+        "clientHeight": 381,
+        "scrollWidth": 625,
+        "clientWidth": 625,
+        "overflowY": "auto",
+        "button": {
+          "x": 485.5562438964844,
+          "y": 546.1000366210938,
+          "width": 68.84375,
+          "height": 37.10000228881836,
+          "top": 546.1000366210938,
+          "right": 554.3999938964844,
+          "bottom": 583.2000389099121,
+          "left": 485.5562438964844
+        },
+        "fullyVisible": false,
+        "active": "editTitle",
+        "focusVisible": true
+      },
+      "keyboard": {
+        "width": 640,
+        "height": 381,
+        "dpr": 2.5,
+        "scrollTop": 240,
+        "scrollHeight": 621,
+        "clientHeight": 381,
+        "scrollWidth": 625,
+        "clientWidth": 625,
+        "overflowY": "auto",
+        "button": {
+          "x": 485.5562438964844,
+          "y": 306.1000061035156,
+          "width": 68.84375,
+          "height": 37.10000228881836,
+          "top": 306.1000061035156,
+          "right": 554.3999938964844,
+          "bottom": 343.200008392334,
+          "left": 485.5562438964844
+        },
+        "fullyVisible": true,
+        "active": "",
+        "focusVisible": true
+      },
+      "wheel": {
+        "width": 640,
+        "height": 381,
+        "dpr": 2.5,
+        "scrollTop": 240,
+        "scrollHeight": 621,
+        "clientHeight": 381,
+        "scrollWidth": 625,
+        "clientWidth": 625,
+        "overflowY": "auto",
+        "button": {
+          "x": 485.5562438964844,
+          "y": 306.1000061035156,
+          "width": 68.84375,
+          "height": 37.10000228881836,
+          "top": 306.1000061035156,
+          "right": 554.3999938964844,
+          "bottom": 343.200008392334,
+          "left": 485.5562438964844
+        },
+        "fullyVisible": true,
+        "active": "",
+        "focusVisible": true
+      },
+      "pass": true,
+      "reachability": [
+        {
+          "id": "closeEdit",
+          "tag": "BUTTON",
+          "visible": true
+        },
+        {
+          "id": "editTitle",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "editSubtitle",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "editAuthors",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "editAllowCopy",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "editAllowDownload",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "editAllowPrint",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "editWatermark",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "editLanguage",
+          "tag": "SELECT",
+          "visible": true
+        },
+        {
+          "id": "editYear",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "editPublisher",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "editSubjects",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "cancelEdit",
+          "tag": "BUTTON",
+          "visible": true
+        },
+        {
+          "id": "",
+          "tag": "BUTTON",
+          "visible": true
+        }
+      ],
+      "screenshot": {
+        "file": "edit-200.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 640,
+        "height": 381,
+        "dpr": 2.5,
+        "documentWidth": 632,
+        "active": "",
+        "focusVisible": true
+      }
+    },
+    {
+      "id": "F4-upload-200",
+      "status": "PASS",
+      "initial": {
+        "width": 640,
+        "height": 381,
+        "dpr": 2.5,
+        "scrollTop": 0,
+        "scrollHeight": 646,
+        "clientHeight": 381,
+        "scrollWidth": 625,
+        "clientWidth": 625,
+        "overflowY": "auto",
+        "button": {
+          "x": 494.7437438964844,
+          "y": 570.7999877929688,
+          "width": 59.65625,
+          "height": 37.10000228881836,
+          "top": 570.7999877929688,
+          "right": 554.3999938964844,
+          "bottom": 607.8999900817871,
+          "left": 494.7437438964844
+        },
+        "fullyVisible": false,
+        "active": "uploadFile",
+        "focusVisible": false
+      },
+      "keyboard": {
+        "width": 640,
+        "height": 381,
+        "dpr": 2.5,
+        "scrollTop": 264.79998779296875,
+        "scrollHeight": 646,
+        "clientHeight": 381,
+        "scrollWidth": 625,
+        "clientWidth": 625,
+        "overflowY": "auto",
+        "button": {
+          "x": 494.7437438964844,
+          "y": 306,
+          "width": 59.65625,
+          "height": 37.10000228881836,
+          "top": 306,
+          "right": 554.3999938964844,
+          "bottom": 343.10000228881836,
+          "left": 494.7437438964844
+        },
+        "fullyVisible": true,
+        "active": "submitUpload",
+        "focusVisible": true
+      },
+      "wheel": {
+        "width": 640,
+        "height": 381,
+        "dpr": 2.5,
+        "scrollTop": 264.79998779296875,
+        "scrollHeight": 646,
+        "clientHeight": 381,
+        "scrollWidth": 625,
+        "clientWidth": 625,
+        "overflowY": "auto",
+        "button": {
+          "x": 494.7437438964844,
+          "y": 306,
+          "width": 59.65625,
+          "height": 37.10000228881836,
+          "top": 306,
+          "right": 554.3999938964844,
+          "bottom": 343.10000228881836,
+          "left": 494.7437438964844
+        },
+        "fullyVisible": true,
+        "active": "submitUpload",
+        "focusVisible": true
+      },
+      "pass": true,
+      "reachability": [
+        {
+          "id": "closeUpload",
+          "tag": "BUTTON",
+          "visible": true
+        },
+        {
+          "id": "uploadFile",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "uploadTitle",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "uploadSubtitle",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "uploadAuthors",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "uploadLanguage",
+          "tag": "SELECT",
+          "visible": true
+        },
+        {
+          "id": "uploadYear",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "uploadPublisher",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "uploadSubjects",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "cancelUpload",
+          "tag": "BUTTON",
+          "visible": true
+        },
+        {
+          "id": "submitUpload",
+          "tag": "BUTTON",
+          "visible": true
+        }
+      ],
+      "screenshot": {
+        "file": "upload-200.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 640,
+        "height": 381,
+        "dpr": 2.5,
+        "documentWidth": 632,
+        "active": "submitUpload",
+        "focusVisible": true
+      }
+    },
+    {
+      "id": "F4-grants-200",
+      "status": "PASS",
+      "initial": {
+        "width": 640,
+        "height": 381,
+        "dpr": 2.5,
+        "scrollTop": 0,
+        "scrollHeight": 643,
+        "clientHeight": 381,
+        "scrollWidth": 625,
+        "clientWidth": 625,
+        "overflowY": "auto",
+        "button": {
+          "x": 466.2124938964844,
+          "y": 536.7999877929688,
+          "width": 88.1875,
+          "height": 37.10000228881836,
+          "top": 536.7999877929688,
+          "right": 554.3999938964844,
+          "bottom": 573.8999900817871,
+          "left": 466.2124938964844
+        },
+        "fullyVisible": false,
+        "active": "grantSubjectType",
+        "focusVisible": true
+      },
+      "keyboard": {
+        "width": 640,
+        "height": 381,
+        "dpr": 2.5,
+        "scrollTop": 261.6000061035156,
+        "scrollHeight": 643,
+        "clientHeight": 381,
+        "scrollWidth": 625,
+        "clientWidth": 625,
+        "overflowY": "auto",
+        "button": {
+          "x": 466.2124938964844,
+          "y": 275.20001220703125,
+          "width": 88.1875,
+          "height": 37.10000228881836,
+          "top": 275.20001220703125,
+          "right": 554.3999938964844,
+          "bottom": 312.3000144958496,
+          "left": 466.2124938964844
+        },
+        "fullyVisible": true,
+        "active": "",
+        "focusVisible": true
+      },
+      "wheel": {
+        "width": 640,
+        "height": 381,
+        "dpr": 2.5,
+        "scrollTop": 261.6000061035156,
+        "scrollHeight": 643,
+        "clientHeight": 381,
+        "scrollWidth": 625,
+        "clientWidth": 625,
+        "overflowY": "auto",
+        "button": {
+          "x": 466.2124938964844,
+          "y": 275.20001220703125,
+          "width": 88.1875,
+          "height": 37.10000228881836,
+          "top": 275.20001220703125,
+          "right": 554.3999938964844,
+          "bottom": 312.3000144958496,
+          "left": 466.2124938964844
+        },
+        "fullyVisible": true,
+        "active": "",
+        "focusVisible": true
+      },
+      "pass": true,
+      "reachability": [
+        {
+          "id": "closeGrants",
+          "tag": "BUTTON",
+          "visible": true
+        },
+        {
+          "id": "grantSubjectType",
+          "tag": "SELECT",
+          "visible": true
+        },
+        {
+          "id": "grantSubjectEmail",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "grantScopeType",
+          "tag": "SELECT",
+          "visible": true
+        },
+        {
+          "id": "grantSeatLimit",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "grantSource",
+          "tag": "SELECT",
+          "visible": true
+        },
+        {
+          "id": "grantGroupName",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "createGroupBtn",
+          "tag": "BUTTON",
+          "visible": true
+        },
+        {
+          "id": "grantGroupEmail",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "addGroupMemberBtn",
+          "tag": "BUTTON",
+          "visible": true
+        },
+        {
+          "id": "removeGroupMemberBtn",
+          "tag": "BUTTON",
+          "visible": true
+        },
+        {
+          "id": "cancelGrant",
+          "tag": "BUTTON",
+          "visible": true
+        },
+        {
+          "id": "",
+          "tag": "BUTTON",
+          "visible": true
+        }
+      ],
+      "screenshot": {
+        "file": "grants-200.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 640,
+        "height": 381,
+        "dpr": 2.5,
+        "documentWidth": 632,
+        "active": "",
+        "focusVisible": true
+      }
+    },
+    {
+      "id": "F4-edit-400",
+      "status": "PASS",
+      "initial": {
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "scrollTop": 0,
+        "scrollHeight": 731,
+        "clientHeight": 191,
+        "scrollWidth": 312,
+        "clientWidth": 312,
+        "overflowY": "auto",
+        "button": {
+          "x": 219.15625,
+          "y": 669,
+          "width": 69.2437515258789,
+          "height": 37.5,
+          "top": 669,
+          "right": 288.4000015258789,
+          "bottom": 706.5,
+          "left": 219.15625
+        },
+        "fullyVisible": false,
+        "active": "editTitle",
+        "focusVisible": true
+      },
+      "keyboard": {
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "scrollTop": 540,
+        "scrollHeight": 731,
+        "clientHeight": 191,
+        "scrollWidth": 312,
+        "clientWidth": 312,
+        "overflowY": "auto",
+        "button": {
+          "x": 219.15625,
+          "y": 129,
+          "width": 69.2437515258789,
+          "height": 37.5,
+          "top": 129,
+          "right": 288.4000015258789,
+          "bottom": 166.5,
+          "left": 219.15625
+        },
+        "fullyVisible": true,
+        "active": "",
+        "focusVisible": true
+      },
+      "wheel": {
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "scrollTop": 540,
+        "scrollHeight": 731,
+        "clientHeight": 191,
+        "scrollWidth": 312,
+        "clientWidth": 312,
+        "overflowY": "auto",
+        "button": {
+          "x": 219.15625,
+          "y": 129,
+          "width": 69.2437515258789,
+          "height": 37.5,
+          "top": 129,
+          "right": 288.4000015258789,
+          "bottom": 166.5,
+          "left": 219.15625
+        },
+        "fullyVisible": true,
+        "active": "",
+        "focusVisible": true
+      },
+      "pass": true,
+      "reachability": [
+        {
+          "id": "closeEdit",
+          "tag": "BUTTON",
+          "visible": true
+        },
+        {
+          "id": "editTitle",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "editSubtitle",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "editAuthors",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "editAllowCopy",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "editAllowDownload",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "editAllowPrint",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "editWatermark",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "editLanguage",
+          "tag": "SELECT",
+          "visible": true
+        },
+        {
+          "id": "editYear",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "editPublisher",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "editSubjects",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "cancelEdit",
+          "tag": "BUTTON",
+          "visible": true
+        },
+        {
+          "id": "",
+          "tag": "BUTTON",
+          "visible": true
+        }
+      ],
+      "screenshot": {
+        "file": "edit-400.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "documentWidth": 316,
+        "active": "",
+        "focusVisible": true
+      }
+    },
+    {
+      "id": "F4-upload-400",
+      "status": "PASS",
+      "initial": {
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "scrollTop": 0,
+        "scrollHeight": 701,
+        "clientHeight": 191,
+        "scrollWidth": 312,
+        "clientWidth": 312,
+        "overflowY": "auto",
+        "button": {
+          "x": 228.34375,
+          "y": 639.7999877929688,
+          "width": 60.056251525878906,
+          "height": 37.5,
+          "top": 639.7999877929688,
+          "right": 288.4000015258789,
+          "bottom": 677.2999877929688,
+          "left": 228.34375
+        },
+        "fullyVisible": false,
+        "active": "uploadFile",
+        "focusVisible": false
+      },
+      "keyboard": {
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "scrollTop": 510.79998779296875,
+        "scrollHeight": 701,
+        "clientHeight": 191,
+        "scrollWidth": 312,
+        "clientWidth": 312,
+        "overflowY": "auto",
+        "button": {
+          "x": 228.34375,
+          "y": 129,
+          "width": 60.056251525878906,
+          "height": 37.5,
+          "top": 129,
+          "right": 288.4000015258789,
+          "bottom": 166.5,
+          "left": 228.34375
+        },
+        "fullyVisible": true,
+        "active": "submitUpload",
+        "focusVisible": true
+      },
+      "wheel": {
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "scrollTop": 510.79998779296875,
+        "scrollHeight": 701,
+        "clientHeight": 191,
+        "scrollWidth": 312,
+        "clientWidth": 312,
+        "overflowY": "auto",
+        "button": {
+          "x": 228.34375,
+          "y": 129,
+          "width": 60.056251525878906,
+          "height": 37.5,
+          "top": 129,
+          "right": 288.4000015258789,
+          "bottom": 166.5,
+          "left": 228.34375
+        },
+        "fullyVisible": true,
+        "active": "submitUpload",
+        "focusVisible": true
+      },
+      "pass": true,
+      "reachability": [
+        {
+          "id": "closeUpload",
+          "tag": "BUTTON",
+          "visible": true
+        },
+        {
+          "id": "uploadFile",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "uploadTitle",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "uploadSubtitle",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "uploadAuthors",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "uploadLanguage",
+          "tag": "SELECT",
+          "visible": true
+        },
+        {
+          "id": "uploadYear",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "uploadPublisher",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "uploadSubjects",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "cancelUpload",
+          "tag": "BUTTON",
+          "visible": true
+        },
+        {
+          "id": "submitUpload",
+          "tag": "BUTTON",
+          "visible": true
+        }
+      ],
+      "screenshot": {
+        "file": "upload-400.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "documentWidth": 316,
+        "active": "submitUpload",
+        "focusVisible": true
+      }
+    },
+    {
+      "id": "F4-grants-400",
+      "status": "PASS",
+      "initial": {
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "scrollTop": 0,
+        "scrollHeight": 868,
+        "clientHeight": 191,
+        "scrollWidth": 312,
+        "clientWidth": 312,
+        "overflowY": "auto",
+        "button": {
+          "x": 199.8156280517578,
+          "y": 775.5,
+          "width": 88.5843734741211,
+          "height": 37.5,
+          "top": 775.5,
+          "right": 288.4000015258789,
+          "bottom": 813,
+          "left": 199.8156280517578
+        },
+        "fullyVisible": false,
+        "active": "grantSubjectType",
+        "focusVisible": true
+      },
+      "keyboard": {
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "scrollTop": 677.5999755859375,
+        "scrollHeight": 868,
+        "clientHeight": 191,
+        "scrollWidth": 312,
+        "clientWidth": 312,
+        "overflowY": "auto",
+        "button": {
+          "x": 199.8156280517578,
+          "y": 97.9000015258789,
+          "width": 88.5843734741211,
+          "height": 37.5,
+          "top": 97.9000015258789,
+          "right": 288.4000015258789,
+          "bottom": 135.4000015258789,
+          "left": 199.8156280517578
+        },
+        "fullyVisible": true,
+        "active": "",
+        "focusVisible": true
+      },
+      "wheel": {
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "scrollTop": 677.5999755859375,
+        "scrollHeight": 868,
+        "clientHeight": 191,
+        "scrollWidth": 312,
+        "clientWidth": 312,
+        "overflowY": "auto",
+        "button": {
+          "x": 199.8156280517578,
+          "y": 97.9000015258789,
+          "width": 88.5843734741211,
+          "height": 37.5,
+          "top": 97.9000015258789,
+          "right": 288.4000015258789,
+          "bottom": 135.4000015258789,
+          "left": 199.8156280517578
+        },
+        "fullyVisible": true,
+        "active": "",
+        "focusVisible": true
+      },
+      "pass": true,
+      "reachability": [
+        {
+          "id": "closeGrants",
+          "tag": "BUTTON",
+          "visible": true
+        },
+        {
+          "id": "grantSubjectType",
+          "tag": "SELECT",
+          "visible": true
+        },
+        {
+          "id": "grantSubjectEmail",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "grantScopeType",
+          "tag": "SELECT",
+          "visible": true
+        },
+        {
+          "id": "grantSeatLimit",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "grantSource",
+          "tag": "SELECT",
+          "visible": true
+        },
+        {
+          "id": "grantGroupName",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "createGroupBtn",
+          "tag": "BUTTON",
+          "visible": true
+        },
+        {
+          "id": "grantGroupEmail",
+          "tag": "INPUT",
+          "visible": true
+        },
+        {
+          "id": "addGroupMemberBtn",
+          "tag": "BUTTON",
+          "visible": true
+        },
+        {
+          "id": "removeGroupMemberBtn",
+          "tag": "BUTTON",
+          "visible": true
+        },
+        {
+          "id": "cancelGrant",
+          "tag": "BUTTON",
+          "visible": true
+        },
+        {
+          "id": "",
+          "tag": "BUTTON",
+          "visible": true
+        }
+      ],
+      "screenshot": {
+        "file": "grants-400.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "documentWidth": 316,
+        "active": "",
+        "focusVisible": true
+      }
+    },
+    {
+      "id": "F1-highlight",
+      "status": "PASS",
+      "pass": true,
+      "scan": {
+        "violations": [],
+        "incomplete": [
+          "color-contrast"
+        ]
+      },
+      "targets": [
+        {
+          "label": "Sarı",
+          "width": 24,
+          "height": 24
+        },
+        {
+          "label": "Yeşil",
+          "width": 24,
+          "height": 24
+        },
+        {
+          "label": "Mavi",
+          "width": 24,
+          "height": 24
+        },
+        {
+          "label": "Pembe",
+          "width": 24,
+          "height": 24
+        }
+      ],
+      "screenshot": {
+        "file": "pdf-highlight-toolbar.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 1280,
+        "height": 762,
+        "dpr": 1.25,
+        "documentWidth": 1280,
+        "active": "hlNote",
+        "focusVisible": true
+      }
+    },
+    {
+      "id": "F5-notes-keyboard",
+      "status": "FAIL",
+      "pass": false,
+      "checks": {
+        "openingFocus": true,
+        "closeButton": true,
+        "escape": false,
+        "nShortcut": true
+      },
+      "before": {
+        "active": "toggleNotes",
+        "tag": "BUTTON",
+        "focusVisible": true,
+        "rect": {
+          "x": 218.93125915527344,
+          "y": 88,
+          "width": 85.0687484741211,
+          "height": 38,
+          "top": 88,
+          "right": 304.00000762939453,
+          "bottom": 126,
+          "left": 218.93125915527344
+        },
+        "hit": "toggleNotes",
+        "hitTag": "BUTTON",
+        "unobscured": true,
+        "notesHidden": true,
+        "width": 320,
+        "height": 190
+      },
+      "opened": {
+        "active": "noteFilter",
+        "tag": "INPUT",
+        "focusVisible": true,
+        "rect": {
+          "x": 49.400001525878906,
+          "y": 61,
+          "width": 167.60000610351562,
+          "height": 31.25,
+          "top": 61,
+          "right": 217.00000762939453,
+          "bottom": 92.25,
+          "left": 49.400001525878906
+        },
+        "hit": "noteFilter",
+        "hitTag": "INPUT",
+        "unobscured": true,
+        "notesHidden": false,
+        "width": 320,
+        "height": 190
+      },
+      "closeButton": {
+        "active": "closeNotes",
+        "tag": "BUTTON",
+        "focusVisible": true,
+        "rect": {
+          "x": 200.10313415527344,
+          "y": 14,
+          "width": 24,
+          "height": 24,
+          "top": 14,
+          "right": 224.10313415527344,
+          "bottom": 38,
+          "left": 200.10313415527344
+        },
+        "hit": "closeNotes",
+        "hitTag": "BUTTON",
+        "unobscured": true,
+        "notesHidden": false,
+        "width": 320,
+        "height": 190
+      },
+      "closedByButton": {
+        "active": "toggleNotes",
+        "tag": "BUTTON",
+        "focusVisible": true,
+        "rect": {
+          "x": 218.93125915527344,
+          "y": 88,
+          "width": 85.0687484741211,
+          "height": 38,
+          "top": 88,
+          "right": 304.00000762939453,
+          "bottom": 126,
+          "left": 218.93125915527344
+        },
+        "hit": "toggleNotes",
+        "hitTag": "BUTTON",
+        "unobscured": true,
+        "notesHidden": true,
+        "width": 320,
+        "height": 190
+      },
+      "reopened": {
+        "active": "noteFilter",
+        "tag": "INPUT",
+        "focusVisible": true,
+        "rect": {
+          "x": 49.400001525878906,
+          "y": 61,
+          "width": 167.60000610351562,
+          "height": 31.25,
+          "top": 61,
+          "right": 217.00000762939453,
+          "bottom": 92.25,
+          "left": 49.400001525878906
+        },
+        "hit": "noteFilter",
+        "hitTag": "INPUT",
+        "unobscured": true,
+        "notesHidden": false,
+        "width": 320,
+        "height": 190
+      },
+      "firstEscape": {
+        "active": "",
+        "tag": "BODY",
+        "focusVisible": false,
+        "rect": {
+          "x": 0,
+          "y": -122.5999984741211,
+          "width": 320,
+          "height": 190.60000610351562,
+          "top": -122.5999984741211,
+          "right": 320,
+          "bottom": 68.00000762939453,
+          "left": 0
+        },
+        "unobscured": false,
+        "notesHidden": false,
+        "width": 320,
+        "height": 190
+      },
+      "secondEscape": {
+        "active": "",
+        "tag": "BODY",
+        "focusVisible": false,
+        "rect": {
+          "x": 0,
+          "y": -122.5999984741211,
+          "width": 320,
+          "height": 190.60000610351562,
+          "top": -122.5999984741211,
+          "right": 320,
+          "bottom": 68.00000762939453,
+          "left": 0
+        },
+        "unobscured": false,
+        "notesHidden": true,
+        "width": 320,
+        "height": 190
+      },
+      "openedByN": {
+        "active": "noteFilter",
+        "tag": "INPUT",
+        "focusVisible": true,
+        "rect": {
+          "x": 49.400001525878906,
+          "y": 61,
+          "width": 167.60000610351562,
+          "height": 31.25,
+          "top": 61,
+          "right": 217.00000762939453,
+          "bottom": 92.25,
+          "left": 49.400001525878906
+        },
+        "hit": "noteFilter",
+        "hitTag": "INPUT",
+        "unobscured": true,
+        "notesHidden": false,
+        "width": 320,
+        "height": 190
+      },
+      "closedByN": {
+        "active": "toggleNotes",
+        "tag": "BUTTON",
+        "focusVisible": true,
+        "rect": {
+          "x": 218.93125915527344,
+          "y": 88,
+          "width": 85.0687484741211,
+          "height": 38,
+          "top": 88,
+          "right": 304.00000762939453,
+          "bottom": 126,
+          "left": 218.93125915527344
+        },
+        "hit": "toggleNotes",
+        "hitTag": "BUTTON",
+        "unobscured": true,
+        "notesHidden": true,
+        "width": 320,
+        "height": 190
+      },
+      "screenshots": [
+        {
+          "file": "notes-open-400.png",
+          "pixels": {
+            "width": 1600,
+            "height": 953
+          },
+          "width": 320,
+          "height": 190,
+          "dpr": 5,
+          "documentWidth": 320,
+          "active": "noteFilter",
+          "focusVisible": true
+        },
+        {
+          "file": "notes-closed-400.png",
+          "pixels": {
+            "width": 1600,
+            "height": 953
+          },
+          "width": 320,
+          "height": 190,
+          "dpr": 5,
+          "documentWidth": 320,
+          "active": "toggleNotes",
+          "focusVisible": true
+        },
+        {
+          "file": "notes-escape-400.png",
+          "pixels": {
+            "width": 1600,
+            "height": 953
+          },
+          "width": 320,
+          "height": 190,
+          "dpr": 5,
+          "documentWidth": 320,
+          "active": "",
+          "focusVisible": false
+        }
+      ]
+    },
+    {
+      "id": "F2-epub-initial",
+      "status": "PASS",
+      "pass": true,
+      "frames": [
+        {
+          "title": "EPUB içeriği",
+          "frameLang": "tr",
+          "sandbox": "allow-same-origin",
+          "type": "text/html",
+          "htmlLang": "tr",
+          "xmlLang": "tr",
+          "heading": "Akademik okuma",
+          "body": "Akademik okuma\n\nBu dosya, EPUB motoru adaptörünü denemek için üretilmiş küçük bir kamu malı metindir.\n\nMetin seçimi, vurgu, içindekiler ve arama akışını sınamak için yeterli cümle içerir.\n\nAkademik ok"
+        }
+      ],
+      "screenshot": {
+        "file": "epub-initial.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 1280,
+        "height": 762,
+        "dpr": 1.25,
+        "documentWidth": 1280,
+        "active": "closeReader",
+        "focusVisible": false
+      }
+    },
+    {
+      "id": "F2-epub-zoom-200",
+      "status": "PASS",
+      "pass": true,
+      "frames": [
+        {
+          "title": "EPUB içeriği",
+          "frameLang": "tr",
+          "sandbox": "allow-same-origin",
+          "type": "text/html",
+          "htmlLang": "tr",
+          "xmlLang": "tr",
+          "heading": "Akademik okuma",
+          "body": "Akademik okuma\n\nBu dosya, EPUB motoru adaptörünü denemek için üretilmiş küçük bir kamu malı metindir.\n\nMetin seçimi, vurgu, içindekiler ve arama akışını sınamak için yeterli cümle içerir.\n\nAkademik ok"
+        }
+      ],
+      "screenshot": {
+        "file": "epub-zoom-200.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 640,
+        "height": 381,
+        "dpr": 2.5,
+        "documentWidth": 640,
+        "active": "closeReader",
+        "focusVisible": false
+      }
+    },
+    {
+      "id": "F2-epub-zoom-400",
+      "status": "PASS",
+      "pass": true,
+      "frames": [
+        {
+          "title": "EPUB içeriği",
+          "frameLang": "tr",
+          "sandbox": "allow-same-origin",
+          "type": "text/html",
+          "htmlLang": "tr",
+          "xmlLang": "tr",
+          "heading": "Akademik okuma",
+          "body": "Akademik okuma\n\nBu dosya, EPUB motoru adaptörünü denemek için üretilmiş küçük bir kamu malı metindir.\n\nMetin seçimi, vurgu, içindekiler ve arama akışını sınamak için yeterli cümle içerir.\n\nAkademik ok"
+        }
+      ],
+      "screenshot": {
+        "file": "epub-zoom-400.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 320,
+        "height": 190,
+        "dpr": 5,
+        "documentWidth": 320,
+        "active": "closeReader",
+        "focusVisible": false
+      }
+    },
+    {
+      "id": "F2-epub-zoom-100",
+      "status": "PASS",
+      "pass": true,
+      "frames": [
+        {
+          "title": "EPUB içeriği",
+          "frameLang": "tr",
+          "sandbox": "allow-same-origin",
+          "type": "text/html",
+          "htmlLang": "tr",
+          "xmlLang": "tr",
+          "heading": "Akademik okuma",
+          "body": "Akademik okuma\n\nBu dosya, EPUB motoru adaptörünü denemek için üretilmiş küçük bir kamu malı metindir.\n\nMetin seçimi, vurgu, içindekiler ve arama akışını sınamak için yeterli cümle içerir.\n\nAkademik ok"
+        }
+      ],
+      "screenshot": {
+        "file": "epub-zoom-100.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 1280,
+        "height": 762,
+        "dpr": 1.25,
+        "documentWidth": 1280,
+        "active": "",
+        "focusVisible": false
+      }
+    },
+    {
+      "id": "F2-epub-chapter",
+      "status": "PASS",
+      "pass": true,
+      "labels": [
+        "Akademik okuma",
+        "Notlar ve atıflar"
+      ],
+      "frames": [
+        {
+          "title": "EPUB içeriği",
+          "frameLang": "tr",
+          "sandbox": "allow-same-origin",
+          "type": "text/html",
+          "htmlLang": "tr",
+          "xmlLang": "tr",
+          "heading": "Notlar ve atıflar",
+          "body": "Notlar ve atıflar\n\nVurgular CFI aralığı olarak saklanır; sayfa numarası yerine konum kullanılır.\n\nBir EPUB dosyasında arama yapmak için bölüm metinlerini çıkarmak gerekir.\n\nBu ikinci bölüm, içindekile"
+        }
+      ],
+      "screenshot": {
+        "file": "epub-chapter-2.png",
+        "pixels": {
+          "width": 1600,
+          "height": 953
+        },
+        "width": 1280,
+        "height": 762,
+        "dpr": 1.25,
+        "documentWidth": 1280,
+        "active": "",
+        "focusVisible": false
+      }
+    }
+  ],
+  "url": "http://127.0.0.1:47660/?v=105",
+  "browser": "155.0.4283.45",
+  "baseline": {
+    "width": 1280,
+    "height": 762,
+    "dpr": 1.25,
+    "documentWidth": 1280,
+    "active": "loginPassword",
+    "focusVisible": true
+  },
+  "gitHead": "90ed1a28df9f9bab96f1ed8a069796a7a7e0320e",
+  "findings": {
+    "F1": {
+      "pass": true,
+      "cases": [
+        "F1-highlight"
+      ]
+    },
+    "F2": {
+      "pass": true,
+      "cases": [
+        "F2-epub-initial",
+        "F2-epub-zoom-200",
+        "F2-epub-zoom-400",
+        "F2-epub-zoom-100",
+        "F2-epub-chapter"
+      ]
+    },
+    "F3": {
+      "pass": true,
+      "cases": [
+        "F3-login-200",
+        "F3-login-400"
+      ]
+    },
+    "F4": {
+      "pass": true,
+      "cases": [
+        "F4-edit-200",
+        "F4-upload-200",
+        "F4-grants-200",
+        "F4-edit-400",
+        "F4-upload-400",
+        "F4-grants-400"
+      ]
+    },
+    "F5": {
+      "pass": false,
+      "cases": [
+        "F5-notes-keyboard"
+      ]
+    }
+  },
+  "deployGatePass": false,
+  "completed": true,
+  "sources": [
+    {
+      "file": "spike/app/server.mjs",
+      "sha256": "13fcf43c188ea016651f0235553e0601e54c2625c1a7094254dc524f8b33a4f3"
+    },
+    {
+      "file": "spike/app/indexer.mjs",
+      "sha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f"
+    },
+    {
+      "file": "spike/app/public/index.html",
+      "sha256": "0aedd8cc11ef2b4b03e547825b309b2c9c2c1fe4c4bdcf50df5652e90c0e7df2"
+    },
+    {
+      "file": "spike/app/public/app.js",
+      "sha256": "5adcb12ab3c219dbabe725194c7ef24e954a0dbb207d4bc95298138d04f5da9e"
+    },
+    {
+      "file": "spike/app/public/styles.css",
+      "sha256": "a8fa7fd5eb2278cd84128d95ae6b0d0ee9114649c1aed245b491167f0afbf02f"
+    },
+    {
+      "file": "spike/app/public/epub-engine.mjs",
+      "sha256": "8299599cd7a245d6d2916b211b99f8e5d69bc536e27490f2ae0c7b12f1472306"
+    }
+  ]
+}

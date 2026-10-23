@@ -1,6 +1,8 @@
 # Accessibility manual results — WCAG 2.2 AA
 
-**Status: OPEN — five findings; screen-reader sign-off outstanding.**
+**Status: OPEN — v105 retest passes F1–F4; F5 is partially fixed (Escape focus path remains). Screen-reader sign-off outstanding.**
+
+The initial summary/findings below are the v104 baseline; current verification is recorded under **Retest — v105**.
 
 - Date: 2026-10-23 (Europe/Istanbul).
 - Frontend version: v104, stylesheet v40; repository HEAD `0db153c`.
@@ -61,10 +63,10 @@ Final native zoom measurements: 1280×762 CSS px at 100%, 640×381 at 200%, 320�
 - The one-page PDF cannot verify multi-page announcements. Fixed-layout EPUB, EPUB link navigation, publisher image/table semantics, macOS VoiceOver and human listening were not tested.
 - Assign a target release, fix F1–F5, repeat affected scans/zoom states, then complete NVDA + Edge and full iframe checks before closing this record.
 
-## Remediation — v105 (pending retest)
+## Remediation — v105
 
-These code changes target F1–F5 but are **not yet verified**; the record stays
-open until the affected axe/zoom states are repeated.
+These code changes target F1–F5. The retest below verifies F1–F4 and records
+the remaining F5 Escape behavior; the overall record stays open.
 
 | Finding | Change |
 |---|---|
@@ -74,11 +76,82 @@ open until the affected axe/zoom states are repeated.
 | F4 | Modal overlay scrolls; card no longer centers an oversized dialog out of reach. |
 | F5 | Opening Notes moves focus to `#noteFilter`; closing returns focus to `#toggleNotes`; added a 24 px close button. |
 
+## Retest — v105 (`90ed1a2`) — 2026-10-23
+
+**Deployment gate: HOLD.** Four findings pass the targeted retest; F5 opening
+focus and close-button behavior pass, but Escape fails the expected close/focus
+return path. No production deployment was attempted. A read-only HTTPS check
+confirmed production still serves `app.js?v=104` and `styles.css?v=40`.
+
+- Local URL: `http://127.0.0.1:47660/?v=105`; isolated demo copy with current product files verified byte-for-byte.
+- Browser: Edge 155.0.4283.45. Native browser zoom: 1280×762 / DPR 1.25 at 100%, 640×381 / DPR 2.5 at 200%, 320×190 / DPR 5 at 400%.
+- Evidence: [manifest](a11y-evidence/v105-2026-10-23/manifest.json), [all 15 measured cases](a11y-evidence/v105-2026-10-23/results.json), [production version check](a11y-evidence/v105-2026-10-23/production-version.json).
+- Screenshots capture the actual rendered viewport through CDP without a clip rectangle; this avoids the previous screenshot cropping and browser password-bubble issues.
+
+| Finding | Retest result | Measurement / evidence |
+|---|---|---|
+| F1 | **PASS** | All four highlight color targets measure 24×24 CSS px. Real Edge axe-core 4.13.0 scan with the toolbar open: **0 violations**; color-contrast review items remain. [JSON](a11y-evidence/v105-2026-10-23/pdf-highlight-toolbar.axe.json), [screenshot](a11y-evidence/v105-2026-10-23/pdf-highlight-toolbar.png). |
+| F2 | **PASS for the tested reflow EPUB language** | Initial load, 200%, 400%, return to 100%, and chapter 2: iframe `lang`, rendered `html[lang]` and `xml:lang` all equal `tr`. Title stays `EPUB içeriği`; sandbox stays `allow-same-origin` without scripts. [Chapter 2](a11y-evidence/v105-2026-10-23/epub-chapter-2.png); detailed frame attributes in results JSON. |
+| F3 | **PASS** | Invalid-login submit is reachable by Tab and wheel scrolling at both zoom levels. Overlay uses `overflow-y: auto`; no horizontal overlay overflow. At 400%, wheel scrollTop 267.6 puts submit at y=108.15–149.65 inside the 190 px viewport. [200%](a11y-evidence/v105-2026-10-23/login-error-200.png), [400%](a11y-evidence/v105-2026-10-23/login-error-400.png). |
+| F4 | **PASS** | Edit, Upload and Grants pass at both 200% and 400%. Keyboard focus, wheel scrolling and individual control focus checks reach every visible input/select/button; no horizontal overlay overflow. Measurements below. |
+| F5 | **PARTIAL** | Keyboard activation focuses visible `#noteFilter`. Close button and `n` close path restore visible `#toggleNotes`. Escape in the focused filter only blurs to BODY; second Escape closes without restoring focus. [Open](a11y-evidence/v105-2026-10-23/notes-open-400.png), [button close](a11y-evidence/v105-2026-10-23/notes-closed-400.png), [first Escape](a11y-evidence/v105-2026-10-23/notes-escape-400.png). |
+
+### F4 — final modal measurements
+
+The initial form can extend below the viewport; unlike v104, its overlay now
+scrolls. Every listed submit control is fully visible after keyboard focus and
+wheel scrolling. The results JSON also records individual field reachability.
+
+| Modal | Zoom / viewport height | Overlay scrollTop after keyboard focus | Submit y range after keyboard focus | Screenshot |
+|---|---|---|---|---|
+| Edit | 200% / 381 px | 240 | 306.10–343.20 | [Edit 200%](a11y-evidence/v105-2026-10-23/edit-200.png) |
+| Upload | 200% / 381 px | 264.8 | 306.00–343.10 | [Upload 200%](a11y-evidence/v105-2026-10-23/upload-200.png) |
+| Grants | 200% / 381 px | 261.6 | 275.20–312.30 | [Grants 200%](a11y-evidence/v105-2026-10-23/grants-200.png) |
+| Edit | 400% / 190 px | 540 | 129.00–166.50 | [Edit 400%](a11y-evidence/v105-2026-10-23/edit-400.png) |
+| Upload | 400% / 190 px | 510.8 | 129.00–166.50 | [Upload 400%](a11y-evidence/v105-2026-10-23/upload-400.png) |
+| Grants | 400% / 190 px | 677.6 | 97.90–135.40 | [Grants 400%](a11y-evidence/v105-2026-10-23/grants-400.png) |
+
+### F5 — remaining Escape path
+
+Reproduction at 400% / 320 CSS px, with an empty Notes filter:
+
+1. Tab from Download to Notes, then Enter. Focus becomes `#noteFilter`, with `:focus-visible` true; y=61–92.25 is unobscured in the 190 px viewport. The original opening-focus overlap is fixed.
+2. Shift+Tab three times reaches the new 24×24 close button. Enter closes Notes and restores unobscured, visible focus to `#toggleNotes` at y=88–126. This path passes.
+3. Enter reopens Notes and focuses `#noteFilter`. **First Escape** leaves `notesPanel.hidden=false` and moves focus to `BODY`, with `:focus-visible=false`.
+4. **Second Escape** sets `notesPanel.hidden=true`, but focus remains `BODY`; the toggle does not regain focus.
+
+The `n` shortcut was also checked from a non-input control: opening focuses the
+filter; closing from the close button restores the toggle. Typing `n` inside an
+input is not treated as a shortcut requirement.
+
+Cause confirmed in `spike/app/public/app.js`: the `if (typing)` branch at line
+3526 blurs the input and returns before the Notes Escape handler. On second
+Escape, `setNotesOpen(false)` reaches line 1394 with BODY focused, so the
+`notesPanel.contains(document.activeElement)` condition prevents focus return.
+
+**Follow-up:** route Notes Escape from its filter through the common close
+path before the typing early return, and verify focus restoration. Owner:
+project maintainer; target patch not assigned. This is a remaining interaction
+acceptance issue; the original F5 opening-focus observation now passes. No new
+WCAG conformance verdict is inferred from the Escape behavior alone.
+
+**v106 remediation (pending retest):** when the typing branch receives Escape
+and the event target is inside `#notesPanel`, it now calls `setNotesOpen(false)`
+before returning. That closes the panel and restores focus to `#toggleNotes`
+because the active element is still the filter when the close runs. Escape from
+other inputs keeps the old blur behavior.
+
+This retest does not claim NVDA/VoiceOver, complete iframe axe coverage, native
+forced-colors, offline v105, or full WCAG AA sign-off. Earlier v104 measurements
+remain above as the historical baseline. [Browser diagnostics](a11y-evidence/v105-2026-10-23/browser-console.json)
+are retained separately; no additional defect was assigned from console output.
+
 ## Sign-off
 
-- [ ] No critical/serious axe findings — F1 remains; iframe coverage incomplete.
+- [ ] No critical/serious axe findings — targeted v105 highlight-toolbar scan passes; full iframe coverage remains incomplete.
 - [ ] Screen-reader tasks pass or are logged — not run; speech/browse tasks pending.
-- [ ] No clipped controls at 200%/400% — F3/F4 remain; F5 hides focus.
-- [ ] EPUB iframe title/lang/reading order checked — title/sandbox inspected; language and screen-reader work remain.
-- [x] Offline library/reader checked — browser network-emulation smoke only, with limits above.
-- [ ] Findings have owner and target version — maintainer role recorded; target release unassigned.
+- [x] Targeted login / Edit / Upload / Grants controls reachable at 200%/400% — v105 retest passes.
+- [ ] EPUB iframe title/lang/reading order checked — v105 title/lang/sandbox pass; screen-reader reading order remains unverified.
+- [ ] Offline library/reader checked for v105 — only the v104 baseline smoke was performed.
+- [ ] Findings have owner and target version — F1–F4 verified in v105; F5 Escape fix in v106 pending retest.
+- [ ] v106 deployment gate — held for the F5 Escape retest; production remains v104.

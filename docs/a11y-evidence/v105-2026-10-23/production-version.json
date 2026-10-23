@@ -1,0 +1,9 @@
+{
+  "date": "2026-10-23",
+  "url": "https://localhost",
+  "method": "Read-only HTTPS GET with pinned local Caddy CA; local-CA revocation lookup disabled",
+  "servedScript": "app.js?v=104",
+  "servedStylesheet": "styles.css?v=40",
+  "deploymentAttempted": false,
+  "reason": "v105 targeted gate failed on Notes Escape focus restoration"
+}
