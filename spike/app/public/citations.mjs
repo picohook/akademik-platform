@@ -10,6 +10,31 @@ export const CITATION_STYLES = [
   { id: 'bibtex', label: 'BibTeX' },
 ];
 
+// PDF.js expands /PageLabels into an array indexed by physical PDF page.
+// A missing/blank label is never an inferred printed-page number.
+export function normalizePdfPageLabels(labels) {
+  return Array.isArray(labels)
+    ? labels.map((label) => typeof label === 'string' ? label.trim() : '')
+    : null;
+}
+
+export function pdfPageLabel(labels, page) {
+  if (!Number.isInteger(page) || page < 1) return null;
+  const label = labels?.[page - 1];
+  return typeof label === 'string' && label.trim() ? label.trim() : null;
+}
+
+export function pdfPageDescription(labels, page, language = 'tr') {
+  const label = pdfPageLabel(labels, page);
+  const physical = Number.isInteger(page) && page > 0 ? page : '—';
+  if (!label) return `${language === 'en' ? 'PDF page' : 'PDF sayfası'} ${physical}`;
+  return `${language === 'en' ? 'Page' : 'Sayfa'} ${label} (PDF ${physical})`;
+}
+
+export function pdfCitationPage(labels, page, language = 'tr') {
+  return pdfPageLabel(labels, page) || pdfPageDescription(null, page, language);
+}
+
 export function normalizeAuthors(value) {
   const list = Array.isArray(value) ? value : [];
   return list.map((author) => {
@@ -129,9 +154,11 @@ function ieeeAuthors(csl) {
 function pageLabel(page, turkish) {
   const value = String(page || '').trim();
   if (!value) return '';
-  const range = value.includes('-') || value.includes('–');
-  if (turkish) return `${range ? 'ss.' : 's.'} ${value.replace('-', '–')}`;
-  return `${range ? 'pp.' : 'p.'} ${value.replace('-', '–')}`;
+  if (/^PDF (?:sayfası|page) /u.test(value)) return value;
+  const range = /^(?:\d+\s*[-–]\s*\d+|[ivxlcdm]+\s*[-–]\s*[ivxlcdm]+)$/i.test(value);
+  const locator = range ? value.replace('-', '–') : value;
+  if (turkish) return `${range ? 'ss.' : 's.'} ${locator}`;
+  return `${range ? 'pp.' : 'p.'} ${locator}`;
 }
 
 function editionLabel(edition, turkish) {
@@ -264,6 +291,8 @@ export function formatCsl(csl, style = 'apa', page = '') {
     case 'apa':
     default: text = apa(csl); break;
   }
+
+  if (style === 'bibtex' && page) warnings.push('BibTeX kitap künyesidir; sayfa konumu eklenmez.');
 
   if (style !== 'bibtex' && page) {
     const label = pageLabel(page, csl.language === 'tr');

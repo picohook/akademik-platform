@@ -1,0 +1,54 @@
+import assert from 'node:assert/strict';
+import path from 'node:path';
+import net from 'node:net';
+import {spawn} from 'node:child_process';
+import {mkdir,readFile,writeFile,copyFile,cp} from 'node:fs/promises';
+import {createHash,randomBytes} from 'node:crypto';
+import {createRequire} from 'node:module';
+import {chromium} from 'file:///C:/Users/OWNER/AppData/Local/npm-cache/_npx/e41f203b7505f1fb/node_modules/playwright/index.mjs';
+const require=createRequire(path.resolve('spike/app/package.json'));
+const {PDFDocument,PDFName,PDFString}=require('pdf-lib');
+const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+const dir=path.resolve('tmp/page-labels-review/'+stamp), appDir=path.resolve('spike/app/tmp/page-labels-'+stamp);
+const source=path.resolve('spike/app');
+const files=['server.mjs','indexer.mjs','public/app.js','public/citations.mjs','public/index.html','public/i18n.mjs','public/sw.js','public/epub-engine.mjs','public/styles.css'];
+const sha=b=>createHash('sha256').update(b).digest('hex');
+const report={version:114,startedAt:new Date().toISOString(),scope:'Four requested v114 browser acceptance cases; implementing author, real Edge, isolated demo, no production writes',sources:[],cases:[]};
+const pause=ms=>new Promise(r=>setTimeout(r,ms));
+let app,browser,context,page,base,log='';const diagnostics=[];
+const save=()=>writeFile(path.join(dir,'results.json'),JSON.stringify(report,null,2));
+async function stage(id,fn){try{report.cases.push({id,status:'PASS',...(await fn())});}catch(e){report.cases.push({id,status:'FAIL',error:e.stack});await page.screenshot({path:path.join(dir,id+'-FAIL.png')}).catch(()=>{});}await save();console.log(JSON.stringify(report.cases.at(-1)));}
+async function api(url,options={}){const token=(await context.cookies()).find(c=>c.name==='akademik_csrf')?.value;const res=await page.request.fetch(base+url,{...options,headers:{...options.headers,'x-csrf-token':token||''}});assert.ok(res.ok(),url+' '+res.status()+' '+await res.text());return res.json();}
+async function open(book){if(await page.locator('#reader').isVisible()){await page.locator('#closeReader').click();await page.locator('#reader').waitFor({state:'hidden'});}await page.goto(base+'/');await page.locator('#grid .card').filter({hasText:book.title}).locator('.open-btn').click();await page.waitForFunction(()=>document.activeElement?.id==='closeReader');await pause(200);}
+async function go(n){await page.locator('#pageInput').fill(String(n));await page.locator('#pageInput').press('Enter');await page.waitForFunction(n=>new URL(location.href).searchParams.get('page')===String(n),n);await pause(250);}
+async function cite(){await page.locator('#citeBook').click();await page.locator('#citeModal').waitFor({state:'visible'});}
+async function closeCite(){await page.locator('#closeCite').click();}
+async function makePdf(labels){const doc=await PDFDocument.create();for(let n=1;n<=8;n++){const p=doc.addPage([500,620]);p.drawText('Physical PDF page '+n+' - LabelProbe',{x:45,y:550,size:16});}if(labels){doc.catalog.set(PDFName.of('PageLabels'),doc.context.obj({Nums:[0,{S:PDFName.of('r'),St:3},2,{S:PDFName.of('D'),St:125},4,{S:PDFName.of('D'),P:PDFString.of('A-'),St:1},6,{P:PDFString.of('')}]}));}return Buffer.from(await doc.save());}
+try{
+ await mkdir(dir,{recursive:true});await mkdir(path.join(appDir,'public'),{recursive:true});
+ for(const f of ['server.mjs','indexer.mjs'])await copyFile(path.join(source,f),path.join(appDir,f));
+ await cp(path.join(source,'public'),path.join(appDir,'public'),{recursive:true,filter:p=>!['uploads','ocr'].some(d=>p===path.join(source,'public',d)||p.startsWith(path.join(source,'public',d)+path.sep))});
+ for(const file of files){const bytes=await readFile(path.join(appDir,file));assert.equal(sha(bytes),sha(await readFile(path.join(source,file))));report.sources.push({file,sha256:sha(bytes)});}
+ const server=net.createServer();await new Promise(r=>server.listen(0,'127.0.0.1',r));const port=server.address().port;await new Promise(r=>server.close(r));base='http://127.0.0.1:'+port;
+ app=spawn(process.execPath,['server.mjs'],{cwd:appDir,env:{...process.env,DATABASE_URL:'',PORT:String(port),SESSION_SECRET:randomBytes(32).toString('hex'),DEMO_PASSWORD:'demo1234'},windowsHide:true,stdio:['ignore','pipe','pipe']});for(const s of [app.stdout,app.stderr])s.on('data',b=>log=(log+b).slice(-6000));app.on('error',e=>log+=e.message);
+ let ready=false;for(let n=0;n<100;n++){try{if((await fetch(base+'/api/health')).ok){ready=true;break;}}catch{}await pause(150);}assert.ok(ready,log);
+ browser=await chromium.launch({channel:'msedge',headless:true});report.browser=browser.version();context=await browser.newContext({viewport:{width:1440,height:1000},serviceWorkers:'block'});page=await context.newPage();page.setDefaultTimeout(10000);page.on('pageerror',e=>diagnostics.push(e.message));
+ await page.goto(base+'/');await page.locator('#loginEmail').fill('librarian@example.edu.tr');await page.locator('#loginPassword').fill('demo1234');await page.locator('#loginForm button[type=submit]').click();await page.locator('#loginScreen').waitFor({state:'hidden'});
+ const upload=async(title,bytes)=>api('/api/upload',{method:'POST',multipart:{title,language:'en',file:{name:title+'.pdf',mimeType:'application/pdf',buffer:bytes}}});
+
+ const mappedBytes=await readFile('spike/app/test/fixtures/page-labels.pdf');
+ const plainBytes=await readFile('spike/app/test/fixtures/page-labels-none.pdf');
+ const mixedDoc=await PDFDocument.load(mappedBytes);
+ mixedDoc.catalog.set(PDFName.of('PageLabels'),mixedDoc.context.obj({Nums:[0,{S:PDFName.of('r')},2,{P:PDFString.of('')},3,{S:PDFName.of('D'),St:2}]}));
+ const mixedBytes=Buffer.from(await mixedDoc.save());
+ for(const [name,bytes] of [['page-labels.pdf',mappedBytes],['page-labels-none.pdf',plainBytes],['page-labels-partial.pdf',mixedBytes]])await writeFile(path.join(dir,name),bytes);
+ const mapped=await upload('Mapped label fixture',mappedBytes),plain=await upload('Unmapped fixture',plainBytes),mixed=await upload('Partial label fixture',mixedBytes);
+ async function readLabels(book){return page.evaluate(async id=>{const lib=await import('/vendor/pdfjs/pdf.mjs');const pdf=await lib.getDocument({url:'/api/books/'+id+'/file',isEvalSupported:false}).promise;try{return await pdf.getPageLabels();}finally{await pdf.destroy();}},book.id);}
+ async function checkPage(n,expected,label){await go(n);assert.equal(await page.locator('#pageLabel').innerText(),expected+' / 6');assert.equal(await page.locator('#pageInput').inputValue(),String(n));await cite();assert.equal(await page.locator('#citePage').inputValue(),label);const text=await page.locator('#citeOutput').innerText();assert.ok(text.includes(label));if(label.startsWith('PDF '))assert.doesNotMatch(text,/p\. PDF/);const result={physicalPage:n,display:await page.locator('#pageLabel').innerText(),citationLocator:label,citation:text,urlPage:new URL(page.url()).searchParams.get('page')};await closeCite();return result;}
+ await open(mapped);
+ await stage('physical-page-3-maps-to-label-1',async()=>{const labels=await readLabels(mapped);assert.deepEqual(labels,['i','ii','1','2','3','4']);const result=await checkPage(3,'Sayfa 1 (PDF 3)','1');await cite();await page.screenshot({path:path.join(dir,'mapped-page3-citation.png')});await closeCite();return {labels,...result};});
+ await stage('roman-front-matter',async()=>{const results=[];for(const [n,label] of [[1,'i'],[2,'ii']])results.push(await checkPage(n,'Sayfa '+label+' (PDF '+n+')',label));await page.screenshot({path:path.join(dir,'roman-page2.png')});return {pages:results};});
+ await stage('unlabeled-every-page-falls-back',async()=>{await open(plain);const labels=await readLabels(plain);assert.equal(labels,null);const results=[];for(let n=1;n<=6;n++)results.push(await checkPage(n,'PDF sayfası '+n,'PDF sayfası '+n));await cite();await page.screenshot({path:path.join(dir,'unlabeled-citation.png')});await closeCite();return {labels,pages:results};});
+ await stage('only-blank-label-falls-back',async()=>{await open(mixed);const labels=await readLabels(mixed);assert.deepEqual(labels,['i','ii','','2','3','4']);const results=[];for(let n=1;n<=6;n++){const label=labels[n-1];results.push(await checkPage(n,label?'Sayfa '+label+' (PDF '+n+')':'PDF sayfası '+n,label||'PDF sayfası '+n));if(n===3||n===4){await cite();await page.screenshot({path:path.join(dir,'partial-page'+n+'-citation.png')});await closeCite();}}return {labels,pages:results};});
+ report.completed=true;report.sourceUnchanged=true;for(const item of report.sources)if(sha(await readFile(path.join(source,item.file)))!==item.sha256)report.sourceUnchanged=false;report.passed=report.cases.filter(c=>c.status==='PASS').length;report.total=report.cases.length;report.completedAt=new Date().toISOString();await save();await writeFile(path.join(dir,'browser-console.json'),JSON.stringify(diagnostics,null,2));console.log(JSON.stringify({passed:report.passed,total:report.total,sourceUnchanged:report.sourceUnchanged,evidence:dir}));if(report.passed!==report.total)process.exitCode=1;
+}catch(e){report.fatal=e.stack;report.appLog=log;await save();console.error(e);process.exitCode=1;}finally{await context?.setOffline(false).catch(()=>{});await browser?.close().catch(()=>{});app?.kill();}

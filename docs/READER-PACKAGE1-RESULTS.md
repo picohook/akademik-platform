@@ -1,10 +1,12 @@
 # Reader package 1 — independent acceptance review
 
-**Status: HOLD — latest v112 retest passes 20/21 checks. R2 is closed; R1 still loses the active star when Notes opens.**
+**Status: ACCEPTED — final v113 retest passes 21/21 checks. R1 and R2 are closed for package 1.**
 
-The findings below retain the v109 baseline. Current results, the remaining
-reproduction and deployment decision are in the
-[v110/v112 independent retest](READER-PACKAGE1-RETEST-2026-10-23.md).
+The findings below retain the v109 baseline. The
+[v113 final independent retest](READER-PACKAGE1-V113-RETEST-2026-10-23.md)
+closes the package. The earlier
+[v110/v112 independent retest](READER-PACKAGE1-RETEST-2026-10-23.md)
+retains the historical failures and reproduction.
 
 - Date: 2026-10-23, Europe/Istanbul.
 - Tested commit: `b8adce970a5d319f2a1e39a106c4b04f28dbd7aa`, frontend v109 / CSS v41.
@@ -100,7 +102,7 @@ The implementing author should address R1/R2 in a follow-up commit. The
 independent reviewer should repeat the affected cases before closing package 1.
 No deployment was performed as part of this review.
 
-## v110/v111 remediation (retested)
+## v110–v113 remediation (retested)
 
 - **R1:** v113 keeps the selected bookmark active through a reflow while its
   saved CFI is inside the rendered `currentLocation()` range; when the bookmark
@@ -113,4 +115,4 @@ No deployment was performed as part of this review.
 - **Translation:** notes get their bookmark suffix from `t('Yer imi')`; the
   uppercase-only CSS transform was removed, so English renders “Bookmark”
   instead of “YER IMI”.
-- Status remains **HOLD**: v112 passed 20/21; its deployment condition was not met.
+- Final status: **ACCEPTED**, pinned v113 / `f572f3c` passes **21/21**. The previous v112 result remains 20/21; this review did not change production.

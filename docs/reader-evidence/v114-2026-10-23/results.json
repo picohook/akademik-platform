@@ -1,0 +1,193 @@
+{
+  "version": 114,
+  "startedAt": "2026-10-23T13:29:50.416Z",
+  "scope": "Four requested v114 browser acceptance cases; implementing author, real Edge, isolated demo, no production writes",
+  "sources": [
+    {
+      "file": "server.mjs",
+      "sha256": "e3262c5256b150e8c705fbf23ffebe5e6153d5550f152726dff6ce1a0a59a7d9"
+    },
+    {
+      "file": "indexer.mjs",
+      "sha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f"
+    },
+    {
+      "file": "public/app.js",
+      "sha256": "91eb9a6a493106f5415a1b0466f9a053808fccd365680a7f9c7814359a846011"
+    },
+    {
+      "file": "public/citations.mjs",
+      "sha256": "92018db3430915d2f3c009f7556d820ff04e005f7be4449a6d264218da83bf06"
+    },
+    {
+      "file": "public/index.html",
+      "sha256": "26a0243445c2869ce73e54e1332ec76a0e13110c985520d1aab4887af0479367"
+    },
+    {
+      "file": "public/i18n.mjs",
+      "sha256": "bda3aafe1b2c518324fa5e75127d0c9e265357553dd7601a2645daa6ca415847"
+    },
+    {
+      "file": "public/sw.js",
+      "sha256": "17ea5415f70dda0f66199b8812f962e0da8acbff9bacd80b70325007354cb9b0"
+    },
+    {
+      "file": "public/epub-engine.mjs",
+      "sha256": "c3419e27feed41fba66176f590dbe7e2484126c1950655febcab158e87c830f0"
+    },
+    {
+      "file": "public/styles.css",
+      "sha256": "d750a2f3aee4e7fb0ed2454d27b0337964055186a19e449b90a2252e75a38cfb"
+    }
+  ],
+  "cases": [
+    {
+      "id": "physical-page-3-maps-to-label-1",
+      "status": "PASS",
+      "labels": [
+        "i",
+        "ii",
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "physicalPage": 3,
+      "display": "Sayfa 1 (PDF 3) / 6",
+      "citationLocator": "1",
+      "citation": "Mapped label fixture. (t.y.)., p. 1.",
+      "urlPage": "3"
+    },
+    {
+      "id": "roman-front-matter",
+      "status": "PASS",
+      "pages": [
+        {
+          "physicalPage": 1,
+          "display": "Sayfa i (PDF 1) / 6",
+          "citationLocator": "i",
+          "citation": "Mapped label fixture. (t.y.)., p. i.",
+          "urlPage": "1"
+        },
+        {
+          "physicalPage": 2,
+          "display": "Sayfa ii (PDF 2) / 6",
+          "citationLocator": "ii",
+          "citation": "Mapped label fixture. (t.y.)., p. ii.",
+          "urlPage": "2"
+        }
+      ]
+    },
+    {
+      "id": "unlabeled-every-page-falls-back",
+      "status": "PASS",
+      "labels": null,
+      "pages": [
+        {
+          "physicalPage": 1,
+          "display": "PDF sayfası 1 / 6",
+          "citationLocator": "PDF sayfası 1",
+          "citation": "Unmapped fixture. (t.y.)., PDF sayfası 1.",
+          "urlPage": "1"
+        },
+        {
+          "physicalPage": 2,
+          "display": "PDF sayfası 2 / 6",
+          "citationLocator": "PDF sayfası 2",
+          "citation": "Unmapped fixture. (t.y.)., PDF sayfası 2.",
+          "urlPage": "2"
+        },
+        {
+          "physicalPage": 3,
+          "display": "PDF sayfası 3 / 6",
+          "citationLocator": "PDF sayfası 3",
+          "citation": "Unmapped fixture. (t.y.)., PDF sayfası 3.",
+          "urlPage": "3"
+        },
+        {
+          "physicalPage": 4,
+          "display": "PDF sayfası 4 / 6",
+          "citationLocator": "PDF sayfası 4",
+          "citation": "Unmapped fixture. (t.y.)., PDF sayfası 4.",
+          "urlPage": "4"
+        },
+        {
+          "physicalPage": 5,
+          "display": "PDF sayfası 5 / 6",
+          "citationLocator": "PDF sayfası 5",
+          "citation": "Unmapped fixture. (t.y.)., PDF sayfası 5.",
+          "urlPage": "5"
+        },
+        {
+          "physicalPage": 6,
+          "display": "PDF sayfası 6 / 6",
+          "citationLocator": "PDF sayfası 6",
+          "citation": "Unmapped fixture. (t.y.)., PDF sayfası 6.",
+          "urlPage": "6"
+        }
+      ]
+    },
+    {
+      "id": "only-blank-label-falls-back",
+      "status": "PASS",
+      "labels": [
+        "i",
+        "ii",
+        "",
+        "2",
+        "3",
+        "4"
+      ],
+      "pages": [
+        {
+          "physicalPage": 1,
+          "display": "Sayfa i (PDF 1) / 6",
+          "citationLocator": "i",
+          "citation": "Partial label fixture. (t.y.)., p. i.",
+          "urlPage": "1"
+        },
+        {
+          "physicalPage": 2,
+          "display": "Sayfa ii (PDF 2) / 6",
+          "citationLocator": "ii",
+          "citation": "Partial label fixture. (t.y.)., p. ii.",
+          "urlPage": "2"
+        },
+        {
+          "physicalPage": 3,
+          "display": "PDF sayfası 3 / 6",
+          "citationLocator": "PDF sayfası 3",
+          "citation": "Partial label fixture. (t.y.)., PDF sayfası 3.",
+          "urlPage": "3"
+        },
+        {
+          "physicalPage": 4,
+          "display": "Sayfa 2 (PDF 4) / 6",
+          "citationLocator": "2",
+          "citation": "Partial label fixture. (t.y.)., p. 2.",
+          "urlPage": "4"
+        },
+        {
+          "physicalPage": 5,
+          "display": "Sayfa 3 (PDF 5) / 6",
+          "citationLocator": "3",
+          "citation": "Partial label fixture. (t.y.)., p. 3.",
+          "urlPage": "5"
+        },
+        {
+          "physicalPage": 6,
+          "display": "Sayfa 4 (PDF 6) / 6",
+          "citationLocator": "4",
+          "citation": "Partial label fixture. (t.y.)., p. 4.",
+          "urlPage": "6"
+        }
+      ]
+    }
+  ],
+  "browser": "155.0.4283.45",
+  "completed": true,
+  "sourceUnchanged": true,
+  "passed": 4,
+  "total": 4,
+  "completedAt": "2026-10-23T13:30:26.554Z"
+}

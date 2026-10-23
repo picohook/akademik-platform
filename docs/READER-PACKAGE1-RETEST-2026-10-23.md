@@ -1,6 +1,6 @@
 # Reader package 1 — v110/v112 independent retest
 
-**Latest decision: HOLD — v112 passes 20/21 checks. R2 is closed; one Notes-resize path in R1 remains open. v112 was not deployed by the reviewer.**
+**Historical decision: HOLD for v112 (20/21). Superseded by the [final v113 retest](READER-PACKAGE1-V113-RETEST-2026-10-23.md): 21/21, package 1 ACCEPTED.**
 
 | Tested version | Source | Outcome |
 |---|---|---|

@@ -151,7 +151,8 @@
           <option value="bibtex">BibTeX</option>
         </select>
       </label>
-      <label>Sayfa (opsiyonel, örn. 42 veya 42-45)<input id="citePage" maxlength="30" /></label>
+      <label>Sayfa (opsiyonel, örn. iv, 42 veya 42-45)<input id="citePage" maxlength="120" aria-describedby="citePageHint" /></label>
+      <p class="cite-warning" id="citePageHint" hidden></p>
       <div class="cite-warning" id="citeWarning" hidden></div>
       <pre class="cite-output" id="citeOutput"></pre>
       <div class="modal-actions">
@@ -266,7 +267,7 @@
       <div class="reader-actions">
         <button class="ghost-btn" id="toggleToc" type="button" title="İçindekiler" aria-label="İçindekiler" aria-controls="tocPanel" aria-expanded="false">☰</button>
         <div class="page-jump">
-          <input id="pageInput" type="number" min="1" value="1" aria-label="Sayfa numarası" />
+          <input id="pageInput" type="number" min="1" value="1" aria-label="PDF sayfa numarası" title="PDF dosyasındaki sıra numarası" />
           <span id="pageTotal">/ 1</span>
         </div>
         <button class="ghost-btn" id="fitToggle" type="button" title="Genişliğe sığdır" aria-pressed="false">↔</button>
@@ -399,6 +400,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=113"></script>
+  <script type="module" src="/app.js?v=114"></script>
 </body>
 </html>

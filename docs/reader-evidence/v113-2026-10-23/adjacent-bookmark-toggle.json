@@ -1,0 +1,120 @@
+{
+  "saved": {
+    "asset_version_id": "f8770602-3a1e-47b5-a56e-9d8b5fed88f8",
+    "type": "epub",
+    "cfi": "epubcfi(/6/2!/4/2/1:0)",
+    "href": "ch1.xhtml",
+    "percent": 0,
+    "text_quote": "Yer imi"
+  },
+  "currentProgress": {
+    "asset_id": "f8770602-3a1e-47b5-a56e-9d8b5fed88f8",
+    "anchor": {
+      "asset_version_id": "f8770602-3a1e-47b5-a56e-9d8b5fed88f8",
+      "type": "epub",
+      "cfi": "epubcfi(/6/2!/4/24/1:0)",
+      "href": "ch1.xhtml"
+    },
+    "percent": 0,
+    "updated_at": "2026-10-23T13:05:13.043Z"
+  },
+  "currentCfi": "epubcfi(/6/2!/4/24/1:0)",
+  "starBefore": "false",
+  "savedTarget": {
+    "cfi": "epubcfi(/6/2!/4/24/1:0)",
+    "target": "epubcfi(/6/2!/4/2/1:0)",
+    "star": "false",
+    "epubExports": [
+      "VERSION",
+      "Book",
+      "Rendition",
+      "Contents",
+      "CFI",
+      "utils"
+    ],
+    "frames": [
+      {
+        "width": 11264,
+        "height": 909,
+        "body": "Akademik okuma\n\nBu dosya, EPUB motoru adaptörünü denemek için üretilmiş küçük bir kamu malı metindir.\n\nMetin seçimi, vurgu, içindekiler ve arama akışını sınamak için yeterli cümle ",
+        "target": {
+          "rect": {
+            "x": 58,
+            "y": 53.15625,
+            "width": 34.671875,
+            "height": 53,
+            "top": 53.15625,
+            "right": 92.671875,
+            "bottom": 106.15625,
+            "left": 58
+          },
+          "frameRect": {
+            "x": -1392,
+            "y": 75.25,
+            "width": 11264,
+            "height": 909,
+            "top": 75.25,
+            "right": 9872,
+            "bottom": 984.25,
+            "left": -1392
+          },
+          "viewport": {
+            "x": 16,
+            "y": 75.25,
+            "width": 1408,
+            "height": 908.75,
+            "top": 75.25,
+            "right": 1424,
+            "bottom": 984,
+            "left": 16
+          },
+          "absolute": {
+            "left": -1334,
+            "right": -1299.328125,
+            "top": 128.40625,
+            "bottom": 181.40625
+          },
+          "text": "Akademik okuma",
+          "visible": false
+        }
+      }
+    ]
+  },
+  "before": [
+    {
+      "id": "d14241e6-c69c-4f95-a7b9-460b8ae3d8bb",
+      "anchor": {
+        "asset_version_id": "f8770602-3a1e-47b5-a56e-9d8b5fed88f8",
+        "type": "epub",
+        "cfi": "epubcfi(/6/2!/4/2/1:0)",
+        "href": "ch1.xhtml",
+        "percent": 0,
+        "text_quote": "Yer imi"
+      }
+    }
+  ],
+  "after": [
+    {
+      "id": "d14241e6-c69c-4f95-a7b9-460b8ae3d8bb",
+      "anchor": {
+        "asset_version_id": "f8770602-3a1e-47b5-a56e-9d8b5fed88f8",
+        "type": "epub",
+        "cfi": "epubcfi(/6/2!/4/2/1:0)",
+        "href": "ch1.xhtml",
+        "percent": 0,
+        "text_quote": "Yer imi"
+      }
+    },
+    {
+      "id": "5665a99f-956a-4390-85c8-657643953e62",
+      "anchor": {
+        "asset_version_id": "f8770602-3a1e-47b5-a56e-9d8b5fed88f8",
+        "type": "epub",
+        "cfi": "epubcfi(/6/2!/4/24/1:0)",
+        "href": "ch1.xhtml",
+        "percent": 0,
+        "text_quote": "Yer imi"
+      }
+    }
+  ]
+}

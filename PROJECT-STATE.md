@@ -4,10 +4,10 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web: **v113** (`spike/app/public/index.html`), stiller **v42**
+- Web: **v114** (`spike/app/public/index.html`), stiller **v42**
 - DB migration: **001–012** (`db/migrations/`)
-- Prod: **v113** (2026-10-23), kaynak **f572f3c**, imaj `sha256:0734bb11…`; smoke **16/16**, health/restart `healthy/0`. v113 visible-CFI bookmark fix canlı; package-1 bağımsız final retest bekliyor. Rollback: v106 image. Kayıt: `docs/deployments/2026-10-23-v113.md`.
-- Son test edilen kod commit’i: **d0e01c9** — v112, EPUB yer imi etiketleri; prod kaynağı **81a5fc5**.
+- Prod: **v113** (2026-10-23), kaynak **f572f3c**, imaj `sha256:0734bb11…`; dağıtım kaydında smoke **16/16**, health/restart `healthy/0`. Package-1 bağımsız final retest **21/21 geçti**. Bu retestte prod değiştirilmedi veya yeniden doğrulanmadı. Rollback: v106 image. Kayıt: `docs/deployments/2026-10-23-v113.md`.
+- Son test edilen kod commit’i: **f572f3c** — sabit v113 arşivi, package-1 bağımsız Edge retest **21/21**, kabul edildi.
 - Bağımlılık: `npm audit --omit=dev` **0**; tam audit’te yalnız dev-only `epubjs/@xmldom` (2 uyarı).
 - EPUB kararı: **ADR-012** — MVP/V1a için epub.js, `EpubEngine` adapter arkasında, pinli; Readium/R2D2BC geçiş eşikleri yazılı.
 
@@ -20,7 +20,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - Entitlement: `grants` tablosu (all/publisher/subject/collection/title); katalog + dosya/arama/indirme filtreli; `seat_limit` kurum oturum sayısını sınırlar. **Erişim** modalından grant ekle/sil (librarian/admin); collection kapsamı `collection_items` ile uygulanıyor.
 - Interop: `GET /opds`, `/oai` (OAI-PMH oai_dc), `/sushi` (COUNTER-5-shaped IR), `GET /api/books/:id/marc`, `GET /api/reports/usage.csv`. Ayrıntı `docs/INTEROP.md`; OAI/SUSHI sertifikalı değil.
 - Erişilebilirlik: hedefli v105 toolbar axe taraması 0 ihlal; F1–F4 v105, F5 v106 retest geçti (10/10, %100/%400). F1–F5 kapandı; NVDA/VoiceOver ve tam iframe taraması açık. `docs/A11Y-RESULTS.md`.
-- 1. paket bağımsız Edge retest: v110 **17/19**, sabit v112/d0e01c9 **20/21, HOLD**. Kullanıcı/kitap ayarları, İngilizce Bookmark, yakın farklı konumlar ve etiketler geçti; Notes doğrudan açılınca görünür yer iminin yıldızı hâlâ sönüyor. Dev v110 ayrı uploads/OCR bağlamalarıyla yenilendi; bu retestte prod değiştirilmedi. Kanıtlar: `docs/READER-PACKAGE1-RETEST-2026-10-23.md`.
+- 1. paket bağımsız Edge retest: v110 **17/19**, v112 **20/21**, sabit v113/f572f3c **21/21, ACCEPTED**. R1/R2 kapandı: Notes açılınca görünür yer iminin yıldızı korunuyor; dönüş/silme, yakın farklı konumlar, kullanıcı/kitap ayarları, İngilizce etiketler, PDF ve offline regresyonları geçti. Bu retestte prod değiştirilmedi. Kanıtlar: `docs/READER-PACKAGE1-V113-RETEST-2026-10-23.md`. 2. paket v114 uygulandı: PDF sayfa etiketleri ve atıf eşlemesi; eksik/null etiketler yalnız ilgili sayfada fallback yapar. Birim testleri 15/15; diğer AI kod incelemesi sonrası gerçek Edge tarayıcı kabulü 4/4 geçti. İstenen dört kabul koşulu kapandı; bu dar koşu 21 testlik bağımsız regresyon iddiası değildir. Prod v113 olarak kaldı. Kabul planı: `docs/PAGE-LABELS-TESTS.md`.
 - Arayüz **TR/EN**: `i18n.mjs`; header/login `data-lang-toggle`, `localStorage.uiLang`, sayfa yenilenerek uygulanır. Statik metinler + yaygın dinamik etiketler çevrildi; bazı toast/yardım metinleri hâlâ Türkçe.
 - Erişim: kopyalama/indirme/yazdırma/filigran; `/api/books/:id/download`.
 - Arama: sunucu sayfa indeksi (`asset_pages`); diakritik katlama, **tam kelime**, **bulanık** (pg_trgm), **kök** eşleşmesi (tr/en FTS, `text_tsv`/`text_tsv_en`); dil-duyarlı katalog araması (`works.language`), eşleşme sayısı + tür etiketi (`exact`/`folded`/`word`/`stem`/`fuzzy`).

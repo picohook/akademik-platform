@@ -1,0 +1,106 @@
+{
+  "frontend": 114,
+  "browser": "155.0.4283.45",
+  "startedAt": "2026-10-23T13:29:50.416Z",
+  "completedAt": "2026-10-23T13:30:26.554Z",
+  "scope": "Four requested v114 browser acceptance cases; implementing author, real Edge, isolated demo, no production writes",
+  "sourceIdentification": "Working-tree snapshot, identified by per-file SHA256; base HEAD b4ef650, uncommitted v114 changes",
+  "sources": [
+    {
+      "file": "server.mjs",
+      "sha256": "e3262c5256b150e8c705fbf23ffebe5e6153d5550f152726dff6ce1a0a59a7d9"
+    },
+    {
+      "file": "indexer.mjs",
+      "sha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f"
+    },
+    {
+      "file": "public/app.js",
+      "sha256": "91eb9a6a493106f5415a1b0466f9a053808fccd365680a7f9c7814359a846011"
+    },
+    {
+      "file": "public/citations.mjs",
+      "sha256": "92018db3430915d2f3c009f7556d820ff04e005f7be4449a6d264218da83bf06"
+    },
+    {
+      "file": "public/index.html",
+      "sha256": "26a0243445c2869ce73e54e1332ec76a0e13110c985520d1aab4887af0479367"
+    },
+    {
+      "file": "public/i18n.mjs",
+      "sha256": "bda3aafe1b2c518324fa5e75127d0c9e265357553dd7601a2645daa6ca415847"
+    },
+    {
+      "file": "public/sw.js",
+      "sha256": "17ea5415f70dda0f66199b8812f962e0da8acbff9bacd80b70325007354cb9b0"
+    },
+    {
+      "file": "public/epub-engine.mjs",
+      "sha256": "c3419e27feed41fba66176f590dbe7e2484126c1950655febcab158e87c830f0"
+    },
+    {
+      "file": "public/styles.css",
+      "sha256": "d750a2f3aee4e7fb0ed2454d27b0337964055186a19e449b90a2252e75a38cfb"
+    }
+  ],
+  "cases": 4,
+  "passed": 4,
+  "productionChanged": false,
+  "artifacts": [
+    {
+      "file": "browser-console.json",
+      "bytes": 1939,
+      "sha256": "2baa534109b790eca44298d301a702af84180d8e845b77808f143d08323501db"
+    },
+    {
+      "file": "browser-harness.mjs",
+      "bytes": 9280,
+      "sha256": "0d388b92dd392fdc24d29a488c4429aa3eb66cac1929f9d11405576cef6c3f88"
+    },
+    {
+      "file": "mapped-page3-citation.png",
+      "bytes": 51311,
+      "sha256": "f9adf52d5247f1a1d9634224fb3dbf0cc1e6b98ce7d17f8b3c4d99ce7fd43dc2"
+    },
+    {
+      "file": "page-labels-none.pdf",
+      "bytes": 1933,
+      "sha256": "71fc53b150a7e1b72256da16574cc8280ade1bf0ccb2665f05112b63fa7fb535"
+    },
+    {
+      "file": "page-labels-partial.pdf",
+      "bytes": 1320,
+      "sha256": "45a52d24533d3e391fadaf1b5a26b044159a5c3b821aec2369f49cb7d9e1a0ca"
+    },
+    {
+      "file": "page-labels.pdf",
+      "bytes": 1993,
+      "sha256": "c2fa8354f536e18fcb798384591cce86dedc7f240a88cd765c12547111b397ee"
+    },
+    {
+      "file": "partial-page3-citation.png",
+      "bytes": 51921,
+      "sha256": "2409edf466c2b27a3f0b5cd7daef6107c5a60f3264ebff0508efd155ad2dab5a"
+    },
+    {
+      "file": "partial-page4-citation.png",
+      "bytes": 51147,
+      "sha256": "ce7fc58ccbe72bd168a13760d9c3b97491fbfb77948f930d2f541bfb59888e2a"
+    },
+    {
+      "file": "results.json",
+      "bytes": 5490,
+      "sha256": "8b175c936813645abdaec67c8cf55b8cd9f5ef076cbc1d52aca55c987a66f2da"
+    },
+    {
+      "file": "roman-page2.png",
+      "bytes": 33082,
+      "sha256": "019ccb8cbe97d9f9c9761779771bcbb527a189eca6be9fb9aa979d267cad0fb4"
+    },
+    {
+      "file": "unlabeled-citation.png",
+      "bytes": 52126,
+      "sha256": "220806474be3c2571928c44ace9aba7c68546a6d30e10b48302ac38770514939"
+    }
+  ]
+}

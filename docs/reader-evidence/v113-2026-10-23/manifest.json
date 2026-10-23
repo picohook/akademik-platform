@@ -1,0 +1,152 @@
+{
+  "cases": 21,
+  "frontend": "v113",
+  "scope": "Independent pinned v113 R1/R2 retest, account/book settings, English labels, and adjacent EPUB positions; isolated demo, no production writes",
+  "productionChangedByReviewer": false,
+  "artifacts": [
+    {
+      "bytes": 3118,
+      "sha256": "a9a7e22561e4f6d6134ec41e6bcb2ce5e7fd4af3d24fe1adda922edabbbbf8bd",
+      "file": "adjacent-bookmark-toggle.json"
+    },
+    {
+      "bytes": 675245,
+      "sha256": "3ad3d32b749509c27fc5dae6e8686fd290508212c982610ead76e571c6181c84",
+      "file": "adjacent-fixture.epub"
+    },
+    {
+      "bytes": 198391,
+      "sha256": "1c0c1cdd583970cb6fad35d3bb82f4ef06f004690cc2a9a4cedc4c7c59f7427e",
+      "file": "adjacent-page-after-toggle.png"
+    },
+    {
+      "bytes": 198020,
+      "sha256": "7b319d69a620676b1ab49bc5c48645b8a854de7b0d8f1e39b094411d8236219f",
+      "file": "adjacent-page-before-toggle.png"
+    },
+    {
+      "bytes": 178014,
+      "sha256": "2d5611a8fc603cbcd5a413dc3b11f366261d3863d032c16d7533bd658a629164",
+      "file": "bookmark-distinct-labels.png"
+    },
+    {
+      "bytes": 118965,
+      "sha256": "a02a0a75fa07ba5a3d1655a59e18cf35ef1d243d9e2baeff7c81088c536096ca",
+      "file": "bookmark-notes-resized.png"
+    },
+    {
+      "bytes": 19702,
+      "sha256": "95fe2f122cb3dc0839364fa9b7428fd193b8cf2d3362cb9688c2dc7c69aea3cf",
+      "file": "browser-console.json"
+    },
+    {
+      "bytes": 29187,
+      "sha256": "e9952c21c273308811930a53baeef076ac256b29e81a394e0a5d5dccca2dc3e9",
+      "file": "browser-harness.mjs"
+    },
+    {
+      "bytes": 197740,
+      "sha256": "c95bf5aa4d74d480818b2a495d3362f0941b719756125fdc786e03280ddf514c",
+      "file": "english-bookmark.png"
+    },
+    {
+      "bytes": 284,
+      "sha256": "b7dd60f998920d81f58bb40b8d45f630e6d1c3b501f1e59aa70066809c906410",
+      "file": "english-notes.md"
+    },
+    {
+      "bytes": 148985,
+      "sha256": "26ae5745d7548f9d2c45c70427a5890d44c3ad03cf2c19d45dcc0c1f276c2497",
+      "file": "epub-bookmark-created.png"
+    },
+    {
+      "bytes": 113222,
+      "sha256": "e6a97cb4679b3ad06353b2f1ca77075539f9d83d729c80a88f603fd3709cdb96",
+      "file": "epub-bookmark-reopened.png"
+    },
+    {
+      "bytes": 225556,
+      "sha256": "509e8a91647a61076d1f2bcc2b00399dc744f6ae2822f02196e10a509498a14d",
+      "file": "epub-settings-reopened.png"
+    },
+    {
+      "bytes": 16353,
+      "sha256": "dc575a8a4ff13b71118273d67b87921d12bf161ecf3f6c9d8889088c08a5cbc3",
+      "file": "long-fixture.epub"
+    },
+    {
+      "bytes": 229263,
+      "sha256": "707cd625bb7734460b6d664a5b3ad877f0fbeaae869ed178aa52b5a91c9b9932",
+      "file": "offline-bookmark-excluded.png"
+    },
+    {
+      "bytes": 23106,
+      "sha256": "f0d46af7040a431663468ff599450338252f650dff67cf8d292dcd460500586d",
+      "file": "results.json"
+    },
+    {
+      "bytes": 116487,
+      "sha256": "c3e6590218d6d1b137927a55d90049c06dbda03f804ef0443b260508662f7ca6",
+      "file": "returned-bookmark-after-toggle.png"
+    },
+    {
+      "bytes": 113222,
+      "sha256": "e6a97cb4679b3ad06353b2f1ca77075539f9d83d729c80a88f603fd3709cdb96",
+      "file": "returned-bookmark-before-toggle.png"
+    },
+    {
+      "bytes": 595,
+      "sha256": "7123828fb7c0a0dec30eaf5aa75d32f517a6e15465fd9ee16b4946c854a93483",
+      "file": "returned-bookmark-toggle.json"
+    },
+    {
+      "bytes": 225564,
+      "sha256": "bcb51d7b6fe047c45a5cd3f12deee77bc77f61e92546544d30e0ba2eb50f0a97",
+      "file": "user-A-restored.png"
+    },
+    {
+      "bytes": 127995,
+      "sha256": "0205f8fa595c768b2f4222c83f2b39db2a4cddafcddecf1149e93b0392eea2c3",
+      "file": "user-B-defaults.png"
+    }
+  ],
+  "browser": "155.0.4283.45",
+  "packageAccepted": true,
+  "passed": 21,
+  "sourceArchive": "git archive f572f3c",
+  "sourceCommit": "f572f3c23d64066ab3081ba7a4f4592558e7a00f",
+  "sources": [
+    {
+      "file": "spike/app/server.mjs",
+      "sha256": "93ecceb67b7d490093c170a32896b600ea71dd1cd66cafaad418efcaeda5a960"
+    },
+    {
+      "file": "spike/app/indexer.mjs",
+      "sha256": "10bd599125fc9253d970b0b6f847c55eb5b90b31da46cb9b0c3b7c0f1d2c8da8"
+    },
+    {
+      "file": "spike/app/public/app.js",
+      "sha256": "9dbda32f314bd8649e9f62cd61d23df3ad9e68b9f6cea4ab5c8bea3e94d2edee"
+    },
+    {
+      "file": "spike/app/public/index.html",
+      "sha256": "876b0986bbc36f4104052fc234870253196878e9af9f38b79f0f9413ac30c1fa"
+    },
+    {
+      "file": "spike/app/public/i18n.mjs",
+      "sha256": "5e632eac04702aca322b2f0f347be5f3dd0f5c127b0a13b2bcbaa002866638a8"
+    },
+    {
+      "file": "spike/app/public/epub-engine.mjs",
+      "sha256": "ecf1f5914907e1202360dca8ef05cb89e4279a88d144cc532892b54e78826f2b"
+    },
+    {
+      "file": "spike/app/public/styles.css",
+      "sha256": "b5083f34f1b5ca7386d015c0fbd4b9decf4d8a3b875c16d6c5444eb84e38f8d0"
+    },
+    {
+      "file": "spike/app/public/offline.mjs",
+      "sha256": "8372e4aaf63c403e9076ac4889e18e7fb1401a8822fd28f67019967ae95ba1f4"
+    }
+  ]
+}

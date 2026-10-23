@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatCitation, toCslJson } from '../public/citations.mjs';
+import { formatCitation, toCslJson, normalizePdfPageLabels, pdfPageLabel, pdfPageDescription, pdfCitationPage } from '../public/citations.mjs';
 
 const examples = {
   'tr-single': {
@@ -180,4 +180,73 @@ test('CSL-JSON keeps structured authors', () => {
 test('missing metadata produces warnings', () => {
   const result = formatCitation(examples.missing.book, 'apa');
   assert.deepEqual(result.warnings, ['Yayın yılı yok.', 'Yayıncı bilgisi yok.']);
+});
+
+test('PDF PageLabels preserve roman, decimal and prefixed labels without offsets', () => {
+  const labels = normalizePdfPageLabels(['iii', 'iv', '125', '126', 'A-1', '']);
+  assert.deepEqual(labels, ['iii', 'iv', '125', '126', 'A-1', '']);
+  assert.equal(pdfPageLabel(labels, 2), 'iv');
+  assert.equal(pdfPageDescription(labels, 3), 'Sayfa 125 (PDF 3)');
+  assert.equal(pdfPageDescription(labels, 5, 'en'), 'Page A-1 (PDF 5)');
+  assert.equal(pdfCitationPage(labels, 2), 'iv');
+  assert.equal(pdfCitationPage(labels, 3), '125');
+});
+
+test('absent label maps never imply printed pages', () => {
+  for (const labels of [null, undefined, {}, 'i, ii']) {
+    assert.equal(normalizePdfPageLabels(labels), null);
+  }
+  assert.equal(pdfPageDescription(null, 4), 'PDF sayfası 4');
+  assert.equal(pdfCitationPage(null, 4, 'en'), 'PDF page 4');
+  assert.equal(pdfCitationPage(['', ' '], 2), 'PDF sayfası 2');
+  assert.equal(pdfPageLabel(['i'], 0), null);
+  assert.equal(pdfPageLabel(['i'], 1.5), null);
+  assert.equal(pdfPageLabel(['i'], 2), null);
+});
+
+test('duplicate and custom labels are preserved rather than renumbered', () => {
+  assert.deepEqual(normalizePdfPageLabels(['cover', 'cover']), ['cover', 'cover']);
+  assert.equal(pdfPageDescription(['cover', 'cover'], 2), 'Sayfa cover (PDF 2)');
+});
+
+test('all text citation styles use roman page labels and explicit PDF fallback', () => {
+  for (const style of ['apa', 'mla', 'chicago', 'ieee']) {
+    const book = examples['en-two'].book;
+    assert.match(formatCitation(book, style, pdfCitationPage(['iii', 'iv'], 2)).text, /p\. iv\./);
+    const fallback = formatCitation(book, style, pdfCitationPage(null, 3, 'en')).text;
+    assert.match(fallback, /PDF page 3\./);
+    assert.doesNotMatch(fallback, /p\. PDF/);
+    const turkish = formatCitation(examples['tr-single'].book, style, pdfCitationPage(null, 3)).text;
+    assert.match(turkish, /PDF sayfası 3\./);
+    assert.doesNotMatch(turkish, /s\. PDF/);
+  }
+});
+
+test('roman ranges remain editable; BibTeX explicitly warns about omitted locators', () => {
+  assert.match(formatCitation(examples['en-two'].book, 'apa', 'iv–v').text, /pp\. iv–v\./);
+  assert.ok(formatCitation(examples['en-two'].book, 'bibtex', 'iv').warnings.includes('BibTeX kitap künyesidir; sayfa konumu eklenmez.'));
+});
+
+test('hyphens in custom PDF labels are not converted to page ranges', () => {
+  for (const style of ['apa', 'mla', 'chicago', 'ieee']) {
+    assert.match(formatCitation(examples['en-two'].book, style, 'A-1').text, /p\. A-1\./);
+  }
+});
+
+
+test('partial labels retain valid pages and fall back only at missing entries', () => {
+  const input = [' i ', null, ' 125 ', undefined, 42, '  ', 'A-1'];
+  const labels = normalizePdfPageLabels(input);
+  assert.deepEqual(labels, ['i', '', '125', '', '', '', 'A-1']);
+  assert.equal(input[0], ' i ', 'Normalization must not mutate the PDF.js array');
+  assert.equal(pdfPageDescription(labels, 1), 'Sayfa i (PDF 1)');
+  assert.equal(pdfCitationPage(labels, 3), '125');
+  assert.equal(pdfCitationPage(labels, 7), 'A-1');
+  for (const page of [2, 4, 5, 6, 8]) {
+    assert.equal(pdfPageDescription(labels, page), 'PDF sayfası ' + page);
+    assert.equal(pdfCitationPage(labels, page, 'en'), 'PDF page ' + page);
+  }
+  const short = normalizePdfPageLabels(['ii']);
+  assert.equal(pdfCitationPage(short, 1), 'ii');
+  assert.equal(pdfCitationPage(short, 2), 'PDF sayfası 2');
 });

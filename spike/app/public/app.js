@@ -1,5 +1,5 @@
 import * as pdfjsLib from '/vendor/pdfjs/pdf.mjs';
-import { formatCitation } from '/citations.mjs';
+import { formatCitation, normalizePdfPageLabels, pdfPageLabel, pdfPageDescription, pdfCitationPage } from '/citations.mjs';
 import { EpubEngine } from '/epub-engine.mjs';
 import { initializeLanguage, toggleLanguage, t, translateDom, getLang } from '/i18n.mjs';
 import {
@@ -81,6 +81,7 @@ const state = {
   pdf: null,
   page: 1,
   numPages: 0,
+  pdfPageLabels: null,
   scale: 1,
   fitMode: 'width',
   initialFit: true,
@@ -823,7 +824,12 @@ function closeEdit() {
 function openCite() {
   if (!state.book) return;
   citeStyle.value = 'apa';
-  citePage.value = '';
+  citePage.value = state.epubMode ? '' : pdfCitationPage(state.pdfPageLabels, state.page, getLang());
+  const hint = $('citePageHint');
+  hint.hidden = state.epubMode;
+  hint.textContent = state.epubMode ? '' : pdfPageText(state.page) + ' · ' + t(pdfPageLabel(state.pdfPageLabels, state.page)
+    ? 'PDF sayfa etiketi kullanıldı; basılı nüshayla doğrulayın.'
+    : 'Basılı sayfa eşlemesi yok; PDF sıra numarası kullanıldı.');
   renderCitation();
   openModal(citeModal, citeStyle);
 }
@@ -1306,7 +1312,7 @@ function renderToc() {
       button.textContent = item.title;
       const page = document.createElement('span');
       page.className = 'toc-page';
-      page.textContent = String(item.page);
+      page.textContent = pdfPageText(item.page);
       button.appendChild(page);
       button.addEventListener('click', () => goToPage(item.page));
       fragment.appendChild(button);
@@ -1327,7 +1333,7 @@ function renderToc() {
     button.type = 'button';
     button.className = `toc-item${pageNumber === state.page ? ' active' : ''}`;
     if (pageNumber === state.page) button.setAttribute('aria-current', 'location');
-    button.textContent = `Sayfa ${pageNumber}`;
+    button.textContent = pdfPageText(pageNumber);
     button.addEventListener('click', () => goToPage(pageNumber));
     fragment.appendChild(button);
   }
@@ -1385,14 +1391,14 @@ function renderThumbs() {
     button.type = 'button';
     button.className = `thumb-item${pageNumber === state.page ? ' active' : ''}`;
     if (pageNumber === state.page) button.setAttribute('aria-current', 'page');
-    button.setAttribute('aria-label', t(`Sayfa ${pageNumber}`));
+    button.setAttribute('aria-label', pdfPageText(pageNumber));
     button.dataset.page = String(pageNumber);
     const canvas = document.createElement('canvas');
     canvas.width = 1;
     canvas.height = 1;
     canvas.setAttribute('aria-hidden', 'true');
     const label = document.createElement('span');
-    label.textContent = `Sayfa ${pageNumber}`;
+    label.textContent = pdfPageText(pageNumber);
     button.append(canvas, label);
     button.addEventListener('click', () => goToPage(pageNumber));
     fragment.appendChild(button);
@@ -1429,6 +1435,10 @@ function toggleToc(show) {
   }
 }
 
+function pdfPageText(page) {
+  return pdfPageDescription(state.pdfPageLabels, Number(page), getLang());
+}
+
 function updatePageUi() {
   if (state.epubMode) {
     pageInput.hidden = true;
@@ -1443,12 +1453,14 @@ function updatePageUi() {
   bookmarkBtn.hidden = false;
   pageInput.max = String(state.numPages || 1);
   pageInput.value = String(state.page || 1);
+  pageInput.setAttribute('aria-label', t('PDF sayfa numarası'));
+  pageInput.title = t('PDF dosyasındaki sıra numarası');
   pageTotal.textContent = `/ ${state.numPages || 1}`;
-  pageWrap.setAttribute('aria-label', t(`Sayfa ${state.page}`));
-  pageWrap2.setAttribute('aria-label', t(`Sayfa ${state.secondPage || state.page + 1}`));
-  pageLabel.textContent = t(state.twoPage && state.secondPage
-    ? `${state.page}-${state.secondPage} / ${state.numPages}`
-    : `${state.page} / ${state.numPages}`);
+  pageWrap.setAttribute('aria-label', pdfPageText(state.page));
+  pageWrap2.setAttribute('aria-label', pdfPageText(state.secondPage || state.page + 1));
+  pageLabel.textContent = (state.twoPage && state.secondPage
+    ? `${pdfPageText(state.page)} – ${pdfPageText(state.secondPage)}`
+    : pdfPageText(state.page)) + ` / ${state.numPages}`;
   updateBookmarkUi();
 }
 
@@ -1820,7 +1832,7 @@ function addSearchResultSnippet(pageNumber, snippetText, query, matches = 0, mat
     : matchType === 'fuzzy' ? t(' · yakın')
       : matchType === 'word' ? t(' · tam kelime')
         : '';
-  label.textContent = t(`Sayfa ${pageNumber}${matches > 1 ? ` · ${matches} eşleşme` : ''}`) + note;
+  label.textContent = pdfPageText(pageNumber) + (matches > 1 ? ` · ${t(`${matches} eşleşme`)}` : '') + note;
   const snippet = document.createElement('span');
   snippet.className = 'search-snippet';
   snippet.textContent = snippetText;
@@ -2628,7 +2640,7 @@ function exportAnnotations(format) {
   ];
   annotations.forEach((annotation) => {
     const page = annotation.anchor?.page || '—';
-    lines.push(`## Sayfa ${page}`, '');
+    lines.push(`## ${annotation.anchor?.type === 'epub' ? epubBookmarkLabel(annotation, annotation.color === 'bookmark') : pdfPageText(page)}`, '');
     if (annotation.color === 'bookmark') {
       lines.push(`*${t('Yer imi')}*`, '');
     } else {
@@ -2736,7 +2748,7 @@ function renderNotes() {
     const epubAnchor = annotation.anchor?.type === 'epub';
     page.textContent = epubAnchor
       ? epubBookmarkLabel(annotation, isBookmark)
-      : `Sayfa ${annotation.anchor?.page || '—'}${isBookmark ? ` · ${t('Yer imi')}` : ''}`;
+      : `${pdfPageText(annotation.anchor?.page)}${isBookmark ? ` · ${t('Yer imi')}` : ''}`;
     item.appendChild(page);
     const createdAt = annotation.created_at ? new Date(annotation.created_at) : null;
     const updatedAt = annotation.updated_at ? new Date(annotation.updated_at) : null;
@@ -3052,6 +3064,7 @@ async function openBook(book, options = {}) {
   pageTotal.hidden = false;
   bookmarkBtn.hidden = false;
   state.page = 1;
+  state.pdfPageLabels = null;
   state.scale = 0;
   state.fitMode = 'width';
   state.initialFit = true;
@@ -3136,6 +3149,15 @@ async function openBook(book, options = {}) {
     state.pdf = await task.promise;
     state.perf.pdfLoadMs = performance.now() - state.perf.openedAt;
     state.numPages = state.pdf.numPages;
+    const loadedPdf = state.pdf;
+    let labels = null;
+    try {
+      labels = normalizePdfPageLabels(await loadedPdf.getPageLabels());
+    } catch (error) {
+      console.warn('PDF page labels unavailable:', error.message);
+    }
+    if (state.pdf !== loadedPdf) return;
+    state.pdfPageLabels = labels;
 
     const params = new URLSearchParams(window.location.search);
     const rawPage = params.get('book') === book.id ? params.get('page') : null;
@@ -3204,6 +3226,7 @@ async function closeReader() {
   state.renderTask = null;
   state.secondRenderTask = null;
   state.pdf = null;
+  state.pdfPageLabels = null;
   state.book = null;
   state.secondPage = null;
   state.secondViewport = null;
