@@ -42,6 +42,11 @@ const DEMO_EMAIL = process.env.DEMO_EMAIL || 'reader@example.edu.tr';
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'demo1234';
 const BRAND_NAME = process.env.BRAND_NAME || 'Akademik Platform';
 const BRAND_TAGLINE = process.env.BRAND_TAGLINE || 'spike';
+const APP_VERSION = process.env.APP_VERSION || '115';
+const BUILD_SHA = process.env.BUILD_SHA || '';
+const BUILD_DATE = process.env.BUILD_DATE || '';
+const APP_ENV = process.env.APP_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'development');
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || '';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -1992,6 +1997,11 @@ const server = http.createServer(async (req, res) => {
         brandName: BRAND_NAME,
         brandTagline: BRAND_TAGLINE,
         mode: pool ? 'db' : 'demo',
+        version: APP_VERSION,
+        buildSha: BUILD_SHA,
+        buildDate: BUILD_DATE,
+        environment: APP_ENV,
+        supportEmail: SUPPORT_EMAIL,
       });
       return;
     }

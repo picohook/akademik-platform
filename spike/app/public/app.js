@@ -138,6 +138,12 @@ const mode = $('mode');
 const brandName = $('brandName');
 const brandTag = $('brandTag');
 const loginBrand = $('loginBrand');
+const footerBrand = $('footerBrand');
+const footerYear = $('footerYear');
+const footerVersion = $('footerVersion');
+const footerEnvironment = $('footerEnvironment');
+const footerBuildDate = $('footerBuildDate');
+const footerSupport = $('footerSupport');
 const loginScreen = $('loginScreen');
 const loginForm = $('loginForm');
 const loginEmail = $('loginEmail');
@@ -985,6 +991,21 @@ function applyBrand(name, tagline) {
   brandTag.hidden = !tag;
   loginBrand.textContent = title;
   document.title = `${title} — Katalog`;
+}
+
+function applyFooter(config) {
+  footerBrand.textContent = config.brandName || 'Akademik Platform';
+  footerYear.textContent = String(new Date().getFullYear());
+  footerVersion.textContent = config.version ? `v${String(config.version).replace(/^v/i, '')}` : '';
+  const env = config.environment === 'production' ? 'Üretim' : 'Geliştirme';
+  footerEnvironment.textContent = config.environment ? t(env) : '';
+  footerBuildDate.textContent = config.buildDate ? ` · ${config.buildDate}` : '';
+  if (config.supportEmail) {
+    footerSupport.href = `mailto:${config.supportEmail}`;
+    footerSupport.hidden = false;
+  } else {
+    footerSupport.hidden = true;
+  }
 }
 
 function canManage() {
@@ -3777,6 +3798,7 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
+$('footerShortcuts').addEventListener('click', showShortcuts);
 $('openUpload').addEventListener('click', openUpload);
 $('offlineBtn').addEventListener('click', openOfflineModal);
 $('closeOffline').addEventListener('click', closeOffline);
@@ -4200,6 +4222,7 @@ window.__readerStress = stressPages;
     const config = await fetch('/api/config').then((response) => (response.ok ? response.json() : null));
     if (config) {
       applyBrand(config.brandName, config.brandTagline);
+      applyFooter(config);
       mode.textContent = t(config.mode === 'db' ? 'DB modu' : 'Demo modu');
       mode.classList.toggle('db', config.mode === 'db');
     } else {

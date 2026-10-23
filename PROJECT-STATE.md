@@ -4,7 +4,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web: **v114** (`spike/app/public/index.html`), stiller **v42**
+- Web: **v115** (`spike/app/public/index.html`), stiller **v43**
 - DB migration: **001–012** (`db/migrations/`)
 - Prod: **v114** (2026-10-23), kaynak **0a14f45**, imaj `sha256:0fed8327…`; smoke **16/16**, health/restart `healthy/0`. Page-label Edge kabulü **4/4** (uygulayan AI; bağımsız değil). Rollback: v113 image. Kayıt: `docs/deployments/2026-10-23-v114.md`.
 - Son test edilen kod commit’i: **0a14f45** — v114, page-label browser kabulü 4/4 + citation 15/15.

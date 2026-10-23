@@ -9,7 +9,7 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/icons/icon-180.png" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=42" />
+  <link rel="stylesheet" href="/styles.css?v=43" />
   <link rel="prefetch" href="/vendor/pdfjs/pdf.worker.mjs" as="script" />
 </head>
 <body>
@@ -67,6 +67,14 @@
     <section class="grid" id="grid" aria-live="polite"></section>
     <p class="empty" id="empty" hidden>Sonuç yok. Arama terimini değiştirin.</p>
   </main>
+
+  <footer class="site-footer" id="siteFooter">
+    <span>© <span id="footerYear"></span> <span id="footerBrand">Akademik Platform</span> · <span id="footerVersion"></span> · <span id="footerEnvironment"></span><span id="footerBuildDate"></span></span>
+    <span class="footer-links">
+      <button class="footer-link" id="footerShortcuts" type="button">Kısayollar</button>
+      <a class="footer-link" id="footerSupport" href="#" hidden>Destek</a>
+    </span>
+  </footer>
 
   <div class="modal" id="editModal" hidden>
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editHeading">
@@ -400,6 +408,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=114"></script>
+  <script type="module" src="/app.js?v=115"></script>
 </body>
 </html>
