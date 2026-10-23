@@ -16,10 +16,12 @@
   },
   "dependencies": {
     "busboy": "^1.6.0",
-    "epubjs": "^0.3.93",
     "jszip": "^3.10.1",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^5.4.296",
     "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "epubjs": "^0.3.93"
   }
 }

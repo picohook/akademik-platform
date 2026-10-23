@@ -6,7 +6,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 - Web: **v104** (`spike/app/public/index.html`), stiller **v40**
 - DB migration: **001–012** (`db/migrations/`)
-- Prod: **v52 + 008** deploy edildi (2026-10-21) — Caddy HTTPS, smoke **16/16**; kök/tam kelime/bulanık prod'da doğrulandı.
+- Prod: **v103 + migration 009–012** deploy edildi (2026-10-23), sabit kaynak **fc0645c** — Caddy HTTPS, smoke **16/16** + ek canlı kontrol **26/26**; sunucu hash'i, RLS/politikalar ve health doğrulandı. Yedek/geri dönüş kaydı: `docs/deployments/2026-10-23-v103.md`.
 - Son commit: dil düzeltmesi (bu commit)
 - EPUB kararı: **ADR-012** — MVP/V1a için epub.js, `EpubEngine` adapter arkasında, pinli; Readium/R2D2BC geçiş eşikleri yazılı.
 
