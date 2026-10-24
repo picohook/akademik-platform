@@ -1,6 +1,6 @@
 # Annotation receipt retention and RLS — v122 hardening
 
-**2026-10-24 independent review: HOLD; blockers fixed in the current working tree, re-test pending.** The review found app-role purge privilege/RLS failures and writable v121 rollback replaying tombstoned POSTs. The purge no longer uses `FOR UPDATE`; a v121 write for a tombstoned operation is now rejected by a DB trigger. Prod remains v121; migration 016 was applied only to an isolated backup copy. [Findings and evidence](ANNOTATION-RECEIPT-HARDENING-REVIEW-2026-10-24.md).
+**2026-10-24 retest of 7fff4e0: HOLD.** The previous app-role purge and writable-v121 rollback blockers passed real PostgreSQL/HTTP/Edge retesting. One blocker remains: independently re-evaluated retention selections can copy 1 receipt but delete 2 when a row crosses the 90-day boundary. Prod remains v121; no production migration/deploy. [Retest evidence](ANNOTATION-RECEIPT-HARDENING-RETEST-2026-10-24.md).
 
 This package closes the two v121 follow-ups:
 

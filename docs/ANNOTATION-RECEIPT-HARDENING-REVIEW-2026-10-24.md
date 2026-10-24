@@ -1,5 +1,7 @@
 # v122 bağımsız inceleme — HOLD — 2026-10-24
 
+**7fff4e0 retest güncellemesi:** Aşağıdaki c7f40db F1/F2 bulguları gerçek app-role/HTTP testinde kapandı. Purge eşik anında yeni bir anahtar kaybı nedeniyle genel HOLD sürüyor. [Güncel retest](ANNOTATION-RECEIPT-HARDENING-RETEST-2026-10-24.md).
+
 İncelenen commit: **c7f40db206b896142172173e548da9b03c5a4d88**. Uygulama kodu değiştirilmedi. **Prod v121; migration 016 veya deploy yapılmadı.** v122 için önerilen koşullu PASS, aşağıdaki gerçek PostgreSQL bulguları nedeniyle verilemez.
 
 ## F1 — Purge uygulama rolüyle çalışmıyor (blocker)

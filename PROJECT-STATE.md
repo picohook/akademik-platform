@@ -4,10 +4,10 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web kaynak **v122/7fff4e0**, stiller **v45**, SW cache **v14**. Bağımsız inceleme **HOLD** idi; F1/F2 düzeltmeleri kodda, gerçek app-role retesti bekliyor. Prod **v121**. docs/ANNOTATION-RECEIPT-HARDENING-REVIEW-2026-10-24.md.
-- DB migration kaynak **001–016**, prod **001–015**. 016 taze prod yedeği kopyasında çift uygulandı; veri korundu; düzeltme sonrası app-role purge/rollback retesti yapılmadı. Prod’a uygulanmadı.
+- Web kaynak **v122/7fff4e0**, stiller **v45**, SW cache **v14**. Gerçek app-role retest **HOLD**: eski F1/F2 kapandı, 90 günlük eşikte tombstone olmadan silinen receipt bulundu. Prod **v121**. docs/ANNOTATION-RECEIPT-HARDENING-RETEST-2026-10-24.md.
+- DB migration kaynak **001–016**, prod **001–015**. Restore kopyasında eski c7f40db 016 ardından düzeltilmiş 7fff4e0 016 çift uygulandı; veri korundu. App-role temel purge/rollback geçti; eşik testi kaldı. Prod’a uygulanmadı.
 - Prod: **v121** (2026-10-24 11:16:43 Europe/Istanbul), kaynak **933615a**, imaj sha256:8c29759dc1181f7ee77ab2f001548631637e9258c3e652fdc548027372e7470a, etiket akademik-platform-prod-web:v121-933615a; healthy/0, smoke **16/16**, gerçek PostgreSQL/Edge **14/14**, 0 JS hatası, cleanup 4/4. v120 rollback korunur. docs/deployments/2026-10-24-v121.md.
-- Son doğrulama v122: bağımsız **64/64 birim** (düzeltme sonrası yerel **65/65**) ve normal CAS/replay/Edge 410/taslak koruma geçti. F1 purge artık `FOR UPDATE`/UPDATE izni kullanmıyor: tenant advisory lock, `RETURNING`siz tombstone insert ve maintenance SELECT. F2 için tombstone operasyon anahtarına INSERT guard trigger eklendi; v121 eski POST’u 201 ile diriltemez, transaction rollback olur. **Gerçek app-role purge ve v121 rollback retesti henüz yapılmadı; HOLD.**
+- Son doğrulama v122/7fff4e0: bağımsız **65/65 birim**, restore migration reapply, app-role purge **1/1**, eski tombstone silme, iki ayrı Node sürecinde skipped, hata rollback, **1000+5** batch ve gerçek v121 HTTP **500/P0001** koruması geçti; yeni anahtar 201, v122 sonrası 410. Edge gerçek app-role purge/HTTP410/taslak reload geçti. **10/11**, 0 JS hatası, cleanup **6/6**. Tek blocker: iki ayrı clock_timestamp seçiminde eşik geçen receipt için **1 moved / 2 deleted**, ikinci tombstone **0**. **HOLD**, prod v121 değişmedi.
 - Bağımlılık: `npm audit --omit=dev` **0**; tam audit’te yalnız dev-only `epubjs/@xmldom` (2 uyarı).
 - EPUB kararı: **ADR-012** — MVP/V1a için epub.js, `EpubEngine` adapter arkasında, pinli; Readium/R2D2BC geçiş eşikleri yazılı.
 
@@ -41,7 +41,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - Kopyalama paketi v116 canlı: PDF/EPUB izin tutarlılığı, seçimden Kopyala / Atıfla kopyala. Citation 17/17 + EPUB izin 7/7 birim testi ve gerçek Edge kabulü 13/13 geçti (uygulayan AI). Seçim/vurgu/not korunur. Kanıtlar: `docs/COPYING-TESTS.md`.
 - Kapasite retesti geçti: yalnız async scrypt yeterli olmadı; parola doğrulaması `withTenant` dışına taşınıp havuz bağlantısı erken bırakıldı (`8e1347c`). Tenant/user advisory lock ve seat limit korundu; güvenlik 60/60. Aynı kısa taramada 10/25/50/100 girişlerin tamamı kabul, 6200 API isteğinde 0 hata; 50/100 giriş p95 **2,637 / 5,182 sn**. Bu, prod kapasitesi garantisi değildir. Önceki başarısız koşular değişmeden korundu. Kanıt: `docs/CAPACITY-TEST.md`.
 - Manuel NVDA/VoiceOver ve tam EPUB iframe denetimi paralel; gerçek ekran okuyucu gözlemi olmadan ACR tam uyum iddiası yok.
-- Sıradaki iş: v122 F1/F2 düzeltmelerini **gerçek app-role ile yeniden test et**: advisory-lock purge, iki süreç, tombstone insert/görünürlük, v121 eski POST’un trigger ile rollback olması. 365 günlük pencere sonrası eski POST yeniden kabulü ayrıca açık ürün/protokol kararıdır. docs/ANNOTATION-RECEIPT-HARDENING.md.
+- Sıradaki iş: purge uygun receipt anahtarlarını tek seferde sabitleyip aynı kümeyi INSERT/DELETE’te kullanmak; eşik testi geçene kadar v122 HOLD. Önceki F1/F2 gerçek retest ile kapandı. docs/ANNOTATION-RECEIPT-HARDENING-RETEST-2026-10-24.md.
 - Müşteriye bağlı: ilk istenen SSO protokolü; sertifikalı COUNTER alım şartıysa ayrı iş paketi.
 - Sonraki okuyucu işleri: not içe aktarma / açıklamalı PDF, EPUB görünüm seçenekleri; El aracı küçük P2 iş. Fixed-layout/MathML/RTL içerikle doğrulanacak. 500 MB görsel PDF kapsam dışında.
 
