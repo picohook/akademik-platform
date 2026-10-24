@@ -1,0 +1,236 @@
+{
+  "createdAt": "2026-10-24T15:42:07.066Z",
+  "release": 122,
+  "sourceCommit": "8b598a37416aabbe18ce1c846a052a9787b4f0b1",
+  "status": "PARTIAL",
+  "renderedAxeScans": 10,
+  "reportedViolations": 0,
+  "keyboardCasesPassed": 1,
+  "originalFrameScansBlocked": 2,
+  "nvda": "NOT RUN",
+  "voiceover": "NOT RUN",
+  "sourceMatchesDeployedImage": true,
+  "productionUnchanged": true,
+  "artifacts": {
+    ".gitattributes": {
+      "bytes": 74,
+      "sha256": "574dca45282c721e228acd15bf9aaeef98616404a08f68a929e460f25f1b6cd1"
+    },
+    "a11y-reflow.epub": {
+      "bytes": 2870,
+      "sha256": "501e27f76ce1a109bfbf1cba9af0b76ddd5bab88ac4627c5be547ac8e49c24c8"
+    },
+    "audit-final.mjs": {
+      "bytes": 14173,
+      "sha256": "bff6c98a86ed64046c605efff765c573d76558409b76093eeae06a7cca5c6f66"
+    },
+    "audit.mjs": {
+      "bytes": 12160,
+      "sha256": "fd2dcb014e10da8103b88fffa8454466b7b5eafb23dc44eb397fff82c200dc39"
+    },
+    "final/catalog.aria.yml": {
+      "bytes": 1299,
+      "sha256": "b5a881c09557ec5024e5c7a05ba2768483c39e338e0b632907dd7968f2746812"
+    },
+    "final/catalog.ax.json": {
+      "bytes": 215396,
+      "sha256": "748577e456f5c31dc8469849c10da87a04100b2ebda9e4cd825794a66ef1b8b3"
+    },
+    "final/catalog.axe.json": {
+      "bytes": 16238,
+      "sha256": "9600d2c945ff882f5970a12bc741a3bd2f557dd6e10b5aee8a00a340a5f434bb"
+    },
+    "final/catalog.focus.json": {
+      "bytes": 95,
+      "sha256": "9ab0f0c3e0f497fb0ac85fd05858035d70fe4c04eb4a511defb1e85bf687a647"
+    },
+    "final/epub-shell.aria.yml": {
+      "bytes": 2022,
+      "sha256": "65247d56443494694ee51d679cd5f386a0a2a01452ac136a8d33c2b83b2423c9"
+    },
+    "final/epub-shell.ax.json": {
+      "bytes": 179988,
+      "sha256": "00a18805e04154bf625cb1e05e1d994daadb84ba7fc89343edc5ed1e75dee5c3"
+    },
+    "final/epub-shell.axe.json": {
+      "bytes": 4514,
+      "sha256": "e12196f491abb3d713af52f3b442db7076a7cfeb2c87043e039847b0c860fb12"
+    },
+    "final/epub-shell.focus.json": {
+      "bytes": 100,
+      "sha256": "1f758f34a0f6fff01be1cde3675791f0e818a8d2a4bbfd4b7d49af6f67429deb"
+    },
+    "final/epub.png": {
+      "bytes": 26000,
+      "sha256": "6a75b1664102bb917fc6790102f35149a7d1ddcd5a3e2619e8c39192c8eea73f"
+    },
+    "final/grantsModal.axe.json": {
+      "bytes": 16945,
+      "sha256": "7f0165ce5364389428aa851313923365e1b081c4f0f071ea955394bd1343246b"
+    },
+    "final/login-error.aria.yml": {
+      "bytes": 1152,
+      "sha256": "791abdef34685dbc38e6aa092abafed19082090837ae398e6bc21a318d5b7c59"
+    },
+    "final/login-error.ax.json": {
+      "bytes": 159806,
+      "sha256": "4afdd5bcc598f9034a82ce2bb9fa34624fac2c244f739ddf5d84a6f077e5543f"
+    },
+    "final/login-error.axe.json": {
+      "bytes": 8477,
+      "sha256": "f24fbffeb17357a4f04cad3aba14a00b7cb310ec1211808e4a7aefc289f4284e"
+    },
+    "final/login-error.focus.json": {
+      "bytes": 101,
+      "sha256": "86c86b991d2008c9b929e0fb0fff1e2a187d70d32eb63e362e4e33d32308405c"
+    },
+    "final/login.aria.yml": {
+      "bytes": 1114,
+      "sha256": "5f4b9e91fe9e8897d6eb89bbf6ca6abe8cdfe8aa2eda1fa9d696c227cd4b86a5"
+    },
+    "final/login.ax.json": {
+      "bytes": 157507,
+      "sha256": "75d958214457391957868573d2c175186e3318f6151bf37ee615a51bd907defd"
+    },
+    "final/login.axe.json": {
+      "bytes": 8477,
+      "sha256": "29b0f46a62ec89753c20c68bac5980a7b73b8054d9299815fa64df596b7e1f36"
+    },
+    "final/login.focus.json": {
+      "bytes": 101,
+      "sha256": "86c86b991d2008c9b929e0fb0fff1e2a187d70d32eb63e362e4e33d32308405c"
+    },
+    "final/offlineModal.axe.json": {
+      "bytes": 16947,
+      "sha256": "3ccd28707e4a6899e138eeaacb8eaf100822a8046c5e0e7c7537eaa2b200cdd2"
+    },
+    "final/passwordModal.axe.json": {
+      "bytes": 16949,
+      "sha256": "3cb073d3819976a29091e0a8bd71b9c11904ff94a53f60d65c954b1b64edadd3"
+    },
+    "final/pdf-notes.aria.yml": {
+      "bytes": 2662,
+      "sha256": "fa103ea4792d1d9775d2fe9bf9a728dae9cce44b2a11ce5c37d06d13578f2038"
+    },
+    "final/pdf-notes.ax.json": {
+      "bytes": 227888,
+      "sha256": "ab16fb4e0adc553cbe1edfdd4c46b4deb18326e4ed6b284b575b3eb266ebbe22"
+    },
+    "final/pdf-notes.axe.json": {
+      "bytes": 7748,
+      "sha256": "11d3c9b26bd5428ef0109a370ba3a47b937a63cb655e1241d712972da8d25e12"
+    },
+    "final/pdf-notes.focus.json": {
+      "bytes": 100,
+      "sha256": "1f758f34a0f6fff01be1cde3675791f0e818a8d2a4bbfd4b7d49af6f67429deb"
+    },
+    "final/pdf-reader.aria.yml": {
+      "bytes": 2662,
+      "sha256": "fa103ea4792d1d9775d2fe9bf9a728dae9cce44b2a11ce5c37d06d13578f2038"
+    },
+    "final/pdf-reader.ax.json": {
+      "bytes": 227888,
+      "sha256": "ab16fb4e0adc553cbe1edfdd4c46b4deb18326e4ed6b284b575b3eb266ebbe22"
+    },
+    "final/pdf-reader.axe.json": {
+      "bytes": 7748,
+      "sha256": "11d3c9b26bd5428ef0109a370ba3a47b937a63cb655e1241d712972da8d25e12"
+    },
+    "final/pdf-reader.focus.json": {
+      "bytes": 100,
+      "sha256": "1f758f34a0f6fff01be1cde3675791f0e818a8d2a4bbfd4b7d49af6f67429deb"
+    },
+    "final/results.json": {
+      "bytes": 4095,
+      "sha256": "b165847f2aa3bf7b7e910032b11bbe2c570392fceef05ba793e9a861703cd5d4"
+    },
+    "final/uploadModal.axe.json": {
+      "bytes": 16945,
+      "sha256": "d4d6ee685b5ee672508034e2dfa622e21e787f3aa819a0e860c7147b3edba6c4"
+    },
+    "first-attempt/catalog.aria.yml": {
+      "bytes": 1299,
+      "sha256": "b5a881c09557ec5024e5c7a05ba2768483c39e338e0b632907dd7968f2746812"
+    },
+    "first-attempt/catalog.axe.json": {
+      "bytes": 16238,
+      "sha256": "69029145a237aec73807de51fb530d68ecce22ba61ff7c1d0bfacd894f43b289"
+    },
+    "first-attempt/epub-shell.aria.yml": {
+      "bytes": 2022,
+      "sha256": "65247d56443494694ee51d679cd5f386a0a2a01452ac136a8d33c2b83b2423c9"
+    },
+    "first-attempt/epub-shell.axe.json": {
+      "bytes": 4514,
+      "sha256": "6d191dbc496516783ea4dd9172580a409513d4c2c95f43b311e2ad2fb7285c1b"
+    },
+    "first-attempt/epub.png": {
+      "bytes": 26000,
+      "sha256": "6a75b1664102bb917fc6790102f35149a7d1ddcd5a3e2619e8c39192c8eea73f"
+    },
+    "first-attempt/grantsModal.axe.json": {
+      "bytes": 16945,
+      "sha256": "9e714dccce877926ad0c4c0ee71dbf155edb06d4f59a18c8b8bde71949fee659"
+    },
+    "first-attempt/login-error.aria.yml": {
+      "bytes": 1152,
+      "sha256": "791abdef34685dbc38e6aa092abafed19082090837ae398e6bc21a318d5b7c59"
+    },
+    "first-attempt/login-error.axe.json": {
+      "bytes": 8477,
+      "sha256": "b67940b482a8a36f5e091b1be6dfde65fd6457afe0f7878c583b9f4a322ac939"
+    },
+    "first-attempt/login.aria.yml": {
+      "bytes": 1114,
+      "sha256": "5f4b9e91fe9e8897d6eb89bbf6ca6abe8cdfe8aa2eda1fa9d696c227cd4b86a5"
+    },
+    "first-attempt/login.axe.json": {
+      "bytes": 8477,
+      "sha256": "0fd8db46dd660681efba42b05ab6a042f849f1dcc4d53c60c9978e2008ced1ed"
+    },
+    "first-attempt/offlineModal.axe.json": {
+      "bytes": 16947,
+      "sha256": "3a4324067c6023892dde6849d90c86d0f74c0e52515c6311c5619ae3f4d19c0b"
+    },
+    "first-attempt/passwordModal.axe.json": {
+      "bytes": 16949,
+      "sha256": "3aa3bf582f9b271e07ac80f9c68c077ecb10396b922d86e94d4636aea1f1ceeb"
+    },
+    "first-attempt/pdf-notes.aria.yml": {
+      "bytes": 2186,
+      "sha256": "ee91cadb33a0e2e7cd2d65bea2b4b2797aed19272d6c593994bcc925e2a8b420"
+    },
+    "first-attempt/pdf-notes.axe.json": {
+      "bytes": 7034,
+      "sha256": "f95aa390d22cde7f3e5af618f65e0b2ce5e9290392c638a960cb771e9fae505e"
+    },
+    "first-attempt/pdf-reader.aria.yml": {
+      "bytes": 2662,
+      "sha256": "fa103ea4792d1d9775d2fe9bf9a728dae9cce44b2a11ce5c37d06d13578f2038"
+    },
+    "first-attempt/pdf-reader.axe.json": {
+      "bytes": 7748,
+      "sha256": "49150ceb2f35707990e7918ba5e07a091caa88ec278a9b739816f3a5ad1c7f7b"
+    },
+    "first-attempt/results.json": {
+      "bytes": 4134,
+      "sha256": "7dbf50065095e4710f7c06173d0c26b0ea5a30c5bee911423485011454829c75"
+    },
+    "first-attempt/uploadModal.axe.json": {
+      "bytes": 16945,
+      "sha256": "cdaa5a10d03f60aa3b3fd23ffb27c4414b2e810cada0ceafb78a88945e018e5a"
+    },
+    "nvda-environment.json": {
+      "bytes": 377,
+      "sha256": "5b5722444efcc053e5c498adeae7ae5532dba189b26073811b63ed017aad32c2"
+    },
+    "production-unchanged.json": {
+      "bytes": 671,
+      "sha256": "904115ea5c28f8a70f9072c2db5bbf4fe1aa3852f68d8f72955e72eec6767187"
+    },
+    "summary.json": {
+      "bytes": 4084,
+      "sha256": "4822e583cdd6e89d61b192a4ef9d1b0c0c1c6b93ca313225a38084c95926731f"
+    }
+  }
+}

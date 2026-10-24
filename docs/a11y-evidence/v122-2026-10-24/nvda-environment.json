@@ -1,0 +1,9 @@
+{
+  "attempt": "one bounded 45s attempt using signed existing installer and a new workspace target",
+  "signature": "Valid",
+  "portableExecutablePresent": false,
+  "processExited": false,
+  "signer": "CN=NV Access Limited, O=NV Access Limited, L=Camp Mountain, S=Queensland, C=AU",
+  "checkedAt": "2026-10-24T15:27:19.8060332Z",
+  "userInstalledNvdaChanged": false
+}

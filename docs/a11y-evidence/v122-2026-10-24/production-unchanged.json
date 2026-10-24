@@ -1,0 +1,24 @@
+{
+  "checkedAt": "2026-10-24T15:42:06.912Z",
+  "id": "2ef18d50e49bb1340a9271533846cc82bf944e839745dc99a9d005fb61bc8c52",
+  "image": "sha256:da4f5654f473a0a5503d878f36b9f7949342943fb4f58247264c92dc8c81b0d5",
+  "startedAt": "2026-10-24T14:50:22.788302278Z",
+  "health": "healthy",
+  "restarts": 0,
+  "version": "122",
+  "buildSha": "8b598a3",
+  "sameContainerImageAndStart": true,
+  "readonlyVerification": true,
+  "localServersStopped": [
+    {
+      "attempt": "first-attempt",
+      "url": "http://127.0.0.1:57110",
+      "connectionRefused": true
+    },
+    {
+      "attempt": "final",
+      "url": "http://127.0.0.1:54891",
+      "connectionRefused": true
+    }
+  ]
+}

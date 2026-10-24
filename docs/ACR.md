@@ -1,71 +1,94 @@
-# Accessibility Conformance Report — draft
+# Accessibility Conformance Report — v122 draft
 
-**Not a certificate.** This is a draft ACR-style summary for procurement
-discussions. It is not a completed VPAT and does not claim full WCAG 2.2 AA
-conformance.
+**OPEN — NVDA + Edge manual acceptance pending.** Bu rapor tamamlanmış VPAT veya sertifika değildir; tam WCAG 2.2 AA uyumu iddia etmez. Önceki v113 taslağındaki seçili kriterler v122’ye otomatik taşınmadı.
 
-- Product: Akademik Platform web reader
-- Version: v113 / CSS v42
-- Date: 2026-10-23
-- Standards: WCAG 2.2 Level A/AA; WAI-ARIA 1.2 where applicable
-- Scope: login, catalog, modals, PDF reader, EPUB reader, notes/search,
-  highlights and the offline library
-- Methods: axe-core 4.13 in Edge and jsdom, keyboard/zoom checks, DOM/layout
-  measurements, source review; **no completed NVDA or VoiceOver pass**
-- Evidence: [A11Y-RESULTS.md](A11Y-RESULTS.md),
-  [ACCESSIBILITY.md](ACCESSIBILITY.md),
-  [a11y-evidence/](a11y-evidence/)
+- Ürün/sürüm: Akademik Platform, **v122**, CSS **v45**, SW **v14**.
+- Değerlendirilen kaynak: **8b598a37416aabbe18ce1c846a052a9787b4f0b1**; 2026-10-24.
+- Canlı sürüm: [v122 dağıtımı](deployments/2026-10-24-v122.md). Yeni audit ayrı, yalnız fixture kullanan demo kopyasındadır; prod değişmedi.
+- Hedef: WCAG 2.2 A/AA. Aşağıda **55 kriterin tamamı** bulunur; 4.1.1 WCAG 2.2’den çıkarıldığı için bu matrise dahil değildir.
+- Kapsam: login, katalog, modallar, PDF/EPUB okuyucu, seçim/kopyalama/not/yer imi, offline ve çatışma/410 durumları. Yayın içeriği örnekleri arayüzden ayrı kayıtlanır; tüm yayınların erişilebilir olduğu varsayılmaz.
+- Ortam: Windows 25H2 build 26200.9711, Edge 155.0.4283.45, axe-core 4.13.0. Güncel otomasyon headless Edge kullanır; gerçek NVDA kabulünün yerine geçmez.
+- Seçilen manuel ortam: **NVDA + Edge / Windows** (ürün sahibi). NVDA sürümü, ses/sentezleyici, TR/EN ayarları ve test eden kişi henüz bildirilmedi.
+- VoiceOver + Safari: **NOT RUN**, Windows kapsamında yok; ayrı ortam kabulü gerektirir.
 
-## Status vocabulary
+## Kanıt ve durum kullanımı
 
-- **Supports** — verified for the tested screens/state.
-- **Partially Supports** — some functions meet the criterion, others do not or
-  remain unverified.
-- **Does Not Support** — a known failure.
-- **Not Applicable** — no relevant content.
-- **Not Evaluated** — not tested; no claim.
+Güncel sonuç: **10 axe taraması / 0 ihlal**, **1 Notes odak kontrolü geçti**, **2 orijinal EPUB frame taraması BLOCKED**; JS hatası 0. [v122 kanıt özeti](a11y-evidence/v122-2026-10-24/summary.json). Kontrastın manuel inceleme maddeleri ve gerçek NVDA konuşması açıktır.
 
-## Selected criteria
+[Sonuçlar](A11Y-RESULTS.md), [v122 manuel oturum formu](A11Y-NVDA-V122.md), [genel plan](A11Y-TEST-PLAN.md). v104/v105/v106 kanıtları tarihsel hedefli testlerdir. v122 dağıtımındaki Edge 14/14 işlevsellik testidir; ekran okuyucu kabulü değildir.
 
-| WCAG SC | Level | Status | Notes |
-|---|---|---|---|
-| 1.1.1 Non-text Content | A | Partially Supports | Reader controls have names; publisher EPUB/PDF images and alt text depend on source files and were not exhaustively audited. Scanned PDFs without OCR have no text layer. |
-| 1.3.1 Info and Relationships | A | Partially Supports | Landmarks, headings, tabs, dialogs and form labels are present; full EPUB content semantics remain source-dependent and iframe coverage is incomplete. |
-| 1.3.2 Meaningful Sequence | A | Partially Supports | Reader order is verified for tested fixtures; fixed-layout EPUB and complex publisher tables are not covered. |
-| 1.4.3 Contrast (Minimum) | AA | Partially Supports | Automated checks on tested screens pass; symbol-only controls and overlapping backgrounds still need a manual contrast pass. |
-| 1.4.4 Resize Text | AA | Supports | Login, Edit, Upload and Grants controls are reachable at 200% and 400% zoom in the v105/v106 retest. |
-| 1.4.10 Reflow | AA | Partially Supports | 320 CSS px checks pass for login/modals/catalog; full reader content at 400% and fixed-layout EPUB are not fully covered. |
-| 1.4.11 Non-text Contrast | AA | Not Evaluated | No complete manual pass. |
-| 2.1.1 Keyboard | A | Partially Supports | Catalog, modals, PDF controls, notes and shortcuts are keyboard-operated; EPUB iframe content and third-party publisher semantics are not fully verified. |
-| 2.1.2 No Keyboard Trap | A | Supports | Modal/reader focus traps release with Escape and return focus. |
-| 2.4.3 Focus Order | A | Supports | Tested login/catalog/reader/modals use a logical order. |
-| 2.4.7 Focus Visible | AA | Supports | Global `:focus-visible` outline; checked in normal and forced-colors emulation. |
-| 2.4.11 Focus Not Obscured (Minimum) | AA | Supports | Notes focus no longer sits under the panel; Escape/close return focus to the toggle (v106, 10/10). |
-| 2.5.8 Target Size (Minimum) | AA | Supports | Small controls are at least 24×24 CSS px (v105). |
-| 3.1.1 Language of Page | A | Partially Supports | App language is set; EPUB frame `html[lang]` is applied on load/relocation (v105), but a full iframe audit is outstanding. |
-| 3.2.1 On Focus | A | Supports | No context change on focus in tested screens. |
-| 3.2.2 On Input | A | Supports | Inputs do not auto-submit; search/filter changes are explicit. |
-| 3.3.1 Error Identification | A | Partially Supports | Login/upload/grant errors are text and announced; some dynamic messages remain Turkish-only. |
-| 3.3.2 Labels or Instructions | A | Supports | Form controls have visible labels/accessible names in tested screens. |
-| 4.1.2 Name, Role, Value | A | Supports | axe reports zero violations for tested static states; controls use native elements or correct roles. |
-| 4.1.3 Status Messages | AA | Partially Supports | Toasts and result counts use live regions; screen-reader announcement quality is unverified. |
+**Supports** yalnız tanımlı kapsamda yeterli kanıtla; **Partially Supports** kanıtlanan eksiklikle; **Does Not Support** doğrulanmış başarısızlıkla; **Not Applicable** gerekçeli kapsam kararıyla kullanılır. **Not Evaluated**, bu taslağın tamamlanmamış değerlendirmesidir; nihai uygunluk sonucu değildir. Test eksikliği başarısızlık veya kısmi destek diye sunulmaz. Otomatik alt kontrolün geçmesi tüm kriteri kapatmaz.
 
-## Known gaps / not evaluated
+## WCAG 2.2 A/AA matrisi
 
-- **NVDA + Edge** and **VoiceOver + Safari** passes were not run. Human
-  listening, browse-mode reading order and spoken error/live-region quality are
-  unverified.
-- Complete **EPUB iframe** axe run did not finish; frame title/lang/sandbox were
-  inspected separately.
-- Native Windows high-contrast/forced-colors pass is incomplete (Edge media
-  emulation only).
-- Fixed-layout EPUB, MathML, RTL, tables and publisher image semantics were not
-  audited.
-- Offline reader was tested with network emulation, not OS airplane mode or a
-  cold offline restart.
-- Mobile screen readers, 500 MB image-only PDFs and audio/TTS are out of scope.
+Kriter açıklamaları kısa Türkçe etiketlerdir; normatif metin için [W3C WCAG 2.2](https://www.w3.org/TR/WCAG22/) esas alınır. Durumlar ürün geneli hakkındadır; açıklamalardaki hedefli geçişler daha dar kanıttır.
 
-## Contact
+| SC | Düzey | Kısa açıklama | v122 durumu | Kanıt / kalan değerlendirme |
+| --- | --- | --- | --- | --- |
+| 1.1.1 | A | Metin alternatifleri | Not Evaluated | Arayüz ve yayın içeriği ayrı incelenmeli; taranmış/OCR’siz PDF alternatifi ayrıca değerlendirilir. |
+| 1.2.1 | A | Önceden kaydedilmiş ses/video | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 1.2.2 | A | Kayıt altyazıları | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 1.2.3 | A | Sesli betimleme alternatifi | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 1.2.4 | AA | Canlı altyazılar | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 1.2.5 | AA | Sesli betimleme | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 1.3.1 | A | Bilgi ilişkileri | Not Evaluated | Güncel DOM/axe kanıtı mevcut; EPUB tablo/başlık semantiği NVDA ile doğrulanmadı. |
+| 1.3.2 | A | Anlamlı okuma sırası | Not Evaluated | DOM veya ekran görüntüsü konuşma/okuma sırası kanıtı değildir. S05/S08. |
+| 1.3.3 | A | Duyusal yönergeler | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 1.3.4 | AA | Ekran yönü | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 1.3.5 | AA | Girdi amacı | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 1.4.1 | A | Renk kullanımı | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 1.4.2 | A | Ses kontrolü | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 1.4.3 | AA | Metin kontrastı | Not Evaluated | Güncel axe çıktılarında color-contrast manuel inceleme maddeleri var. |
+| 1.4.4 | AA | Metin büyütme | Not Evaluated | v105/v106 tarihsel 200/400% kanıtı var; tüm v122 durumları için yeniden karar gerekir. |
+| 1.4.5 | AA | Metin görselleri | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 1.4.10 | AA | Yeniden akış | Not Evaluated | Yeni not/çatışma kontrolleri ve EPUB için 320 CSS px kapsamı açık. |
+| 1.4.11 | AA | Arayüz kontrastı | Not Evaluated | Native Windows contrast theme ve manuel oran ölçümü açık. |
+| 1.4.12 | AA | Metin aralıkları | Not Evaluated | Metin aralığı override deneyi yapılmadı. |
+| 1.4.13 | AA | Hover/odak içeriği | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 2.1.1 | A | Klavye kullanımı | Not Evaluated | Notes Escape hedefli DOM testi geçti; tam klavye/iframe akışı S04–S11 açık. |
+| 2.1.2 | A | Klavye tuzağı | Not Evaluated | Hedefli kapatma testi geçti; EPUB içerikten geri çıkış ve yeni dinamik durumlar açık. |
+| 2.1.4 | A | Tek karakter kısayolları | Not Evaluated | NVDA browse/focus modlarıyla uygulama kısayollarının etkileşimi S04/S08. |
+| 2.2.1 | A | Süre ayarları | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 2.2.2 | A | Duraklatma ve gizleme | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 2.3.1 | A | Yanıp sönme | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 2.4.1 | A | Blokları atlama | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 2.4.2 | A | Sayfa başlığı | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 2.4.3 | A | Odak sırası | Not Evaluated | Odak geçişi ve reader dışı içerik NVDA ile incelenmeli; S04/S07/S08. |
+| 2.4.4 | A | Bağlantı amacı | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 2.4.5 | AA | Birden çok yol | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 2.4.6 | AA | Başlık ve etiketler | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 2.4.7 | AA | Görünür odak | Not Evaluated | v105/v106 hedefli tarihsel kanıt; v122 dinamik durumlar ve native contrast açık. |
+| 2.4.11 | AA | Örtülmeyen odak | Not Evaluated | Güncel Notes Escape/odak hedefli kontrolü geçti; genel kriter kapanmadı. |
+| 2.5.1 | A | İşaretçi hareketleri | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 2.5.2 | A | İşaretçiyi iptal etme | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 2.5.3 | A | Etiketteki ad | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 2.5.4 | A | Hareketle çalıştırma | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 2.5.7 | AA | Sürükleme alternatifleri | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 2.5.8 | AA | Hedef boyutu | Not Evaluated | v105 renk düğmesi düzeltmesi tarihsel; yeni kopyalama/çatışma kontrolleri ayrıca ölçülmeli. |
+| 3.1.1 | A | Sayfa dili | Not Evaluated | Güncel örnek iframe html[lang]=en doğrulandı; yayın örneklemi ve konuşma kontrolü açık. |
+| 3.1.2 | AA | Bölüm dili | Not Evaluated | Örnekteki tr bölümü NVDA dil değişimiyle okunmalı. S08. |
+| 3.2.1 | A | Odakta bağlam | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 3.2.2 | A | Girdide bağlam | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 3.2.3 | AA | Tutarlı gezinme | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 3.2.4 | AA | Tutarlı tanımlama | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 3.2.6 | A | Tutarlı yardım | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 3.3.1 | A | Hata tanımlama | Not Evaluated | Login role=alert mevcut; gerçek duyuru S01. Çatışma/410 S11/S12. |
+| 3.3.2 | A | Etiket ve yönergeler | Not Evaluated | Güncel login/modallar axe taraması geçti; tüm iş akışına ilişkin sonuç verilmedi. |
+| 3.3.3 | AA | Hata önerisi | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 3.3.4 | AA | İşlem hatasını önleme | Not Evaluated | Not silme/çatışma kararı/410 taslak davranışı kullanılabilirlik açısından S06/S11/S12. |
+| 3.3.7 | A | Tekrarlı girdi | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
+| 3.3.8 | AA | Erişilebilir kimlik doğrulama | Not Evaluated | Parola yöneticisi, yapıştırma ve kimlik doğrulama tam kullanıcı akışı test edilmeli. |
+| 4.1.2 | A | Ad/rol/değer | Not Evaluated | Güncel axe ve AX/DOM kanıtı kısmi; iframe/dinamik kontrollerin tamamı kapanmadı. |
+| 4.1.3 | AA | Durum mesajları | Not Evaluated | aria-live/role=status varlığı konuşma kanıtı değildir. S01/S05/S10–S12. |
 
-Accessibility owner: project maintainer. Provide this draft with the linked
-evidence; do not present it as a certification or a completed VPAT.
+## Açık kapılar
+
+1. **NVDA + Edge:** S01–S12 sonuçları, gerçekten duyulan metin, browse/focus geçişi, iframe okuma/çıkış ve hata/çatışma duyuruları. S12 için yalnız izole ortamda 410 senaryosu; prod receipt tarihleri değiştirilmeyecek.
+2. **EPUB orijinal sandbox iframe:** güncel içerik taraması zaman aşımına uğradı. Kopyalanmış standalone HTML veya shell taraması tam iframe PASS sayılmaz; allow-scripts açılarak test kolaylaştırılmaz.
+3. Native Windows contrast theme, manuel kontrast, metin aralıkları, v122 dinamik ekranlarının 200/400%/320 CSS px kontrolleri.
+4. PDF’de gerçek metin/okuma sırası ve OCR’siz tarama alternatifi; EPUB başlık/tablo/bağlantı/iki dil örneklemi. Fixed-layout/MathML/RTL ayrı doğrulama kapsamıdır; çalışıyor/çalışmıyor diye varsayılmaz.
+5. Her satıra kanıta dayalı sonuç, etkilenen ekran/içerik, bilinen eksiklik ve test eden/tarih yazılmalı. ACR bilinen sınırlamaları raporlayabilir; yalnız NVDA akışının geçmesi tam AA iddiasına yetmez.
+
+WCAG tam uyum iddiası tüm ilgili A/AA kriterlerini, tam sayfaları ve eksiksiz süreçleri kapsar; [W3C uygunluk koşulları](https://www.w3.org/TR/WCAG22/#conformance-reqs). Bu taslak değerlendirme hazırlığıdır ve müşteri görüşmesinde tamamlanmış uygunluk belgesi olarak sunulmaz.
+
+Sorumlu: proje sahibi; test eden ve son onay henüz atanmadı.

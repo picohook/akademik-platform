@@ -1,0 +1,154 @@
+{
+  "checkedAt": "2026-10-24T15:41:02.504Z",
+  "release": 122,
+  "sourceCommit": "8b598a37416aabbe18ce1c846a052a9787b4f0b1",
+  "status": "PARTIAL",
+  "completedCases": 11,
+  "totalCases": 13,
+  "renderedAxeScans": [
+    {
+      "file": "final/catalog.axe.json",
+      "violations": 0,
+      "incomplete": [
+        "color-contrast"
+      ],
+      "engine": {
+        "name": "axe-core",
+        "version": "4.13.0"
+      }
+    },
+    {
+      "file": "final/epub-shell.axe.json",
+      "violations": 0,
+      "incomplete": [
+        "color-contrast"
+      ],
+      "engine": {
+        "name": "axe-core",
+        "version": "4.13.0"
+      }
+    },
+    {
+      "file": "final/grantsModal.axe.json",
+      "violations": 0,
+      "incomplete": [
+        "color-contrast"
+      ],
+      "engine": {
+        "name": "axe-core",
+        "version": "4.13.0"
+      }
+    },
+    {
+      "file": "final/login-error.axe.json",
+      "violations": 0,
+      "incomplete": [
+        "color-contrast"
+      ],
+      "engine": {
+        "name": "axe-core",
+        "version": "4.13.0"
+      }
+    },
+    {
+      "file": "final/login.axe.json",
+      "violations": 0,
+      "incomplete": [
+        "color-contrast"
+      ],
+      "engine": {
+        "name": "axe-core",
+        "version": "4.13.0"
+      }
+    },
+    {
+      "file": "final/offlineModal.axe.json",
+      "violations": 0,
+      "incomplete": [
+        "color-contrast"
+      ],
+      "engine": {
+        "name": "axe-core",
+        "version": "4.13.0"
+      }
+    },
+    {
+      "file": "final/passwordModal.axe.json",
+      "violations": 0,
+      "incomplete": [
+        "color-contrast"
+      ],
+      "engine": {
+        "name": "axe-core",
+        "version": "4.13.0"
+      }
+    },
+    {
+      "file": "final/pdf-notes.axe.json",
+      "violations": 0,
+      "incomplete": [
+        "color-contrast"
+      ],
+      "engine": {
+        "name": "axe-core",
+        "version": "4.13.0"
+      }
+    },
+    {
+      "file": "final/pdf-reader.axe.json",
+      "violations": 0,
+      "incomplete": [
+        "color-contrast"
+      ],
+      "engine": {
+        "name": "axe-core",
+        "version": "4.13.0"
+      }
+    },
+    {
+      "file": "final/uploadModal.axe.json",
+      "violations": 0,
+      "incomplete": [
+        "color-contrast"
+      ],
+      "engine": {
+        "name": "axe-core",
+        "version": "4.13.0"
+      }
+    }
+  ],
+  "blocked": [
+    {
+      "id": "epub-original-frame-one",
+      "status": "BLOCKED",
+      "error": "Original sandbox iframe axe did not complete in 15s"
+    },
+    {
+      "id": "epub-original-frame-two",
+      "status": "BLOCKED",
+      "error": "Original sandbox iframe axe did not complete in 15s"
+    }
+  ],
+  "confirmedAxeViolations": 0,
+  "keyboardObservation": "Notes panel open -> focused filter -> one Escape -> closed panel and toggle focus; not a speech observation",
+  "nvda": "NOT RUN; existing signed official portable creation attempt failed, no system installation changed",
+  "voiceover": "NOT RUN; unavailable on Windows; separate platform scope",
+  "originalFrameSandboxPreserved": true,
+  "productionScriptsInjected": false,
+  "sourceMatchesDeployedImage": true,
+  "firstAttemptNotesFailure": "Harness toggled the already-open wide-screen Notes panel closed before attempting filter focus; final test checks visibility and focuses the actual input. Application code unchanged. First attempt retained.",
+  "candidateManualChecks": [
+    {
+      "area": "Reader toolbar",
+      "observation": "AX primary names for six icon controls are glyphs; descriptive title appears as AX description. Actual NVDA announcement and purpose comprehension need S04/S05. No WCAG failure assigned without further evaluation."
+    },
+    {
+      "area": "Reader background",
+      "observation": "main.inert is true but footer.inert is false; footer Shortcuts remains in Chromium AX tree. NVDA modal browsing and keyboard reachability need S04. No trap/conformance result inferred from AX tree alone."
+    }
+  ],
+  "cleanup": {
+    "browserClosed": true,
+    "ownedServerStopped": true
+  }
+}

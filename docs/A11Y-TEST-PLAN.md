@@ -1,10 +1,10 @@
 # Accessibility test plan — WCAG 2.2 AA
 
-This is the manual/automated verification pass on top of `docs/ACCESSIBILITY.md`.
+Current target: **v122 / 8b598a3**, CSS v45, SW v14. Manual platform: **NVDA + Edge on Windows** (selected by product owner). Run and record [S01–S12](A11Y-NVDA-V122.md); VoiceOver/Safari is a separate NOT RUN environment. Historical v104–v106 results are not v122 sign-off.
 
 ## 1. axe DevTools (automated)
 
-Install the **axe DevTools** extension in Edge or Chrome. Open `https://localhost/?v=104` (prod) or `http://localhost:8080/?v=104` (dev).
+Install the **axe DevTools** extension in Edge or Chrome. Open `https://localhost/?v=122` (prod) or `http://localhost:8080/?v=122` (dev).
 
 Run **Scan all of my page** on:
 
@@ -17,15 +17,9 @@ Run **Scan all of my page** on:
 
 Expected: **no critical or serious issues**. Minor/moderate findings are logged in the PR/issue.
 
-For EPUB content, use axe’s **include frames** option; EPUB.js renders into a sandboxed iframe. If the extension cannot reach it, run the axe API inside the frame:
+For EPUB content, audit the **original rendered frame document**, preserving sandbox and CSP. The audit engine must be present in that execution context; referencing parent-window axe or copying the frame into a standalone page is not a complete include-frames run. Current v122 attempts time out in the sandbox and are **BLOCKED**, not a pass or a confirmed WCAG defect. Keep script permissions unchanged. If an extension cannot complete its include-frames run, retain that limitation and manually inspect headings, links, tables, language and reading order with NVDA.
 
-```js
-// DevTools console while the EPUB is open
-const frame = document.querySelector('#epubView iframe');
-frame.contentWindow.eval('axe.run(document, { runOnly: ["wcag2a","wcag2aa","wcag21a","wcag21aa","wcag22aa"] })');
-```
-
-Do not paste third-party scripts into production; this is a local audit only.
+Do not inject audit scripts into production; use the isolated pinned local audit copy.
 
 ## 2. Screen reader
 
@@ -77,7 +71,7 @@ Use DevTools device toolbar at 320×640 and 1280×720.
 ## 5. Sign-off
 
 - [ ] axe: no critical/serious on all screens.
-- [ ] NVDA or VoiceOver: all tasks above pass.
+- [ ] NVDA + Edge: S01–S12 actual observations recorded; failures/not-run cases explicit. VoiceOver remains separate.
 - [ ] 200%/400% zoom: no clipped controls.
 - [ ] EPUB iframe: title/lang/reading order checked.
 - [ ] Findings fixed or logged with owner and target version.

@@ -8,6 +8,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - DB migration kaynak ve prod **001–016**. Taze restore kopyasında 016 çift uygulandı; annotation/receipt fingerprint’leri korundu. DB admin 016 → v122 web sırası tamam. 016 rollback’te korunur.
 - Prod: **v122** (2026-10-24 17:52:23 Europe/Istanbul), kaynak **8b598a3**, imaj sha256:da4f5654f473a0a5503d878f36b9f7949342943fb4f58247264c92dc8c81b0d5, etiket akademik-platform-prod-web:v122-8b598a3; healthy/0, smoke **16/16**, gerçek PostgreSQL/Edge **14/14**, JS hatası 0, cleanup 4/4. İlk otomatik retention: sentetik 1 receipt → 1 tombstone, hata yok. v121 rollback korunur. docs/deployments/2026-10-24-v122.md.
 - Son doğrulama v122/4300f1f: istenen birebir app-role retest **11/11**, 0 JS hatası, cleanup **6/6**. İki 91 günlük receipt aynı turda **2 moved / 2 deleted / 2 tombstone**; batch **1000+5**; iki ayrı Node sürecinde kazanan **2/2** ve 2 tombstone, diğeri skipped/0 silme. Gerçek v121 HTTP **500/P0001** ile not sayısı sabit; v122 **410**, Edge taslak/reload geçti. Önceki aynı kod **65/65** birim kanıtı korunur; yeniden koşulmadı. Bu izole retest sırasında prod değiştirilmedi; ardından GO ile v122/001–016 deploy tamamlandı. docs/reader-evidence/v122-retention-exact/requested-checks.json.
+- **Receipt hardening v122 ürün sahibi tarafından kapatıldı.** Bilinçli sınırlar: tombstone purge’den 365 gün sonra çok eski POST yeniden kabul edilebilir; v121 rollback 500/P0001 ve kullanıcı RLS/410 yok; 016 geri alınmaz. Haftalık retention logu ve annotation_operations boyutu kontrolü operasyonel takip; süre müşteri sözleşmesinde açık yazılmalı.
 - Bağımlılık: `npm audit --omit=dev` **0**; tam audit’te yalnız dev-only `epubjs/@xmldom` (2 uyarı).
 - EPUB kararı: **ADR-012** — MVP/V1a için epub.js, `EpubEngine` adapter arkasında, pinli; Readium/R2D2BC geçiş eşikleri yazılı.
 
@@ -40,14 +41,14 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - **P0 v118 dar kapsamla canlı; migration 013–014 ve deploy tamam.** Normal ve yeni Çevrimdışı ↓ indirme ortak biletli/filigranlı POST yolunu kullanır; PDF beyaz kutusu kaldırıldı, yalnız %28 opak metin var. Kullanıcı/tenant başına DB-ortak 10 issue ve 40 ticket-route isteği/60 sn; 429/Retry-After, sınırlı audit özeti; başlangıç+60 sn, tenant kapsamlı 1000’lik purge. **Kullanıcı dar kapsamı kabul etti: sosyal filigran + erişim kontrolü. Ham okuyucu akışı, eski offline kopyalar, screenshot/fotoğraf, filigran kaldırma ve her kopyanın izlenebilirliği kapsam dışı.** Eski blob'lar korunur; zorunlu yeniden indirme yok. Kota testi native tahmin kabul kontrolüdür, fiziksel disk doluluğu/transaction QuotaExceededError kanıtı değildir. `docs/SOCIAL-DRM.md`; AES at-rest P1.
 - Kopyalama paketi v116 canlı: PDF/EPUB izin tutarlılığı, seçimden Kopyala / Atıfla kopyala. Citation 17/17 + EPUB izin 7/7 birim testi ve gerçek Edge kabulü 13/13 geçti (uygulayan AI). Seçim/vurgu/not korunur. Kanıtlar: `docs/COPYING-TESTS.md`.
 - Kapasite retesti geçti: yalnız async scrypt yeterli olmadı; parola doğrulaması `withTenant` dışına taşınıp havuz bağlantısı erken bırakıldı (`8e1347c`). Tenant/user advisory lock ve seat limit korundu; güvenlik 60/60. Aynı kısa taramada 10/25/50/100 girişlerin tamamı kabul, 6200 API isteğinde 0 hata; 50/100 giriş p95 **2,637 / 5,182 sn**. Bu, prod kapasitesi garantisi değildir. Önceki başarısız koşular değişmeden korundu. Kanıt: `docs/CAPACITY-TEST.md`.
-- Manuel NVDA/VoiceOver ve tam EPUB iframe denetimi paralel; gerçek ekran okuyucu gözlemi olmadan ACR tam uyum iddiası yok.
+- **Sıradaki erişilebilirlik kabulü: NVDA + Edge / Windows** (ürün sahibi seçti). v122 güncel audit: 10 axe taraması 0 ihlal, Notes Escape/odak 1/1; orijinal EPUB frame taraması 2 BLOCKED, JS 0. Gerçek konuşma henüz NOT RUN; VoiceOver ayrı test. ACR v122/55 kriter taslak ve S01–S12 formu hazır; tam AA/VPAT kapanmadı. docs/A11Y-NVDA-V122.md.
 - v122 GO uygulandı: taze yedek/restore → DB admin 016 → sabit 8b598a3 imajı → smoke 16/16 ve Edge 14/14. İlk otomatik app-role retention geçti. 016 ve v121 rollback imajı korunur. docs/deployments/2026-10-24-v122.md.
 - Müşteriye bağlı: ilk istenen SSO protokolü; sertifikalı COUNTER alım şartıysa ayrı iş paketi.
 - Sonraki okuyucu işleri: not içe aktarma / açıklamalı PDF, EPUB görünüm seçenekleri; El aracı küçük P2 iş. Fixed-layout/MathML/RTL içerikle doğrulanacak. 500 MB görsel PDF kapsam dışında.
 
 ## Açık işler (sırayla)
 
-1. **WCAG 2.2 AA manuel denetimi:** NVDA/VoiceOver, tam EPUB iframe axe ve native kontrast teması; hedefli F1–F5/zoom retestleri geçti.
+1. **WCAG 2.2 AA / ACR:** v122 güncel kanıtı ve 55 kriter taslağı hazır; NVDA + Edge S01–S12 konuşma gözlemleri, sandbox iframe tam taraması, native kontrast ve güncel dinamik reflow açık. docs/ACR.md.
 2. **Sosyal filigran / erişim kontrolü:** P0 v118 dar sözleşme kapsamında canlı; 013–014 ve deploy tamam, 16 smoke + 6 canlı senaryo geçti. Sonraki iş AES at-rest P1; chunked range/LCP yalnız gerçek yayıncı şartıyla. `docs/deployments/2026-10-23-v118.md`, `docs/SOCIAL-DRM.md`.
 3. **Görsel ağırlıklı >300 MB:** kapsam dışı; yalnızca gerçek yayıncı talebi olursa önizleme/derivative pipeline.
 4. **Interop:** OPDS/OAI/MARC/SUSHI/CSV/OPDS API-key hazır; sertifikalı COUNTER ve OAI resumption/set kaldı (`docs/INTEROP.md`).
@@ -64,7 +65,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - Demo modunda parola değiştirme/oturum iptali 501.
 - OCR otomasyonu yok; hOCR manuel/CLI.
 - EPUB okuyucu tarayıcıda otomatik test edilmedi; EPUB indirme açık; `watermark=false` değilse XHTML sayfalarına kullanıcı/e-posta/tarih filigranı ekleniyor; `allow_download` uygulanıyor. v78: tam kelime/bulanık birbirini dışlıyor; fuzzy yalnızca exact sonuç <3 iken ve `word_similarity >= 0.6` ile çalışıyor. Arama `<body>` ve gerçek chapter etiketi. Eski indeksler için `index-text --all --force`.
-- Erişilebilirlik: modal odak tuzağı, tab/aria-current, skip link, `aria-busy`, reduced-motion eklendi; F1–F5 hedefli retestlerle kapandı, v106 prod’da; NVDA/VoiceOver ve tam iframe taraması açık. `docs/A11Y-RESULTS.md`.
+- Erişilebilirlik: modal odak tuzağı, tab/aria-current, skip link, `aria-busy`, reduced-motion; F1–F5 tarihsel hedefli retestlerle kapandı. Prod v122; güncel NVDA + Edge ve tam iframe kabulü açık. `docs/A11Y-RESULTS.md`.
 - Prod'daki mayenit kitabı 2026-10-21'de `language='en'` yapıldı (İngilizce sözlükle kök arama çalışıyor). Ingest `--language` verilmezse sessizce `tr` yazar; İngilizce kitaplar için `--language en` şart.
 - İçerik hakları ve gerçek yayıncı kitapları hâlâ yok.
 - i18n kısmi: statik UI ve yaygın dinamik etiketler EN; bazı toast/doğrulama/yardım metinleri ve kitap metadata’sı çevrilmiyor.

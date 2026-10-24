@@ -1,6 +1,6 @@
 # Accessibility manual results — WCAG 2.2 AA
 
-**Status: OPEN — F1–F4 passed in v105; F5 passed in v106 (10/10 targeted checks). Screen-reader and full iframe sign-off remain outstanding.**
+**Status: OPEN — v122 audit refreshed; NVDA + Edge actual speech observations and complete iframe sign-off remain outstanding. Historical F1–F5 targeted passes remain below.**
 
 The initial summary/findings below are the v104 baseline; current verification is recorded under **Retest — v105** and **Retest — v106**.
 
@@ -182,3 +182,19 @@ HTTPS asset hashes match the tested source, and smoke checks pass 16/16.
 - [ ] Offline library/reader checked for v105 — only the v104 baseline smoke was performed.
 - [x] Targeted F1–F5 findings closed — F1–F4 verified in v105; F5 Escape and focus behavior verified in v106 (10/10).
 - [x] v106 deployment gate — F5 retest passed; [production deployed and verified](deployments/2026-10-23-v106.md), smoke 16/16.
+
+
+## v122 current audit and NVDA preparation — 2026-10-24
+
+Pinned source **8b598a3**, CSS45/SW14; actual deployed image hashes match all 14 runtime files. Product owner selected **Windows / NVDA + Edge**. The current audit uses an isolated unchanged demo copy with generated reflow EPUB, no customer data and no production audit-script injection. A transport bootstrap limits the server to loopback; DATABASE_URL is empty and social watermark enforcement is disabled in this fixture-only demo, so these runs do not establish production DB/DRM behavior.
+
+- **10 rendered Edge/axe scans completed, 0 reported violations:** login, login-error, catalog, Upload, Password, Grants, Offline empty modal, PDF reader, PDF Notes and EPUB shell. Contrast incomplete items remain; zero violations is not a full contrast pass.
+- **1 targeted keyboard/DOM pass:** Notes filter -> one Escape -> panel closes and focus returns to toggle. This is not a spoken-focus pass.
+- **2 original-frame scans BLOCKED:** chapter one and two both timed out at 15 seconds. Direct evaluation and CDP isolated-world evaluation were tried on the original sandboxed documents without enabling publisher scripts; shell or standalone scans are not substituted as full iframe coverage. Frame language/title/sandbox metadata was checked before the incomplete scan, but this does not complete an iframe audit.
+- Browser JS errors **0**. Owned browser and local server stopped; production remains v122.
+- The first harness toggled the already-open wide-screen Notes panel closed, then incorrectly attempted to focus the hidden filter. That fixture/setup failure is retained separately; corrected setup passes without product changes. This is not a reopened F5 product finding.
+- A signed NV Access 2026.2 portable creation attempt in a new workspace folder did not finish within the bounded 45 seconds and yielded no executable. Only that spawned installer was stopped; no NVDA installation/startup setting changed. No real NVDA speech pass is claimed. VoiceOver/Safari was unavailable and remains NOT RUN.
+
+Two observations are queued for the real NVDA session rather than declared WCAG failures: six reader icon controls have glyph primary AX names and descriptive title text in AX descriptions; the footer/Shortcuts remains in the AX tree while main is inert. Verify announcement clarity and modal browse-mode isolation in S04/S05.
+
+[Summary](a11y-evidence/v122-2026-10-24/summary.json), [final results](a11y-evidence/v122-2026-10-24/final/results.json), [first attempt](a11y-evidence/v122-2026-10-24/first-attempt/results.json), [manual S01–S12 form](A11Y-NVDA-V122.md), [55-criterion ACR draft](ACR.md). **Overall record stays OPEN; no WCAG AA conformance or completed VPAT is asserted.**

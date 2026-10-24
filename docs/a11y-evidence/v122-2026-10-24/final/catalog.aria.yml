@@ -1,0 +1,36 @@
+- link "İçeriğe atla":
+  - /url: "#mainContent"
+- banner:
+  - link "A Akademik Platform spike":
+    - /url: /
+    - text: A Akademik Platform
+    - emphasis: spike
+  - searchbox "Katalogda ara"
+  - text: / Demo modu Demo Kütüphaneci · librarian
+  - button "Switch to English": EN
+  - button "Çevrimdışı"
+  - button "Erişim"
+  - button "Parola"
+  - button "Çıkış"
+- main:
+  - paragraph: Okuma katmanı · 14 günlük spike
+  - heading "Katalog, okuyucu, not ve arama. Tek çalışan dilim." [level=1]
+  - paragraph:
+    - text: Bu ekran ürün değil; PDF.js,
+    - code: anchor
+    - text: modeli ve Postgres aramasını ölçmek için kurulmuş bir iskelet. Örnek içerik kamu malı test PDF'idir.
+  - button "Tümü"
+  - button "Diş Hekimliği"
+  - button "Implantoloji"
+  - text: 1 başlık
+  - button "+ Kitap ekle"
+  - text: DİŞ HEKİMLİĞİ D Diş Hekimliğinde İmplant Komplikasyonları Demo Akademik Yayıncılık
+  - paragraph: Klinik değerlendirme ve yönetim
+  - paragraph: TR · 2026
+  - text: PDF Diş Hekimliği Implantoloji
+  - button "Diş Hekimliğinde İmplant Komplikasyonları kitabını oku": Oku
+  - button "Çevrimdışı indir": ↓
+  - button "Düzenle"
+- contentinfo:
+  - text: © 2026 Akademik Platform · v122 · Geliştirme
+  - button "Kısayollar"
