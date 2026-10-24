@@ -4,10 +4,10 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web kaynak **v122/c7f40db**, stiller **v45**, SW cache **v14**. Bağımsız inceleme **HOLD**; prod **v121**. docs/ANNOTATION-RECEIPT-HARDENING-REVIEW-2026-10-24.md.
-- DB migration kaynak **001–016**, prod **001–015**. 016 taze prod yedeği kopyasında çift uygulandı; veri korundu fakat app-role purge izin/RLS testinde kaldı. Prod’a uygulanmadı.
+- Web kaynak **v122/7fff4e0**, stiller **v45**, SW cache **v14**. Bağımsız inceleme **HOLD** idi; F1/F2 düzeltmeleri kodda, gerçek app-role retesti bekliyor. Prod **v121**. docs/ANNOTATION-RECEIPT-HARDENING-REVIEW-2026-10-24.md.
+- DB migration kaynak **001–016**, prod **001–015**. 016 taze prod yedeği kopyasında çift uygulandı; veri korundu; düzeltme sonrası app-role purge/rollback retesti yapılmadı. Prod’a uygulanmadı.
 - Prod: **v121** (2026-10-24 11:16:43 Europe/Istanbul), kaynak **933615a**, imaj sha256:8c29759dc1181f7ee77ab2f001548631637e9258c3e652fdc548027372e7470a, etiket akademik-platform-prod-web:v121-933615a; healthy/0, smoke **16/16**, gerçek PostgreSQL/Edge **14/14**, 0 JS hatası, cleanup 4/4. v120 rollback korunur. docs/deployments/2026-10-24-v121.md.
-- Son doğrulama v122: bağımsız **64/64 birim**, migration 016 restore kopyasında çift uygulama, normal CAS/replay, owner RLS ve gerçek Edge HTTP410/IndexedDB taslak koruma geçti. Purge **42501**, UPDATE izni tek başına 0 satır, maintenance tombstone SELECT ayrıca 42501. Aktif tombstone varken v121 modülü eski POST’u **201** ile yeniden oluşturuyor; v122’ye dönüşte de yeni receipt **201**. Karar **HOLD**, prod v121 değişmedi; final 10 diagnostic/kontrolde 9 repro PASS/1 kabul FAIL, 0 JS hatası, cleanup 5/5.
+- Son doğrulama v122: bağımsız **64/64 birim** (düzeltme sonrası yerel **65/65**) ve normal CAS/replay/Edge 410/taslak koruma geçti. F1 purge artık `FOR UPDATE`/UPDATE izni kullanmıyor: tenant advisory lock, `RETURNING`siz tombstone insert ve maintenance SELECT. F2 için tombstone operasyon anahtarına INSERT guard trigger eklendi; v121 eski POST’u 201 ile diriltemez, transaction rollback olur. **Gerçek app-role purge ve v121 rollback retesti henüz yapılmadı; HOLD.**
 - Bağımlılık: `npm audit --omit=dev` **0**; tam audit’te yalnız dev-only `epubjs/@xmldom` (2 uyarı).
 - EPUB kararı: **ADR-012** — MVP/V1a için epub.js, `EpubEngine` adapter arkasında, pinli; Readium/R2D2BC geçiş eşikleri yazılı.
 
@@ -41,7 +41,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - Kopyalama paketi v116 canlı: PDF/EPUB izin tutarlılığı, seçimden Kopyala / Atıfla kopyala. Citation 17/17 + EPUB izin 7/7 birim testi ve gerçek Edge kabulü 13/13 geçti (uygulayan AI). Seçim/vurgu/not korunur. Kanıtlar: `docs/COPYING-TESTS.md`.
 - Kapasite retesti geçti: yalnız async scrypt yeterli olmadı; parola doğrulaması `withTenant` dışına taşınıp havuz bağlantısı erken bırakıldı (`8e1347c`). Tenant/user advisory lock ve seat limit korundu; güvenlik 60/60. Aynı kısa taramada 10/25/50/100 girişlerin tamamı kabul, 6200 API isteğinde 0 hata; 50/100 giriş p95 **2,637 / 5,182 sn**. Bu, prod kapasitesi garantisi değildir. Önceki başarısız koşular değişmeden korundu. Kanıt: `docs/CAPACITY-TEST.md`.
 - Manuel NVDA/VoiceOver ve tam EPUB iframe denetimi paralel; gerçek ekran okuyucu gözlemi olmadan ACR tam uyum iddiası yok.
-- Sıradaki iş: v122 **HOLD** bulgularını uygulayan AI’ye ilet: app-role purge kilit/UPDATE RLS + tombstone maintenance görünürlüğü ve tombstone uyumlu/read-only rollback. 365 günlük pencere sonrası eski POST yeniden kabulü ayrıca açık ürün/protokol kararıdır. docs/ANNOTATION-RECEIPT-HARDENING-REVIEW-2026-10-24.md.
+- Sıradaki iş: v122 F1/F2 düzeltmelerini **gerçek app-role ile yeniden test et**: advisory-lock purge, iki süreç, tombstone insert/görünürlük, v121 eski POST’un trigger ile rollback olması. 365 günlük pencere sonrası eski POST yeniden kabulü ayrıca açık ürün/protokol kararıdır. docs/ANNOTATION-RECEIPT-HARDENING.md.
 - Müşteriye bağlı: ilk istenen SSO protokolü; sertifikalı COUNTER alım şartıysa ayrı iş paketi.
 - Sonraki okuyucu işleri: not içe aktarma / açıklamalı PDF, EPUB görünüm seçenekleri; El aracı küçük P2 iş. Fixed-layout/MathML/RTL içerikle doğrulanacak. 500 MB görsel PDF kapsam dışında.
 
