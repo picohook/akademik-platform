@@ -1,0 +1,35 @@
+{
+  "recordedAt": "2026-10-24T08:07:45.405Z",
+  "release": "v121",
+  "reviewedCommit": "933615a",
+  "decision": "conditional PASS; deployment authorized by user review",
+  "independentReview": {
+    "code": "PASS",
+    "units": "62/62 reported by reviewer",
+    "browser": "Not run by independent reviewer; implementing-agent evidence only"
+  },
+  "acceptedForPilot": {
+    "receiptStorage": "Existing v121 receipts retain response bodies, including note text after note deletion. No TTL/purge added in this release.",
+    "scope": "Pilot deployment only; no claim of settled customer retention/compliance policy."
+  },
+  "beforeCustomerProduction": [
+    {
+      "issue": "Receipt retention and erased note content",
+      "decisionNeeded": "Define retention duration, erasure behavior, compaction and operations monitoring. Do not choose a duration without product/contract decision.",
+      "implementationConstraint": "A deleted annotation-ID tombstone alone cannot identify an old POST, whose annotation ID was server-generated. Retain/reject old operation IDs with request hash and result/tombstone metadata, or enforce an explicit bounded retry protocol; never simply purge receipts and permit an old create again."
+    },
+    {
+      "issue": "Tenant-only receipt RLS",
+      "followup": "Consider app.user_id context and user-scoped receipt policy; current application queries bind tenant+user. This is defense in depth, not changed in the approved release."
+    }
+  ],
+  "deployOrder": [
+    "fresh backup",
+    "restore backup in owned isolated PostgreSQL and apply migration 015 twice; verify note fingerprints and trigger/CAS",
+    "build pinned approved source",
+    "apply 015 as production DB admin",
+    "start v121 web",
+    "TLS smoke and actual production two-device/offline/A-B-A browser acceptance"
+  ],
+  "rollback": "Keep additive migration 015; restore v120 image and public env metadata. CAS guarantee unavailable while v120 serves."
+}

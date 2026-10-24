@@ -1,0 +1,38 @@
+{
+  "startedAt": "2026-10-24T08:06:59.284Z",
+  "backup": {
+    "file": "backups/akademik-pre-v121-2026-10-24T08-02-52-130Z-b922d5.dump",
+    "bytes": 97648,
+    "sha256": "cf348392e33d92ae377db4014a1378f5744b2d3e165b1915452eb87e3f192e0f",
+    "private": true
+  },
+  "status": "passed",
+  "cleanup": {
+    "ownedCloneRemoved": true
+  },
+  "scope": "Fresh actual production backup restored in network-isolated owned PostgreSQL. No real note/account content published; fingerprints only. Migration 015 applied twice as admin; rollback-only trigger/CAS probe.",
+  "before": {
+    "notes": 7,
+    "contentDigest": "62c550127d0b7a8b92c84251d39b5850",
+    "works": 2,
+    "assets": 2,
+    "users": 2
+  },
+  "after": {
+    "notes": 7,
+    "contentDigest": "62c550127d0b7a8b92c84251d39b5850",
+    "works": 2,
+    "assets": 2,
+    "users": 2
+  },
+  "schema": {
+    "versionDefault": "1",
+    "rls": true,
+    "trigger": true,
+    "legacyVersions": 0,
+    "receipts": 0
+  },
+  "rollbackOnlyProbe": true,
+  "doubleApply": true,
+  "completedAt": "2026-10-24T08:07:28.188Z"
+}

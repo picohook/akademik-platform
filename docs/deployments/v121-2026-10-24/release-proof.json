@@ -1,0 +1,117 @@
+{
+  "release": "v121",
+  "sourceCommit": "933615aa5a719e730317ecc32305af3f66bd0653",
+  "sourceIsPinnedArchive": true,
+  "independentReview": "User-reported conditional code PASS and 62/62 units; no independent browser run.",
+  "sourceProof": [
+    {
+      "file": "server.mjs",
+      "sha256": "086a14481593c7cc547b1e94b21f4680b99cf82dc3109afb0e1284d8d0a6fbc3",
+      "testedSha256": "405fd7de6ce8dd8c6229990c3a0dede6e50753aa96c71d6a3ee0abdd499711b1",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "indexer.mjs",
+      "sha256": "10bd599125fc9253d970b0b6f847c55eb5b90b31da46cb9b0c3b7c0f1d2c8da8",
+      "testedSha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "download-tickets.mjs",
+      "sha256": "129ddbfb91673e8bc47af0d06ed6f7eeccb4333ff3ab9e6ae28cb72428d999f8",
+      "testedSha256": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "annotation-sync.mjs",
+      "sha256": "1c912354038f6e692ce7fb59d72e7eb599873287d5dc205f8ad9e946f822dd8f",
+      "testedSha256": "904257d723227499c22601ef2293bc89b75407b58616afd710977e95c3eb843e",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "social-watermark.mjs",
+      "sha256": "145ba2260d079f7e436d714f75364ed8551c50b620affe99535b309976152fa5",
+      "testedSha256": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/app.js",
+      "sha256": "2914d0850a044cdea66c40292dc18e004ff076a2f237ecf307f748f187415ffa",
+      "testedSha256": "2bd08b5927384f2b7382ab024c2576cee26d126babd518b530d1f62595925be9",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/index.html",
+      "sha256": "7f67591d696f591ffe19c8cb6a4b34f62cfb89fa923056f6010485411178c7d4",
+      "testedSha256": "a819c94c031d08bc025bcef185db8db593af06fabdceac6d9869122bbe88aac8",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/offline.mjs",
+      "sha256": "3ada1c005a263f8ee46a5c785493ff84bae0bce7d1d3277a7b9542abfa489491",
+      "testedSha256": "d9a087f22b57c84d6a5df54e7e6a76f3f9a8cc5b86ed46323fa70d1082dfb35c",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/downloads.mjs",
+      "sha256": "7e908a175f0ff0dc521d70f508269a1e6d4bc2c0bf1c34e56802af62a3fafb72",
+      "testedSha256": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/sw.js",
+      "sha256": "5e061aa800de4eca2230d30bc8cdf14c17a9542fd200bfec20ffe70aee76ac68",
+      "testedSha256": "90d7e5083daaa5d657f1c46f0d34e8d4a98f23e9eced78518d0a1cca0b005260",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/epub-engine.mjs",
+      "sha256": "f52179b07d83b8f93ca7fbdf67ca8c4d301851e663c63db2667015e71af3ca6b",
+      "testedSha256": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/styles.css",
+      "sha256": "8bf1e9a30c7b5d993e1ef64f9e5458f2fe7feb1269e0e2fde7cf88d0fb3a8045",
+      "testedSha256": "a1d87008bb5c518fd8047c077ac8438a0a3a0e0cf5f97859858a371daae95ee9",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/i18n.mjs",
+      "sha256": "754823377709eb3a64c960e9789fa82263fb8c63e6553321df64b456878d0795",
+      "testedSha256": "670ad9c258e99aaf25bcc9d5329aa3d43ce779a30d3eda08251a575a990a03b8",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/citations.mjs",
+      "sha256": "96b00fa2be1be8cdc582dd1a2dfcff1d67435eb0c1a6d6e161bd7e8873c4a015",
+      "testedSha256": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+      "equalAfterLineEndingNormalization": true
+    }
+  ],
+  "imageHashes": {
+    "server.mjs": "086a14481593c7cc547b1e94b21f4680b99cf82dc3109afb0e1284d8d0a6fbc3",
+    "indexer.mjs": "10bd599125fc9253d970b0b6f847c55eb5b90b31da46cb9b0c3b7c0f1d2c8da8",
+    "download-tickets.mjs": "129ddbfb91673e8bc47af0d06ed6f7eeccb4333ff3ab9e6ae28cb72428d999f8",
+    "annotation-sync.mjs": "1c912354038f6e692ce7fb59d72e7eb599873287d5dc205f8ad9e946f822dd8f",
+    "social-watermark.mjs": "145ba2260d079f7e436d714f75364ed8551c50b620affe99535b309976152fa5",
+    "public/app.js": "2914d0850a044cdea66c40292dc18e004ff076a2f237ecf307f748f187415ffa",
+    "public/index.html": "7f67591d696f591ffe19c8cb6a4b34f62cfb89fa923056f6010485411178c7d4",
+    "public/offline.mjs": "3ada1c005a263f8ee46a5c785493ff84bae0bce7d1d3277a7b9542abfa489491",
+    "public/downloads.mjs": "7e908a175f0ff0dc521d70f508269a1e6d4bc2c0bf1c34e56802af62a3fafb72",
+    "public/sw.js": "5e061aa800de4eca2230d30bc8cdf14c17a9542fd200bfec20ffe70aee76ac68",
+    "public/epub-engine.mjs": "f52179b07d83b8f93ca7fbdf67ca8c4d301851e663c63db2667015e71af3ca6b",
+    "public/styles.css": "8bf1e9a30c7b5d993e1ef64f9e5458f2fe7feb1269e0e2fde7cf88d0fb3a8045",
+    "public/i18n.mjs": "754823377709eb3a64c960e9789fa82263fb8c63e6553321df64b456878d0795",
+    "public/citations.mjs": "96b00fa2be1be8cdc582dd1a2dfcff1d67435eb0c1a6d6e161bd7e8873c4a015"
+  },
+  "migration": "015-annotation-sync.sql",
+  "migrationSourceSha256": "cd7b1059c4be160c25623f9ac722282a9ceb31955143d72d4b295c53f4789437",
+  "smokeHelperSha256": "96a7d0c0dd6b75154b5120debc2c4f38fc6d72821149c769e4e890fc2537962b",
+  "operationsChange": "Smoke helper updated for required operationId and baseVersion; reviewed application source unchanged.",
+  "knownLimits": [
+    "Receipt bodies retain note text after annotation deletion; no TTL or purge. Retention/erasure/compaction decision required before customer production.",
+    "Receipt RLS currently tenant-only; per-user context/policy is a defense-in-depth follow-up.",
+    "Idempotency deduplicates the same operation key, not different user intents or every network transmission."
+  ]
+}

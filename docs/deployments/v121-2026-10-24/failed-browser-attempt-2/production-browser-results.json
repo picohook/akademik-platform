@@ -1,0 +1,151 @@
+{
+  "startedAt": "2026-10-24T08:11:58.116Z",
+  "runId": "9775ace9-2563-40d6-9879-23ed6fbb2b7b",
+  "base": "https://localhost",
+  "sourceCommit": "933615aa5a719e730317ecc32305af3f66bd0653",
+  "status": "failed",
+  "cases": [
+    {
+      "nativeIndexedDB": true,
+      "provenance": "ticketed-download-v1",
+      "sha256": "580abcce5c272bd83b1a9336ec6c17ef93b924a0d64c6edee50e8c75908a8258",
+      "id": "ticketed-native-offline-save-pdf",
+      "status": "PASS"
+    },
+    {
+      "nativeIndexedDB": true,
+      "provenance": "ticketed-download-v1",
+      "sha256": "0cd1765fe0cf2645b203764f9002e699d4813e52909cbd787a12dd7c57fc169d",
+      "id": "ticketed-native-offline-save-epub",
+      "status": "PASS"
+    },
+    {
+      "offlineHardReload": true,
+      "localAliasPreserved": true,
+      "singleServerBookmark": true,
+      "anchor": {
+        "asset_version_id": "8dfa61ab-5bfb-403d-87c7-cdfc20bb75de",
+        "type": "pdf",
+        "page": 1,
+        "rects": [],
+        "text_quote": {
+          "prefix": "",
+          "exact": "",
+          "suffix": ""
+        },
+        "text_position": {
+          "start": 0,
+          "end": 0
+        }
+      },
+      "id": "offline-create-cancel-reload-sync-pdf",
+      "status": "PASS"
+    },
+    {
+      "offlineHardReload": true,
+      "canonicalDelete": true,
+      "neutralToast": true,
+      "id": "offline-delete-reload-sync-pdf",
+      "status": "PASS"
+    },
+    {
+      "offlineHardReload": true,
+      "localAliasPreserved": true,
+      "singleServerBookmark": true,
+      "anchor": {
+        "asset_version_id": "ddaeee5e-be8b-4fba-a907-c83000668ebe",
+        "type": "epub",
+        "cfi": "epubcfi(/6/2!/4/2/1:0)",
+        "href": "chapter.xhtml",
+        "percent": 0,
+        "text_quote": "Yer imi"
+      },
+      "id": "offline-create-cancel-reload-sync-epub",
+      "status": "PASS"
+    },
+    {
+      "offlineHardReload": true,
+      "canonicalDelete": true,
+      "neutralToast": true,
+      "id": "offline-delete-reload-sync-epub",
+      "status": "PASS"
+    },
+    {
+      "nativeIndexedDB": true,
+      "offlineHardReload": true,
+      "casVersion": 2,
+      "cleanedUp": true,
+      "id": "offline-note-edit-reload-sync-pdf",
+      "status": "PASS"
+    },
+    {
+      "nativeIndexedDB": true,
+      "offlineHardReload": true,
+      "casVersion": 2,
+      "cleanedUp": true,
+      "id": "offline-note-edit-reload-sync-epub",
+      "status": "PASS"
+    },
+    {
+      "independentBrowserContexts": 2,
+      "sameAccount": true,
+      "staleEditBlocked": true,
+      "explicitChoice": "local",
+      "finalVersion": 3,
+      "id": "two-device-conflict-pdf",
+      "status": "PASS"
+    },
+    {
+      "independentBrowserContexts": 2,
+      "sameAccount": true,
+      "staleEditBlocked": true,
+      "explicitChoice": "server",
+      "finalVersion": 2,
+      "id": "two-device-conflict-epub",
+      "status": "PASS"
+    },
+    {
+      "realAccountSwitch": true,
+      "offlineHardReload": true,
+      "onlyBVisible": true,
+      "APendingQueuePreserved": true,
+      "id": "B-offline-only-own-bookmark-A-queue-retained-pdf",
+      "status": "PASS"
+    },
+    {
+      "realAccountSwitch": true,
+      "offlineHardReload": true,
+      "onlyBVisible": true,
+      "APendingQueuePreserved": true,
+      "id": "B-offline-only-own-bookmark-A-queue-retained-epub",
+      "status": "PASS"
+    }
+  ],
+  "cleanup": {
+    "pdfFixtureDeleted": true,
+    "epubFixtureDeleted": true,
+    "loggedOut": true,
+    "browserClosed": true
+  },
+  "scope": "Real production HTTPS/PostgreSQL; temporary generated books and notes, actual ticketed offline saves, native IndexedDB, offline bookmark create/delete/reload, offline note edit, two independent device conflicts and A-B-A isolation. Existing customer books/grants unchanged; fixtures removed.",
+  "browser": "155.0.4283.45",
+  "tls": "Dedicated Edge ignores local Caddy CA errors; Node smoke separately validates exported CA; OS trust unchanged.",
+  "fixtures": [
+    {
+      "id": "e7bfde05-f41e-46f6-abcd-75c829c2364c",
+      "title": "Release v121 verification 9775ace9-2563-40d6-9879-23ed6fbb2b7b PDF",
+      "format": "pdf"
+    },
+    {
+      "id": "351cd30f-3a04-4dc9-a29e-f4b5c20fa5e7",
+      "title": "Release v121 verification 9775ace9-2563-40d6-9879-23ed6fbb2b7b EPUB",
+      "format": "epub"
+    }
+  ],
+  "error": {
+    "phase": "A-relogin-flushes-own-bookmark-pdf",
+    "message": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n2 !== 1\n\n    at file:///C:/Users/OWNER/Documents/deepseek-harness/default-workspace/akademik-platform/tmp/deploy-v121/browser-production.mjs:81:277\n    at async stage (file:///C:/Users/OWNER/Documents/deepseek-harness/default-workspace/akademik-platform/tmp/deploy-v121/browser-production.mjs:19:51)\n    at async file:///C:/Users/OWNER/Documents/deepseek-harness/default-workspace/akademik-platform/tmp/deploy-v121/browser-production.mjs:81:23"
+  },
+  "browserErrors": [],
+  "completedAt": "2026-10-24T08:12:58.668Z"
+}

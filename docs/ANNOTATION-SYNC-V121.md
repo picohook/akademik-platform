@@ -1,6 +1,6 @@
 # Not ve yer imi eşitleme — v121
 
-2026-10-24. Kaynak **v121**, CSS **v45**, SW shell **v13**. Kod ve uygulayan ajanın kabul testleri tamamlandı; bağımsız inceleme bekliyor. **Prod v120 olarak kaldı; bu çalışma sırasında üretime migration veya deploy yapılmadı.** PostgreSQL migration **015** zorunlu; IndexedDB sürümü **2** olarak korunur.
+2026-10-24. Kaynak **v121**, CSS **v45**, SW shell **v13**. Bağımsız kod incelemesi **koşullu PASS**; **prod v121**, migration 015 ve canlı kabul tamam. Aşağıdaki ilk kabul koşuları geliştirme sırasındaki izole testlerdir; ayrı dağıtım güncellemesi sondadır. PostgreSQL migration **015** zorunlu; IndexedDB sürümü **2** olarak korunur.
 
 ## Davranış
 
@@ -69,3 +69,10 @@ docker compose --env-file .env.production -f docker-compose.prod.yml exec -T db 
 `akademik` burada DB admin rolüdür; kuruma göre değiştirin. Migration başarıyla bitmeden v121 sunucusunu başlatmayın. `.env.production` içindeki `APP_VERSION=121`, `BUILD_SHA` ve `BUILD_DATE` dağıtılacak commit'e göre ayarlanmalıdır; kaynak compose varsayılanını artırmak mevcut `.env.production` değerini değiştirmez. Ardından build/restart, smoke ve gerçek PDF/EPUB offline edit/yer imi + iki cihaz çatışması + A→B→A kabulü gerekir.
 
 Rollback'te migration 015'i geri almayın; v120, ek sürüm sütunu/trigger/receipt tablosuyla çalışabilir. v120 istemcisi CAS uygulamaz; rollback sırasında bu yeni güvence verilmez. v121 kuyruğu sürümlü endpoint bulunmazsa saklanır; v121'e dönüşte aynı anahtarla devam eder. v120 rollback imajı korunmalıdır.
+
+
+## Dağıtım güncellemesi — 2026-10-24
+
+Kullanıcı deploy edilebilir olarak koşullu PASS bildirdi; bağımsız reviewer 62/62 birimi tekrarladı, tarayıcı koşturamadı. Taze prod yedeği restore edildi; migration 015 çift uygulandı ve not içeriği özeti korundu. Ardından prod DB admin migration 015 ve sabit 933615a imajıyla v121 web başlatıldı. HTTPS smoke **16/16**, gerçek prod PostgreSQL/Edge offline edit/yer imi, iki bağımsız bağlamda PDF/EPUB CAS çatışması ve A→B→A dahil **14/14**, 0 JS hatası, cleanup 4/4. v120 rollback korunur; 015 geri alınmaz.
+
+Receipt not metninin silme sonrası saklanması ve büyüme politikası çözülmüş sayılmaz: müşteri üretimi öncesi süre/silme/tombstone protokolü kararı gerekir. Yalnız annotation ID tombstone’u eski POST’u tanımaya yetmez; operationId eşlemesi korunmalı veya eski işlemler açıkça reddedilmelidir. Tenant-only receipt RLS kullanıcı policy’si için takip işidir. [Dağıtım ve açık kararlar](deployments/2026-10-24-v121.md).

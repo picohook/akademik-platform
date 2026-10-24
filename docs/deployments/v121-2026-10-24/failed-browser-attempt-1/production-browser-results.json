@@ -1,0 +1,101 @@
+{
+  "startedAt": "2026-10-24T08:10:26.232Z",
+  "runId": "b59ceea7-18e0-463a-a27c-5975ea3393ea",
+  "base": "https://localhost",
+  "sourceCommit": "933615aa5a719e730317ecc32305af3f66bd0653",
+  "status": "failed",
+  "cases": [
+    {
+      "nativeIndexedDB": true,
+      "provenance": "ticketed-download-v1",
+      "sha256": "d3f1d26ecf949a0b4cdb31013983468d3559e8bf9b1612d297f76e0547ef19ba",
+      "id": "ticketed-native-offline-save-pdf",
+      "status": "PASS"
+    },
+    {
+      "nativeIndexedDB": true,
+      "provenance": "ticketed-download-v1",
+      "sha256": "6cad9c08b1ddb99c2e19ac4b51760c04da64cd6dadc40db13d70abf372bf6752",
+      "id": "ticketed-native-offline-save-epub",
+      "status": "PASS"
+    },
+    {
+      "offlineHardReload": true,
+      "localAliasPreserved": true,
+      "singleServerBookmark": true,
+      "anchor": {
+        "asset_version_id": "bd340ef4-ad90-460d-88bc-2ef27536c832",
+        "type": "pdf",
+        "page": 1,
+        "rects": [],
+        "text_quote": {
+          "prefix": "",
+          "exact": "",
+          "suffix": ""
+        },
+        "text_position": {
+          "start": 0,
+          "end": 0
+        }
+      },
+      "id": "offline-create-cancel-reload-sync-pdf",
+      "status": "PASS"
+    },
+    {
+      "offlineHardReload": true,
+      "canonicalDelete": true,
+      "neutralToast": true,
+      "id": "offline-delete-reload-sync-pdf",
+      "status": "PASS"
+    },
+    {
+      "offlineHardReload": true,
+      "localAliasPreserved": true,
+      "singleServerBookmark": true,
+      "anchor": {
+        "asset_version_id": "eae19119-ac07-4a79-82db-beb5cc52252a",
+        "type": "epub",
+        "cfi": "epubcfi(/6/2!/4/2/1:0)",
+        "href": "chapter.xhtml",
+        "percent": 0,
+        "text_quote": "Yer imi"
+      },
+      "id": "offline-create-cancel-reload-sync-epub",
+      "status": "PASS"
+    },
+    {
+      "offlineHardReload": true,
+      "canonicalDelete": true,
+      "neutralToast": true,
+      "id": "offline-delete-reload-sync-epub",
+      "status": "PASS"
+    }
+  ],
+  "cleanup": {
+    "pdfFixtureDeleted": true,
+    "epubFixtureDeleted": true,
+    "loggedOut": true,
+    "browserClosed": true
+  },
+  "scope": "Real production HTTPS/PostgreSQL; temporary generated books and notes, actual ticketed offline saves, native IndexedDB, offline bookmark create/delete/reload, offline note edit, two independent device conflicts and A-B-A isolation. Existing customer books/grants unchanged; fixtures removed.",
+  "browser": "155.0.4283.45",
+  "tls": "Dedicated Edge ignores local Caddy CA errors; Node smoke separately validates exported CA; OS trust unchanged.",
+  "fixtures": [
+    {
+      "id": "32493ab8-1b03-40c0-9133-460bf009ab0c",
+      "title": "Release v121 verification b59ceea7-18e0-463a-a27c-5975ea3393ea PDF",
+      "format": "pdf"
+    },
+    {
+      "id": "2f8f0502-7a49-438d-bd8f-8b3e335367b6",
+      "title": "Release v121 verification b59ceea7-18e0-463a-a27c-5975ea3393ea EPUB",
+      "format": "epub"
+    }
+  ],
+  "error": {
+    "phase": "offline-note-edit-reload-sync-pdf",
+    "message": "locator.waitFor: Timeout 25000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#notesList .note-body').filter({ hasText: 'Release offline note b59ceea7-18e0-463a-a27c-5975ea3393ea pdf' }) to be visible\u001b[22m\n\n    at C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\tmp\\deploy-v121\\browser-production.mjs:60:92\n    at async stage (C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\tmp\\deploy-v121\\browser-production.mjs:19:51)\n    at async file:///C:/Users/OWNER/Documents/deepseek-harness/default-workspace/akademik-platform/tmp/deploy-v121/browser-production.mjs:58:23"
+  },
+  "browserErrors": [],
+  "completedAt": "2026-10-24T08:11:16.601Z"
+}

@@ -1,0 +1,164 @@
+{
+  "createdAt": "2026-10-24T08:17:10.987Z",
+  "release": "v121",
+  "sourceCommit": "933615aa5a719e730317ecc32305af3f66bd0653",
+  "releaseImage": "sha256:8c29759dc1181f7ee77ab2f001548631637e9258c3e652fdc548027372e7470a",
+  "smoke": 16,
+  "browser": {
+    "passed": 14,
+    "total": 14,
+    "independent": false
+  },
+  "failedAttemptsRetained": true,
+  "privateBackupsPublished": false,
+  "artifacts": {
+    ".gitattributes": {
+      "bytes": 92,
+      "sha256": "46ae9442e216b592f02c166c01c547d20e2bfc138e0074cd84b82ecc178df59b"
+    },
+    "015-annotation-sync.sql.txt": {
+      "bytes": 138,
+      "sha256": "bd027e4a883b1e6b4a97ccf745c71e1e2f94afc9b7d3dabf22607294c6d78354"
+    },
+    "B-bookmark-privacy-epub.png": {
+      "bytes": 48311,
+      "sha256": "c50b0c6c9d00ce80a604522221ce85cfe40dd5a7c08a5def6983305d1af6c2ba"
+    },
+    "B-bookmark-privacy-pdf.png": {
+      "bytes": 35727,
+      "sha256": "3da8ff7f1d6da787ffa7cda87074e7553d7df8020a889d5861e03ffb4a483530"
+    },
+    "browser-production-helper.mjs": {
+      "bytes": 21320,
+      "sha256": "23ea218598a2275783f252a5165370793a04d3e5e46af53e18e938425afa9316"
+    },
+    "build.txt": {
+      "bytes": 1974,
+      "sha256": "1327b7d1b50ca85d4f9c28e6ee39469ad70a0f97f4e97c000a32d0d36ad4f210"
+    },
+    "cleanup-helper.mjs": {
+      "bytes": 1335,
+      "sha256": "cd8c03aeefc1cc504b4aede929e208e0d30ff3821afcc1d068757f7d58deaef9"
+    },
+    "cleanup-verification.json": {
+      "bytes": 361,
+      "sha256": "2f6395c8b1588c1199b9c97f97b4cbc2758fb2fde0b70314b5d2cf575f0d6081"
+    },
+    "deployment-helper.mjs": {
+      "bytes": 21540,
+      "sha256": "d410c3dceab265833aa3a72d5b1ab136258e4d392781e02f3caafb0a5ed8ec0c"
+    },
+    "deployment.json": {
+      "bytes": 9859,
+      "sha256": "84124b64466964b3a6408a925be6d2ce0d7b79413f8caae10d51fd289886fc8f"
+    },
+    "failed-browser-attempt-1/browser-production-helper.mjs": {
+      "bytes": 21117,
+      "sha256": "b3f9e1e1f7dba0137b07cac5ff93147269cc27880976c65e1de80bfa308b03cf"
+    },
+    "failed-browser-attempt-1/offline-bookmark-epub.png": {
+      "bytes": 45495,
+      "sha256": "cb2c691038684cef8cd1d0f4329e118b137dc9cc972009da3a9b8c6d0b8a9da8"
+    },
+    "failed-browser-attempt-1/offline-bookmark-pdf.png": {
+      "bytes": 34691,
+      "sha256": "b39eebb7d02e7640f55ba339f62344a9864d85f093f8c764d146d2453bb22e40"
+    },
+    "failed-browser-attempt-1/production-browser-failure.png": {
+      "bytes": 32899,
+      "sha256": "7a7329b58270e000199a6f3fda817af3d4948f46a50dd585c9e294144fb83a1b"
+    },
+    "failed-browser-attempt-1/production-browser-results.json": {
+      "bytes": 3813,
+      "sha256": "5300bc09fffc5faba4eaf40125efdce488d27094707fbd986d0e66ef2f418200"
+    },
+    "failed-browser-attempt-2/B-bookmark-privacy-epub.png": {
+      "bytes": 48612,
+      "sha256": "de43c40f466f653c6d01a9eeb23e019f8fda5c970d90f256d732c7cc0bebc7a3"
+    },
+    "failed-browser-attempt-2/B-bookmark-privacy-pdf.png": {
+      "bytes": 35817,
+      "sha256": "bbbe0ab4939228c0e5391e56af6903ad0da6e109b95f0959711f6e74be8f331a"
+    },
+    "failed-browser-attempt-2/browser-production-helper.mjs": {
+      "bytes": 21112,
+      "sha256": "543202cde2457aa9d261a4cbe2052404ba3588a5629a1c3027d697c83b081788"
+    },
+    "failed-browser-attempt-2/offline-bookmark-epub.png": {
+      "bytes": 47137,
+      "sha256": "4c5ad30406ba4b876a905735d25011aa219c2ac670c5d10b0f734f5dca3fbb03"
+    },
+    "failed-browser-attempt-2/offline-bookmark-pdf.png": {
+      "bytes": 35312,
+      "sha256": "90f249290e346863ef4aef77e6fa2a28d0d268e4ad3b97887b583f170e06361e"
+    },
+    "failed-browser-attempt-2/production-browser-failure.png": {
+      "bytes": 41042,
+      "sha256": "0844f418537b44b66af75af35133989bd73a531aa69b5094d667b62300b1b366"
+    },
+    "failed-browser-attempt-2/production-browser-results.json": {
+      "bytes": 4996,
+      "sha256": "94117b20d521fe2a39407ece9331be2a21c37508ede13d98becd4d8ede50c501"
+    },
+    "failed-browser-attempt-2/two-device-conflict-epub.png": {
+      "bytes": 69269,
+      "sha256": "99bece570832e0c6bed9d4db2b84f92d2dbfe4f3aa0c31160bdf3e1aba4a4fcb"
+    },
+    "failed-browser-attempt-2/two-device-conflict-pdf.png": {
+      "bytes": 62506,
+      "sha256": "c7bd988df6470ca684a421788dac83e702af53c8b2e1e719120865d7c6f66467"
+    },
+    "http-verification.json": {
+      "bytes": 1393,
+      "sha256": "314bec3b295459df6d88cb4cd9ac9db1d0b71a9245832b996b2bea4f164ca959"
+    },
+    "offline-bookmark-epub.png": {
+      "bytes": 46494,
+      "sha256": "d30bc05efb00fe846581f9eb785fd1385f773878521033af64dbd7ff5ffe7599"
+    },
+    "offline-bookmark-pdf.png": {
+      "bytes": 35220,
+      "sha256": "2c0672861b0b94727ea291537075f079ed1692b15050eeefa9910a3f2281864d"
+    },
+    "production-browser-results.json": {
+      "bytes": 4806,
+      "sha256": "d6478c63650738f3ef180c9fde9af0658b60f6d0e6b8254c81bb2a2b14fa8615"
+    },
+    "release-env-metadata.json": {
+      "bytes": 552,
+      "sha256": "ea058a099f70a042963a8a31ba514b705f480841bc90b5fd16dd94ee22cdc45b"
+    },
+    "release-proof.json": {
+      "bytes": 6095,
+      "sha256": "7d30e8333a9899ef43a38f4f7624bca0ac1f287d86dc175b33e684d8a7cc7987"
+    },
+    "restore-migration-first-attempt.json": {
+      "bytes": 1077,
+      "sha256": "bbbd6f4e38cad8940369002938ba31c6785cd9ffd4b2ad808c1508bd8798e6ab"
+    },
+    "restore-migration-results.json": {
+      "bytes": 1062,
+      "sha256": "1efc02a7209e0d251c21be7012c2f834a5f476d0779a1b3a9aa0e8220c3eb0cf"
+    },
+    "review-decision.json": {
+      "bytes": 1962,
+      "sha256": "0b311a61525dd47883a3696c3368410f52b1670a056c379aa119a16415c9d057"
+    },
+    "smoke-helper.mjs": {
+      "bytes": 5103,
+      "sha256": "96a7d0c0dd6b75154b5120debc2c4f38fc6d72821149c769e4e890fc2537962b"
+    },
+    "smoke.txt": {
+      "bytes": 423,
+      "sha256": "d6553c9fefe7f4cd32c53031e535791e0fca72209ad9d654d4d4ceaec7aae17c"
+    },
+    "two-device-conflict-epub.png": {
+      "bytes": 68631,
+      "sha256": "b5127199e655c7fb72e2b5cc406182a1c6c9134b616e226c61065eba93df9e60"
+    },
+    "two-device-conflict-pdf.png": {
+      "bytes": 62296,
+      "sha256": "7199828fd40f4f1268c5d61cf2614574ebf43965a350d94ec7780563e1614865"
+    }
+  }
+}

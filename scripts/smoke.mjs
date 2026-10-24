@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 
 const base = (process.argv[2] || process.env.SMOKE_BASE || 'http://localhost:8080').replace(/\/$/, '');
 const cookies = new Map();
@@ -85,6 +86,7 @@ const anchor = {
   text_position: { start: 0, end: 5 },
 };
 const annotationBody = {
+  operationId: randomUUID(),
   assetId: book.asset_id,
   anchor,
   color: 'yellow',
@@ -114,15 +116,17 @@ ok('annotation create');
 const patchedResponse = await request(`/api/annotations/${created.id}`, {
   method: 'PATCH',
   headers: { 'content-type': 'application/json', 'x-csrf-token': csrf() },
-  body: JSON.stringify({ note: 'smoke edited', tags: 'smoke' }),
+  body: JSON.stringify({ operationId: randomUUID(), baseVersion: created.version, note: 'smoke edited', tags: 'smoke' }),
 });
 assert.equal(patchedResponse.status, 200);
-assert.equal((await json(patchedResponse)).note, 'smoke edited');
+const patched = await json(patchedResponse);
+assert.equal(patched.note, 'smoke edited');
 ok('annotation patch');
 
 const deletedResponse = await request(`/api/annotations/${created.id}`, {
   method: 'DELETE',
-  headers: { 'x-csrf-token': csrf() },
+  headers: { 'content-type': 'application/json', 'x-csrf-token': csrf() },
+  body: JSON.stringify({ operationId: randomUUID(), baseVersion: patched.version }),
 });
 assert.equal(deletedResponse.status, 200);
 ok('annotation delete');

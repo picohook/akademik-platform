@@ -1,0 +1,238 @@
+{
+  "release": "v121",
+  "sourceCommit": "933615aa5a719e730317ecc32305af3f66bd0653",
+  "operationsCommit": "933615aa5a719e730317ecc32305af3f66bd0653",
+  "startedAt": "2026-10-24T08:02:52.130Z",
+  "runId": "2026-10-24T08-02-52-130Z-b922d5",
+  "buildDate": "2026-10-24 11:02",
+  "before": {
+    "id": "43bb6fbfc5d228d2477a292037624912dfc985c84b80e993caf62f5d1f5a19a1",
+    "image": "sha256:afa6adaaa399f32df3338ddc6bfb2e0ca8e0616eeee083cf0b266d96bdbb408a",
+    "startedAt": "2026-10-24T00:28:44.915626871Z",
+    "status": "running",
+    "health": "healthy",
+    "restarts": 0
+  },
+  "dbBefore": {
+    "id": "90301242f1eacae5f30e5bf03f60a9f397fe08105094cd1252f09bc213667a36",
+    "image": "sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea",
+    "startedAt": "2026-10-21T07:30:23.564414916Z",
+    "status": "running",
+    "health": "healthy",
+    "restarts": 0
+  },
+  "caddyBefore": {
+    "id": "0fc7980c45658f3692c4723d1bec1435194e7ce3e47bd90250f2aff782bb802d",
+    "image": "sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f",
+    "startedAt": "2026-10-21T07:30:43.898856358Z",
+    "status": "running",
+    "restarts": 0
+  },
+  "previousMetadata": {
+    "BUILD_SHA": "186f5f9264211ee762832fbe1e4601c9bc56ae88",
+    "APP_VERSION": "120",
+    "BUILD_DATE": "2026-10-24 03:26",
+    "APP_ENV": "production",
+    "SOCIAL_DRM_B2B": "true"
+  },
+  "releaseTag": "akademik-platform-prod-web:v121-933615a",
+  "rollbackTag": "akademik-platform-prod-web:rollback-v120-pre-v121-2026-10-24T08-02-52-130Z-b922d5",
+  "prepared": true,
+  "schemaReady": true,
+  "built": true,
+  "deployed": true,
+  "finalized": true,
+  "steps": [
+    {
+      "step": "fresh-backups-validated-and-rollback-retained",
+      "at": "2026-10-24T08:05:16.668Z"
+    },
+    {
+      "step": "fresh-production-backup-restored-migration-015-double-applied-and-data-retained",
+      "at": "2026-10-24T08:07:22.414Z"
+    },
+    {
+      "step": "pinned-image-built-and-file-hashes-verified",
+      "at": "2026-10-24T08:08:30.142Z"
+    },
+    {
+      "step": "production-migration-015-applied-before-v121-web",
+      "at": "2026-10-24T08:09:11.698Z"
+    },
+    {
+      "step": "v121-web-started-after-migration-015",
+      "at": "2026-10-24T08:09:47.509Z"
+    },
+    {
+      "step": "HTTPS-source-hashes-and-smoke-16-passed",
+      "at": "2026-10-24T08:10:14.341Z"
+    },
+    {
+      "step": "production-conflict-offline-privacy-verification-passed-and-public-metadata-persisted",
+      "at": "2026-10-24T08:16:43.301Z"
+    }
+  ],
+  "dbUser": "akademik",
+  "dbName": "akademik",
+  "dbAdmin": {
+    "role": "akademik",
+    "superuser": true,
+    "tickets": "download_tickets",
+    "limits": "download_ticket_limits"
+  },
+  "sourceRoot": "C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\tmp\\deploy-v121\\source-933615a",
+  "sourceProof": [
+    {
+      "file": "server.mjs",
+      "sha256": "086a14481593c7cc547b1e94b21f4680b99cf82dc3109afb0e1284d8d0a6fbc3",
+      "testedSha256": "405fd7de6ce8dd8c6229990c3a0dede6e50753aa96c71d6a3ee0abdd499711b1",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "indexer.mjs",
+      "sha256": "10bd599125fc9253d970b0b6f847c55eb5b90b31da46cb9b0c3b7c0f1d2c8da8",
+      "testedSha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "download-tickets.mjs",
+      "sha256": "129ddbfb91673e8bc47af0d06ed6f7eeccb4333ff3ab9e6ae28cb72428d999f8",
+      "testedSha256": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "annotation-sync.mjs",
+      "sha256": "1c912354038f6e692ce7fb59d72e7eb599873287d5dc205f8ad9e946f822dd8f",
+      "testedSha256": "904257d723227499c22601ef2293bc89b75407b58616afd710977e95c3eb843e",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "social-watermark.mjs",
+      "sha256": "145ba2260d079f7e436d714f75364ed8551c50b620affe99535b309976152fa5",
+      "testedSha256": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/app.js",
+      "sha256": "2914d0850a044cdea66c40292dc18e004ff076a2f237ecf307f748f187415ffa",
+      "testedSha256": "2bd08b5927384f2b7382ab024c2576cee26d126babd518b530d1f62595925be9",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/index.html",
+      "sha256": "7f67591d696f591ffe19c8cb6a4b34f62cfb89fa923056f6010485411178c7d4",
+      "testedSha256": "a819c94c031d08bc025bcef185db8db593af06fabdceac6d9869122bbe88aac8",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/offline.mjs",
+      "sha256": "3ada1c005a263f8ee46a5c785493ff84bae0bce7d1d3277a7b9542abfa489491",
+      "testedSha256": "d9a087f22b57c84d6a5df54e7e6a76f3f9a8cc5b86ed46323fa70d1082dfb35c",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/downloads.mjs",
+      "sha256": "7e908a175f0ff0dc521d70f508269a1e6d4bc2c0bf1c34e56802af62a3fafb72",
+      "testedSha256": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/sw.js",
+      "sha256": "5e061aa800de4eca2230d30bc8cdf14c17a9542fd200bfec20ffe70aee76ac68",
+      "testedSha256": "90d7e5083daaa5d657f1c46f0d34e8d4a98f23e9eced78518d0a1cca0b005260",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/epub-engine.mjs",
+      "sha256": "f52179b07d83b8f93ca7fbdf67ca8c4d301851e663c63db2667015e71af3ca6b",
+      "testedSha256": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/styles.css",
+      "sha256": "8bf1e9a30c7b5d993e1ef64f9e5458f2fe7feb1269e0e2fde7cf88d0fb3a8045",
+      "testedSha256": "a1d87008bb5c518fd8047c077ac8438a0a3a0e0cf5f97859858a371daae95ee9",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/i18n.mjs",
+      "sha256": "754823377709eb3a64c960e9789fa82263fb8c63e6553321df64b456878d0795",
+      "testedSha256": "670ad9c258e99aaf25bcc9d5329aa3d43ce779a30d3eda08251a575a990a03b8",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/citations.mjs",
+      "sha256": "96b00fa2be1be8cdc582dd1a2dfcff1d67435eb0c1a6d6e161bd7e8873c4a015",
+      "testedSha256": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+      "equalAfterLineEndingNormalization": true
+    }
+  ],
+  "backups": [
+    {
+      "file": "backups/akademik-pre-v121-2026-10-24T08-02-52-130Z-b922d5.dump",
+      "bytes": 97648,
+      "sha256": "cf348392e33d92ae377db4014a1378f5744b2d3e165b1915452eb87e3f192e0f",
+      "private": true
+    },
+    {
+      "file": "backups/files-pre-v121-2026-10-24T08-02-52-130Z-b922d5.tgz",
+      "bytes": 154485288,
+      "sha256": "8d2647ad69c485b31b25a33b0469e1de5c28ad5b753dee22d42cc0356fc12891",
+      "private": true
+    }
+  ],
+  "migrationAction": "015 applied as DB administrator after fresh-backup restore/double-apply validation",
+  "lastError": {
+    "phase": "clone",
+    "at": "2026-10-24T08:06:15.837Z",
+    "message": "Expected values to be strictly equal:\n\n0 !== '0'\n"
+  },
+  "cloneVerified": true,
+  "releaseImage": "sha256:8c29759dc1181f7ee77ab2f001548631637e9258c3e652fdc548027372e7470a",
+  "imageHashes": {
+    "server.mjs": "086a14481593c7cc547b1e94b21f4680b99cf82dc3109afb0e1284d8d0a6fbc3",
+    "indexer.mjs": "10bd599125fc9253d970b0b6f847c55eb5b90b31da46cb9b0c3b7c0f1d2c8da8",
+    "download-tickets.mjs": "129ddbfb91673e8bc47af0d06ed6f7eeccb4333ff3ab9e6ae28cb72428d999f8",
+    "annotation-sync.mjs": "1c912354038f6e692ce7fb59d72e7eb599873287d5dc205f8ad9e946f822dd8f",
+    "social-watermark.mjs": "145ba2260d079f7e436d714f75364ed8551c50b620affe99535b309976152fa5",
+    "public/app.js": "2914d0850a044cdea66c40292dc18e004ff076a2f237ecf307f748f187415ffa",
+    "public/index.html": "7f67591d696f591ffe19c8cb6a4b34f62cfb89fa923056f6010485411178c7d4",
+    "public/offline.mjs": "3ada1c005a263f8ee46a5c785493ff84bae0bce7d1d3277a7b9542abfa489491",
+    "public/downloads.mjs": "7e908a175f0ff0dc521d70f508269a1e6d4bc2c0bf1c34e56802af62a3fafb72",
+    "public/sw.js": "5e061aa800de4eca2230d30bc8cdf14c17a9542fd200bfec20ffe70aee76ac68",
+    "public/epub-engine.mjs": "f52179b07d83b8f93ca7fbdf67ca8c4d301851e663c63db2667015e71af3ca6b",
+    "public/styles.css": "8bf1e9a30c7b5d993e1ef64f9e5458f2fe7feb1269e0e2fde7cf88d0fb3a8045",
+    "public/i18n.mjs": "754823377709eb3a64c960e9789fa82263fb8c63e6553321df64b456878d0795",
+    "public/citations.mjs": "96b00fa2be1be8cdc582dd1a2dfcff1d67435eb0c1a6d6e161bd7e8873c4a015"
+  },
+  "migratedSchema": {
+    "version": true,
+    "receiptRls": true,
+    "trigger": true
+  },
+  "after": {
+    "id": "d3c5fe8185e0a1fd3d01a0aa984ca7dcad33297eb68c3ad6de4a3b5a7673936d",
+    "image": "sha256:8c29759dc1181f7ee77ab2f001548631637e9258c3e652fdc548027372e7470a",
+    "startedAt": "2026-10-24T08:09:46.662562379Z",
+    "status": "running",
+    "health": "healthy",
+    "restarts": 0
+  },
+  "smokeChecks": 16,
+  "dbAfter": {
+    "id": "90301242f1eacae5f30e5bf03f60a9f397fe08105094cd1252f09bc213667a36",
+    "image": "sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea",
+    "startedAt": "2026-10-21T07:30:23.564414916Z",
+    "status": "running",
+    "health": "healthy",
+    "restarts": 0
+  },
+  "caddyAfter": {
+    "id": "0fc7980c45658f3692c4723d1bec1435194e7ce3e47bd90250f2aff782bb802d",
+    "image": "sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f",
+    "startedAt": "2026-10-21T07:30:43.898856358Z",
+    "status": "running",
+    "restarts": 0
+  },
+  "completedAt": "2026-10-24T08:16:43.301Z"
+}
