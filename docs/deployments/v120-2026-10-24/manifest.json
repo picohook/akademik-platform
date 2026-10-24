@@ -1,0 +1,79 @@
+{
+  "release": "akademik-platform-prod-web:v120-186f5f9",
+  "status": "deployed",
+  "sourceCommit": "186f5f9264211ee762832fbe1e4601c9bc56ae88",
+  "image": "sha256:afa6adaaa399f32df3338ddc6bfb2e0ca8e0616eeee083cf0b266d96bdbb408a",
+  "completedAt": "2026-10-24T00:31:18.035Z",
+  "artifacts": [
+    {
+      "file": ".gitattributes",
+      "bytes": 92,
+      "sha256": "46ae9442e216b592f02c166c01c547d20e2bfc138e0074cd84b82ecc178df59b"
+    },
+    {
+      "file": "B-bookmark-privacy-epub.png",
+      "bytes": 49092,
+      "sha256": "5ce3a82b74dc02d6ddf7e40aeacf9c8aa208a1a5cf15f6f1d34d7ef7c0d45247"
+    },
+    {
+      "file": "B-bookmark-privacy-pdf.png",
+      "bytes": 35481,
+      "sha256": "c97bedf0c80f4f8d3e9c69bca69b5b461a5f5533596be26d501312b10fd60fbd"
+    },
+    {
+      "file": "browser-production-helper.mjs",
+      "bytes": 16596,
+      "sha256": "c034a4c2a24cdccda0b50cc9ca960899aa49d8c549f37d33d93be5e94ad55397"
+    },
+    {
+      "file": "build.txt",
+      "bytes": 1767,
+      "sha256": "120e8bc86e4fed3782308628e38456ac5e6f3ce991cd7f2bae483a840cd28544"
+    },
+    {
+      "file": "cleanup-verification.json",
+      "bytes": 332,
+      "sha256": "59338cd3ac5131395e6e686eae248e5c6a8802035ffe02bf8e026c02e98fa1f5"
+    },
+    {
+      "file": "deployment.json",
+      "bytes": 8895,
+      "sha256": "75248e2f8c3ef7566643ab46ed302cbf95eee1d7f623b033fe98ffb6708e00af"
+    },
+    {
+      "file": "http-verification.json",
+      "bytes": 1393,
+      "sha256": "48790ea11e7eb8234b461d8caa1cbbcde52f3915cc83f45d8ecf8fbc7d9accf8"
+    },
+    {
+      "file": "offline-bookmark-epub.png",
+      "bytes": 47384,
+      "sha256": "d970f442ab742bb409c5a296309c245563524514adaaa56f42594057b82e08fd"
+    },
+    {
+      "file": "offline-bookmark-pdf.png",
+      "bytes": 34976,
+      "sha256": "614cb99d3b001e8c5ead725b44f6ffbe8c2c7567866f02d71cb5346074803d99"
+    },
+    {
+      "file": "production-browser-results.json",
+      "bytes": 3894,
+      "sha256": "76bda6cfae66108a26a2de378ee0140468e789a5ab7ed85591a44665d21fe098"
+    },
+    {
+      "file": "release-env-metadata.json",
+      "bytes": 552,
+      "sha256": "a7686a43b1943f39d2c690f88d443bfe62b6ed2537f79162476e1f34eafbc83e"
+    },
+    {
+      "file": "release-proof.json",
+      "bytes": 5539,
+      "sha256": "3dc8ffac55609c25d9b4b1df78ac7c706ef312850ffbfcbe8f7fca3a99e3195a"
+    },
+    {
+      "file": "smoke.txt",
+      "bytes": 423,
+      "sha256": "d6553c9fefe7f4cd32c53031e535791e0fca72209ad9d654d4d4ceaec7aae17c"
+    }
+  ]
+}

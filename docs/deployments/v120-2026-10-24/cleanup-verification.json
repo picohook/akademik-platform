@@ -1,0 +1,13 @@
+{
+  "verificationTitlesRemaining": 0,
+  "assetsByFormat": [
+    {
+      "format": "pdf",
+      "count": 2
+    }
+  ],
+  "headlessOrPlaywrightSessionsRemaining": 0,
+  "checkedAt": "2026-10-24T00:32:09.597Z",
+  "method": "Read-only production DB aggregates after API fixture/session cleanup",
+  "existingCustomerBooksChanged": false
+}

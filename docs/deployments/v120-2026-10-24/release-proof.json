@@ -1,0 +1,112 @@
+{
+  "release": "v120",
+  "reviewedCoreCommit": "9822f36",
+  "finalSourceCommit": "186f5f9264211ee762832fbe1e4601c9bc56ae88",
+  "postReviewChange": "Neutral deletion toast text/translation and online UI message assertion; revalidated 17/17",
+  "independentCodeReview": "PASS confirmed by user; independent reviewer browser unavailable",
+  "sourceIsPinnedArchive": true,
+  "sourceProof": [
+    {
+      "file": "server.mjs",
+      "sha256": "eddbcaf522c040bb319bd88c2507d5e3e31b693d6ff81fe5ccff92d85ea0b94e",
+      "testedSha256": "d150c34b9f8de4adaecead4134306ca42a31ba9359614aef0536565cb5324dcb",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "indexer.mjs",
+      "sha256": "10bd599125fc9253d970b0b6f847c55eb5b90b31da46cb9b0c3b7c0f1d2c8da8",
+      "testedSha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "download-tickets.mjs",
+      "sha256": "129ddbfb91673e8bc47af0d06ed6f7eeccb4333ff3ab9e6ae28cb72428d999f8",
+      "testedSha256": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "social-watermark.mjs",
+      "sha256": "145ba2260d079f7e436d714f75364ed8551c50b620affe99535b309976152fa5",
+      "testedSha256": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/app.js",
+      "sha256": "98b3cedacb9208e9dff938006cf7645631610df1ee6b1244f441948b74e366f0",
+      "testedSha256": "2ec0e879d8e5f6cc71436ea2303fe65c6d18392453c66c16032f9586a524f0eb",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/index.html",
+      "sha256": "d77d2841559ea42060696f3b324fa4c5be3247998295b072e7f0949d08cdd077",
+      "testedSha256": "1ef50609b492def916ccc5c709f7f562a6d5e196746125f2732b707d8f940c05",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/offline.mjs",
+      "sha256": "8c3ed03529eb4625e785d82f26962655d4fe36b2a788afdc57f458f49386df7d",
+      "testedSha256": "0ce9b98c47a2df59a1550568075c93e15067a1002083804ea0627906bdff3413",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/downloads.mjs",
+      "sha256": "7e908a175f0ff0dc521d70f508269a1e6d4bc2c0bf1c34e56802af62a3fafb72",
+      "testedSha256": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/sw.js",
+      "sha256": "3667aec025da3f2810c0eeed07733bacbd8a755fd89c546bde9f2d411b86c1a8",
+      "testedSha256": "78bac8c0379bb6cff2c911576d7e482cb4fe200d322c23d3ef1af01984cf3166",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/epub-engine.mjs",
+      "sha256": "f52179b07d83b8f93ca7fbdf67ca8c4d301851e663c63db2667015e71af3ca6b",
+      "testedSha256": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/styles.css",
+      "sha256": "0204b500974a1aeac05ca9d6644e4d15ea0eb8903cae9336fc1ca50f1d4ca9da",
+      "testedSha256": "e856d63b7800ac2f32c6e7798c1e6b61fc3773c6656de5fff52e16cb0cd62699",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/i18n.mjs",
+      "sha256": "6cf7fff8b289e2b57f7969294fce2f27bf96e57978b3f406a6e63cb6f76f52f4",
+      "testedSha256": "2854db0316d475eac497d00a1bf7d3bc1de9f6a2f8962773acff9c328861309a",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/citations.mjs",
+      "sha256": "96b00fa2be1be8cdc582dd1a2dfcff1d67435eb0c1a6d6e161bd7e8873c4a015",
+      "testedSha256": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+      "equalAfterLineEndingNormalization": true
+    }
+  ],
+  "imageHashes": {
+    "server.mjs": "eddbcaf522c040bb319bd88c2507d5e3e31b693d6ff81fe5ccff92d85ea0b94e",
+    "indexer.mjs": "10bd599125fc9253d970b0b6f847c55eb5b90b31da46cb9b0c3b7c0f1d2c8da8",
+    "download-tickets.mjs": "129ddbfb91673e8bc47af0d06ed6f7eeccb4333ff3ab9e6ae28cb72428d999f8",
+    "social-watermark.mjs": "145ba2260d079f7e436d714f75364ed8551c50b620affe99535b309976152fa5",
+    "public/app.js": "98b3cedacb9208e9dff938006cf7645631610df1ee6b1244f441948b74e366f0",
+    "public/index.html": "d77d2841559ea42060696f3b324fa4c5be3247998295b072e7f0949d08cdd077",
+    "public/offline.mjs": "8c3ed03529eb4625e785d82f26962655d4fe36b2a788afdc57f458f49386df7d",
+    "public/downloads.mjs": "7e908a175f0ff0dc521d70f508269a1e6d4bc2c0bf1c34e56802af62a3fafb72",
+    "public/sw.js": "3667aec025da3f2810c0eeed07733bacbd8a755fd89c546bde9f2d411b86c1a8",
+    "public/epub-engine.mjs": "f52179b07d83b8f93ca7fbdf67ca8c4d301851e663c63db2667015e71af3ca6b",
+    "public/styles.css": "0204b500974a1aeac05ca9d6644e4d15ea0eb8903cae9336fc1ca50f1d4ca9da",
+    "public/i18n.mjs": "6cf7fff8b289e2b57f7969294fce2f27bf96e57978b3f406a6e63cb6f76f52f4",
+    "public/citations.mjs": "96b00fa2be1be8cdc582dd1a2dfcff1d67435eb0c1a6d6e161bd7e8873c4a015"
+  },
+  "predeployPGEdgeCases": 17,
+  "predeployAcceptance": "../../OFFLINE-BOOKMARKS-V120.md",
+  "historicalNoteRegression": 20,
+  "historicalSecurityChecks": 68,
+  "productionBrowserCases": 10,
+  "productionSmokeChecks": 16,
+  "productionMigrationsApplied": [],
+  "existingMigrations": "001-014 unchanged",
+  "previousImagePreserved": "akademik-platform-prod-web:rollback-v119-pre-v120-2026-10-24T00-26-28-516Z-787fa9"
+}

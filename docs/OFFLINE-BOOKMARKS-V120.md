@@ -1,6 +1,6 @@
 # Çevrimdışı yer imi kuyruğu — v120
 
-2026-10-24. Kaynak v120, CSS v44, SW shell v12. Prod v119; bu paket deploy edilmedi. PostgreSQL migration veya IndexedDB sürüm değişikliği yok.
+2026-10-24. Kaynak v120, CSS v44, SW shell v12. Prod v120; app-only dağıtım tamam. PostgreSQL migration veya IndexedDB sürüm değişikliği yok.
 
 ## Davranış
 
@@ -42,3 +42,7 @@ node spike/app/test/offline-edit.browser.mjs
 Kullanıcı bağımsız kod incelemesini PASS olarak bildirdi; reviewer kendi sandbox’ında tarayıcı koşturamadı. Küçük UX notu düzeltildi: yer imi/not silme mesajı artık “bu cihazdan kaldırıldı” der; online kullanıcıya “çevrimdışı” denmez. Bu iki mesaj ve çevirileri dışında ürün davranışı değiştirilmedi. Online not panelinden yer imi silerken mesaj kontrolü eklendi.
 
 Dağıtılacak kaynakla ayrı PostgreSQL/Edge kabulü tekrar **17/17**, 0 JS hatası, cleanup 4/4: [sonuç](reader-evidence/v120-offline-bookmarks/f15aeccc-c090-4aa5-b4ef-0d6f4dea7b18/results.json), [kaynak/artifact manifesti](reader-evidence/v120-offline-bookmarks/f15aeccc-c090-4aa5-b4ef-0d6f4dea7b18/manifest.json). Önceki 20/20 not regresyonu ve 68 güvenlik kanıtı ayrı tarihsel doğrulamalar olarak korunur; toast değişikliği için yeniden koşturulmadı.
+
+## Dağıtım güncellemesi
+
+v120 app-only canlı: smoke 16/16; gerçek prod PostgreSQL/Edge offline im ekle/kaldır ve A→B→A dahil 10/10, 0 JS hatası, cleanup 4/4. Migration yok, v119 rollback korunur. Önceki onay/deploy bekleme ifadeleri ilgili testlerin tarihsel durumudur. [Dağıtım kaydı](deployments/2026-10-24-v120.md).
