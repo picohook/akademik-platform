@@ -1,0 +1,41 @@
+{
+  "runId": "61f98f59-2e66-4a09-82c7-ec5c7cdb39c3",
+  "source": {
+    "server.mjs": "08a3e7ae5ad356c3b4bf07257abe3379c4bab76476747853ec8bdcdf708410c9",
+    "indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+    "download-tickets.mjs": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+    "annotation-sync.mjs": "95df688c719717f08dc26e029476eb2b586dc236ec741fd5bc05543b364141ad",
+    "social-watermark.mjs": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+    "public/app.js": "5c633a0208a9e17ac5118985d97b85a655a9f7e27f4b3a2b6960e51ba3251603",
+    "public/index.html": "7953cce5031e5d3325b1efdbe5100ea63b8f83f50a1d2202e1bb7fea1c63be98",
+    "public/offline.mjs": "cba7a4e9a1371bccf35e55d4c67275ddf28946b2e64799452382a73dcd12feea",
+    "public/downloads.mjs": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+    "public/sw.js": "054a88e60f75790b94914ce3b0fbb4c18887d53e809e535d506fd7495ea6ce75",
+    "public/epub-engine.mjs": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885",
+    "public/styles.css": "a1d87008bb5c518fd8047c077ac8438a0a3a0e0cf5f97859858a371daae95ee9",
+    "public/i18n.mjs": "aea682fbae10d305b04cfee250f3d7f4b22cc7f616df3329d2814d9e04cce09b",
+    "public/citations.mjs": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+    "db/schema.sql": "dd5bbb31ad315a5cb8637e7b9291053bdbd552b66f89d6b3c62f2ac69940d1b4",
+    "db/seed.sql": "b8d845cea00579ccd0b13fcbb94e9d050c42d1fff736ec4dd36e1137f67ce587",
+    "db/migrations/016-annotation-receipt-retention.sql": "5b90d24760cdaf1eab2b85edc15f3c9ffbd62aa96efc10fdaed8f6ee0e8a9528"
+  },
+  "artifacts": [
+    {
+      "file": "edge-operation-expired-draft-preserved.png",
+      "bytes": 56397,
+      "sha256": "78691e04bd4b1d010dd9d1e8f51e6df97031327a59037b3321645d48fed5ab80"
+    },
+    {
+      "file": "results.json",
+      "bytes": 8566,
+      "sha256": "c546b57533ab3159fad90dcea4a98b060b9b6755900941698713b55f6341071b"
+    }
+  ],
+  "cleanup": {
+    "browser": true,
+    "app": true,
+    "secondServer": true,
+    "database": true,
+    "temporaryCopy": true
+  }
+}

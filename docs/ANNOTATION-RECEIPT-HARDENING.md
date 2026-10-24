@@ -1,5 +1,7 @@
 # Annotation receipt retention and RLS — v122 hardening
 
+**2026-10-24 independent review: HOLD.** Real restored-PostgreSQL app-role purge fails (privilege/RLS), and writable v121 rollback can replay tombstoned POSTs into duplicate notes. Prod remains v121; migration 016 was applied only to an isolated backup copy. [Findings and evidence](ANNOTATION-RECEIPT-HARDENING-REVIEW-2026-10-24.md). The design claims below predate that verification.
+
 This package closes the two v121 follow-ups:
 
 1. `annotation_operations` retained full note content forever.

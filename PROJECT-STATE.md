@@ -4,10 +4,10 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web kaynak: **v122**, stiller **v45**, SW cache **v14**. Prod **v121**; v122 hardening deploy edilmedi. docs/ANNOTATION-RECEIPT-HARDENING.md.
-- DB migration kaynak **001–016**; prod **001–015**. 016 (receipt retention + kullanıcı RLS) yedek kopyada doğrulanacak, sonra DB admin ile uygulanacak. Rollback’te 016 korunur; IndexedDB sürümü 2 aynı.
+- Web kaynak **v122/c7f40db**, stiller **v45**, SW cache **v14**. Bağımsız inceleme **HOLD**; prod **v121**. docs/ANNOTATION-RECEIPT-HARDENING-REVIEW-2026-10-24.md.
+- DB migration kaynak **001–016**, prod **001–015**. 016 taze prod yedeği kopyasında çift uygulandı; veri korundu fakat app-role purge izin/RLS testinde kaldı. Prod’a uygulanmadı.
 - Prod: **v121** (2026-10-24 11:16:43 Europe/Istanbul), kaynak **933615a**, imaj sha256:8c29759dc1181f7ee77ab2f001548631637e9258c3e652fdc548027372e7470a, etiket akademik-platform-prod-web:v121-933615a; healthy/0, smoke **16/16**, gerçek PostgreSQL/Edge **14/14**, 0 JS hatası, cleanup 4/4. v120 rollback korunur. docs/deployments/2026-10-24-v121.md.
-- Son kod doğrulaması: **v122 receipt hardening** — 90 gün tam receipt / 365 gün içeriksiz tombstone, kullanıcı bazlı receipt RLS, 6 saatlik purge, eski işlem için 410 + yerel taslak koruma. **64 birim** (2 yeni retention testi) ve syntax temiz; gerçek PostgreSQL migration/browser kabulü yapılmadı.
+- Son doğrulama v122: bağımsız **64/64 birim**, migration 016 restore kopyasında çift uygulama, normal CAS/replay, owner RLS ve gerçek Edge HTTP410/IndexedDB taslak koruma geçti. Purge **42501**, UPDATE izni tek başına 0 satır, maintenance tombstone SELECT ayrıca 42501. Aktif tombstone varken v121 modülü eski POST’u **201** ile yeniden oluşturuyor; v122’ye dönüşte de yeni receipt **201**. Karar **HOLD**, prod v121 değişmedi; final 10 diagnostic/kontrolde 9 repro PASS/1 kabul FAIL, 0 JS hatası, cleanup 5/5.
 - Bağımlılık: `npm audit --omit=dev` **0**; tam audit’te yalnız dev-only `epubjs/@xmldom` (2 uyarı).
 - EPUB kararı: **ADR-012** — MVP/V1a için epub.js, `EpubEngine` adapter arkasında, pinli; Readium/R2D2BC geçiş eşikleri yazılı.
 
@@ -41,7 +41,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - Kopyalama paketi v116 canlı: PDF/EPUB izin tutarlılığı, seçimden Kopyala / Atıfla kopyala. Citation 17/17 + EPUB izin 7/7 birim testi ve gerçek Edge kabulü 13/13 geçti (uygulayan AI). Seçim/vurgu/not korunur. Kanıtlar: `docs/COPYING-TESTS.md`.
 - Kapasite retesti geçti: yalnız async scrypt yeterli olmadı; parola doğrulaması `withTenant` dışına taşınıp havuz bağlantısı erken bırakıldı (`8e1347c`). Tenant/user advisory lock ve seat limit korundu; güvenlik 60/60. Aynı kısa taramada 10/25/50/100 girişlerin tamamı kabul, 6200 API isteğinde 0 hata; 50/100 giriş p95 **2,637 / 5,182 sn**. Bu, prod kapasitesi garantisi değildir. Önceki başarısız koşular değişmeden korundu. Kanıt: `docs/CAPACITY-TEST.md`.
 - Manuel NVDA/VoiceOver ve tam EPUB iframe denetimi paralel; gerçek ekran okuyucu gözlemi olmadan ACR tam uyum iddiası yok.
-- Sıradaki operasyonel iş: **v122 receipt hardening** kodda hazır (90/365 gün, tombstone, kullanıcı RLS, 6 saatlik purge, 410). Migration 016 ve gerçek PostgreSQL/browser kabulü yapılmadan deploy edilmedi.
+- Sıradaki iş: v122 **HOLD** bulgularını uygulayan AI’ye ilet: app-role purge kilit/UPDATE RLS + tombstone maintenance görünürlüğü ve tombstone uyumlu/read-only rollback. 365 günlük pencere sonrası eski POST yeniden kabulü ayrıca açık ürün/protokol kararıdır. docs/ANNOTATION-RECEIPT-HARDENING-REVIEW-2026-10-24.md.
 - Müşteriye bağlı: ilk istenen SSO protokolü; sertifikalı COUNTER alım şartıysa ayrı iş paketi.
 - Sonraki okuyucu işleri: not içe aktarma / açıklamalı PDF, EPUB görünüm seçenekleri; El aracı küçük P2 iş. Fixed-layout/MathML/RTL içerikle doğrulanacak. 500 MB görsel PDF kapsam dışında.
 

@@ -1,0 +1,394 @@
+TAP version 13
+# Subtest: retention moves full receipts to content-free tombstones
+ok 1 - retention moves full receipts to content-free tombstones
+  ---
+  duration_ms: 4.052
+  type: 'test'
+  ...
+# Subtest: a purged operation returns 410 without mutating annotations
+ok 2 - a purged operation returns 410 without mutating annotations
+  ---
+  duration_ms: 5.9016
+  type: 'test'
+  ...
+# Subtest: citation tr-single
+ok 3 - citation tr-single
+  ---
+  duration_ms: 34.4435
+  type: 'test'
+  ...
+# Subtest: citation en-two
+ok 4 - citation en-two
+  ---
+  duration_ms: 32.4159
+  type: 'test'
+  ...
+# Subtest: citation en-three-doi
+ok 5 - citation en-three-doi
+  ---
+  duration_ms: 11.5526
+  type: 'test'
+  ...
+# Subtest: citation editor
+ok 6 - citation editor
+  ---
+  duration_ms: 5.1716
+  type: 'test'
+  ...
+# Subtest: citation place-isbn
+ok 7 - citation place-isbn
+  ---
+  duration_ms: 22.5857
+  type: 'test'
+  ...
+# Subtest: citation missing
+ok 8 - citation missing
+  ---
+  duration_ms: 22.7582
+  type: 'test'
+  ...
+# Subtest: CSL-JSON keeps structured authors
+ok 9 - CSL-JSON keeps structured authors
+  ---
+  duration_ms: 29.0582
+  type: 'test'
+  ...
+# Subtest: missing metadata produces warnings
+ok 10 - missing metadata produces warnings
+  ---
+  duration_ms: 1.3815
+  type: 'test'
+  ...
+# Subtest: PDF PageLabels preserve roman, decimal and prefixed labels without offsets
+ok 11 - PDF PageLabels preserve roman, decimal and prefixed labels without offsets
+  ---
+  duration_ms: 13.0468
+  type: 'test'
+  ...
+# Subtest: absent label maps never imply printed pages
+ok 12 - absent label maps never imply printed pages
+  ---
+  duration_ms: 2.8066
+  type: 'test'
+  ...
+# Subtest: duplicate and custom labels are preserved rather than renumbered
+ok 13 - duplicate and custom labels are preserved rather than renumbered
+  ---
+  duration_ms: 2.5794
+  type: 'test'
+  ...
+# Subtest: all text citation styles use roman page labels and explicit PDF fallback
+ok 14 - all text citation styles use roman page labels and explicit PDF fallback
+  ---
+  duration_ms: 8.1494
+  type: 'test'
+  ...
+# Subtest: roman ranges remain editable; BibTeX explicitly warns about omitted locators
+ok 15 - roman ranges remain editable; BibTeX explicitly warns about omitted locators
+  ---
+  duration_ms: 2.0683
+  type: 'test'
+  ...
+# Subtest: hyphens in custom PDF labels are not converted to page ranges
+ok 16 - hyphens in custom PDF labels are not converted to page ranges
+  ---
+  duration_ms: 0.7871
+  type: 'test'
+  ...
+# Subtest: partial labels retain valid pages and fall back only at missing entries
+ok 17 - partial labels retain valid pages and fall back only at missing entries
+  ---
+  duration_ms: 1.5887
+  type: 'test'
+  ...
+# Subtest: copied PDF quotations cite the selection page, including mapped and fallback locators
+ok 18 - copied PDF quotations cite the selection page, including mapped and fallback locators
+  ---
+  duration_ms: 8.6456
+  type: 'test'
+  ...
+# Subtest: EPUB quotations use chapter locators without inventing PDF or printed pages
+ok 19 - EPUB quotations use chapter locators without inventing PDF or printed pages
+  ---
+  duration_ms: 1.0925
+  type: 'test'
+  ...
+# Subtest: cleanup starts immediately, repeats each minute without overlap and stops on close
+ok 20 - cleanup starts immediately, repeats each minute without overlap and stops on close
+  ---
+  duration_ms: 11.4101
+  type: 'test'
+  ...
+# Subtest: a failed cleanup is reported and does not disable subsequent ticks
+ok 21 - a failed cleanup is reported and does not disable subsequent ticks
+  ---
+  duration_ms: 6.1906
+  type: 'test'
+  ...
+# Subtest: offline pdf persists only ticket response bytes and provenance
+ok 22 - offline pdf persists only ticket response bytes and provenance
+  ---
+  duration_ms: 169.0603
+  type: 'test'
+  ...
+# Subtest: offline epub persists only ticket response bytes and provenance
+ok 23 - offline epub persists only ticket response bytes and provenance
+  ---
+  duration_ms: 14.8884
+  type: 'test'
+  ...
+# Subtest: normal downloads use the same two POSTs and return delivery bytes
+ok 24 - normal downloads use the same two POSTs and return delivery bytes
+  ---
+  duration_ms: 10.0562
+  type: 'test'
+  ...
+# Subtest: issue denial 403 never persists or falls back to source
+ok 25 - issue denial 403 never persists or falls back to source
+  ---
+  duration_ms: 3.4894
+  type: 'test'
+  ...
+# Subtest: delivery denial 403 never persists or falls back to source
+ok 26 - delivery denial 403 never persists or falls back to source
+  ---
+  duration_ms: 7.5922
+  type: 'test'
+  ...
+# Subtest: delivery denial 409 never persists or falls back to source
+ok 27 - delivery denial 409 never persists or falls back to source
+  ---
+  duration_ms: 5.8731
+  type: 'test'
+  ...
+# Subtest: invalid ticket response stops before delivery and persistence
+ok 28 - invalid ticket response stops before delivery and persistence
+  ---
+  duration_ms: 17.6717
+  type: 'test'
+  ...
+# Subtest: network failure never persists an offline book
+ok 29 - network failure never persists an offline book
+  ---
+  duration_ms: 30.0793
+  type: 'test'
+  ...
+# Subtest: declared size above offline cap cancels response before persistence
+ok 30 - declared size above offline cap cancels response before persistence
+  ---
+  duration_ms: 68.692
+  type: 'test'
+  ...
+# Subtest: actual streamed bytes enforce cap even with understated content length
+ok 31 - actual streamed bytes enforce cap even with understated content length
+  ---
+  duration_ms: 17.5361
+  type: 'test'
+  ...
+# Subtest: storage quota failure never writes to IndexedDB
+ok 32 - storage quota failure never writes to IndexedDB
+  ---
+  duration_ms: 33.7778
+  type: 'test'
+  ...
+# Subtest: unexpected successful HTML response never becomes an offline book
+ok 33 - unexpected successful HTML response never becomes an offline book
+  ---
+  duration_ms: 66.1563
+  type: 'test'
+  ...
+# Subtest: disabled download does not request a ticket or save bytes
+ok 34 - disabled download does not request a ticket or save bytes
+  ---
+  duration_ms: 0.7125
+  type: 'test'
+  ...
+# Subtest: issue rate limit exposes wait time and never persists
+ok 35 - issue rate limit exposes wait time and never persists
+  ---
+  duration_ms: 3.4955
+  type: 'test'
+  ...
+# Subtest: delivery rate limit exposes wait time and never persists
+ok 36 - delivery rate limit exposes wait time and never persists
+  ---
+  duration_ms: 4.3989
+  type: 'test'
+  ...
+# Subtest: denied chapter copy and cut are stopped in capture phase without changing selection
+ok 37 - denied chapter copy and cut are stopped in capture phase without changing selection
+  ---
+  duration_ms: 14.598
+  type: 'test'
+  ...
+# Subtest: permission is read for every event, including policy changes after opening
+ok 38 - permission is read for every event, including policy changes after opening
+  ---
+  duration_ms: 3.112
+  type: 'test'
+  ...
+# Subtest: user text in inputs, textareas and contenteditable remains copyable
+ok 39 - user text in inputs, textareas and contenteditable remains copyable
+  ---
+  duration_ms: 0.8227
+  type: 'test'
+  ...
+# Subtest: collapsed or empty selections do not trigger a blocked-copy notification
+ok 40 - collapsed or empty selections do not trigger a blocked-copy notification
+  ---
+  duration_ms: 0.9044
+  type: 'test'
+  ...
+# Subtest: explicit cleanup and iframe pagehide remove handlers once
+ok 41 - explicit cleanup and iframe pagehide remove handlers once
+  ---
+  duration_ms: 0.9555
+  type: 'test'
+  ...
+# Subtest: chapter pointerdown dismisses stale selection, parent-toolbar interaction does not
+ok 42 - chapter pointerdown dismisses stale selection, parent-toolbar interaction does not
+  ---
+  duration_ms: 2.217
+  type: 'test'
+  ...
+# Subtest: each newly rendered chapter receives policy and engine destruction removes handlers
+ok 43 - each newly rendered chapter receives policy and engine destruction removes handlers
+  ---
+  duration_ms: 7.6328
+  type: 'test'
+  ...
+# Subtest: folds Turkish diacritics and dotted/dotless i
+ok 44 - folds Turkish diacritics and dotted/dotless i
+  ---
+  duration_ms: 7.4435
+  type: 'test'
+  ...
+# Subtest: normalizes case and whitespace without folding
+ok 45 - normalizes case and whitespace without folding
+  ---
+  duration_ms: 0.8784
+  type: 'test'
+  ...
+# Subtest: finds whole words only
+ok 46 - finds whole words only
+  ---
+  duration_ms: 2.7251
+  type: 'test'
+  ...
+# Subtest: builds a snippet around the match
+ok 47 - builds a snippet around the match
+  ---
+  duration_ms: 1.0297
+  type: 'test'
+  ...
+# Subtest: anchors snippets for exact, stemmed and fuzzy matches
+ok 48 - anchors snippets for exact, stemmed and fuzzy matches
+  ---
+  duration_ms: 4.1643
+  type: 'test'
+  ...
+# Subtest: edit distance tolerates a single typo
+ok 49 - edit distance tolerates a single typo
+  ---
+  duration_ms: 1.325
+  type: 'test'
+  ...
+# Subtest: catalog matching folds diacritics and tolerates typos
+ok 50 - catalog matching folds diacritics and tolerates typos
+  ---
+  duration_ms: 0.9886
+  type: 'test'
+  ...
+# Subtest: actual PDF text on every page contains platform, full identities and UTC date
+ok 51 - actual PDF text on every page contains platform, full identities and UTC date
+  ---
+  duration_ms: 1399.1122
+  type: 'test'
+  ...
+# Subtest: long and Unicode PDF emails are retained safely and wrapped within each page
+ok 52 - long and Unicode PDF emails are retained safely and wrapped within each page
+  ---
+  duration_ms: 222.0345
+  type: 'test'
+  ...
+# Subtest: PDF stamping respects a nonzero crop box
+ok 53 - PDF stamping respects a nonzero crop box
+  ---
+  duration_ms: 288.3149
+  type: 'test'
+  ...
+# Subtest: PDF watermark adds translucent text without painting over dense original footer content
+ok 54 - PDF watermark adds translucent text without painting over dense original footer content
+  ---
+  duration_ms: 309.1764
+  type: 'test'
+  ...
+# Subtest: malformed, encrypted, zero-page and unreadably tiny PDFs fail closed
+ok 55 - malformed, encrypted, zero-page and unreadably tiny PDFs fail closed
+  ---
+  duration_ms: 42.5822
+  type: 'test'
+  ...
+# Subtest: every EPUB body contains escaped Unicode identity; mimetype is first and stored
+ok 56 - every EPUB body contains escaped Unicode identity; mimetype is first and stored
+  ---
+  duration_ms: 212.0818
+  type: 'test'
+  ...
+# Subtest: EPUB without visible bodies, malformed documents and encrypted packages fail closed
+ok 57 - EPUB without visible bodies, malformed documents and encrypted packages fail closed
+  ---
+  duration_ms: 168.8363
+  type: 'test'
+  ...
+# Subtest: OPF-declared XHTML spine is stamped even when its filename ends in xml
+ok 58 - OPF-declared XHTML spine is stamped even when its filename ends in xml
+  ---
+  duration_ms: 45.6355
+  type: 'test'
+  ...
+# Subtest: SVG/fixed-layout spine cannot bypass stamping through an ordinary XHTML nav
+ok 59 - SVG/fixed-layout spine cannot bypass stamping through an ordinary XHTML nav
+  ---
+  duration_ms: 105.2926
+  type: 'test'
+  ...
+# Subtest: declared XHTML must have a real HTML root and same-namespace direct body
+ok 60 - declared XHTML must have a real HTML root and same-namespace direct body
+  ---
+  duration_ms: 310.888
+  type: 'test'
+  ...
+# Subtest: namespaced XHTML and declared HTML with void tags remain stampable
+ok 61 - namespaced XHTML and declared HTML with void tags remain stampable
+  ---
+  duration_ms: 53.0792
+  type: 'test'
+  ...
+# Subtest: OPF parent-relative chapter paths resolve inside the archive and cannot escape it
+ok 62 - OPF parent-relative chapter paths resolve inside the archive and cannot escape it
+  ---
+  duration_ms: 38.8107
+  type: 'test'
+  ...
+# Subtest: missing, malformed, ambiguous or unsafe EPUB package metadata fails closed
+ok 63 - missing, malformed, ambiguous or unsafe EPUB package metadata fails closed
+  ---
+  duration_ms: 663.3652
+  type: 'test'
+  ...
+# Subtest: unsupported format or missing/malformed identity fails instead of returning original
+ok 64 - unsupported format or missing/malformed identity fails instead of returning original
+  ---
+  duration_ms: 60.1828
+  type: 'test'
+  ...
+1..64
+# tests 64
+# suites 0
+# pass 64
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 55699.7115
