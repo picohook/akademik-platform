@@ -1,0 +1,127 @@
+{
+  "createdAt": "2026-10-24T12:21:02.968Z",
+  "decision": "PASS; previous technical HOLD closed",
+  "reviewedCommit": "4300f1f8d742229f245e891055281b1b6784e0e6",
+  "stateCommit": "2e6713a",
+  "results": "01aa91f7-f18d-4096-bca6-441b83f25271/results.json",
+  "passed": 11,
+  "total": 11,
+  "browserErrors": 0,
+  "cleanup": {
+    "rollbackServer": true,
+    "browser": true,
+    "app": true,
+    "secondServer": true,
+    "database": true,
+    "temporaryCopy": true
+  },
+  "units": {
+    "passed": 65,
+    "total": 65,
+    "output": "units.tap.txt"
+  },
+  "productionVersion": 121,
+  "productionMigration016Applied": false,
+  "sourceProof": {
+    "spike/app/server.mjs": {
+      "sha256": "08a3e7ae5ad356c3b4bf07257abe3379c4bab76476747853ec8bdcdf708410c9",
+      "lfNormalizedSha256": "08a3e7ae5ad356c3b4bf07257abe3379c4bab76476747853ec8bdcdf708410c9"
+    },
+    "spike/app/indexer.mjs": {
+      "sha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+      "lfNormalizedSha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f"
+    },
+    "spike/app/download-tickets.mjs": {
+      "sha256": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+      "lfNormalizedSha256": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f"
+    },
+    "spike/app/annotation-sync.mjs": {
+      "sha256": "553eec49001914c58e9f019caab734e8f0f61da307bde64958a6d2bd15e8e106",
+      "lfNormalizedSha256": "553eec49001914c58e9f019caab734e8f0f61da307bde64958a6d2bd15e8e106"
+    },
+    "spike/app/social-watermark.mjs": {
+      "sha256": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+      "lfNormalizedSha256": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531"
+    },
+    "spike/app/public/app.js": {
+      "sha256": "5c633a0208a9e17ac5118985d97b85a655a9f7e27f4b3a2b6960e51ba3251603",
+      "lfNormalizedSha256": "5c633a0208a9e17ac5118985d97b85a655a9f7e27f4b3a2b6960e51ba3251603"
+    },
+    "spike/app/public/index.html": {
+      "sha256": "7953cce5031e5d3325b1efdbe5100ea63b8f83f50a1d2202e1bb7fea1c63be98",
+      "lfNormalizedSha256": "3f072111f9a60d2800aba232a5c07ee6555a729f2561e2646f06a2efa464753d"
+    },
+    "spike/app/public/offline.mjs": {
+      "sha256": "cba7a4e9a1371bccf35e55d4c67275ddf28946b2e64799452382a73dcd12feea",
+      "lfNormalizedSha256": "cba7a4e9a1371bccf35e55d4c67275ddf28946b2e64799452382a73dcd12feea"
+    },
+    "spike/app/public/downloads.mjs": {
+      "sha256": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+      "lfNormalizedSha256": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9"
+    },
+    "spike/app/public/sw.js": {
+      "sha256": "054a88e60f75790b94914ce3b0fbb4c18887d53e809e535d506fd7495ea6ce75",
+      "lfNormalizedSha256": "0b7427c7bc1d30be2d0dd8ef57947497f621534cc1017c6edf85b487153daa93"
+    },
+    "spike/app/public/epub-engine.mjs": {
+      "sha256": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885",
+      "lfNormalizedSha256": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885"
+    },
+    "spike/app/public/styles.css": {
+      "sha256": "a1d87008bb5c518fd8047c077ac8438a0a3a0e0cf5f97859858a371daae95ee9",
+      "lfNormalizedSha256": "a1d87008bb5c518fd8047c077ac8438a0a3a0e0cf5f97859858a371daae95ee9"
+    },
+    "spike/app/public/i18n.mjs": {
+      "sha256": "aea682fbae10d305b04cfee250f3d7f4b22cc7f616df3329d2814d9e04cce09b",
+      "lfNormalizedSha256": "aea682fbae10d305b04cfee250f3d7f4b22cc7f616df3329d2814d9e04cce09b"
+    },
+    "spike/app/public/citations.mjs": {
+      "sha256": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+      "lfNormalizedSha256": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86"
+    },
+    "db/schema.sql": {
+      "sha256": "e7e3fa227b60017ebbd232f1f1f831d8a704dce3a76e34073b28983de715fa6b",
+      "lfNormalizedSha256": "e7e3fa227b60017ebbd232f1f1f831d8a704dce3a76e34073b28983de715fa6b"
+    },
+    "db/seed.sql": {
+      "sha256": "b8d845cea00579ccd0b13fcbb94e9d050c42d1fff736ec4dd36e1137f67ce587",
+      "lfNormalizedSha256": "b8d845cea00579ccd0b13fcbb94e9d050c42d1fff736ec4dd36e1137f67ce587"
+    },
+    "db/migrations/016-annotation-receipt-retention.sql": {
+      "sha256": "a255e5072d7efda75c39ca0a24ab9b95f1a9735b548e5eb5d31ed6f72a57e9d4",
+      "lfNormalizedSha256": "a255e5072d7efda75c39ca0a24ab9b95f1a9735b548e5eb5d31ed6f72a57e9d4"
+    },
+    "spike/app/test/annotation-retention.retest.mjs": {
+      "sha256": "e0790b25cdffcb603138e771d9379ac1b89c61e7880d40854f0f5a2c95092bb6",
+      "lfNormalizedSha256": "e0790b25cdffcb603138e771d9379ac1b89c61e7880d40854f0f5a2c95092bb6"
+    }
+  },
+  "artifacts": {
+    ".gitattributes": {
+      "bytes": 92,
+      "sha256": "46ae9442e216b592f02c166c01c547d20e2bfc138e0074cd84b82ecc178df59b"
+    },
+    "01aa91f7-f18d-4096-bca6-441b83f25271/edge-app-role-purge-410-draft-preserved.png": {
+      "bytes": 53310,
+      "sha256": "5f32e685001db465c4dfe601fabbc1b214b5bc0c3c7b8441c375c9948fafca08"
+    },
+    "01aa91f7-f18d-4096-bca6-441b83f25271/manifest.json": {
+      "bytes": 2179,
+      "sha256": "734041af007cfa19b8399c24030fa88eda2d233240d5f3b303be4278bcb672f1"
+    },
+    "01aa91f7-f18d-4096-bca6-441b83f25271/results.json": {
+      "bytes": 11019,
+      "sha256": "0908342101a22ec2a389aceade8bd5d0c0a77aa53fa9910f016f2d94de5d8d59"
+    },
+    "production-unchanged.json": {
+      "bytes": 433,
+      "sha256": "b4e0dd398084ea39ad54632c0562246d14d58db6819165c5ac42b7284b2c4d92"
+    },
+    "units.tap.txt": {
+      "bytes": 12352,
+      "sha256": "3d1e38512b35fe4e85fc82a47d5fd6857d65ec4e165afb1dbdc69d3a60242d53"
+    }
+  },
+  "privateBackupsPublished": false,
+  "scope": "Independent technical acceptance of bounded receipt retention and rollback guard. No production deployment; documented 90/365-day window, rollback fallback and maintenance throughput limits unchanged."
+}

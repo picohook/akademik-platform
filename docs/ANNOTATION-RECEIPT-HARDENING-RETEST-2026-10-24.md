@@ -1,5 +1,8 @@
 # v122 düzeltme retesti — HOLD — 2026-10-24
 
+**4300f1f nihai güncelleme: PASS.** Aşağıdaki tarihsel blocker’lar gerçek app-role/HTTP/Edge kabulünde kapandı: **11/11**, birim **65/65**. Prod v121 değişmedi. [Güncel nihai kabul](ANNOTATION-RECEIPT-HARDENING-ACCEPTANCE-2026-10-24.md).
+
+
 İncelenen uygulama commit'i **7fff4e07d50bf034bad11a819cc94a84ec3a56b0**, state commit'i **4d59377**. **Önceki F1/F2 düzeltmeleri gerçek app-role testinde geçti.** Ancak önceki incelemede açık bırakılan “kopyalanan ve silinen anahtar kümesi aynı mı?” kontrolü bir blocker üretti. Uygulama kodu değiştirilmedi; prod **v121**, migration 016 uygulanmadı.
 
 ## Tek blocker — iki ayrı seçim arasında 90 günlük eşiği geçen receipt tombstone'suz siliniyor

@@ -20,7 +20,7 @@ const appDir = fileURLToPath(new URL('../', import.meta.url));
 const repoDir = path.resolve(appDir, '../..');
 const tempParent = path.join(appDir, 'tmp');
 const runId = randomUUID(), container = `akademik-offline-browser-${runId}`;
-const output = path.join(repoDir, 'docs/reader-evidence/v122-retention-retest',runId);
+const output = path.join(repoDir, 'docs/reader-evidence/v122-retention-final',runId);
 const tenantId = '11111111-1111-1111-1111-111111111111';
 const userId = randomUUID(), email = 'offline-reader@browser.test', secondUserId=randomUUID(), secondEmail='bookmark-second@browser.test';
 const fixtures = [
@@ -158,7 +158,7 @@ async function primaryPurge(){const client=new pg.Client({connectionString:serve
 async function expireOperationWithAppPurge(operationId){await admin.query("update annotation_operations set created_at=clock_timestamp()-interval '91 days' where operation_id=$1",[operationId]);const result=await primaryPurge();assert.equal(result.receiptsMoved,1);assert.equal(result.receiptsDeleted,1);return result;}
 async function stopChild(child){if(child&&child.exitCode===null&&child.signalCode===null){const exited=once(child,'exit');child.kill();await Promise.race([exited,pause(4000)]);if(child.exitCode===null&&child.signalCode===null){child.kill('SIGKILL');await exited;}}}
 try{
- report.reviewedCommit='7fff4e07d50bf034bad11a819cc94a84ec3a56b0';report.harnessSha256=sha(await readFile(fileURLToPath(import.meta.url)));
+ report.reviewedCommit='4300f1f8d742229f245e891055281b1b6784e0e6';report.harnessSha256=sha(await readFile(fileURLToPath(import.meta.url)));
  await setup();await page.waitForLoadState('networkidle');
  await check('fresh-prod-backup-restored-migration-016-twice-preserves-notes',async()=>{
   const reuse=process.argv.indexOf('--reuse-backup');const stamp=new Date().toISOString().replace(/[:.]/g,'-');backup=reuse>=0?process.argv[reuse+1]:'backups/akademik-v122-review-'+stamp+'-'+runId.slice(0,8)+'.dump';assert.ok(path.resolve(repoDir,backup).startsWith(path.resolve(repoDir,'backups')+path.sep)&&path.basename(backup).startsWith('akademik-v122-review-')&&backup.endsWith('.dump'));
@@ -171,7 +171,7 @@ try{
   const restoredAdminUrl=serverEnv.DATABASE_URL.replace('akademik_app:'+appPassword,'browser_admin:'+dbPassword).replace('/browser_test','/retention_restore');reviewDb=new pg.Client({connectionString:restoredAdminUrl});await reviewDb.connect();
   const fingerprint=async()=> (await reviewDb.query("select json_build_object('notes',(select count(*) from annotations),'digest',(select md5(coalesce(string_agg(md5(to_jsonb(a)::text),'' order by id),'')) from annotations a),'assets',(select count(*) from assets)) state")).rows[0].state;
   const before=await fingerprint();await reviewDb.query('grant usage on schema public to akademik_app; grant select,insert on annotation_operations to akademik_app');
-  const file='db/migrations/016-annotation-receipt-retention.sql',sql=await readFile(path.join(repoDir,file));report.source[file]=sha(sql);const old=(await exec('git',['show','c7f40db:db/migrations/016-annotation-receipt-retention.sql'],{cwd:repoDir,windowsHide:true})).stdout;await reviewDb.query(old);await reviewDb.query(sql.toString());await reviewDb.query(sql.toString());report.migrationUpgrade={from:'c7f40db',to:'7fff4e0',reappliedTwice:true};assert.deepEqual(await fingerprint(),before);
+  const file='db/migrations/016-annotation-receipt-retention.sql',sql=await readFile(path.join(repoDir,file));report.source[file]=sha(sql);const old=(await exec('git',['show','c7f40db:db/migrations/016-annotation-receipt-retention.sql'],{cwd:repoDir,windowsHide:true})).stdout;await reviewDb.query(old);await reviewDb.query(sql.toString());await reviewDb.query(sql.toString());report.migrationUpgrade={from:'c7f40db',to:'4300f1f',reappliedTwice:true};assert.deepEqual(await fingerprint(),before);
   const permissions=(await reviewDb.query("select has_table_privilege('akademik_app','annotation_operations','UPDATE') as update,has_table_privilege('akademik_app','annotation_operations','SELECT') as select,has_table_privilege('akademik_app','annotation_operations','DELETE') as delete")).rows[0];
   report.restore={migrationTwice:true,fingerprintPreserved:true,original:before,permissions};return report.restore;
  });
@@ -209,7 +209,7 @@ try{
  await check('retention-boundary-crossing-cannot-delete-a-receipt-without-tombstone',async()=>{
   const [a,b]=await seedReviewOld(2);await reviewDb.query("update annotation_operations set created_at=clock_timestamp()-interval '90 days'+interval '5 seconds' where operation_id=$1",[b]);
   await reviewApp.query('begin');try{await reviewApp.query("select set_config('app.tenant_id',$1,true)",[reviewTenant]);await reviewApp.query("select set_config('app.maintenance','on',true)");let paused=false;const wrapped={query:async(sql,params)=>{const result=await reviewApp.query(sql,params);if(!paused&&sql.includes('insert into annotation_operation_tombstones')){paused=true;await reviewApp.query('select pg_sleep(5.2)');}return result;}};const result=await purgeAnnotationReceipts(wrapped,{tenantId:reviewTenant});const receipt=(await reviewApp.query('select count(*)::int n from annotation_operations where operation_id=$1',[b])).rows[0].n,tombstone=(await reviewApp.query('select count(*)::int n from annotation_operation_tombstones where operation_id=$1',[b])).rows[0].n;
-   report.retentionBoundary={realClockCrossing:true,controlledDelaySeconds:5.2,...result,secondReceiptRemaining:receipt,secondTombstoneCount:tombstone};assert.ok(receipt===1||tombstone===1,'receipt crossed retention cutoff between queries and was deleted without a tombstone');assert.equal(result.receiptsMoved,result.receiptsDeleted);return report.retentionBoundary;
+   report.retentionBoundary={realClockCrossing:true,controlledDelaySeconds:5.2,...result,secondReceiptRemaining:receipt,secondTombstoneCount:tombstone};assert.equal(result.receiptsMoved,1);assert.equal(result.receiptsDeleted,1);assert.equal(receipt,1,'newly eligible receipt must remain for the next purge');assert.equal(tombstone,0);const next=await purgeAnnotationReceipts(reviewApp,{tenantId:reviewTenant});assert.equal(next.receiptsMoved,1);assert.equal(next.receiptsDeleted,1);const both=(await reviewApp.query('select count(*)::int n from annotation_operation_tombstones where operation_id=any($1::uuid[])',[[a,b]])).rows[0].n,remaining=(await reviewApp.query('select count(*)::int n from annotation_operations where operation_id=any($1::uuid[])',[[a,b]])).rows[0].n;assert.equal(both,2);assert.equal(remaining,0);report.retentionBoundary.next=next;report.retentionBoundary.bothTombstones=both;report.retentionBoundary.receiptsAfterNext=remaining;report.retentionBoundary.allDeletedKeysCovered=true;return report.retentionBoundary;
   }finally{await reviewApp.query('rollback');}
  });
  await check('actual-v121-http500-and-p0001-roll-back-tombstoned-post-normal-new-key-still-works',async()=>{

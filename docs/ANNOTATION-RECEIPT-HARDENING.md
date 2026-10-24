@@ -1,6 +1,6 @@
 # Annotation receipt retention and RLS — v122 hardening
 
-**2026-10-24 retest of 7fff4e0: HOLD; remaining race fixed in the working tree, app-role retest pending.** The previous app-role purge and writable-v121 rollback blockers passed real PostgreSQL/HTTP/Edge retesting. The retest found one remaining race: independently re-evaluated retention selections could copy 1 receipt but delete 2 when a row crossed the 90-day boundary. The purge now freezes one key set and uses it for both insert and delete. Prod remains v121; no production migration/deploy. [Retest evidence](ANNOTATION-RECEIPT-HARDENING-RETEST-2026-10-24.md).
+**2026-10-24 final independent acceptance of 4300f1f: PASS.** Real PostgreSQL/app-role, two Node processes, retention cutoff, 1000+5 batch, actual v121 HTTP rollback guard and Edge 410/draft retention passed **11/11**; units **65/65**, 0 JS errors, cleanup 6/6. All previous technical blockers are closed. Prod remains v121; no production migration/deploy. [Final acceptance](ANNOTATION-RECEIPT-HARDENING-ACCEPTANCE-2026-10-24.md).
 
 This package closes the two v121 follow-ups:
 
