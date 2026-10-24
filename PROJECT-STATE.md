@@ -4,10 +4,10 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web kaynak **v122/7fff4e0**, stiller **v45**, SW cache **v14**. Gerçek app-role retest **HOLD**: eski F1/F2 kapandı, 90 günlük eşikte tombstone olmadan silinen receipt bulundu. Prod **v121**. docs/ANNOTATION-RECEIPT-HARDENING-RETEST-2026-10-24.md.
+- Web kaynak **v122/4300f1f**, stiller **v45**, SW cache **v14**. App-role retest HOLD: F1/F2 kapandı; eşik yarışı düzeltildi, gerçek app-role eşik retesti bekliyor. Prod **v121**. docs/ANNOTATION-RECEIPT-HARDENING-RETEST-2026-10-24.md.
 - DB migration kaynak **001–016**, prod **001–015**. Restore kopyasında eski c7f40db 016 ardından düzeltilmiş 7fff4e0 016 çift uygulandı; veri korundu. App-role temel purge/rollback geçti; eşik testi kaldı. Prod’a uygulanmadı.
 - Prod: **v121** (2026-10-24 11:16:43 Europe/Istanbul), kaynak **933615a**, imaj sha256:8c29759dc1181f7ee77ab2f001548631637e9258c3e652fdc548027372e7470a, etiket akademik-platform-prod-web:v121-933615a; healthy/0, smoke **16/16**, gerçek PostgreSQL/Edge **14/14**, 0 JS hatası, cleanup 4/4. v120 rollback korunur. docs/deployments/2026-10-24-v121.md.
-- Son doğrulama v122/7fff4e0: bağımsız **65/65 birim**, restore migration reapply, app-role purge **1/1**, eski tombstone silme, iki ayrı Node sürecinde skipped, hata rollback, **1000+5** batch ve gerçek v121 HTTP **500/P0001** koruması geçti; yeni anahtar 201, v122 sonrası 410. Edge gerçek app-role purge/HTTP410/taslak reload geçti. **10/11**, 0 JS hatası, cleanup **6/6**. Tek blocker: iki ayrı clock_timestamp seçiminde eşik geçen receipt için **1 moved / 2 deleted**, ikinci tombstone **0**. **HOLD**, prod v121 değişmedi.
+- Son doğrulama v122/7fff4e0: bağımsız **65/65 birim**, restore migration reapply, app-role purge **1/1**, eski tombstone silme, iki ayrı Node sürecinde skipped, hata rollback, **1000+5** batch ve gerçek v121 HTTP **500/P0001** koruması geçti; yeni anahtar 201, v122 sonrası 410. Edge gerçek app-role purge/HTTP410/taslak reload geçti. **10/11**, 0 JS hatası, cleanup **6/6**. Tek blocker iki ayrı clock_timestamp seçimiydi; **4300f1f** tek SELECT anahtar kümesini INSERT/DELETE’te kullanıyor. Yerel **65/65**; gerçek app-role eşik retesti yapılmadı.
 - Bağımlılık: `npm audit --omit=dev` **0**; tam audit’te yalnız dev-only `epubjs/@xmldom` (2 uyarı).
 - EPUB kararı: **ADR-012** — MVP/V1a için epub.js, `EpubEngine` adapter arkasında, pinli; Readium/R2D2BC geçiş eşikleri yazılı.
 
@@ -41,7 +41,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - Kopyalama paketi v116 canlı: PDF/EPUB izin tutarlılığı, seçimden Kopyala / Atıfla kopyala. Citation 17/17 + EPUB izin 7/7 birim testi ve gerçek Edge kabulü 13/13 geçti (uygulayan AI). Seçim/vurgu/not korunur. Kanıtlar: `docs/COPYING-TESTS.md`.
 - Kapasite retesti geçti: yalnız async scrypt yeterli olmadı; parola doğrulaması `withTenant` dışına taşınıp havuz bağlantısı erken bırakıldı (`8e1347c`). Tenant/user advisory lock ve seat limit korundu; güvenlik 60/60. Aynı kısa taramada 10/25/50/100 girişlerin tamamı kabul, 6200 API isteğinde 0 hata; 50/100 giriş p95 **2,637 / 5,182 sn**. Bu, prod kapasitesi garantisi değildir. Önceki başarısız koşular değişmeden korundu. Kanıt: `docs/CAPACITY-TEST.md`.
 - Manuel NVDA/VoiceOver ve tam EPUB iframe denetimi paralel; gerçek ekran okuyucu gözlemi olmadan ACR tam uyum iddiası yok.
-- Sıradaki iş: purge uygun receipt anahtarlarını tek seferde sabitleyip aynı kümeyi INSERT/DELETE’te kullanmak; eşik testi geçene kadar v122 HOLD. Önceki F1/F2 gerçek retest ile kapandı. docs/ANNOTATION-RECEIPT-HARDENING-RETEST-2026-10-24.md.
+- Sıradaki iş: **4300f1f** tek SELECT anahtar kümesini INSERT/DELETE’te kullanıyor; gerçek app-role eşik/1000+5 retestini geçmeden v122 HOLD. Önceki F1/F2 gerçek retest ile kapandı. docs/ANNOTATION-RECEIPT-HARDENING-RETEST-2026-10-24.md.
 - Müşteriye bağlı: ilk istenen SSO protokolü; sertifikalı COUNTER alım şartıysa ayrı iş paketi.
 - Sonraki okuyucu işleri: not içe aktarma / açıklamalı PDF, EPUB görünüm seçenekleri; El aracı küçük P2 iş. Fixed-layout/MathML/RTL içerikle doğrulanacak. 500 MB görsel PDF kapsam dışında.
 
@@ -51,7 +51,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 2. **Sosyal filigran / erişim kontrolü:** P0 v118 dar sözleşme kapsamında canlı; 013–014 ve deploy tamam, 16 smoke + 6 canlı senaryo geçti. Sonraki iş AES at-rest P1; chunked range/LCP yalnız gerçek yayıncı şartıyla. `docs/deployments/2026-10-23-v118.md`, `docs/SOCIAL-DRM.md`.
 3. **Görsel ağırlıklı >300 MB:** kapsam dışı; yalnızca gerçek yayıncı talebi olursa önizleme/derivative pipeline.
 4. **Interop:** OPDS/OAI/MARC/SUSHI/CSV/OPDS API-key hazır; sertifikalı COUNTER ve OAI resumption/set kaldı (`docs/INTEROP.md`).
-5. **Mobil/PWA:** not düzenleme v119, offline yer imi v120 ve çakışma/idempotency v121 canlı. v122 receipt retention/kullanıcı RLS kodda; migration 016 ve kabul bekliyor.
+5. **Mobil/PWA:** not düzenleme v119, offline yer imi v120 ve çakışma/idempotency v121 canlı. v122 receipt retention/kullanıcı RLS kodda; migration 016 ve eşik retesti bekliyor.
 6. **Okuyucu paketi 2:** not içe aktarma, açıklamalı PDF, EPUB sürekli/çift sayfa; El aracı küçük P2.
 7. **Kuruma bağlı:** ilk istenen SSO protokolü; sertifikalı COUNTER alım şartıysa ayrı paket.
 
