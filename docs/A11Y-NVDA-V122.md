@@ -1,6 +1,6 @@
 # v122 — NVDA + Edge manuel kabul oturumu
 
-**Durum: IN PROGRESS — S01 hata duyurusu kullanıcı tarafından doğrulandı; diğer konuşma kontrolleri açık.** Bu formdaki adımlar otomatik olarak geçti sayılmaz. Ürün sahibi Windows/NVDA + Edge ortamını seçti; VoiceOver ayrı testtir.
+**Durum: IN PROGRESS — S01 hata duyurusu, alan adları, parola gizliliği ve başarılı giriş kullanıcı tarafından doğrulandı; başlık duyurusu ve diğer görevler açık.** Bu formdaki adımlar otomatik olarak geçti sayılmaz. Ürün sahibi Windows/NVDA + Edge ortamını seçti; VoiceOver ayrı testtir.
 
 ## Hazırlık
 
@@ -45,7 +45,7 @@ Her satıra PASS / FAIL / IN PROGRESS / NOT RUN; gerçekten duyulan metin, klavy
 
 | ID | Sonuç | Duyulan / fiilen olan | Kanıt / etki |
 | --- | --- | --- | --- |
-| S01 | IN PROGRESS — hata duyurusu PASS | Kullanıcı önce “okuyor, alert”, ardından “okuyor tüm mesajı” bildirdi. Tam hata mesajı NVDA ile duyuluyor; birebir mesaj dökümü verilmedi. | Kullanıcı gözlemi, 2026-10-24; Edge 155.0.4283.45 64-bit / NVDA 2026.2 (2026.2.0.57664). Başlık/alan adları, parola gizliliği ve başarılı giriş ayrıca bekleniyor. |
+| S01 | IN PROGRESS — hata duyurusu, alan adları, parola gizliliği ve başarılı giriş PASS | Kullanıcı tam hata mesajının okunduğunu doğruladı; ardından Tab ile e-posta/parola/Giriş yap alan adlarının doğru okunması, parola karakterlerinin gizli kalması ve doğru parolayla girişin tamamlanması sorusuna “evet” yanıtı verdi. Birebir konuşma dökümü verilmedi. | Kullanıcı gözlemi, 2026-10-24; Edge 155.0.4283.45 64-bit / NVDA 2026.2 (2026.2.0.57664). Başlık duyurusu ayrıca bekleniyor; tüm S01 henüz PASS sayılmadı. |
 | S02 | NOT RUN | — | — |
 | S03 | NOT RUN | — | — |
 | S04 | NOT RUN | — | — |

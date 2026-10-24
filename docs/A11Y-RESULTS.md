@@ -208,3 +208,8 @@ The product owner reports Edge **155.0.4283.45 (Official build), 64-bit** and NV
 ### S01 partial speech observation — 2026-10-24
 
 On the reported Edge **155.0.4283.45 (64-bit)** / NVDA **2026.2 (2026.2.0.57664)** environment, the user first reported “okuyor, alert”, then clarified “okuyor tüm mesajı”. **Login-error announcement subcheck: PASS (user-reported)** — the full error message is spoken. No verbatim error-message transcript, recording or independent agent speech run was supplied; automatic timing versus navigation-triggered reading was not separately reported. This does not establish the rest of S01: heading/field names, password privacy and successful login still need observations. S01 is **IN PROGRESS** and the overall ACR stays OPEN; criterion-wide statuses and historical evidence manifests are unchanged.
+
+
+### S01 field names, password privacy and successful login — 2026-10-24
+
+The user answered “evet” to the combined check of Tab navigation through email/password/submit, correctly spoken field names, hidden password characters and successful login with the correct password. These three subchecks are **PASS (user-reported)** on the previously reported NVDA/Edge versions. Together with the prior full-error announcement, this advances S01; heading speech has not yet been confirmed, so S01 remains **IN PROGRESS**. No criterion-wide conformance status or production code changed.

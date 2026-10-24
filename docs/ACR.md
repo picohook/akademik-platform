@@ -8,7 +8,7 @@
 - Hedef: WCAG 2.2 A/AA. Aşağıda **55 kriterin tamamı** bulunur; 4.1.1 WCAG 2.2’den çıkarıldığı için bu matrise dahil değildir.
 - Kapsam: login, katalog, modallar, PDF/EPUB okuyucu, seçim/kopyalama/not/yer imi, offline ve çatışma/410 durumları. Yayın içeriği örnekleri arayüzden ayrı kayıtlanır; tüm yayınların erişilebilir olduğu varsayılmaz.
 - Ortam: Windows 25H2 build 26200.9711, Edge 155.0.4283.45, axe-core 4.13.0. Güncel otomasyon headless Edge kullanır; gerçek NVDA kabulünün yerine geçmez.
-- Seçilen manuel ortam: **NVDA + Edge / Windows** (ürün sahibi). Kullanıcı 2026-10-24 tarihinde **Edge 155.0.4283.45 (Official build), 64-bit** ve **NVDA 2026.2 (2026.2.0.57664)** bildirdi. Windows sürümü, ses/sentezleyici, TR/EN ayarları ve test eden kişi henüz kaydedilmedi. Kullanıcı S01’de “alert” ve tüm hata mesajının okunduğunu doğruladı: **hata duyurusu alt kontrolü PASS**. Birebir konuşma dökümü sağlanmadı; başlık/alan adları, parola gizliliği ve başarılı giriş dahil S01’in kalanı ve genel kabul açık.
+- Seçilen manuel ortam: **NVDA + Edge / Windows** (ürün sahibi). Kullanıcı 2026-10-24 tarihinde **Edge 155.0.4283.45 (Official build), 64-bit** ve **NVDA 2026.2 (2026.2.0.57664)** bildirdi. Windows sürümü, ses/sentezleyici, TR/EN ayarları ve test eden kişi henüz kaydedilmedi. Kullanıcı S01’de “alert” ve tüm hata mesajının okunduğunu doğruladı: **hata duyurusu alt kontrolü PASS**. Alan adları, parola gizliliği ve doğru parolayla başarılı giriş de kullanıcı tarafından doğrulandı. Birebir konuşma dökümü sağlanmadı; S01 başlık duyurusu ve genel kabul açık.
 - VoiceOver + Safari: **NOT RUN**, Windows kapsamında yok; ayrı ortam kabulü gerektirir.
 
 ## Kanıt ve durum kullanımı
