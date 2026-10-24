@@ -1,6 +1,6 @@
 # Annotation receipt retention and RLS — v122 hardening
 
-**2026-10-24 retest of 7fff4e0: HOLD.** The previous app-role purge and writable-v121 rollback blockers passed real PostgreSQL/HTTP/Edge retesting. One blocker remains: independently re-evaluated retention selections can copy 1 receipt but delete 2 when a row crosses the 90-day boundary. Prod remains v121; no production migration/deploy. [Retest evidence](ANNOTATION-RECEIPT-HARDENING-RETEST-2026-10-24.md).
+**2026-10-24 retest of 7fff4e0: HOLD; remaining race fixed in the working tree, app-role retest pending.** The previous app-role purge and writable-v121 rollback blockers passed real PostgreSQL/HTTP/Edge retesting. The retest found one remaining race: independently re-evaluated retention selections could copy 1 receipt but delete 2 when a row crossed the 90-day boundary. The purge now freezes one key set and uses it for both insert and delete. Prod remains v121; no production migration/deploy. [Retest evidence](ANNOTATION-RECEIPT-HARDENING-RETEST-2026-10-24.md).
 
 This package closes the two v121 follow-ups:
 
@@ -26,12 +26,14 @@ The maintenance job runs once after 60 seconds and then every 6 hours. It:
 
 1. Acquires a tenant-scoped transaction advisory lock; a concurrent run returns
    `skipped` without touching rows.
-2. Selects up to 1 000 expired receipts **without** `FOR UPDATE` (no UPDATE
-   privilege or UPDATE RLS policy is required).
-3. Copies only `operation_id`, request hash, method, annotation id and timestamps
-   to `annotation_operation_tombstones`. No `RETURNING` is used, so maintenance
-   does not need tombstone SELECT visibility.
-4. Deletes the full receipt, including its note response body.
+2. Selects up to 1 000 expired receipt **keys once** (tenant, user, operation,
+   hash, method, annotation, created_at) **without** `FOR UPDATE`.
+3. Inserts tombstones for that frozen key set, then deletes receipts by the
+   **same** tenant/user/operation arrays. It never performs a second time-based
+   selection, so a receipt cannot cross the threshold and be deleted without its
+   tombstone.
+4. Tombstone INSERT uses no `RETURNING`, so maintenance does not need tombstone
+   SELECT visibility.
 5. Deletes tombstones older than the tombstone window.
 
 The advisory lock makes two Node processes safe; tombstone insert and receipt

@@ -18,13 +18,19 @@ function canonical(value) {
 
 test('retention moves full receipts to content-free tombstones', async () => {
   const calls = [];
+  const row = {
+    tenant_id: TENANT, user_id: USER, operation_id: OPERATION,
+    request_hash: 'a'.repeat(64), method: 'POST', annotation_id: ASSET,
+    created_at: new Date('2026-01-01T00:00:00Z'),
+  };
   const client = {
     async query(sql, params) {
       calls.push({ sql, params });
       if (sql.includes('pg_try_advisory_xact_lock')) return { rows: [{ acquired: true }] };
-      if (sql.includes('insert into annotation_operation_tombstones')) return { rowCount: 2 };
-      if (sql.includes('delete from annotation_operations')) return { rowCount: 2 };
+      if (sql.includes('insert into annotation_operation_tombstones')) return { rowCount: 1 };
+      if (sql.includes('delete from annotation_operations')) return { rowCount: 1 };
       if (sql.includes('delete from annotation_operation_tombstones')) return { rowCount: 1 };
+      if (sql.includes('from annotation_operations')) return { rows: [row] };
       throw new Error(`unexpected query: ${sql}`);
     },
   };
@@ -32,15 +38,18 @@ test('retention moves full receipts to content-free tombstones', async () => {
     tenantId: TENANT, retentionDays: 90, tombstoneDays: 365, limit: 500,
   });
   assert.deepEqual(result, {
-    skipped: false, receiptsMoved: 2, receiptsDeleted: 2, tombstonesDeleted: 1,
+    skipped: false, receiptsMoved: 1, receiptsDeleted: 1, tombstonesDeleted: 1,
     retentionDays: 90, tombstoneDays: 365,
   });
-  assert.equal(calls.length, 4);
+  assert.equal(calls.length, 5);
   assert.match(calls[0].sql, /pg_try_advisory_xact_lock/);
+  assert.match(calls[1].sql, /from annotation_operations/);
   assert.doesNotMatch(calls[1].sql, /for update/i);
-  assert.match(calls[1].sql, /on conflict .* do nothing/);
   assert.equal(calls[1].params[1], 90);
   assert.equal(calls[1].params[2], 500);
+  assert.deepEqual(calls[2].params[2], [OPERATION]);
+  assert.deepEqual(calls[3].params[2], [OPERATION]);
+  assert.match(calls[2].sql, /on conflict .* do nothing/);
 });
 
 test('a concurrent maintenance run skips without deleting receipts', async () => {

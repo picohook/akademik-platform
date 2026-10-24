@@ -97,27 +97,54 @@ export async function purgeAnnotationReceipts(client, { tenantId, retentionDays 
     return { skipped: true, receiptsMoved: 0, receiptsDeleted: 0, tombstonesDeleted: 0,
       retentionDays: retention, tombstoneDays: tombstoneRetention };
   }
-  const stale = `select tenant_id, user_id, operation_id, request_hash, method, annotation_id, created_at
-                   from annotation_operations
-                  where tenant_id = $1 and created_at < clock_timestamp() - ($2::int * interval '1 day')
-                  order by created_at
-                  limit $3`;
+  const candidates = await client.query(
+    `select tenant_id, user_id, operation_id, request_hash, method, annotation_id, created_at
+       from annotation_operations
+      where tenant_id = $1 and created_at < clock_timestamp() - ($2::int * interval '1 day')
+      order by created_at
+      limit $3`,
+    [tenantId, retention, limit],
+  );
+  const rows = candidates.rows;
+  if (!rows.length) {
+    const expiredTombstones = await client.query(
+      `delete from annotation_operation_tombstones
+        where tenant_id = $1 and purged_at < clock_timestamp() - ($2::int * interval '1 day')`,
+      [tenantId, tombstoneRetention],
+    );
+    return { skipped: false, receiptsMoved: 0, receiptsDeleted: 0,
+      tombstonesDeleted: expiredTombstones.rowCount, retentionDays: retention, tombstoneDays: tombstoneRetention };
+  }
+  // Freeze the key set once. INSERT and DELETE must use these exact rows; a
+  // second time-based selection could delete a receipt that became older
+  // between the two statements without creating its tombstone.
+  const arrays = [
+    rows.map(row => row.tenant_id),
+    rows.map(row => row.user_id),
+    rows.map(row => row.operation_id),
+    rows.map(row => row.request_hash),
+    rows.map(row => row.method),
+    rows.map(row => row.annotation_id),
+    rows.map(row => row.created_at),
+  ];
   // INSERT ... RETURNING would require tombstone SELECT visibility for the
-  // maintenance role. rowCount is enough; the delete below is keyed by the
-  // same selected rows.
+  // maintenance role. rowCount is enough.
   const moved = await client.query(`
-    with stale as (${stale})
     insert into annotation_operation_tombstones
       (tenant_id, user_id, operation_id, request_hash, method, annotation_id, created_at, purged_at)
-    select tenant_id, user_id, operation_id, request_hash, method, annotation_id, created_at, clock_timestamp()
-      from stale
-    on conflict (tenant_id, user_id, operation_id) do nothing`, [tenantId, retention, limit]);
+    select keys.tenant_id, keys.user_id, keys.operation_id, keys.request_hash, keys.method,
+           keys.annotation_id, keys.created_at, clock_timestamp()
+      from unnest($1::uuid[], $2::uuid[], $3::uuid[], $4::text[], $5::text[], $6::uuid[], $7::timestamptz[])
+        as keys(tenant_id, user_id, operation_id, request_hash, method, annotation_id, created_at)
+    on conflict (tenant_id, user_id, operation_id) do nothing`, arrays);
   const deleted = await client.query(`
-    with stale as (${stale})
-    delete from annotation_operations operations using stale
-     where operations.tenant_id = stale.tenant_id
-       and operations.user_id = stale.user_id
-       and operations.operation_id = stale.operation_id`, [tenantId, retention, limit]);
+    delete from annotation_operations operations
+     using unnest($1::uuid[], $2::uuid[], $3::uuid[])
+       as keys(tenant_id, user_id, operation_id)
+     where operations.tenant_id = keys.tenant_id
+       and operations.user_id = keys.user_id
+       and operations.operation_id = keys.operation_id`,
+    [arrays[0], arrays[1], arrays[2]]);
   const expiredTombstones = await client.query(
     `delete from annotation_operation_tombstones
       where tenant_id = $1 and purged_at < clock_timestamp() - ($2::int * interval '1 day')`,
