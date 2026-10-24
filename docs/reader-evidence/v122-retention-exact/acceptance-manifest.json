@@ -1,0 +1,120 @@
+{
+  "createdAt": "2026-10-24T12:29:51.770Z",
+  "decision": "PASS",
+  "reviewedCommit": "4300f1f8d742229f245e891055281b1b6784e0e6",
+  "results": "df6dae12-bec0-42e7-bb5f-90c65841c2bd/results.json",
+  "requestedChecks": "requested-checks.json",
+  "passed": 11,
+  "total": 11,
+  "productionVersion": 121,
+  "productionMigration016Applied": false,
+  "applicationSourceUnchangedFromPreviousAcceptance": true,
+  "priorUnits": {
+    "rerun": false,
+    "passed": 65,
+    "total": 65,
+    "output": "../v122-retention-final/units.tap.txt",
+    "sha256": "3d1e38512b35fe4e85fc82a47d5fd6857d65ec4e165afb1dbdc69d3a60242d53",
+    "reason": "Same application source; this run changes only test fixtures/assertions to verify exactly two receipts."
+  },
+  "sourceProof": {
+    "spike/app/server.mjs": {
+      "sha256": "08a3e7ae5ad356c3b4bf07257abe3379c4bab76476747853ec8bdcdf708410c9",
+      "lfNormalizedSha256": "08a3e7ae5ad356c3b4bf07257abe3379c4bab76476747853ec8bdcdf708410c9"
+    },
+    "spike/app/indexer.mjs": {
+      "sha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+      "lfNormalizedSha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f"
+    },
+    "spike/app/download-tickets.mjs": {
+      "sha256": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+      "lfNormalizedSha256": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f"
+    },
+    "spike/app/annotation-sync.mjs": {
+      "sha256": "553eec49001914c58e9f019caab734e8f0f61da307bde64958a6d2bd15e8e106",
+      "lfNormalizedSha256": "553eec49001914c58e9f019caab734e8f0f61da307bde64958a6d2bd15e8e106"
+    },
+    "spike/app/social-watermark.mjs": {
+      "sha256": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+      "lfNormalizedSha256": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531"
+    },
+    "spike/app/public/app.js": {
+      "sha256": "5c633a0208a9e17ac5118985d97b85a655a9f7e27f4b3a2b6960e51ba3251603",
+      "lfNormalizedSha256": "5c633a0208a9e17ac5118985d97b85a655a9f7e27f4b3a2b6960e51ba3251603"
+    },
+    "spike/app/public/index.html": {
+      "sha256": "7953cce5031e5d3325b1efdbe5100ea63b8f83f50a1d2202e1bb7fea1c63be98",
+      "lfNormalizedSha256": "3f072111f9a60d2800aba232a5c07ee6555a729f2561e2646f06a2efa464753d"
+    },
+    "spike/app/public/offline.mjs": {
+      "sha256": "cba7a4e9a1371bccf35e55d4c67275ddf28946b2e64799452382a73dcd12feea",
+      "lfNormalizedSha256": "cba7a4e9a1371bccf35e55d4c67275ddf28946b2e64799452382a73dcd12feea"
+    },
+    "spike/app/public/downloads.mjs": {
+      "sha256": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+      "lfNormalizedSha256": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9"
+    },
+    "spike/app/public/sw.js": {
+      "sha256": "054a88e60f75790b94914ce3b0fbb4c18887d53e809e535d506fd7495ea6ce75",
+      "lfNormalizedSha256": "0b7427c7bc1d30be2d0dd8ef57947497f621534cc1017c6edf85b487153daa93"
+    },
+    "spike/app/public/epub-engine.mjs": {
+      "sha256": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885",
+      "lfNormalizedSha256": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885"
+    },
+    "spike/app/public/styles.css": {
+      "sha256": "a1d87008bb5c518fd8047c077ac8438a0a3a0e0cf5f97859858a371daae95ee9",
+      "lfNormalizedSha256": "a1d87008bb5c518fd8047c077ac8438a0a3a0e0cf5f97859858a371daae95ee9"
+    },
+    "spike/app/public/i18n.mjs": {
+      "sha256": "aea682fbae10d305b04cfee250f3d7f4b22cc7f616df3329d2814d9e04cce09b",
+      "lfNormalizedSha256": "aea682fbae10d305b04cfee250f3d7f4b22cc7f616df3329d2814d9e04cce09b"
+    },
+    "spike/app/public/citations.mjs": {
+      "sha256": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+      "lfNormalizedSha256": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86"
+    },
+    "db/schema.sql": {
+      "sha256": "e7e3fa227b60017ebbd232f1f1f831d8a704dce3a76e34073b28983de715fa6b",
+      "lfNormalizedSha256": "e7e3fa227b60017ebbd232f1f1f831d8a704dce3a76e34073b28983de715fa6b"
+    },
+    "db/seed.sql": {
+      "sha256": "b8d845cea00579ccd0b13fcbb94e9d050c42d1fff736ec4dd36e1137f67ce587",
+      "lfNormalizedSha256": "b8d845cea00579ccd0b13fcbb94e9d050c42d1fff736ec4dd36e1137f67ce587"
+    },
+    "db/migrations/016-annotation-receipt-retention.sql": {
+      "sha256": "a255e5072d7efda75c39ca0a24ab9b95f1a9735b548e5eb5d31ed6f72a57e9d4",
+      "lfNormalizedSha256": "a255e5072d7efda75c39ca0a24ab9b95f1a9735b548e5eb5d31ed6f72a57e9d4"
+    },
+    "spike/app/test/annotation-retention.retest.mjs": {
+      "sha256": "1072538d188bad7e00c25f31160d393ead15e9e6b328e366b41e2f3a038b5bb6"
+    }
+  },
+  "artifacts": {
+    ".gitattributes": {
+      "bytes": 92,
+      "sha256": "46ae9442e216b592f02c166c01c547d20e2bfc138e0074cd84b82ecc178df59b"
+    },
+    "df6dae12-bec0-42e7-bb5f-90c65841c2bd/edge-app-role-purge-410-draft-preserved.png": {
+      "bytes": 53310,
+      "sha256": "5f32e685001db465c4dfe601fabbc1b214b5bc0c3c7b8441c375c9948fafca08"
+    },
+    "df6dae12-bec0-42e7-bb5f-90c65841c2bd/manifest.json": {
+      "bytes": 2179,
+      "sha256": "53daa34a8104d23a79465f821dbd52589d29ae63f66adc3a9c5b009b9ce880e7"
+    },
+    "df6dae12-bec0-42e7-bb5f-90c65841c2bd/results.json": {
+      "bytes": 11204,
+      "sha256": "c006c13e0f338f473032a83a3624123e57f81312df68bc1e4826774f63568367"
+    },
+    "production-unchanged.json": {
+      "bytes": 433,
+      "sha256": "a23d50a53716cb00897a9881499ebd3078e9cda9fe4d6b40e307eb2e90698b54"
+    },
+    "requested-checks.json": {
+      "bytes": 1651,
+      "sha256": "a3dfef28efe41ad1f1d98c82462d2d798fe728918028e68e103473849dbce659"
+    }
+  },
+  "privateBackupsPublished": false
+}

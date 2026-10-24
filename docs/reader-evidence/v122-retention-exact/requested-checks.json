@@ -1,0 +1,68 @@
+{
+  "reviewedCommit": "4300f1f8d742229f245e891055281b1b6784e0e6",
+  "status": "PASS",
+  "passed": 11,
+  "total": 11,
+  "requested": {
+    "two91DayReceipts": {
+      "moved": 2,
+      "deleted": 2,
+      "tombstones": 2
+    },
+    "batch1005": {
+      "firstMoved": 1000,
+      "firstDeleted": 1000,
+      "nextMoved": 5,
+      "nextDeleted": 5
+    },
+    "concurrentProcesses": {
+      "winnerMoved": 2,
+      "winnerDeleted": 2,
+      "winnerTombstones": 2,
+      "loserSkipped": true,
+      "loserDeleted": 0
+    }
+  },
+  "rollback": {
+    "pinnedCommit": "933615a",
+    "actualV121Http": true,
+    "expiredOperation": 500,
+    "sqlState": "P0001",
+    "annotationCountUnchanged": true,
+    "v122Still410": true,
+    "newOperation": 201,
+    "newOperationDelete": 200,
+    "id": "actual-v121-http500-and-p0001-roll-back-tombstoned-post-normal-new-key-still-works",
+    "status": "PASS"
+  },
+  "edge": {
+    "actualAppRolePurge": {
+      "skipped": false,
+      "receiptsMoved": 1,
+      "receiptsDeleted": 1,
+      "tombstonesDeleted": 0,
+      "retentionDays": 90,
+      "tombstoneDays": 365
+    },
+    "realCommittedPostReplyLoss": true,
+    "realHttp410": true,
+    "nativeIndexedDB": true,
+    "hardReload": true,
+    "draftPreserved": true,
+    "conflictUi": true,
+    "explicitDiscard": true,
+    "id": "edge-actual-purge-410-preserves-draft-reload-conflict-ui",
+    "status": "PASS"
+  },
+  "browserErrors": 0,
+  "cleanup": {
+    "rollbackServer": true,
+    "browser": true,
+    "app": true,
+    "secondServer": true,
+    "database": true,
+    "temporaryCopy": true
+  },
+  "productionVersion": 121,
+  "productionMigration016Applied": false
+}

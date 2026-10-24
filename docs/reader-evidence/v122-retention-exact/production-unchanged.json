@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-10-24T12:29:51.701Z",
+  "version": "121",
+  "sourceCommit": "933615aa5a719e730317ecc32305af3f66bd0653",
+  "image": "sha256:8c29759dc1181f7ee77ab2f001548631637e9258c3e652fdc548027372e7470a",
+  "startedAt": "2026-10-24T08:09:46.662562379Z",
+  "health": "healthy",
+  "restarts": 0,
+  "migration016Table": null,
+  "productionAccess": "read-only inspection and fresh pg_dump only; no production migration/deploy"
+}

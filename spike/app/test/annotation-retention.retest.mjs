@@ -20,7 +20,7 @@ const appDir = fileURLToPath(new URL('../', import.meta.url));
 const repoDir = path.resolve(appDir, '../..');
 const tempParent = path.join(appDir, 'tmp');
 const runId = randomUUID(), container = `akademik-offline-browser-${runId}`;
-const output = path.join(repoDir, 'docs/reader-evidence/v122-retention-final',runId);
+const output = path.join(repoDir, 'docs/reader-evidence/v122-retention-exact',runId);
 const tenantId = '11111111-1111-1111-1111-111111111111';
 const userId = randomUUID(), email = 'offline-reader@browser.test', secondUserId=randomUUID(), secondEmail='bookmark-second@browser.test';
 const fixtures = [
@@ -183,21 +183,21 @@ try{
   }finally{await client.end();}
  });
 
- await check('restored-copy-app-role-purge-91-days-without-update-and-expired-tombstone-delete',async()=>{
+ await check('restored-copy-app-role-purge-two-91-day-receipts-and-expired-tombstone-delete',async()=>{
   template=(await reviewDb.query('select tenant_id,user_id,operation_id,request_hash,method,annotation_id from annotation_operations order by created_at limit 1')).rows[0];assert.ok(template);reviewTenant=template.tenant_id;
   await reviewDb.query("update annotation_operations set created_at=clock_timestamp()-interval '91 days' where operation_id=$1",[template.operation_id]);
-  const expired=randomUUID();await reviewDb.query("insert into annotation_operation_tombstones(tenant_id,user_id,operation_id,request_hash,method,annotation_id,created_at,purged_at) values($1,$2,$3,$4,'POST',$5,clock_timestamp()-interval '457 days',clock_timestamp()-interval '366 days')",[reviewTenant,template.user_id,expired,template.request_hash,template.annotation_id]);
+  const [secondId]=await seedReviewOld();const ids=[template.operation_id,secondId];const expired=randomUUID();await reviewDb.query("insert into annotation_operation_tombstones(tenant_id,user_id,operation_id,request_hash,method,annotation_id,created_at,purged_at) values($1,$2,$3,$4,'POST',$5,clock_timestamp()-interval '457 days',clock_timestamp()-interval '366 days')",[reviewTenant,template.user_id,expired,template.request_hash,template.annotation_id]);
   const update=(await reviewDb.query("select has_table_privilege('akademik_app','annotation_operations','UPDATE') value")).rows[0].value;assert.equal(update,false);
-  const result=await reviewPurge();assert.equal(result.skipped,false);assert.equal(result.receiptsMoved,1);assert.equal(result.receiptsDeleted,1);assert.equal(result.tombstonesDeleted,1);
-  assert.equal((await reviewDb.query('select count(*)::int n from annotation_operations where operation_id=$1',[template.operation_id])).rows[0].n,0);assert.equal((await reviewDb.query('select count(*)::int n from annotation_operation_tombstones where operation_id=$1',[template.operation_id])).rows[0].n,1);assert.equal((await reviewDb.query('select count(*)::int n from annotation_operation_tombstones where operation_id=$1',[expired])).rows[0].n,0);
-  const columns=(await reviewDb.query("select column_name from information_schema.columns where table_name='annotation_operation_tombstones'")).rows.map(r=>r.column_name);assert.ok(!columns.includes('response_body'));return{updatePrivilege:false,contentFreeTombstone:true,...result};
+  const result=await reviewPurge();assert.equal(result.skipped,false);assert.equal(result.receiptsMoved,2);assert.equal(result.receiptsDeleted,2);assert.equal(result.tombstonesDeleted,1);
+  assert.equal((await reviewDb.query('select count(*)::int n from annotation_operations where operation_id=any($1::uuid[])',[ids])).rows[0].n,0);assert.equal((await reviewDb.query('select count(*)::int n from annotation_operation_tombstones where operation_id=any($1::uuid[])',[ids])).rows[0].n,2);assert.equal((await reviewDb.query('select count(*)::int n from annotation_operation_tombstones where operation_id=$1',[expired])).rows[0].n,0);
+  const columns=(await reviewDb.query("select column_name from information_schema.columns where table_name='annotation_operation_tombstones'")).rows.map(r=>r.column_name);assert.ok(!columns.includes('response_body'));return{seeded91DayReceipts:2,tombstoneCount:2,remainingSelectedReceipts:0,updatePrivilege:false,contentFreeTombstone:true,...result};
  });
  await check('two-node-processes-one-tenant-maintenance-lock-skips-second',async()=>{
-  await seedReviewOld();await reviewApp.query('begin');let first,second;try{await reviewApp.query("select set_config('app.tenant_id',$1,true)",[reviewTenant]);await reviewApp.query("select set_config('app.maintenance','on',true)");first=await purgeAnnotationReceipts(reviewApp,{tenantId:reviewTenant});assert.equal(first.skipped,false);assert.equal(first.receiptsMoved,1);
+  const ids=await seedReviewOld(2);await reviewApp.query('begin');let first,second;try{await reviewApp.query("select set_config('app.tenant_id',$1,true)",[reviewTenant]);await reviewApp.query("select set_config('app.maintenance','on',true)");first=await purgeAnnotationReceipts(reviewApp,{tenantId:reviewTenant});assert.equal(first.skipped,false);assert.equal(first.receiptsMoved,2);assert.equal(first.receiptsDeleted,2);
    const worker="import pg from 'pg';import {purgeAnnotationReceipts} from './annotation-sync.mjs';const c=new pg.Client({connectionString:process.env.RETEST_DATABASE_URL});await c.connect();try{await c.query('begin');await c.query(\"select set_config('app.tenant_id',$1,true)\",[process.env.RETEST_TENANT]);await c.query(\"select set_config('app.maintenance','on',true)\");const result=await purgeAnnotationReceipts(c,{tenantId:process.env.RETEST_TENANT});await c.query('commit');console.log(JSON.stringify({nodePid:process.pid,result}));}finally{await c.end();}";
    const result=await exec(process.execPath,['--input-type=module','-e',worker],{cwd:appDir,windowsHide:true,timeout:30000,env:{...process.env,RETEST_DATABASE_URL:serverEnv.DATABASE_URL.replace('/browser_test','/retention_restore'),RETEST_TENANT:reviewTenant}});second=JSON.parse(result.stdout);assert.notEqual(second.nodePid,process.pid);assert.equal(second.result.skipped,true);assert.equal(second.result.receiptsDeleted,0);await reviewApp.query('commit');
   }catch(e){await reviewApp.query('rollback');throw e;}
-  const next=await reviewPurge();assert.equal(next.skipped,false);return{independentNodeProcesses:2,heldFirstTransaction:true,first,second:second.result,lockReleasedAfterCommit:true};
+  const tombstones=(await reviewDb.query('select count(*)::int n from annotation_operation_tombstones where operation_id=any($1::uuid[])',[ids])).rows[0].n;assert.equal(tombstones,2);assert.equal((await reviewDb.query('select count(*)::int n from annotation_operations where operation_id=any($1::uuid[])',[ids])).rows[0].n,0);const next=await reviewPurge();assert.equal(next.skipped,false);return{independentNodeProcesses:2,seeded91DayReceipts:2,allSelectedKeysMoved:true,tombstones,heldFirstTransaction:true,first,second:second.result,lockReleasedAfterCommit:true};
  });
  await check('purge-transaction-rolls-back-tombstone-when-receipt-delete-fails',async()=>{
   const [id]=await seedReviewOld();await reviewDb.query('revoke delete on annotation_operations from akademik_app');let failure;
