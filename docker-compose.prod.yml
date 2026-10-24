@@ -28,7 +28,7 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET}
       BRAND_NAME: ${BRAND_NAME:-Akademik Platform}
       BRAND_TAGLINE: ${BRAND_TAGLINE:-}
-      APP_VERSION: ${APP_VERSION:-119}
+      APP_VERSION: ${APP_VERSION:-120}
       BUILD_SHA: ${BUILD_SHA:-}
       BUILD_DATE: ${BUILD_DATE:-}
       APP_ENV: ${APP_ENV:-production}

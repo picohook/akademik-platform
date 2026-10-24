@@ -1,0 +1,146 @@
+{
+  "version": 120,
+  "generatedAt": "2026-10-24T00:17:02.819Z",
+  "bookmarkRun": "37effe27-cd1e-402c-9527-bbacd108e606",
+  "regressionRun": "8105ddd9-7895-4012-8adb-0b55cdb1c01d",
+  "bookmarkChecks": 17,
+  "noteRegressionChecks": 20,
+  "pageErrors": 0,
+  "production": "v119 unchanged",
+  "sources": {
+    "spike/app/server.mjs": {
+      "sha256": "d150c34b9f8de4adaecead4134306ca42a31ba9359614aef0536565cb5324dcb",
+      "sha256LF": "d150c34b9f8de4adaecead4134306ca42a31ba9359614aef0536565cb5324dcb"
+    },
+    "spike/app/indexer.mjs": {
+      "sha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+      "sha256LF": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f"
+    },
+    "spike/app/download-tickets.mjs": {
+      "sha256": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+      "sha256LF": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f"
+    },
+    "spike/app/social-watermark.mjs": {
+      "sha256": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+      "sha256LF": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531"
+    },
+    "spike/app/public/app.js": {
+      "sha256": "ecd437924ff179f16b456c37d0fee4d85b90f4340a8b5081253ec877d9ed5ff5",
+      "sha256LF": "ecd437924ff179f16b456c37d0fee4d85b90f4340a8b5081253ec877d9ed5ff5"
+    },
+    "spike/app/public/index.html": {
+      "sha256": "1ef50609b492def916ccc5c709f7f562a6d5e196746125f2732b707d8f940c05",
+      "sha256LF": "1ef50609b492def916ccc5c709f7f562a6d5e196746125f2732b707d8f940c05"
+    },
+    "spike/app/public/offline.mjs": {
+      "sha256": "0ce9b98c47a2df59a1550568075c93e15067a1002083804ea0627906bdff3413",
+      "sha256LF": "0ce9b98c47a2df59a1550568075c93e15067a1002083804ea0627906bdff3413"
+    },
+    "spike/app/public/downloads.mjs": {
+      "sha256": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+      "sha256LF": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9"
+    },
+    "spike/app/public/sw.js": {
+      "sha256": "78bac8c0379bb6cff2c911576d7e482cb4fe200d322c23d3ef1af01984cf3166",
+      "sha256LF": "78bac8c0379bb6cff2c911576d7e482cb4fe200d322c23d3ef1af01984cf3166"
+    },
+    "spike/app/public/epub-engine.mjs": {
+      "sha256": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885",
+      "sha256LF": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885"
+    },
+    "spike/app/public/styles.css": {
+      "sha256": "e856d63b7800ac2f32c6e7798c1e6b61fc3773c6656de5fff52e16cb0cd62699",
+      "sha256LF": "e856d63b7800ac2f32c6e7798c1e6b61fc3773c6656de5fff52e16cb0cd62699"
+    },
+    "spike/app/public/i18n.mjs": {
+      "sha256": "9872cb600d090cdf746c7dfcb5e95ae975ad84b0c33e237265710a668c504f4f",
+      "sha256LF": "9872cb600d090cdf746c7dfcb5e95ae975ad84b0c33e237265710a668c504f4f"
+    },
+    "spike/app/public/citations.mjs": {
+      "sha256": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+      "sha256LF": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86"
+    },
+    "db/schema.sql": {
+      "sha256": "a2aef0ad519ea7ef4c18c37fa145b69bec33454acf25440a58760d9b9eb55c66",
+      "sha256LF": "a2aef0ad519ea7ef4c18c37fa145b69bec33454acf25440a58760d9b9eb55c66"
+    },
+    "db/seed.sql": {
+      "sha256": "b8d845cea00579ccd0b13fcbb94e9d050c42d1fff736ec4dd36e1137f67ce587",
+      "sha256LF": "b8d845cea00579ccd0b13fcbb94e9d050c42d1fff736ec4dd36e1137f67ce587"
+    },
+    "spike/app/test/offline-bookmarks.browser.mjs": {
+      "sha256": "8ec074cac62a343327c35c75edb0c6cb4427fb78a952d46d3fc288f0eaa25463",
+      "sha256LF": "8ec074cac62a343327c35c75edb0c6cb4427fb78a952d46d3fc288f0eaa25463"
+    },
+    "spike/app/test/offline-edit.browser.mjs": {
+      "sha256": "3f4469908e7308f40861cc9b4a012b18f3e4b0da50c56b4d5e5137a8c72e1669",
+      "sha256LF": "3f4469908e7308f40861cc9b4a012b18f3e4b0da50c56b4d5e5137a8c72e1669"
+    }
+  },
+  "artifacts": {
+    "docs/reader-evidence/v120-offline-bookmarks/.gitattributes": "46ae9442e216b592f02c166c01c547d20e2bfc138e0074cd84b82ecc178df59b",
+    "docs/reader-evidence/v120-offline-bookmarks/030217b6-1dc5-41cc-ae8b-943234678ee3/epub-offline-bookmark.png": "635210e374597df5c8a6953340ab275dea19cbb43e8313e1aba12429c01c6df3",
+    "docs/reader-evidence/v120-offline-bookmarks/030217b6-1dc5-41cc-ae8b-943234678ee3/failure.png": "482fa8246f25fb4c3821a92e01ff854cea3d88352f79fcf78b10f24fdbcc7318",
+    "docs/reader-evidence/v120-offline-bookmarks/030217b6-1dc5-41cc-ae8b-943234678ee3/manifest.json": "5b5f5cac62f4cab951d0c91a97b32a78cc5c2d613c2e955b7f3099216425e03c",
+    "docs/reader-evidence/v120-offline-bookmarks/030217b6-1dc5-41cc-ae8b-943234678ee3/pdf-offline-bookmark.png": "0773be65712ab251893141a32df773fb661dfee6f0282d94b5cbd5c298502792",
+    "docs/reader-evidence/v120-offline-bookmarks/030217b6-1dc5-41cc-ae8b-943234678ee3/results.json": "029884c0c4b2e5dd8e228bee34f2c01898ada3efaab9b9f7c8f5ebae675fbba8",
+    "docs/reader-evidence/v120-offline-bookmarks/030217b6-1dc5-41cc-ae8b-943234678ee3/saved-epub.epub": "019417bc5d1770f8eb87726c40f74149f9e49429ec9131134369491af2c32558",
+    "docs/reader-evidence/v120-offline-bookmarks/030217b6-1dc5-41cc-ae8b-943234678ee3/saved-epub.png": "0c2f265117120b823e9c19c1b794fa8499bf7d91b192f3ff98a1308eb05308fd",
+    "docs/reader-evidence/v120-offline-bookmarks/030217b6-1dc5-41cc-ae8b-943234678ee3/saved-pdf.pdf": "14e944b194b7b79590c1a6e2ecb9736d8a8280f4f820b40c59271414582f1fb4",
+    "docs/reader-evidence/v120-offline-bookmarks/030217b6-1dc5-41cc-ae8b-943234678ee3/saved-pdf.png": "e32253b0282469c247be6ffc7d8b01e76e6070fdf1333d5aed94d933757c913f",
+    "docs/reader-evidence/v120-offline-bookmarks/37effe27-cd1e-402c-9527-bbacd108e606/epub-B-bookmark-privacy.png": "72f80ad6244c4891ea443233c97268a11e0c2a6d3c6de6ac3686e4ffcd46119b",
+    "docs/reader-evidence/v120-offline-bookmarks/37effe27-cd1e-402c-9527-bbacd108e606/epub-offline-bookmark.png": "0e47fe75c7f0b21e42a7969ea0b051e018ed739ba482aa7c30f3678027fcd709",
+    "docs/reader-evidence/v120-offline-bookmarks/37effe27-cd1e-402c-9527-bbacd108e606/manifest.json": "a10c11424a7a944cafd742e0e4f9ff55dbbd94b529fb75bda9b3478ae4afc912",
+    "docs/reader-evidence/v120-offline-bookmarks/37effe27-cd1e-402c-9527-bbacd108e606/pdf-B-bookmark-privacy.png": "f023f28e230f9bce25f43317d691c9a6db22ed04413b58010f8c35ff9aa93e3a",
+    "docs/reader-evidence/v120-offline-bookmarks/37effe27-cd1e-402c-9527-bbacd108e606/pdf-offline-bookmark.png": "feba3a544e212f98e881a68fb21b5a1c96e76aa5bd8718216a025e748515fbfb",
+    "docs/reader-evidence/v120-offline-bookmarks/37effe27-cd1e-402c-9527-bbacd108e606/results.json": "1c15a2314f9d1a2bbe3fd02436c8b96c7b31a208047e521485161eceff4ebf8a",
+    "docs/reader-evidence/v120-offline-bookmarks/37effe27-cd1e-402c-9527-bbacd108e606/saved-epub.epub": "cac4cf8ea9352afc928a3db06453833b23be9e4f51598e0241b306852047832d",
+    "docs/reader-evidence/v120-offline-bookmarks/37effe27-cd1e-402c-9527-bbacd108e606/saved-epub.png": "4fb18d31b39dedbfa76ef8c71b05d5bdb91b064e015508b891a59e19e5595a63",
+    "docs/reader-evidence/v120-offline-bookmarks/37effe27-cd1e-402c-9527-bbacd108e606/saved-pdf.pdf": "5ee843051fe788eaea57929a986e736e7c4bb31789baa8da865b62b8d53b8d4b",
+    "docs/reader-evidence/v120-offline-bookmarks/37effe27-cd1e-402c-9527-bbacd108e606/saved-pdf.png": "98d0232d6351532d5308aec1fe4c08021036c29d284db8ab580bf3a3d84d57ae",
+    "docs/reader-evidence/v120-offline-bookmarks/d31ae2ec-1f0c-4a8a-a08d-b0afaa90da3a/epub-B-bookmark-privacy.png": "12301e48759bc450b222a5881fccccb58cd242b4c9ce9aa3a114803495d9a858",
+    "docs/reader-evidence/v120-offline-bookmarks/d31ae2ec-1f0c-4a8a-a08d-b0afaa90da3a/epub-offline-bookmark.png": "49529960867e7650fbff1a79697c88c164dcf4dc481e9bd06db666d8c914e175",
+    "docs/reader-evidence/v120-offline-bookmarks/d31ae2ec-1f0c-4a8a-a08d-b0afaa90da3a/failure.png": "c51ac142c44749c733b7edf97691f79fe9ba1b7d634d7408abbc6d7172db5d40",
+    "docs/reader-evidence/v120-offline-bookmarks/d31ae2ec-1f0c-4a8a-a08d-b0afaa90da3a/manifest.json": "3a3421fab708aa244725c6cad98ce60fa459c4f06a10b73b0cda18cd9429052c",
+    "docs/reader-evidence/v120-offline-bookmarks/d31ae2ec-1f0c-4a8a-a08d-b0afaa90da3a/pdf-B-bookmark-privacy.png": "1b557cc7ad9a66750184006c9349358d92abd03fe5d7fa924d0450c8b389794e",
+    "docs/reader-evidence/v120-offline-bookmarks/d31ae2ec-1f0c-4a8a-a08d-b0afaa90da3a/pdf-offline-bookmark.png": "8c936c55267a64ecc72966bdef90f1c33b077ddc8dfca37a6266945cdfb1cc05",
+    "docs/reader-evidence/v120-offline-bookmarks/d31ae2ec-1f0c-4a8a-a08d-b0afaa90da3a/results.json": "647426b98a64d3232a0f0b16f0f7417384f37149ef5d78e9d7187d8e5d97fb7b",
+    "docs/reader-evidence/v120-offline-bookmarks/d31ae2ec-1f0c-4a8a-a08d-b0afaa90da3a/saved-epub.epub": "444b0ed8931d2b8bd4531b4d9151e2e6b9d3a5ad6b8ca7c48002fa765e4f6b7e",
+    "docs/reader-evidence/v120-offline-bookmarks/d31ae2ec-1f0c-4a8a-a08d-b0afaa90da3a/saved-epub.png": "d3447eba2587af267f3d2cb99e77b42ede7c5f3a1029504bb2cb13d78d4643e4",
+    "docs/reader-evidence/v120-offline-bookmarks/d31ae2ec-1f0c-4a8a-a08d-b0afaa90da3a/saved-pdf.pdf": "037b8341c27dea3b18af0e19fd71542a854e396829b345a53893a5eaad7a5ec9",
+    "docs/reader-evidence/v120-offline-bookmarks/d31ae2ec-1f0c-4a8a-a08d-b0afaa90da3a/saved-pdf.png": "3225b1d8b738908d97b0b50868415573acaeadbb82b0633688a6d407eb017528",
+    "docs/reader-evidence/v120-offline-bookmarks/d794a5fe-959e-4bba-9c4f-be3b5fb64a73/epub-B-bookmark-privacy.png": "b76509acc90bed1ca32ff53576a75b84588f8d8a12eb6e73fd8eb79de5604d67",
+    "docs/reader-evidence/v120-offline-bookmarks/d794a5fe-959e-4bba-9c4f-be3b5fb64a73/epub-offline-bookmark.png": "4dcab1f0506e255d85423904859f5054a8e9f0b2f5c54b6486dd99b89ff240d9",
+    "docs/reader-evidence/v120-offline-bookmarks/d794a5fe-959e-4bba-9c4f-be3b5fb64a73/failure.png": "aeac9ef55abe06754c28c3c3793f21f7497d08556eeb2c3cdb3611228819a0be",
+    "docs/reader-evidence/v120-offline-bookmarks/d794a5fe-959e-4bba-9c4f-be3b5fb64a73/manifest.json": "a66dab27a60a105a99463753de235aab584649c19e22bf4bc71f69c1e39fce41",
+    "docs/reader-evidence/v120-offline-bookmarks/d794a5fe-959e-4bba-9c4f-be3b5fb64a73/pdf-B-bookmark-privacy.png": "5703c073dc82b262b1f4ee5d9516d0f4e843dea3b49a15970521b8c74a78b3e7",
+    "docs/reader-evidence/v120-offline-bookmarks/d794a5fe-959e-4bba-9c4f-be3b5fb64a73/pdf-offline-bookmark.png": "eef8da31b92871fc505011d8d1c914c580d40972316cf114869f88c4779905ab",
+    "docs/reader-evidence/v120-offline-bookmarks/d794a5fe-959e-4bba-9c4f-be3b5fb64a73/results.json": "91f5213afe828ede16c0044a45f576a31450807e2cb69418187c6acb10a15684",
+    "docs/reader-evidence/v120-offline-bookmarks/d794a5fe-959e-4bba-9c4f-be3b5fb64a73/saved-epub.epub": "d0791b832220fb06ac702b2afb34d85aabd3d10528fb0fa3bbb583681cc90596",
+    "docs/reader-evidence/v120-offline-bookmarks/d794a5fe-959e-4bba-9c4f-be3b5fb64a73/saved-epub.png": "4fb18d31b39dedbfa76ef8c71b05d5bdb91b064e015508b891a59e19e5595a63",
+    "docs/reader-evidence/v120-offline-bookmarks/d794a5fe-959e-4bba-9c4f-be3b5fb64a73/saved-pdf.pdf": "2f20b671e35812a1d353dbe58e8c455616719d331ea9769ab24e9528d592eea6",
+    "docs/reader-evidence/v120-offline-bookmarks/d794a5fe-959e-4bba-9c4f-be3b5fb64a73/saved-pdf.png": "98d0232d6351532d5308aec1fe4c08021036c29d284db8ab580bf3a3d84d57ae",
+    "docs/reader-evidence/v120-offline-edit/.gitattributes": "46ae9442e216b592f02c166c01c547d20e2bfc138e0074cd84b82ecc178df59b",
+    "docs/reader-evidence/v120-offline-edit/1a3ef002-d8c6-4716-9a7b-d987739fbe3c/epub-account-B-private-notes-hidden.png": "bfbbbc128fce4509558f6ce3fb48eceece85bd03e74c68ea42a265cc888e3d35",
+    "docs/reader-evidence/v120-offline-edit/1a3ef002-d8c6-4716-9a7b-d987739fbe3c/epub-logged-out-private-notes-hidden.png": "e67351ccfddecc40b5c28cb2304837b94e117dae32f31b660a2653ab24a60f07",
+    "docs/reader-evidence/v120-offline-edit/1a3ef002-d8c6-4716-9a7b-d987739fbe3c/epub-offline-edited.png": "915778cac7072a68b22e1b5331a91a1eeab9770ad0063387ae26767da32bb66b",
+    "docs/reader-evidence/v120-offline-edit/1a3ef002-d8c6-4716-9a7b-d987739fbe3c/pdf-account-B-private-notes-hidden.png": "711b04c61bd99ee37453df7a8900afe21ef4d123e9ddc8432b5d3d2aac9c657f",
+    "docs/reader-evidence/v120-offline-edit/1a3ef002-d8c6-4716-9a7b-d987739fbe3c/pdf-logged-out-private-notes-hidden.png": "1df58bcea6b54626f65a8a7a37eb96e7afa7ec3c43100e938b018f2a8630d5a4",
+    "docs/reader-evidence/v120-offline-edit/1a3ef002-d8c6-4716-9a7b-d987739fbe3c/pdf-offline-edited.png": "8f51129ca865c36ad160d87f3f367c94ca76220dab098ab64154b7827987c104",
+    "docs/reader-evidence/v120-offline-edit/1a3ef002-d8c6-4716-9a7b-d987739fbe3c/results.json": "f77078c6af4a16fbd0e50d0a122ac53eca12fdb7fe76f7fddce7e484075f7c30",
+    "docs/reader-evidence/v120-offline-edit/8105ddd9-7895-4012-8adb-0b55cdb1c01d/epub-account-B-private-notes-hidden.png": "a719b2d5e3da362282c9d855f16bb84e0acae36e2d725131f6180507a7362178",
+    "docs/reader-evidence/v120-offline-edit/8105ddd9-7895-4012-8adb-0b55cdb1c01d/epub-logged-out-private-notes-hidden.png": "4a97566afb2854ddf431395abbc5c0e96dd5240e09401d2b2b7b03b8225e6ff4",
+    "docs/reader-evidence/v120-offline-edit/8105ddd9-7895-4012-8adb-0b55cdb1c01d/epub-offline-edited.png": "4dc51c88d111210231c2ab468073780bbf5bfcd4b92c89608543faf96b0c51dc",
+    "docs/reader-evidence/v120-offline-edit/8105ddd9-7895-4012-8adb-0b55cdb1c01d/pdf-account-B-private-notes-hidden.png": "c1fc7b5de5bf2cd1927a4a36610fc8b628b05682b6db36baccafefcb9cd638ee",
+    "docs/reader-evidence/v120-offline-edit/8105ddd9-7895-4012-8adb-0b55cdb1c01d/pdf-logged-out-private-notes-hidden.png": "e0be66b95739e85b1c6d13b6955c146b4e7f5330bd91a708878bdce5438c86b0",
+    "docs/reader-evidence/v120-offline-edit/8105ddd9-7895-4012-8adb-0b55cdb1c01d/pdf-offline-edited.png": "87a8402fd72866b207344ab9fd953d4f50db98db9aa6e56d5bd8029db89f3b7e",
+    "docs/reader-evidence/v120-offline-edit/8105ddd9-7895-4012-8adb-0b55cdb1c01d/results.json": "1e57174dba9fa5e4ac53b3c699bf84455843fd4393dd5b52ac869d74b09340d9",
+    "docs/reader-evidence/v120-offline-edit/8fc02eb7-c9a0-433d-8ebc-33e6e3b6a4e4/epub-account-B-private-notes-hidden.png": "5a380d4fd6104b24d340bd24512c8609689b96545eba5331d2098694f3a336ee",
+    "docs/reader-evidence/v120-offline-edit/8fc02eb7-c9a0-433d-8ebc-33e6e3b6a4e4/epub-logged-out-private-notes-hidden.png": "dc7cd3d5e31d01a89486970c79e988e903a19447f60664e1b1d3e297adb01066",
+    "docs/reader-evidence/v120-offline-edit/8fc02eb7-c9a0-433d-8ebc-33e6e3b6a4e4/epub-offline-edited.png": "9d1296c77e7289ed9a347bf055bca2876f18b66fc71ba9d69d74875659c74382",
+    "docs/reader-evidence/v120-offline-edit/8fc02eb7-c9a0-433d-8ebc-33e6e3b6a4e4/pdf-account-B-private-notes-hidden.png": "4e80b4a2b0ffdc576bb7c90e1fad34945768bedff4e8c36887c03b145dd7f523",
+    "docs/reader-evidence/v120-offline-edit/8fc02eb7-c9a0-433d-8ebc-33e6e3b6a4e4/pdf-logged-out-private-notes-hidden.png": "bc394d79d971447a1f8dc5bf0ba4e472a45864aed3bac32e741942a98277817e",
+    "docs/reader-evidence/v120-offline-edit/8fc02eb7-c9a0-433d-8ebc-33e6e3b6a4e4/pdf-offline-edited.png": "e56f8ea8d22666badbdf9e234c2b38d81c2b435ac7db70c8862a846dd3cb717b",
+    "docs/reader-evidence/v120-offline-edit/8fc02eb7-c9a0-433d-8ebc-33e6e3b6a4e4/results.json": "bb5f62b58a2fbf76f00afb0567fad66b860239ed76a2324d7d62b9c94858869e"
+  }
+}

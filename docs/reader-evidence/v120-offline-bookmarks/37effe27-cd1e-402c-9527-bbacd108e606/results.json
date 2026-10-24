@@ -1,0 +1,301 @@
+{
+  "runId": "37effe27-cd1e-402c-9527-bbacd108e606",
+  "startedAt": "2026-10-24T00:14:41.402Z",
+  "version": 120,
+  "status": "passed",
+  "source": {
+    "server.mjs": "d150c34b9f8de4adaecead4134306ca42a31ba9359614aef0536565cb5324dcb",
+    "indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+    "download-tickets.mjs": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+    "social-watermark.mjs": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+    "public/app.js": "ecd437924ff179f16b456c37d0fee4d85b90f4340a8b5081253ec877d9ed5ff5",
+    "public/index.html": "1ef50609b492def916ccc5c709f7f562a6d5e196746125f2732b707d8f940c05",
+    "public/offline.mjs": "0ce9b98c47a2df59a1550568075c93e15067a1002083804ea0627906bdff3413",
+    "public/downloads.mjs": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+    "public/sw.js": "78bac8c0379bb6cff2c911576d7e482cb4fe200d322c23d3ef1af01984cf3166",
+    "public/epub-engine.mjs": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885",
+    "public/styles.css": "e856d63b7800ac2f32c6e7798c1e6b61fc3773c6656de5fff52e16cb0cd62699",
+    "public/i18n.mjs": "9872cb600d090cdf746c7dfcb5e95ae975ad84b0c33e237265710a668c504f4f",
+    "public/citations.mjs": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+    "db/schema.sql": "a2aef0ad519ea7ef4c18c37fa145b69bec33454acf25440a58760d9b9eb55c66",
+    "db/seed.sql": "b8d845cea00579ccd0b13fcbb94e9d050c42d1fff736ec4dd36e1137f67ce587"
+  },
+  "cases": [
+    {
+      "bookId": "33333333-3333-3333-3333-333333333333",
+      "sha256": "5ee843051fe788eaea57929a986e736e7c4bb31789baa8da865b62b8d53b8d4b",
+      "bytes": 2270,
+      "nativeIndexedDBBlob": true,
+      "stampMarkers": [
+        "user UUID",
+        "tenant UUID",
+        "email",
+        "platform",
+        "original text"
+      ],
+      "requests": [
+        {
+          "phase": "pdf-native-ticketed-offline-copy",
+          "method": "POST",
+          "path": "/api/books/33333333-3333-3333-3333-333333333333/download-ticket"
+        },
+        {
+          "phase": "pdf-native-ticketed-offline-copy",
+          "method": "POST",
+          "path": "/api/books/33333333-3333-3333-3333-333333333333/download"
+        }
+      ],
+      "downloadProvenance": "ticketed-download-v1",
+      "id": "pdf-native-ticketed-offline-copy",
+      "status": "PASS"
+    },
+    {
+      "bookId": "a34241b5-e986-4110-968f-4e160c11c7df",
+      "sha256": "cac4cf8ea9352afc928a3db06453833b23be9e4f51598e0241b306852047832d",
+      "bytes": 1477,
+      "nativeIndexedDBBlob": true,
+      "stampMarkers": [
+        "user UUID",
+        "tenant UUID",
+        "email",
+        "platform",
+        "original text"
+      ],
+      "requests": [
+        {
+          "phase": "epub-native-ticketed-offline-copy",
+          "method": "POST",
+          "path": "/api/books/a34241b5-e986-4110-968f-4e160c11c7df/download-ticket"
+        },
+        {
+          "phase": "epub-native-ticketed-offline-copy",
+          "method": "POST",
+          "path": "/api/books/a34241b5-e986-4110-968f-4e160c11c7df/download"
+        }
+      ],
+      "downloadProvenance": "ticketed-download-v1",
+      "id": "epub-native-ticketed-offline-copy",
+      "status": "PASS"
+    },
+    {
+      "cache": "akademik-shell-v12",
+      "controller": true,
+      "id": "serviceworker-v12-complete-shell",
+      "status": "PASS"
+    },
+    {
+      "nativeAtomicQueue": true,
+      "noServerWrite": true,
+      "id": "pdf-unsent-bookmark-toggle-cancels-create",
+      "status": "PASS"
+    },
+    {
+      "hardReload": true,
+      "position": {
+        "asset_version_id": "55555555-5555-5555-5555-555555555555",
+        "type": "pdf",
+        "page": 2,
+        "rects": [],
+        "text_quote": {
+          "prefix": "",
+          "exact": "",
+          "suffix": ""
+        },
+        "text_position": {
+          "start": 0,
+          "end": 0
+        }
+      },
+      "localAliasPreserved": true,
+      "oneServerRow": true,
+      "id": "pdf-offline-bookmark-reload-jump-and-one-post",
+      "status": "PASS"
+    },
+    {
+      "canonicalServerId": true,
+      "staleGetHidden": true,
+      "offlineReload": true,
+      "serverDeleted": true,
+      "id": "pdf-offline-delete-tombstone-reload-and-delete",
+      "status": "PASS"
+    },
+    {
+      "cachedReaderOnline": true,
+      "pendingStateClears": true,
+      "id": "pdf-cached-online-create-delete-syncs",
+      "status": "PASS"
+    },
+    {
+      "nativeAtomicQueue": true,
+      "noServerWrite": true,
+      "id": "epub-unsent-bookmark-toggle-cancels-create",
+      "status": "PASS"
+    },
+    {
+      "hardReload": true,
+      "position": {
+        "asset_version_id": "93718506-d1a7-4ba3-8246-088e1d043948",
+        "type": "epub",
+        "cfi": "epubcfi(/6/2!/4/2/1:0)",
+        "href": "chapter.xhtml",
+        "percent": 0,
+        "text_quote": "Yer imi"
+      },
+      "localAliasPreserved": true,
+      "oneServerRow": true,
+      "id": "epub-offline-bookmark-reload-jump-and-one-post",
+      "status": "PASS"
+    },
+    {
+      "canonicalServerId": true,
+      "staleGetHidden": true,
+      "offlineReload": true,
+      "serverDeleted": true,
+      "id": "epub-offline-delete-tombstone-reload-and-delete",
+      "status": "PASS"
+    },
+    {
+      "cachedReaderOnline": true,
+      "pendingStateClears": true,
+      "id": "epub-cached-online-create-delete-syncs",
+      "status": "PASS"
+    },
+    {
+      "controlledStatuses": [
+        401,
+        403,
+        429,
+        500
+      ],
+      "draftRetained": true,
+      "realPostgresRetry": true,
+      "staleUiAliasDeletion": true,
+      "id": "http-failures-retain-bookmark-until-retry",
+      "status": "PASS"
+    },
+    {
+      "realAccountSwitch": true,
+      "APendingQueueRetained": true,
+      "OnlyBVisible": true,
+      "id": "pdf-B-offline-hides-A-and-keeps-A-queue",
+      "status": "PASS"
+    },
+    {
+      "realAccountSwitch": true,
+      "APendingQueueRetained": true,
+      "OnlyBVisible": true,
+      "id": "epub-B-offline-hides-A-and-keeps-A-queue",
+      "status": "PASS"
+    },
+    {
+      "AQueueRecovered": true,
+      "BServerBookmarkUntouched": true,
+      "id": "pdf-A-return-flushes-only-own-bookmark",
+      "status": "PASS"
+    },
+    {
+      "AQueueRecovered": true,
+      "BServerBookmarkUntouched": true,
+      "id": "epub-A-return-flushes-only-own-bookmark",
+      "status": "PASS"
+    },
+    {
+      "missingIdentityReturnsNothing": true,
+      "noUnownedBookmarkCreated": true,
+      "id": "logout-offline-no-identity-no-bookmarks",
+      "status": "PASS"
+    }
+  ],
+  "cleanup": {
+    "browser": true,
+    "app": true,
+    "database": true,
+    "temporaryCopy": true
+  },
+  "limitations": [
+    "Small generated PDF/reflowable EPUB only; not large-file, screen-reader, multi-tab idempotency or cross-device conflict acceptance.",
+    "Isolated owned PostgreSQL and real Edge; production/dev services untouched.",
+    "401/403/429/500 retry and retaining A queue during account switch use explicitly controlled HTTP failures."
+  ],
+  "postgresImage": "sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea",
+  "databaseRole": {
+    "rolsuper": false,
+    "rolbypassrls": false
+  },
+  "browser": "155.0.4283.45",
+  "login": "real API login with browser cookie jar, followed by actual UI offline card clicks",
+  "fixture": {
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "userId": "b77ee297-2c0f-49d1-b11d-8e046568c045",
+    "email": "offline-reader@browser.test",
+    "books": [
+      {
+        "id": "33333333-3333-3333-3333-333333333333",
+        "asset": "55555555-5555-5555-5555-555555555555",
+        "title": "Browser PDF fixture",
+        "format": "pdf",
+        "filename": "browser.pdf",
+        "original": "Original offline PDF fixture"
+      },
+      {
+        "id": "a34241b5-e986-4110-968f-4e160c11c7df",
+        "asset": "93718506-d1a7-4ba3-8246-088e1d043948",
+        "title": "Browser EPUB fixture",
+        "format": "epub",
+        "filename": "browser.epub",
+        "original": "Original offline EPUB fixture"
+      },
+      {
+        "id": "c591b89c-ed15-4db5-b1e8-7e25a0303faa",
+        "asset": "ce308678-e780-430b-b1c2-aa0f18be17d4",
+        "title": "Browser quota rate fixture",
+        "format": "pdf",
+        "filename": "quota.pdf",
+        "original": "Original quota fixture"
+      }
+    ],
+    "b2bEnvironment": "unset; secure default exercised",
+    "watermarkMetadata": false
+  },
+  "completedAt": "2026-10-24T00:15:46.012Z",
+  "requests": [
+    {
+      "phase": "pdf-native-ticketed-offline-copy",
+      "method": "POST",
+      "path": "/api/books/33333333-3333-3333-3333-333333333333/download-ticket"
+    },
+    {
+      "phase": "pdf-native-ticketed-offline-copy",
+      "method": "POST",
+      "path": "/api/books/33333333-3333-3333-3333-333333333333/download"
+    },
+    {
+      "phase": "epub-native-ticketed-offline-copy",
+      "method": "POST",
+      "path": "/api/books/a34241b5-e986-4110-968f-4e160c11c7df/download-ticket"
+    },
+    {
+      "phase": "epub-native-ticketed-offline-copy",
+      "method": "POST",
+      "path": "/api/books/a34241b5-e986-4110-968f-4e160c11c7df/download"
+    }
+  ],
+  "browserErrors": [],
+  "sourceStillMatches": {
+    "server.mjs": true,
+    "indexer.mjs": true,
+    "download-tickets.mjs": true,
+    "social-watermark.mjs": true,
+    "public/app.js": true,
+    "public/index.html": true,
+    "public/offline.mjs": true,
+    "public/downloads.mjs": true,
+    "public/sw.js": true,
+    "public/epub-engine.mjs": true,
+    "public/styles.css": true,
+    "public/i18n.mjs": true,
+    "public/citations.mjs": true,
+    "db/schema.sql": true,
+    "db/seed.sql": true
+  }
+}

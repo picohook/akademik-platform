@@ -10,8 +10,9 @@ import { PDFDocument } from 'pdf-lib';
 import JSZip from 'jszip';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const appDir=fileURLToPath(new URL('../',import.meta.url)),root=path.resolve(appDir,'../..'),runId=randomUUID();
-const out=path.join(root,'docs/reader-evidence/v119-offline-edit',runId),tempRoot=path.join(appDir,'tmp');
-const report={runId,version:119,revision:'privacy-fix',startedAt:new Date().toISOString(),status:'running',scope:'Isolated copied demo server, real Edge/IndexedDB/UI and real annotation HTTP; no production/dev services or database used.',cases:[],cleanup:{},sources:{}};
+const appVersion=(await readFile(path.join(appDir,'public/index.html'),'utf8')).match(/app\.js\?v=(\d+)/)[1],shell=(await readFile(path.join(appDir,'public/sw.js'),'utf8')).match(/akademik-shell-v\d+/)[0];
+const out=path.join(root,'docs/reader-evidence/v'+appVersion+'-offline-edit',runId),tempRoot=path.join(appDir,'tmp');
+const report={runId,version:Number(appVersion),revision:'privacy-fix',startedAt:new Date().toISOString(),status:'running',scope:'Isolated copied demo server, real Edge/IndexedDB/UI and real annotation HTTP; no production/dev services or database used.',cases:[],cleanup:{},sources:{}};
 let temp,app,browser,context,page,base,owner,phase='setup',log='';const errors=[];
 const pause=ms=>new Promise(r=>setTimeout(r,ms)),sha=b=>createHash('sha256').update(b).digest('hex');
 const persist=()=>writeFile(path.join(out,'results.json'),JSON.stringify(report,null,2)+'\n');
@@ -48,7 +49,7 @@ async function setup(){
  await cp(path.join(appDir,'public'),path.join(dir,'public'),{recursive:true,filter:f=>!['uploads','ocr'].some(n=>f===path.join(appDir,'public',n)||f.startsWith(path.join(appDir,'public',n)+path.sep))});
  for(const file of ['server.mjs','public/app.js','public/offline.mjs','public/index.html','public/sw.js','public/i18n.mjs'])report.sources[file]=sha(await readFile(path.join(dir,file)));
  const socket=net.createServer();socket.listen(0,'127.0.0.1');await once(socket,'listening');const port=socket.address().port;await new Promise(r=>socket.close(r));base='http://127.0.0.1:'+port;
- app=spawn(process.execPath,['server.mjs'],{cwd:dir,env:{...process.env,DATABASE_URL:'',PORT:String(port),APP_VERSION:'119',SESSION_SECRET:randomUUID(),NODE_OPTIONS:''},windowsHide:true,stdio:['ignore','pipe','pipe']});app.on('error',e=>log+=e.message);for(const s of[app.stdout,app.stderr])s.on('data',b=>log=(log+b).slice(-6000));
+ app=spawn(process.execPath,['server.mjs'],{cwd:dir,env:{...process.env,DATABASE_URL:'',PORT:String(port),APP_VERSION:appVersion,SESSION_SECRET:randomUUID(),NODE_OPTIONS:''},windowsHide:true,stdio:['ignore','pipe','pipe']});app.on('error',e=>log+=e.message);for(const s of[app.stdout,app.stderr])s.on('data',b=>log=(log+b).slice(-6000));
  await until('owned server',async()=>{assert.equal(app.exitCode,null);const r=await fetch(base+'/api/health');return r.ok&&(await r.json()).mode==='demo';});
  browser=await chromium.launch({channel:'msedge',headless:true});context=await browser.newContext({viewport:{width:1440,height:1000},serviceWorkers:'allow'});page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push({phase,error:e.stack}));report.browser=browser.version();
  const login=await context.request.post(base+'/api/login',{data:{email:'librarian@example.edu.tr',password:'demo1234'}});assert.equal(login.status(),200);owner=(await login.json()).id;assert.ok(owner);
@@ -58,7 +59,7 @@ async function setup(){
  // Cache generated files directly as test fixtures, not as a download-policy test.
  for(const book of books)await page.evaluate(async b=>{const o=await import('/offline.mjs'),r=await fetch('/api/books/'+b.id+'/file');if(!r.ok)throw Error('fixture stream');await o.saveOfflineBook(b,await r.blob(),{downloadProvenance:'test-fixture'});},book);
  await page.evaluate(async()=>{await Promise.race([navigator.serviceWorker.ready,new Promise((_,r)=>setTimeout(()=>r(Error('SW timeout')),15000))]);});
- await until('SW11 full shell',()=>page.evaluate(async()=>{const c=await caches.open('akademik-shell-v11');return(await Promise.all(['/','/app.js','/offline.mjs','/vendor/pdfjs/pdf.mjs','/vendor/pdfjs/pdf.worker.mjs','/vendor/epubjs/jszip.min.js','/vendor/epubjs/epub.min.js','/epub-engine.mjs'].map(p=>c.match(p,{ignoreSearch:true})))).every(Boolean);}));
+ await until('current full shell',()=>page.evaluate(async shell=>{const c=await caches.open(shell);return(await Promise.all(['/','/app.js','/offline.mjs','/vendor/pdfjs/pdf.mjs','/vendor/pdfjs/pdf.worker.mjs','/vendor/epubjs/jszip.min.js','/vendor/epubjs/epub.min.js','/epub-engine.mjs'].map(p=>c.match(p,{ignoreSearch:true})))).every(Boolean);},shell));
  return books;
 }
 try{

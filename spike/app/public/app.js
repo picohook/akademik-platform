@@ -1144,6 +1144,10 @@ async function handleLogin(event) {
     loginScreen.hidden = true;
     setUser(payload);
     await bootData();
+    syncOfflineAnnotations().then(() => {
+      const assetId = state.book?.asset_id;
+      if (assetId) return syncReaderAnnotations(assetId);
+    }).catch(() => {});
     search.focus();
   } catch (error) {
     console.error(error);
@@ -1632,6 +1636,10 @@ async function goToPage(value) {
   }
   const target = Math.min(state.numPages, Math.max(1, Math.trunc(requested)));
   if (target !== requested) toast('Sayfa aralığı dışında');
+  if (!state.scrollMode && target === state.page) {
+    updatePageUi();
+    return;
+  }
   if (target !== state.page) {
     state.pending = null;
     hlBar.hidden = true;
@@ -1675,93 +1683,38 @@ function applyEpubFontSize(value, persist = true, bookId = state.book?.id) {
 }
 
 async function toggleBookmark() {
-  if (!state.book) return;
-  if (state.epubMode) {
-    const cfi = currentEpubCfi();
-    if (!cfi) return;
-    const active = state.activeBookmarkId
-      ? state.annotations.find((annotation) => annotation.id === state.activeBookmarkId
-        && annotation.color === 'bookmark' && annotation.anchor?.type === 'epub')
-      : null;
-    const existing = active || bookmarkForEpubCfi(cfi);
+  if (!state.book || bookmarkBtn.disabled || (!state.epubMode && !state.pdf)) return;
+  const ownerId = annotationOwnerId();
+  if (!ownerId) { toast(t('Yer imi için giriş yapın')); return; }
+  const cfi = state.epubMode ? currentEpubCfi() : null;
+  if (state.epubMode && !cfi) return;
+  bookmarkBtn.disabled = true;
+  try {
+    const active = state.epubMode && state.activeBookmarkId
+      ? state.annotations.find(item => item.id === state.activeBookmarkId
+        && item.color === 'bookmark' && item.anchor?.type === 'epub') : null;
+    const existing = active || (state.epubMode ? bookmarkForEpubCfi(cfi) : bookmarkForPage());
     if (existing) {
       await deleteAnnotation(existing.id, { silent: true });
-      state.activeBookmarkId = null;
-      toast('Yer imi kaldırıldı');
+      toast(t('Yer imi kaldırıldı'));
       return;
     }
-    if (state.offlineMode) {
-      toast(t('Yer imi çevrimdışı eklenemiyor'));
-      return;
-    }
-    try {
-      const response = await fetch('/api/annotations', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          assetId: state.book.asset_id,
-          anchor: {
-            asset_version_id: state.book.asset_id,
-            type: 'epub',
-            cfi,
-            href: state.epubProgress?.href || null,
-            percent: state.epubProgress?.percent || 0,
-            text_quote: 'Yer imi',
-          },
-          color: 'bookmark',
-          note: 'Yer imi',
-          selectedText: null,
-        }),
-      });
-      if (!response.ok) throw new Error('bookmark failed');
-      const saved = await response.json();
-      state.annotations.push(saved);
-      state.activeBookmarkId = saved.id;
-      renderNotes();
-      updateBookmarkUi();
-      toast('Yer imi eklendi');
-    } catch (error) {
-      console.error(error);
-      toast('Yer imi eklenemedi');
-    }
-    return;
-  }
-  if (!state.pdf) return;
-  const existing = bookmarkForPage();
-  if (existing) {
-    await deleteAnnotation(existing.id, { silent: true });
-    toast('Yer imi kaldırıldı');
-    return;
-  }
-  try {
-    const response = await fetch('/api/annotations', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        assetId: state.book.asset_id,
-        anchor: {
-          asset_version_id: state.book.asset_id,
-          type: 'pdf',
-          page: state.page,
-          rects: [],
-          text_quote: { prefix: '', exact: '', suffix: '' },
-          text_position: { start: 0, end: 0 },
-        },
-        color: 'bookmark',
-        note: 'Yer imi',
-        selectedText: null,
-      }),
+    const anchor = state.epubMode ? {
+      asset_version_id: state.book.asset_id, type: 'epub', cfi,
+      href: state.epubProgress?.href || null, percent: state.epubProgress?.percent || 0,
+      text_quote: 'Yer imi',
+    } : {
+      asset_version_id: state.book.asset_id, type: 'pdf', page: state.page, rects: [],
+      text_quote: { prefix: '', exact: '', suffix: '' }, text_position: { start: 0, end: 0 },
+    };
+    const saved = await saveLocalReaderAnnotation({
+      assetId: state.book.asset_id, anchor, color: 'bookmark', note: 'Yer imi', selectedText: null,
     });
-    if (!response.ok) throw new Error('bookmark failed');
-    const saved = await response.json();
-    state.annotations.push(saved);
-    renderNotes();
-    updateBookmarkUi();
-    toast('Yer imi eklendi');
+    if (navigator.onLine) syncReaderAnnotations(saved.asset_id, ownerId).catch(() => {});
   } catch (error) {
     console.error(error);
-    toast('Yer imi eklenemedi');
-  }
+    toast(t('Yer imi eklenemedi'));
+  } finally { bookmarkBtn.disabled = false; }
 }
 
 function showShortcuts() {
@@ -3538,7 +3491,7 @@ async function saveEpubHighlight() {
   state.epubSelection = null;
   hlBar.hidden = true;
   if (state.offlineMode) {
-    const annotation = await saveLocalHighlight({
+    const annotation = await saveLocalReaderAnnotation({
       assetId: state.book.asset_id,
       anchor: {
         asset_version_id: state.book.asset_id,
@@ -3613,6 +3566,15 @@ async function syncOfflineAnnotations() {
   return state.annotationSyncing;
 }
 
+async function syncReaderAnnotations(assetId, ownerId = annotationOwnerId()) {
+  await syncOfflineAnnotations();
+  const items = await listLocalAnnotations(assetId, ownerId);
+  if (state.book?.asset_id !== assetId || annotationOwnerId() !== ownerId) return;
+  state.annotations = items;
+  if (!notesList.querySelector('.note-edit')) renderNotes();
+  if (!state.epubMode) renderHighlights();
+}
+
 async function loadAnnotationsFor(assetId, offline) {
   if (offline) return listLocalAnnotations(assetId, annotationOwnerId()).catch(() => []);
   await syncOfflineAnnotations();
@@ -3623,7 +3585,7 @@ async function loadAnnotationsFor(assetId, offline) {
   return listLocalAnnotations(assetId, annotationOwnerId()).catch(() => []);
 }
 
-async function saveLocalHighlight({ assetId, anchor, color, selectedText }) {
+async function saveLocalReaderAnnotation({ assetId, anchor, color, selectedText, note = hlNote.value.trim() || null }) {
   const id = `offline-${crypto.randomUUID()}`;
   const now = new Date().toISOString();
   const annotation = {
@@ -3631,7 +3593,7 @@ async function saveLocalHighlight({ assetId, anchor, color, selectedText }) {
     asset_id: assetId,
     anchor,
     color,
-    note: hlNote.value.trim() || null,
+    note,
     selected_text: selectedText,
     tags: [],
     status: 'active',
@@ -3655,8 +3617,9 @@ async function saveLocalHighlight({ assetId, anchor, color, selectedText }) {
     createdAt: now,
   });
   state.annotations.push(annotation);
+  if (color === 'bookmark' && state.epubMode) state.activeBookmarkId = annotation.id;
   renderNotes();
-  toast(t('Vurgu çevrimdışı kaydedildi'));
+  toast(t(color === 'bookmark' ? 'Yer imi cihazda kaydedildi; eşitleme bekliyor' : 'Vurgu çevrimdışı kaydedildi'));
   return annotation;
 }
 
@@ -3670,7 +3633,7 @@ async function saveHighlight() {
   state.pending = null;
   hlBar.hidden = true;
   if (state.offlineMode) {
-    await saveLocalHighlight({
+    await saveLocalReaderAnnotation({
       assetId: state.book.asset_id,
       anchor: pending.anchor,
       color: state.highlightColor,
@@ -3711,7 +3674,7 @@ async function saveHighlight() {
 async function deleteAnnotation(id, options = {}) {
   if (state.activeBookmarkId === id) state.activeBookmarkId = null;
   const annotation = state.annotations.find((item) => item.id === id);
-  if (state.offlineMode || !navigator.onLine || annotation?.pending) {
+  if (state.offlineMode || !navigator.onLine || annotation?.pending || annotation?.color === 'bookmark') {
     if (!annotation) return;
     // A pending edit and its deletion must not replay in the opposite order.
     await removeLocalAnnotationWithOperation(annotation, annotationOwnerId());
@@ -3719,6 +3682,7 @@ async function deleteAnnotation(id, options = {}) {
     if (state.epubMode) state.epubEngine?.removeAnnotation(id);
     renderNotes();
     if (!state.epubMode) renderHighlights();
+    if (navigator.onLine) syncReaderAnnotations(annotation.asset_id).catch(() => {});
     if (!options.silent) toast('Not silindi (çevrimdışı)');
     return;
   }

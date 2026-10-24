@@ -208,13 +208,16 @@ export async function editLocalAnnotation(id, changes, ownerId) {
 
 export async function removeLocalAnnotationWithOperation(annotation, ownerId) {
   return annotationTransaction(async (notes, queue) => {
-    if (annotation.ownerId && annotation.ownerId !== ownerId) throw new Error('annotation owner mismatch');
+    // The POST acknowledgement may have stored server_id before the UI refresh.
+    // Read the current row inside this transaction instead of deleting a stale alias.
+    const local = await requestValue(notes.get(annotation.id)) || annotation;
+    if (local.ownerId && local.ownerId !== ownerId) throw new Error('annotation owner mismatch');
     const ops = await requestValue(queue.getAll());
     for (const op of ops) if (op.localId === annotation.id) queue.delete(op.opId);
     notes.delete(annotation.id);
-    const serverId = annotation.server_id || (!annotation.id.startsWith('offline-') ? annotation.id : null);
+    const serverId = local.server_id || (!local.id.startsWith('offline-') ? local.id : null);
     if (serverId) queue.put({ opId: crypto.randomUUID(), type: 'delete', localId: annotation.id,
-      serverId, assetId: annotation.asset_id, ownerId: annotation.ownerId || ownerId,
+      serverId, assetId: local.asset_id, ownerId: local.ownerId || ownerId,
       createdAt: new Date().toISOString(), revision: crypto.randomUUID() });
   });
 }

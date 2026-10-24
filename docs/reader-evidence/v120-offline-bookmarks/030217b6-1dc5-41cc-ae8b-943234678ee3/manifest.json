@@ -1,0 +1,68 @@
+{
+  "runId": "030217b6-1dc5-41cc-ae8b-943234678ee3",
+  "source": {
+    "server.mjs": "d150c34b9f8de4adaecead4134306ca42a31ba9359614aef0536565cb5324dcb",
+    "indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+    "download-tickets.mjs": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+    "social-watermark.mjs": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+    "public/app.js": "4077657de3b30f547bb5b0582a0dcdc1cd086207f14cbe668aea5845d8e53471",
+    "public/index.html": "1ef50609b492def916ccc5c709f7f562a6d5e196746125f2732b707d8f940c05",
+    "public/offline.mjs": "75549aa75b94e4cee9456d3f67fcde897a5e2b634fddcca37fab1bd068abdc98",
+    "public/downloads.mjs": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+    "public/sw.js": "78bac8c0379bb6cff2c911576d7e482cb4fe200d322c23d3ef1af01984cf3166",
+    "public/epub-engine.mjs": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885",
+    "public/styles.css": "e856d63b7800ac2f32c6e7798c1e6b61fc3773c6656de5fff52e16cb0cd62699",
+    "public/i18n.mjs": "9872cb600d090cdf746c7dfcb5e95ae975ad84b0c33e237265710a668c504f4f",
+    "public/citations.mjs": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+    "db/schema.sql": "a2aef0ad519ea7ef4c18c37fa145b69bec33454acf25440a58760d9b9eb55c66",
+    "db/seed.sql": "b8d845cea00579ccd0b13fcbb94e9d050c42d1fff736ec4dd36e1137f67ce587"
+  },
+  "artifacts": [
+    {
+      "file": "epub-offline-bookmark.png",
+      "bytes": 37706,
+      "sha256": "635210e374597df5c8a6953340ab275dea19cbb43e8313e1aba12429c01c6df3"
+    },
+    {
+      "file": "failure.png",
+      "bytes": 32736,
+      "sha256": "482fa8246f25fb4c3821a92e01ff854cea3d88352f79fcf78b10f24fdbcc7318"
+    },
+    {
+      "file": "pdf-offline-bookmark.png",
+      "bytes": 34171,
+      "sha256": "0773be65712ab251893141a32df773fb661dfee6f0282d94b5cbd5c298502792"
+    },
+    {
+      "file": "results.json",
+      "bytes": 9999,
+      "sha256": "029884c0c4b2e5dd8e228bee34f2c01898ada3efaab9b9f7c8f5ebae675fbba8"
+    },
+    {
+      "file": "saved-epub.epub",
+      "bytes": 1478,
+      "sha256": "019417bc5d1770f8eb87726c40f74149f9e49429ec9131134369491af2c32558"
+    },
+    {
+      "file": "saved-epub.png",
+      "bytes": 240361,
+      "sha256": "0c2f265117120b823e9c19c1b794fa8499bf7d91b192f3ff98a1308eb05308fd"
+    },
+    {
+      "file": "saved-pdf.pdf",
+      "bytes": 2258,
+      "sha256": "14e944b194b7b79590c1a6e2ecb9736d8a8280f4f820b40c59271414582f1fb4"
+    },
+    {
+      "file": "saved-pdf.png",
+      "bytes": 239038,
+      "sha256": "e32253b0282469c247be6ffc7d8b01e76e6070fdf1333d5aed94d933757c913f"
+    }
+  ],
+  "cleanup": {
+    "browser": true,
+    "app": true,
+    "database": true,
+    "temporaryCopy": true
+  }
+}

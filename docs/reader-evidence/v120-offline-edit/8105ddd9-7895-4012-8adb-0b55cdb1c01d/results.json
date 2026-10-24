@@ -1,0 +1,180 @@
+{
+  "runId": "8105ddd9-7895-4012-8adb-0b55cdb1c01d",
+  "version": 120,
+  "revision": "privacy-fix",
+  "startedAt": "2026-10-24T00:14:42.816Z",
+  "status": "passed",
+  "scope": "Isolated copied demo server, real Edge/IndexedDB/UI and real annotation HTTP; no production/dev services or database used.",
+  "cases": [
+    {
+      "nativeIndexedDB": true,
+      "hardReload": true,
+      "serverId": "d3b763eb-7850-4d9d-a3bd-708aac487a00",
+      "coalescedEdits": 2,
+      "pendingAfterSync": false,
+      "id": "pdf-offline-ui-edit-reload-sync",
+      "status": "PASS"
+    },
+    {
+      "backgroundSync": true,
+      "pendingIndicatorCleared": true,
+      "id": "pdf-cached-reader-online-edit-clears-pending",
+      "status": "PASS"
+    },
+    {
+      "editorPreserved": true,
+      "savedOnlyAfterClick": true,
+      "id": "pdf-unsaved-editor-survives-reconnect",
+      "status": "PASS"
+    },
+    {
+      "nativeIndexedDB": true,
+      "hardReload": true,
+      "serverId": "393251e6-dfc8-478e-a475-89c03cd43313",
+      "coalescedEdits": 2,
+      "pendingAfterSync": false,
+      "id": "epub-offline-ui-edit-reload-sync",
+      "status": "PASS"
+    },
+    {
+      "backgroundSync": true,
+      "pendingIndicatorCleared": true,
+      "id": "epub-cached-reader-online-edit-clears-pending",
+      "status": "PASS"
+    },
+    {
+      "editorPreserved": true,
+      "savedOnlyAfterClick": true,
+      "id": "epub-unsaved-editor-survives-reconnect",
+      "status": "PASS"
+    },
+    {
+      "calls": [
+        "POST"
+      ],
+      "localAliasPreserved": true,
+      "id": "unsent-create-edited-once-posted-once",
+      "status": "PASS"
+    },
+    {
+      "calls": [
+        "POST",
+        "PATCH"
+      ],
+      "latestDraftPreserved": true,
+      "id": "edit-during-create-becomes-patch",
+      "status": "PASS"
+    },
+    {
+      "calls": [
+        "POST",
+        "DELETE"
+      ],
+      "noResurrection": true,
+      "id": "delete-during-create-compensates",
+      "status": "PASS"
+    },
+    {
+      "statuses": [
+        401,
+        403,
+        500
+      ],
+      "draftRetained": true,
+      "retryAcknowledged": true,
+      "id": "failure-retains-draft-and-cache-does-not-overwrite",
+      "status": "PASS"
+    },
+    {
+      "patchDenied": 403,
+      "createDenied": 403,
+      "id": "another-account-does-not-flush-and-api-checks-owner",
+      "status": "PASS"
+    },
+    {
+      "deleteOnly": true,
+      "noResurrection": true,
+      "id": "edit-then-delete-clears-update-and-tombstone-hides-stale-get",
+      "status": "PASS"
+    },
+    {
+      "nativeDataCloneError": true,
+      "noPartialWrite": true,
+      "id": "native-transaction-abort-keeps-note-and-queue-atomic",
+      "status": "PASS"
+    },
+    {
+      "ownerVerificationRequired": true,
+      "legacyDataPreserved": true,
+      "hiddenFromNormalList": true,
+      "id": "legacy-unowned-draft-is-quarantined-without-data-loss",
+      "status": "PASS"
+    },
+    {
+      "logoutClearsRememberedIdentity": true,
+      "privateNotesHidden": true,
+      "legacyNotesHidden": true,
+      "id": "pdf-logged-out-offline-hides-all-notes",
+      "status": "PASS"
+    },
+    {
+      "logoutClearsRememberedIdentity": true,
+      "privateNotesHidden": true,
+      "legacyNotesHidden": true,
+      "id": "epub-logged-out-offline-hides-all-notes",
+      "status": "PASS"
+    },
+    {
+      "sameBrowserProfile": true,
+      "hardReloadOffline": true,
+      "ownNoteVisible": true,
+      "accountANoteHidden": true,
+      "legacyNoteHidden": true,
+      "missingOwnerReturnsNothing": true,
+      "accountADraftRetained": true,
+      "id": "pdf-account-B-offline-cannot-read-A-or-legacy",
+      "status": "PASS"
+    },
+    {
+      "sameBrowserProfile": true,
+      "hardReloadOffline": true,
+      "ownNoteVisible": true,
+      "accountANoteHidden": true,
+      "legacyNoteHidden": true,
+      "missingOwnerReturnsNothing": true,
+      "accountADraftRetained": true,
+      "id": "epub-account-B-offline-cannot-read-A-or-legacy",
+      "status": "PASS"
+    },
+    {
+      "originalDraftPreserved": true,
+      "otherAccountHidden": true,
+      "legacyHidden": true,
+      "id": "pdf-account-A-return-restores-own-offline-draft",
+      "status": "PASS"
+    },
+    {
+      "originalDraftPreserved": true,
+      "otherAccountHidden": true,
+      "legacyHidden": true,
+      "id": "epub-account-A-return-restores-own-offline-draft",
+      "status": "PASS"
+    }
+  ],
+  "cleanup": {
+    "browser": true,
+    "server": true,
+    "temp": true
+  },
+  "sources": {
+    "server.mjs": "d150c34b9f8de4adaecead4134306ca42a31ba9359614aef0536565cb5324dcb",
+    "public/app.js": "ecd437924ff179f16b456c37d0fee4d85b90f4340a8b5081253ec877d9ed5ff5",
+    "public/offline.mjs": "0ce9b98c47a2df59a1550568075c93e15067a1002083804ea0627906bdff3413",
+    "public/index.html": "1ef50609b492def916ccc5c709f7f562a6d5e196746125f2732b707d8f940c05",
+    "public/sw.js": "78bac8c0379bb6cff2c911576d7e482cb4fe200d322c23d3ef1af01984cf3166",
+    "public/i18n.mjs": "9872cb600d090cdf746c7dfcb5e95ae975ad84b0c33e237265710a668c504f4f"
+  },
+  "browser": "155.0.4283.45",
+  "pageErrors": [],
+  "completedAt": "2026-10-24T00:15:18.791Z"
+}
