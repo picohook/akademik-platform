@@ -1,5 +1,7 @@
 # Annotation receipt retention and RLS — v122 hardening
 
+**Dağıtım güncellemesi — 2026-10-24 17:52:23 Europe/Istanbul:** Kullanıcı GO sonrası **prod v122/8b598a3**, migration **001–016**. Taze restore/016 çift uygulama, smoke **16/16**, canlı Edge **14/14**, JS hatası 0 ve ilk otomatik retention geçti. Aşağıdaki deploy yapılmadı ifadeleri önceki teknik kabul koşusunun tarihsel kapsamıdır. [v122 dağıtım kaydı](deployments/2026-10-24-v122.md).
+
 **2026-10-24 final independent acceptance of 4300f1f: PASS.** Real PostgreSQL/app-role, two Node processes, retention cutoff, 1000+5 batch, actual v121 HTTP rollback guard and Edge 410/draft retention passed **11/11**; units **65/65**, 0 JS errors, cleanup 6/6. All previous technical blockers are closed. Prod remains v121; no production migration/deploy. [Final acceptance](ANNOTATION-RECEIPT-HARDENING-ACCEPTANCE-2026-10-24.md).
 
 This package closes the two v121 follow-ups:

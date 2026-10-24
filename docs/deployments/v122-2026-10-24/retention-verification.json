@@ -1,0 +1,26 @@
+{
+  "checkedAt": "2026-10-24T14:51:46.716Z",
+  "automaticFirstRun": true,
+  "elapsedMs": 77610,
+  "appRole": "akademik_app",
+  "appRoleVerified": true,
+  "superuser": false,
+  "bypassRls": false,
+  "retentionDays": 90,
+  "tombstoneDays": 365,
+  "syntheticProbe": {
+    "operationId": "8e3f5974-dd8c-4bfc-b8d6-ea50733a603b",
+    "annotationId": "ae1a2beb-53ad-4a92-ad75-a479de9cc948",
+    "syntheticOnly": true,
+    "agedDays": 91,
+    "existingAnnotationsModified": false,
+    "createdAt": "2026-10-24T14:50:06.013Z"
+  },
+  "logLines": [
+    "2026-10-24T14:51:25.916615096Z [annotations] retention: 1 receipts, 0 tombstones"
+  ],
+  "receiptRemaining": 0,
+  "tombstoneCount": 1,
+  "annotationCreated": 0,
+  "tombstoneHasContentColumn": false
+}

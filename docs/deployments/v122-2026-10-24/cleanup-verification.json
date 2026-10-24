@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-10-24T14:52:18.971Z",
+  "readOnly": true,
+  "testBooksRemaining": 0,
+  "headlessSessions": 0,
+  "assets": 2,
+  "notes": 7,
+  "receipts": 80,
+  "receiptTableBytes": 131072,
+  "receiptRetention": "Synthetic smoke/browser operation receipts intentionally retained according to v122 bounded retention policy (90-day receipt, 365-day content-free tombstone); no production audit or receipts deleted."
+}

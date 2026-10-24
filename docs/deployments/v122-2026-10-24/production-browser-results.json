@@ -1,0 +1,163 @@
+{
+  "startedAt": "2026-10-24T14:51:11.056Z",
+  "runId": "445e30ec-8b87-452d-9e47-bf538fef3fd0",
+  "base": "https://localhost",
+  "sourceCommit": "8b598a37416aabbe18ce1c846a052a9787b4f0b1",
+  "status": "passed",
+  "cases": [
+    {
+      "nativeIndexedDB": true,
+      "provenance": "ticketed-download-v1",
+      "sha256": "dd0cf645e28b7a97a112e44d3cf09bfb6c966b8b6b82c9b990db5a9e6396de6d",
+      "id": "ticketed-native-offline-save-pdf",
+      "status": "PASS"
+    },
+    {
+      "nativeIndexedDB": true,
+      "provenance": "ticketed-download-v1",
+      "sha256": "70242f9fd6d5771b7766a7c2c53a76eaf6e4e7d6df3ab249a1b12cb2e79dacee",
+      "id": "ticketed-native-offline-save-epub",
+      "status": "PASS"
+    },
+    {
+      "offlineHardReload": true,
+      "localAliasPreserved": true,
+      "singleServerBookmark": true,
+      "anchor": {
+        "asset_version_id": "cf28a706-c63b-4bac-b652-0722bc185f04",
+        "type": "pdf",
+        "page": 1,
+        "rects": [],
+        "text_quote": {
+          "prefix": "",
+          "exact": "",
+          "suffix": ""
+        },
+        "text_position": {
+          "start": 0,
+          "end": 0
+        }
+      },
+      "id": "offline-create-cancel-reload-sync-pdf",
+      "status": "PASS"
+    },
+    {
+      "offlineHardReload": true,
+      "canonicalDelete": true,
+      "neutralToast": true,
+      "id": "offline-delete-reload-sync-pdf",
+      "status": "PASS"
+    },
+    {
+      "offlineHardReload": true,
+      "localAliasPreserved": true,
+      "singleServerBookmark": true,
+      "anchor": {
+        "asset_version_id": "b9d9de5d-c4a4-4220-b1b4-2c8cee70d6d0",
+        "type": "epub",
+        "cfi": "epubcfi(/6/2!/4/2/1:0)",
+        "href": "chapter.xhtml",
+        "percent": 0,
+        "text_quote": "Yer imi"
+      },
+      "id": "offline-create-cancel-reload-sync-epub",
+      "status": "PASS"
+    },
+    {
+      "offlineHardReload": true,
+      "canonicalDelete": true,
+      "neutralToast": true,
+      "id": "offline-delete-reload-sync-epub",
+      "status": "PASS"
+    },
+    {
+      "nativeIndexedDB": true,
+      "offlineHardReload": true,
+      "casVersion": 2,
+      "cleanedUp": true,
+      "id": "offline-note-edit-reload-sync-pdf",
+      "status": "PASS"
+    },
+    {
+      "nativeIndexedDB": true,
+      "offlineHardReload": true,
+      "casVersion": 2,
+      "cleanedUp": true,
+      "id": "offline-note-edit-reload-sync-epub",
+      "status": "PASS"
+    },
+    {
+      "independentBrowserContexts": 2,
+      "sameAccount": true,
+      "staleEditBlocked": true,
+      "explicitChoice": "local",
+      "finalVersion": 3,
+      "id": "two-device-conflict-pdf",
+      "status": "PASS"
+    },
+    {
+      "independentBrowserContexts": 2,
+      "sameAccount": true,
+      "staleEditBlocked": true,
+      "explicitChoice": "server",
+      "finalVersion": 2,
+      "id": "two-device-conflict-epub",
+      "status": "PASS"
+    },
+    {
+      "realAccountSwitch": true,
+      "offlineHardReload": true,
+      "onlyBVisible": true,
+      "APendingQueuePreserved": true,
+      "id": "B-offline-only-own-bookmark-A-queue-retained-pdf",
+      "status": "PASS"
+    },
+    {
+      "realAccountSwitch": true,
+      "offlineHardReload": true,
+      "onlyBVisible": true,
+      "APendingQueuePreserved": true,
+      "id": "B-offline-only-own-bookmark-A-queue-retained-epub",
+      "status": "PASS"
+    },
+    {
+      "realRelogin": true,
+      "ownQueueFlushed": true,
+      "onlyAVisible": true,
+      "BOwnedCachePreserved": true,
+      "id": "A-relogin-flushes-own-bookmark-pdf",
+      "status": "PASS"
+    },
+    {
+      "realRelogin": true,
+      "ownQueueFlushed": true,
+      "onlyAVisible": true,
+      "BOwnedCachePreserved": true,
+      "id": "A-relogin-flushes-own-bookmark-epub",
+      "status": "PASS"
+    }
+  ],
+  "cleanup": {
+    "pdfFixtureDeleted": true,
+    "epubFixtureDeleted": true,
+    "loggedOut": true,
+    "browserClosed": true
+  },
+  "scope": "Real production HTTPS/PostgreSQL; temporary generated books and notes, actual ticketed offline saves, native IndexedDB, offline bookmark create/delete/reload, offline note edit, two independent device conflicts and A-B-A isolation. Existing customer books/grants unchanged; fixtures removed.",
+  "browser": "155.0.4283.45",
+  "tls": "Dedicated Edge ignores local Caddy CA errors; Node smoke separately validates exported CA; OS trust unchanged.",
+  "fixtures": [
+    {
+      "id": "db8f9881-f95d-42a3-a077-c6c91738e346",
+      "title": "Release v122 verification 445e30ec-8b87-452d-9e47-bf538fef3fd0 PDF",
+      "format": "pdf"
+    },
+    {
+      "id": "018a7b02-5be4-4705-936a-04522337bed0",
+      "title": "Release v122 verification 445e30ec-8b87-452d-9e47-bf538fef3fd0 EPUB",
+      "format": "epub"
+    }
+  ],
+  "browserErrors": [],
+  "completedAt": "2026-10-24T14:52:01.710Z"
+}

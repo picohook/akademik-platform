@@ -1,0 +1,117 @@
+{
+  "createdAt": "2026-10-24T14:53:36.141Z",
+  "release": "v122",
+  "sourceCommit": "8b598a37416aabbe18ce1c846a052a9787b4f0b1",
+  "releaseImage": "sha256:da4f5654f473a0a5503d878f36b9f7949342943fb4f58247264c92dc8c81b0d5",
+  "smoke": 16,
+  "browser": {
+    "passed": 14,
+    "total": 14,
+    "independent": false
+  },
+  "automaticRetention": true,
+  "privateBackupsPublished": false,
+  "artifacts": {
+    ".gitattributes": {
+      "bytes": 92,
+      "sha256": "46ae9442e216b592f02c166c01c547d20e2bfc138e0074cd84b82ecc178df59b"
+    },
+    "016-annotation-receipt-retention.sql.txt": {
+      "bytes": 312,
+      "sha256": "1f4c2106f1c019db4af8e8ccbc66d19e6e81ca2328b3b91dddeadf1aa4a3e1a9"
+    },
+    "B-bookmark-privacy-epub.png": {
+      "bytes": 48767,
+      "sha256": "13cb5aaa9ae218383b4a5b2b65bc6b28397fa37cb77cfdcc776026a4eb47504d"
+    },
+    "B-bookmark-privacy-pdf.png": {
+      "bytes": 35233,
+      "sha256": "dd11fdefa2587a2ea1a30174c490e51485728718f1cc43e4f8d585bad3c5677c"
+    },
+    "browser-production-helper.mjs": {
+      "bytes": 21320,
+      "sha256": "ffd1bb93d55c22194884795bdd87bf7f3c6a25331d7ecda5bca71b1457d985b7"
+    },
+    "build.txt": {
+      "bytes": 1890,
+      "sha256": "ca8ac0ea58bbfb09e16ef1adfea469c36303b14557b55a51f3e4c85616837d58"
+    },
+    "cleanup-helper.mjs": {
+      "bytes": 1394,
+      "sha256": "1b62ff596a8e600ed6ef57892b1845fd6949e078328b89e73dc376eee314ada9"
+    },
+    "cleanup-verification.json": {
+      "bytes": 421,
+      "sha256": "bb92c4d1081dce00e032b9abde525fd5f945fd6dd10fe8e23cdf7bf1b57cb4de"
+    },
+    "deployment-helper.mjs": {
+      "bytes": 25834,
+      "sha256": "ed40baf7d053af6ef1f2eb36bcc077555ba9cf03de34b26f885b31f91981701f"
+    },
+    "deployment.json": {
+      "bytes": 10202,
+      "sha256": "2c196cb77316f40e5d4f6e89a4704ef8c8a90dfc937110503f4362bcdc44cba8"
+    },
+    "http-verification.json": {
+      "bytes": 1354,
+      "sha256": "ad64e9506fe1aae4497f12a3084c5ba9db0e17791c27615c04435607a53d909e"
+    },
+    "offline-bookmark-epub.png": {
+      "bytes": 47012,
+      "sha256": "deec44404620b218043d3fb58f2e719dc5600edd09c6937804b8d0cd535e44b8"
+    },
+    "offline-bookmark-pdf.png": {
+      "bytes": 34726,
+      "sha256": "cbdc83ade40ae629ff37aa9def9f64633b21ebb984b40ea0109e6d2447e6c089"
+    },
+    "production-browser-results.json": {
+      "bytes": 4806,
+      "sha256": "aaee4f98fa78c04bc7be4fc0af285a20b35608ae74db63f483cf75994af9ba58"
+    },
+    "record-helper.mjs": {
+      "bytes": 11682,
+      "sha256": "f644ade211ba3f8399e365fee3a24bbf5acfc75b60a6a51bf32dbe4ad06c26cc"
+    },
+    "release-env-metadata.json": {
+      "bytes": 336,
+      "sha256": "95bea881080f1376939988558004c4817d4ce96db3a26463c5fe6c0166c3c5c1"
+    },
+    "release-proof.json": {
+      "bytes": 6143,
+      "sha256": "7eedf8066b78eecd86d8bcea95e447a9a23188a59cf0b11f0c08f99a8a7e6da0"
+    },
+    "restore-migration-results.json": {
+      "bytes": 1227,
+      "sha256": "eb98dfdf59dd9ab213fd7db20909f0de913c248a77be6449986f297f0e1b7736"
+    },
+    "retention-log.txt": {
+      "bytes": 81,
+      "sha256": "6f1632d61f00c53cf0e82174cc2a221aad0d811c8095fc97a877a96c4f76ceba"
+    },
+    "retention-verification.json": {
+      "bytes": 743,
+      "sha256": "01731a44f280806803e763a6497c006eff894fce852cebff54c84bb035949bbf"
+    },
+    "smoke-helper.mjs": {
+      "bytes": 5103,
+      "sha256": "96a7d0c0dd6b75154b5120debc2c4f38fc6d72821149c769e4e890fc2537962b"
+    },
+    "smoke.txt": {
+      "bytes": 423,
+      "sha256": "d6553c9fefe7f4cd32c53031e535791e0fca72209ad9d654d4d4ceaec7aae17c"
+    },
+    "two-device-conflict-epub.png": {
+      "bytes": 68815,
+      "sha256": "0c2345e82f559c53be7a9aa347dad43a01b1de4ab99c5da8958deb1d8e8d1aed"
+    },
+    "two-device-conflict-pdf.png": {
+      "bytes": 61452,
+      "sha256": "2e9ce72053b3d0b6813a9b317f22662eb1706dd1732ea2b413f3b9b8461819da"
+    },
+    "compose-ps.json": {
+      "bytes": 468,
+      "sha256": "5861fd761d764ff99ccd5b2156daa7dfee6202dd0f4cd1068c246356dbd0a0ba"
+    }
+  },
+  "composePsVerified": true
+}

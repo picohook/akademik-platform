@@ -1,5 +1,7 @@
 # v122 receipt hardening — nihai teknik kabul — 2026-10-24
 
+**Dağıtım güncellemesi — 2026-10-24 17:52:23 Europe/Istanbul:** Kullanıcı GO sonrası **prod v122/8b598a3**, migration **001–016**. Taze restore/016 çift uygulama, smoke **16/16**, canlı Edge **14/14**, JS hatası 0 ve ilk otomatik retention geçti. Aşağıdaki deploy yapılmadı ifadeleri önceki teknik kabul koşusunun tarihsel kapsamıdır. [v122 dağıtım kaydı](deployments/2026-10-24-v122.md).
+
 **Ek birebir sayım retesti: PASS 11/11.** İki 91 günlük receipt tek purge’de **2 moved / 2 deleted / 2 tombstone**; iki süreçte kazanan **2/2**, diğeri **skipped**. [Yeni sonuç](reader-evidence/v122-retention-exact/df6dae12-bec0-42e7-bb5f-90c65841c2bd/results.json), [istenen sayımlar](reader-evidence/v122-retention-exact/requested-checks.json), [manifest](reader-evidence/v122-retention-exact/acceptance-manifest.json).
 
 

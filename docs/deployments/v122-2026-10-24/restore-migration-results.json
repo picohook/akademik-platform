@@ -1,0 +1,41 @@
+{
+  "startedAt": "2026-10-24T14:47:50.783Z",
+  "backup": {
+    "file": "backups/akademik-pre-v122-2026-10-24T14-40-15-149Z-e09ad6.dump",
+    "bytes": 108977,
+    "sha256": "b4ceedc2bc81da99df5c8c883bd86bee6c72dd917892ef6c5de1b13786dea665",
+    "private": true
+  },
+  "status": "passed",
+  "cleanup": {
+    "ownedCloneRemoved": true
+  },
+  "scope": "Fresh actual production backup restored in network-isolated owned PostgreSQL. No real note/account content published; fingerprints only. Migration 016 applied twice as admin; complete annotation and receipt fingerprints preserved.",
+  "before": {
+    "notes": 7,
+    "contentDigest": "40882355e05f16d82519162baac3e349",
+    "receipts": 54,
+    "receiptDigest": "e083ed6f3fa11fcd92f3bceb9ed21f26",
+    "works": 2,
+    "assets": 2,
+    "users": 2
+  },
+  "after": {
+    "notes": 7,
+    "contentDigest": "40882355e05f16d82519162baac3e349",
+    "receipts": 54,
+    "receiptDigest": "e083ed6f3fa11fcd92f3bceb9ed21f26",
+    "works": 2,
+    "assets": 2,
+    "users": 2
+  },
+  "schema": {
+    "receiptRls": true,
+    "tombstoneRls": true,
+    "trigger": true,
+    "tombstones": 0
+  },
+  "fingerprintsPreserved": true,
+  "doubleApply": true,
+  "completedAt": "2026-10-24T14:48:37.381Z"
+}

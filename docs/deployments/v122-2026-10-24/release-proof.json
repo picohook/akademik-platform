@@ -1,0 +1,117 @@
+{
+  "release": "v122",
+  "sourceCommit": "8b598a37416aabbe18ce1c846a052a9787b4f0b1",
+  "sourceIsPinnedArchive": true,
+  "acceptedRuntimeCommit": "4300f1f8d742229f245e891055281b1b6784e0e6",
+  "acceptedRetest": "docs/reader-evidence/v122-retention-exact/df6dae12-bec0-42e7-bb5f-90c65841c2bd/results.json",
+  "sourceProof": [
+    {
+      "file": "server.mjs",
+      "sha256": "ac71318760296b89cd923b5973c40a550fb3d8a1e7d2edc8dcfb162d9bbbbf29",
+      "testedSha256": "08a3e7ae5ad356c3b4bf07257abe3379c4bab76476747853ec8bdcdf708410c9",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "indexer.mjs",
+      "sha256": "10bd599125fc9253d970b0b6f847c55eb5b90b31da46cb9b0c3b7c0f1d2c8da8",
+      "testedSha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "download-tickets.mjs",
+      "sha256": "129ddbfb91673e8bc47af0d06ed6f7eeccb4333ff3ab9e6ae28cb72428d999f8",
+      "testedSha256": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "annotation-sync.mjs",
+      "sha256": "d7ab0658e3a2aed4a5b5d55a4d3ac7d37bd3cde5d0e8f01952a8778e7a1bb9c1",
+      "testedSha256": "553eec49001914c58e9f019caab734e8f0f61da307bde64958a6d2bd15e8e106",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "social-watermark.mjs",
+      "sha256": "145ba2260d079f7e436d714f75364ed8551c50b620affe99535b309976152fa5",
+      "testedSha256": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/app.js",
+      "sha256": "f0b09b99453a5fc8b931cc86a85fdd08aecd66f37960b493e5f26cccab54b680",
+      "testedSha256": "5c633a0208a9e17ac5118985d97b85a655a9f7e27f4b3a2b6960e51ba3251603",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/index.html",
+      "sha256": "7953cce5031e5d3325b1efdbe5100ea63b8f83f50a1d2202e1bb7fea1c63be98",
+      "testedSha256": "7953cce5031e5d3325b1efdbe5100ea63b8f83f50a1d2202e1bb7fea1c63be98",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/offline.mjs",
+      "sha256": "75d9ab806bc645e871016e1851f092a63b993dabd4ca69507e8aaa3d6673261a",
+      "testedSha256": "cba7a4e9a1371bccf35e55d4c67275ddf28946b2e64799452382a73dcd12feea",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/downloads.mjs",
+      "sha256": "7e908a175f0ff0dc521d70f508269a1e6d4bc2c0bf1c34e56802af62a3fafb72",
+      "testedSha256": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/sw.js",
+      "sha256": "054a88e60f75790b94914ce3b0fbb4c18887d53e809e535d506fd7495ea6ce75",
+      "testedSha256": "054a88e60f75790b94914ce3b0fbb4c18887d53e809e535d506fd7495ea6ce75",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/epub-engine.mjs",
+      "sha256": "f52179b07d83b8f93ca7fbdf67ca8c4d301851e663c63db2667015e71af3ca6b",
+      "testedSha256": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/styles.css",
+      "sha256": "8bf1e9a30c7b5d993e1ef64f9e5458f2fe7feb1269e0e2fde7cf88d0fb3a8045",
+      "testedSha256": "a1d87008bb5c518fd8047c077ac8438a0a3a0e0cf5f97859858a371daae95ee9",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/i18n.mjs",
+      "sha256": "e38e9ae5e71fd7afd4b3632f734bd32107e20f89c977356ec2b516b5feda095f",
+      "testedSha256": "aea682fbae10d305b04cfee250f3d7f4b22cc7f616df3329d2814d9e04cce09b",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/citations.mjs",
+      "sha256": "96b00fa2be1be8cdc582dd1a2dfcff1d67435eb0c1a6d6e161bd7e8873c4a015",
+      "testedSha256": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+      "equalAfterLineEndingNormalization": true
+    }
+  ],
+  "imageHashes": {
+    "server.mjs": "ac71318760296b89cd923b5973c40a550fb3d8a1e7d2edc8dcfb162d9bbbbf29",
+    "indexer.mjs": "10bd599125fc9253d970b0b6f847c55eb5b90b31da46cb9b0c3b7c0f1d2c8da8",
+    "download-tickets.mjs": "129ddbfb91673e8bc47af0d06ed6f7eeccb4333ff3ab9e6ae28cb72428d999f8",
+    "annotation-sync.mjs": "d7ab0658e3a2aed4a5b5d55a4d3ac7d37bd3cde5d0e8f01952a8778e7a1bb9c1",
+    "social-watermark.mjs": "145ba2260d079f7e436d714f75364ed8551c50b620affe99535b309976152fa5",
+    "public/app.js": "f0b09b99453a5fc8b931cc86a85fdd08aecd66f37960b493e5f26cccab54b680",
+    "public/index.html": "7953cce5031e5d3325b1efdbe5100ea63b8f83f50a1d2202e1bb7fea1c63be98",
+    "public/offline.mjs": "75d9ab806bc645e871016e1851f092a63b993dabd4ca69507e8aaa3d6673261a",
+    "public/downloads.mjs": "7e908a175f0ff0dc521d70f508269a1e6d4bc2c0bf1c34e56802af62a3fafb72",
+    "public/sw.js": "054a88e60f75790b94914ce3b0fbb4c18887d53e809e535d506fd7495ea6ce75",
+    "public/epub-engine.mjs": "f52179b07d83b8f93ca7fbdf67ca8c4d301851e663c63db2667015e71af3ca6b",
+    "public/styles.css": "8bf1e9a30c7b5d993e1ef64f9e5458f2fe7feb1269e0e2fde7cf88d0fb3a8045",
+    "public/i18n.mjs": "e38e9ae5e71fd7afd4b3632f734bd32107e20f89c977356ec2b516b5feda095f",
+    "public/citations.mjs": "96b00fa2be1be8cdc582dd1a2dfcff1d67435eb0c1a6d6e161bd7e8873c4a015"
+  },
+  "migration": "016-annotation-receipt-retention.sql",
+  "migrationSourceSha256": "ebd3749057fdfefd57af5a6db329f05f421e1446ab6807d813258e194bb908af",
+  "knownLimits": [
+    "Full receipts retained for 90 days; content-free tombstones retained for 365 days from purge. No indefinite deduplication guarantee after tombstone expiry.",
+    "Unset app.user_id retains tenant-only compatibility fallback for v121; v122 mutation transactions set the authenticated user.",
+    "v121 rollback returns 500/P0001 for a tombstoned old operation and lacks v122 per-user RLS/410 handling. Keep migration 016.",
+    "Same-host independent Edge contexts exercise device conflicts; no physical multi-device or manual WCAG claim."
+  ]
+}

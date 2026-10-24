@@ -1,0 +1,23 @@
+{
+  "checkedAt": "2026-10-24T14:53:36.126Z",
+  "services": [
+    {
+      "service": "caddy",
+      "name": "akademik-platform-prod-caddy-1",
+      "state": "running",
+      "health": null
+    },
+    {
+      "service": "db",
+      "name": "akademik-platform-prod-db-1",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "web",
+      "name": "akademik-platform-prod-web-1",
+      "state": "running",
+      "health": "healthy"
+    }
+  ]
+}
