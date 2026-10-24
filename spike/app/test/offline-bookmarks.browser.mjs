@@ -157,7 +157,7 @@ try {
    await reloadOffline();await open(f);assert.equal(await page.locator('#notesList .note-item').count(),0);await star(false);await context.setOffline(false);
    await until('server deletion',async()=>(await dbMarks(f)).length===0);await until('delete ack',async()=>(await local(f)).ops.length===0);return{canonicalServerId:true,staleGetHidden:true,offlineReload:true,serverDeleted:true};
   });
-  await stage(f.format+'-cached-online-create-delete-syncs',async()=>{await toggle(true);await until('online bookmark saved',async()=>(await dbMarks(f)).length===1);await until('online create ack',async()=>(await local(f)).ops.length===0);await until('pending label gone',async()=>await page.locator('#notesList [role=status]').count()===0);await toggle(false);await until('online delete saved',async()=>(await dbMarks(f)).length===0);await until('online delete ack',async()=>(await local(f)).ops.length===0);return{cachedReaderOnline:true,pendingStateClears:true};});
+  await stage(f.format+'-cached-online-create-delete-syncs',async()=>{await toggle(true);await until('online bookmark saved',async()=>(await dbMarks(f)).length===1);await until('online create ack',async()=>(await local(f)).ops.length===0);await until('pending label gone',async()=>await page.locator('#notesList [role=status]').count()===0);await page.locator('#notesList .note-delete').click();await star(false);assert.equal(await page.locator('#toast').textContent(),'Yer imi bu cihazdan kaldırıldı');await until('online delete saved',async()=>(await dbMarks(f)).length===0);await until('online delete ack',async()=>(await local(f)).ops.length===0);return{cachedReaderOnline:true,pendingStateClears:true};});
   await close();
  }
  await stage('http-failures-retain-bookmark-until-retry',async()=>{

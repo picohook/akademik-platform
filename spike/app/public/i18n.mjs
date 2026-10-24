@@ -246,6 +246,8 @@ const DICT = {
   'Eşitleme bekliyor': 'Sync pending',
   'Bu eski yerel notun hesabı doğrulanamıyor. Önce JSON olarak dışa aktarın.': 'The account for this legacy local note cannot be verified. Export it as JSON first.',
   'Yer imi kaldırıldı': 'Bookmark removed',
+  'Yer imi bu cihazdan kaldırıldı': 'Bookmark removed from this device',
+  'Not bu cihazdan kaldırıldı': 'Note removed from this device',
   'Yer imini kaldır': 'Remove bookmark',
   'Yalnızca yüklenen kitaplar silinebilir': 'Only uploaded titles can be deleted',
   'Yalnızca platforma yüklenen kitaplar silinebilir': 'Only platform-managed titles can be deleted',

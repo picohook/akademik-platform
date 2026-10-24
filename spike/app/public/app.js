@@ -3683,7 +3683,7 @@ async function deleteAnnotation(id, options = {}) {
     renderNotes();
     if (!state.epubMode) renderHighlights();
     if (navigator.onLine) syncReaderAnnotations(annotation.asset_id).catch(() => {});
-    if (!options.silent) toast('Not silindi (çevrimdışı)');
+    if (!options.silent) toast(t(annotation.color === 'bookmark' ? 'Yer imi bu cihazdan kaldırıldı' : 'Not bu cihazdan kaldırıldı'));
     return;
   }
   try {

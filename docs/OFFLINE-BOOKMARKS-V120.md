@@ -36,3 +36,9 @@ Kurulu Playwright modülü PLAYWRIGHT_MODULE ile gösterilmeli; Microsoft Edge v
 node spike/app/test/offline-bookmarks.browser.mjs
 node spike/app/test/offline-edit.browser.mjs
 ~~~
+
+## Bağımsız inceleme ve toast düzeltmesi — 2026-10-24
+
+Kullanıcı bağımsız kod incelemesini PASS olarak bildirdi; reviewer kendi sandbox’ında tarayıcı koşturamadı. Küçük UX notu düzeltildi: yer imi/not silme mesajı artık “bu cihazdan kaldırıldı” der; online kullanıcıya “çevrimdışı” denmez. Bu iki mesaj ve çevirileri dışında ürün davranışı değiştirilmedi. Online not panelinden yer imi silerken mesaj kontrolü eklendi.
+
+Dağıtılacak kaynakla ayrı PostgreSQL/Edge kabulü tekrar **17/17**, 0 JS hatası, cleanup 4/4: [sonuç](reader-evidence/v120-offline-bookmarks/f15aeccc-c090-4aa5-b4ef-0d6f4dea7b18/results.json), [kaynak/artifact manifesti](reader-evidence/v120-offline-bookmarks/f15aeccc-c090-4aa5-b4ef-0d6f4dea7b18/manifest.json). Önceki 20/20 not regresyonu ve 68 güvenlik kanıtı ayrı tarihsel doğrulamalar olarak korunur; toast değişikliği için yeniden koşturulmadı.
