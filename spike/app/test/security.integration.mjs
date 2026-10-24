@@ -148,7 +148,7 @@ async function setup() {
   const sandboxApp = path.join(tempDir, 'app');
   await mkdir(path.join(sandboxApp, 'public', 'seed'), { recursive: true });
   await mkdir(path.join(sandboxApp, 'public', 'ocr', seedAsset), { recursive: true });
-  for (const file of ['server.mjs', 'download-tickets.mjs', 'social-watermark.mjs', 'indexer.mjs', 'public/search.mjs']) {
+  for (const file of ['server.mjs', 'download-tickets.mjs', 'annotation-sync.mjs', 'social-watermark.mjs', 'indexer.mjs', 'public/search.mjs']) {
     await copyFile(path.join(appDir, file), path.join(sandboxApp, file));
   }
   await writeFile(path.join(sandboxApp, 'public', 'seed', 'security.pdf'), await pdfBytes('Security seed'));

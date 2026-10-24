@@ -161,7 +161,7 @@ async function setup() {
   temporary = await mkdtemp(path.join(tempParent, 'social-drm-'));
   const sandbox = path.join(temporary, 'app');
   await mkdir(path.join(sandbox, 'public/seed'), { recursive: true });
-  for (const file of ['server.mjs', 'indexer.mjs', 'download-tickets.mjs', 'social-watermark.mjs', 'public/search.mjs', 'public/downloads.mjs', 'public/offline.mjs']) {
+  for (const file of ['server.mjs', 'indexer.mjs', 'download-tickets.mjs', 'annotation-sync.mjs', 'social-watermark.mjs', 'public/search.mjs', 'public/downloads.mjs', 'public/offline.mjs']) {
     await copyFile(path.join(appDir, file), path.join(sandbox, file));
     report.source[file] = sha(await readFile(path.join(sandbox, file)));
   }

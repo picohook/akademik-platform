@@ -626,3 +626,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
   .page-area { padding: 8px; gap: 4px; }
   .nav-btn { width: 30px; height: 46px; font-size: 20px; }
 }
+
+.note-conflict { border: 2px solid currentColor; padding: 10px; margin: 8px 0; overflow-wrap: anywhere; }
+.note-conflict pre { white-space: pre-wrap; font: inherit; overflow-wrap: anywhere; }
+.note-conflict button { min-height: 32px; margin: 4px 4px 0 0; }

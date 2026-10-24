@@ -69,7 +69,10 @@ docker compose -f docker-compose.prod.yml exec db psql -U akademik -d akademik -
 docker compose -f docker-compose.prod.yml exec db psql -U akademik -d akademik -f /migrations/012-groups.sql
 docker compose -f docker-compose.prod.yml exec db psql -U akademik -d akademik -f /migrations/013-download-tickets.sql
 docker compose -f docker-compose.prod.yml exec db psql -U akademik -d akademik -f /migrations/014-download-ticket-limits.sql
+docker compose --env-file .env.production -f docker-compose.prod.yml exec -T db psql -v ON_ERROR_STOP=1 -U akademik -d akademik -f /migrations/015-annotation-sync.sql
 ```
+
+**v121:** Önce taze yedek ve restore kopyasında doğrulama, sonra migration **015**'i DB admin ile uygulayın; ardından v121 web'i başlatın. Migration rollback'te korunur. Eski istemciler sürüm/işlem anahtarı olmadan yazamaz. Kuyruk geçişi, API ve kabul ayrıntıları: [ANNOTATION-SYNC-V121.md](ANNOTATION-SYNC-V121.md). Bu sıra mevcut volume yükseltmesi içindir; taze `schema.sql` zaten 015'i içerir.
 
 ## 5. App rolü parolasını değiştir
 

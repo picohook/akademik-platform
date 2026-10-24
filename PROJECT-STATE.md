@@ -4,8 +4,8 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web kaynak: **v120** (`spike/app/public/index.html`), stiller **v44**, SW cache **v12**. v120 app-only deploy edildi; prod v120.
-- DB migration kaynak ve prod: **001–014** (`db/migrations/`); 013 → 014 taze yedek sonrası DB admin ile uygulandı, ardından v118 başlatıldı.
+- Web kaynak: **v121** (`spike/app/public/index.html`), stiller **v45**, SW cache **v13**. v121 kod/test tamam; bağımsız inceleme bekliyor. **Prod v120; deploy yapılmadı.**
+- DB migration kaynak **001–015**, prod **001–014** (`db/migrations/`). v121 için **015 önce DB admin ile**, sonra web; rollback'te additive migration korunur. IndexedDB sürümü 2 değişmedi.
 - Prod: **v120** (2026-10-24 03:31:18 Europe/Istanbul), kaynak **186f5f9**, imaj sha256:afa6adaaa399…, etiket akademik-platform-prod-web:v120-186f5f9; healthy/0, smoke **16/16**, gerçek PostgreSQL/Edge **10/10**, 0 JS hatası, cleanup 4/4. Migration yok; 001–014 aynı. v119 rollback korundu. docs/deployments/2026-10-24-v120.md.
 - Son kod doğrulaması: **v118 P0 kabulü dar ürün kapsamında geçti ve deploy onayıyla canlıya alındı**. Önceki **55 birim / 295 DB / 68 güvenlik** kanıtları korunuyor; kullanıcı bağımsız 62 birimde 0 hata bildirdi. Üretim öncesi: **8/8 Edge (varsayılan 7 + kontrollü kota 1), 0 JS hatası, 4/4 cleanup**; yedekten **013→014 + tekrar uygulama + 15 sunucu smoke**, cleanup **3/3**. EPUB ResizeObserver yarışı düzeltildi, ilgili birim **7/7** tekrar geçti. Üretimde ayrıca **16 smoke + 6 canlı senaryo** geçti; imaj 13 kaynak dosyasıyla, HTTPS 9 public dosyayla eşleşiyor. `docs/V118-PREDEPLOY-2026-10-23.md`, `docs/deployments/2026-10-23-v118.md`.
 - Bağımlılık: `npm audit --omit=dev` **0**; tam audit’te yalnız dev-only `epubjs/@xmldom` (2 uyarı).
@@ -33,6 +33,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Güncel geliştirme sırası
 
+- **v121 çakışma/idempotency kodu tamam; bağımsız inceleme bekliyor.** Not/vurgu/yer imi için CAS/version, kalıcı işlem cevapları, kayıp POST/PATCH/DELETE cevabında aynı anahtarla retry, Web Locks + IndexedDB lease ve iki sürümü koruyan seçim paneli. Eski kuyruklar kör gönderilmez. Çıkıştan sonra gecikmiş `/api/me` kimliği geri yazamaz. İzole PostgreSQL/iki Node/Edge **27/27**, not/gizlilik **20/20**, PostgreSQL/Edge yer imi **17/17**; 0 JS hatası. Aynı sunucu/schema üzerinde güvenlik **68**, birim **62/62** geçti. Uygulayan ajanın testleridir. Migration 015 gerekli; prod hâlâ v120. docs/ANNOTATION-SYNC-V121.md.
 - **v120 offline yer imi kuyruğu bağımsız kod PASS; canlı.** PDF/EPUB ekle/kaldır, reload/konuma dönüş, login/online eşitleme, A→B→A sahip izolasyonu. Güncel server_id ile atomik silme ve login tetikleyicisi eklendi; aynı PDF sayfasına dönüş gereksiz render başlatmaz. Ayrı PostgreSQL/Edge **17/17**, not/gizlilik regresyonu **20/20**, JS hatası 0, cleanup 4/4 + 3/3. Migration yok; canlı kabul 10/10, prod v120. docs/OFFLINE-BOOKMARKS-V120.md.
 - **v119 gizlilik blocker kapandı; bağımsız kod PASS, canlıya alındı.** Uygulayan ajanın yerel Edge 20/20; reviewer bağımsız tarayıcı koşturamadı. Gerçek prod PostgreSQL/Edge 9/9: PDF/EPUB offline edit/relogin, A→B→A izolasyonu; 0 JS hatası. Sahipsiz eski notlar DB'de korunur, normal listeden gizlidir. docs/deployments/2026-10-24-v119.md.
 - **v119 çevrimdışı not düzenleme canlı.** PDF/EPUB not metni ve etiketleri atomik IndexedDB kuyruğunda; reload sonrası korunur, oturum doğrulanınca eşitlenir. Yeni kuyruk kullanıcıya bağlı; eski sahibisiz taslaklar korunur ve otomatik gönderilmez. Edge kabul **14/14**, 0 JS hatası, cleanup 3/3; PostgreSQL güvenlik regresyonu **3 senaryo / 68 kontrol** geçti. Bu, uygulayan ajanın testidir; bağımsız retest iddiası yok. Tam çakışma çözümü ve offline yer imi oluşturma kapsam dışında. `docs/OFFLINE-NOTE-EDIT-V119.md`.
@@ -40,7 +41,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - Kopyalama paketi v116 canlı: PDF/EPUB izin tutarlılığı, seçimden Kopyala / Atıfla kopyala. Citation 17/17 + EPUB izin 7/7 birim testi ve gerçek Edge kabulü 13/13 geçti (uygulayan AI). Seçim/vurgu/not korunur. Kanıtlar: `docs/COPYING-TESTS.md`.
 - Kapasite retesti geçti: yalnız async scrypt yeterli olmadı; parola doğrulaması `withTenant` dışına taşınıp havuz bağlantısı erken bırakıldı (`8e1347c`). Tenant/user advisory lock ve seat limit korundu; güvenlik 60/60. Aynı kısa taramada 10/25/50/100 girişlerin tamamı kabul, 6200 API isteğinde 0 hata; 50/100 giriş p95 **2,637 / 5,182 sn**. Bu, prod kapasitesi garantisi değildir. Önceki başarısız koşular değişmeden korundu. Kanıt: `docs/CAPACITY-TEST.md`.
 - Manuel NVDA/VoiceOver ve tam EPUB iframe denetimi paralel; gerçek ekran okuyucu gözlemi olmadan ACR tam uyum iddiası yok.
-- Sonraki kod paketi: cihazlar arası çakışma çözümü ve teslimat idempotency tasarımı. Not düzenleme v119 canlı; offline yer imi kuyruğu v120 canlı.
+- Sıradaki kapı: v121 bağımsız inceleme; ardından taze yedek/restore, migration 015 ve ayrıca onaylı deploy. Not düzenleme v119, offline yer imi kuyruğu v120 canlı.
 - Müşteriye bağlı: ilk istenen SSO protokolü; sertifikalı COUNTER alım şartıysa ayrı iş paketi.
 - Sonraki okuyucu işleri: not içe aktarma / açıklamalı PDF, EPUB görünüm seçenekleri; El aracı küçük P2 iş. Fixed-layout/MathML/RTL içerikle doğrulanacak. 500 MB görsel PDF kapsam dışında.
 
@@ -50,7 +51,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 2. **Sosyal filigran / erişim kontrolü:** P0 v118 dar sözleşme kapsamında canlı; 013–014 ve deploy tamam, 16 smoke + 6 canlı senaryo geçti. Sonraki iş AES at-rest P1; chunked range/LCP yalnız gerçek yayıncı şartıyla. `docs/deployments/2026-10-23-v118.md`, `docs/SOCIAL-DRM.md`.
 3. **Görsel ağırlıklı >300 MB:** kapsam dışı; yalnızca gerçek yayıncı talebi olursa önizleme/derivative pipeline.
 4. **Interop:** OPDS/OAI/MARC/SUSHI/CSV/OPDS API-key hazır; sertifikalı COUNTER ve OAI resumption/set kaldı (`docs/INTEROP.md`).
-5. **Mobil/PWA:** shell + swipe + çevrimdışı kitaplık ve not kuyruğu hazır; not düzenleme v119 canlı. Offline yer imi oluşturma v120 canlı; tam çakışma/idempotency kaldı. Mevcut PATCH son yazanı kabul eder.
+5. **Mobil/PWA:** not düzenleme v119 ve offline yer imi v120 canlı. Çakışma/idempotency v121 kaynakta tamam; bağımsız inceleme/migration 015/deploy bekliyor. Prod v120 PATCH hâlâ son yazanı kabul eder; v121 CAS uygular.
 6. **Okuyucu paketi 2:** not içe aktarma, açıklamalı PDF, EPUB sürekli/çift sayfa; El aracı küçük P2.
 7. **Kuruma bağlı:** ilk istenen SSO protokolü; sertifikalı COUNTER alım şartıysa ayrı paket.
 

@@ -1,3 +1,4 @@
+import { mutateAnnotation, memoryAnnotationMutations } from './annotation-sync.mjs';
 import http from 'node:http';
 import path from 'node:path';
 import { createReadStream, createWriteStream } from 'node:fs';
@@ -44,7 +45,7 @@ const DEMO_EMAIL = process.env.DEMO_EMAIL || 'reader@example.edu.tr';
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'demo1234';
 const BRAND_NAME = process.env.BRAND_NAME || 'Akademik Platform';
 const BRAND_TAGLINE = process.env.BRAND_TAGLINE || 'spike';
-const APP_VERSION = process.env.APP_VERSION || '120';
+const APP_VERSION = process.env.APP_VERSION || '121';
 const BUILD_SHA = process.env.BUILD_SHA || '';
 const BUILD_DATE = process.env.BUILD_DATE || '';
 const APP_ENV = process.env.APP_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'development');
@@ -86,6 +87,7 @@ const demoBooks = [
 ];
 
 const demoAnnotations = [];
+const mutateDemoAnnotation = memoryAnnotationMutations(demoAnnotations);
 const demoGrants = [];
 const demoGrantAudit = [];
 const demoGroups = [];
@@ -1382,20 +1384,6 @@ async function updateBook(id, body) {
   });
 }
 
-async function deleteAnnotation(id, userId) {
-  if (!pool) {
-    const index = demoAnnotations.findIndex((item) => item.id === id);
-    if (index >= 0) demoAnnotations.splice(index, 1);
-    return index >= 0;
-  }
-  return withTenant(async (client) => {
-    const result = await client.query(
-      'delete from annotations where id = $1 and user_id = $2 returning id',
-      [id, userId],
-    );
-    return result.rowCount > 0;
-  });
-}
 
 async function searchBooks(query, auth) {
   const q = String(query || '').trim();
@@ -1463,10 +1451,10 @@ async function searchBooks(query, auth) {
 }
 
 async function listAnnotations(assetId, userId) {
-  if (!pool) return demoAnnotations.filter((item) => item.asset_id === assetId);
+  if (!pool) return demoAnnotations.filter((item) => item.asset_id === assetId && item.user_id === userId);
   return withTenant(async (client) => {
     const { rows } = await client.query(
-      `select id, asset_id, anchor, color, note, selected_text, tags, status, created_at, updated_at
+      `select id, asset_id, anchor, color, note, selected_text, tags, status, created_at, updated_at, version
          from annotations
         where asset_id = $1 and user_id = $2
         order by created_at asc`,
@@ -1476,79 +1464,20 @@ async function listAnnotations(assetId, userId) {
   });
 }
 
-async function createAnnotation(body, userId) {
-  const anchor = body.anchor;
-  if (!anchor || typeof anchor !== 'object') throw new Error('anchor is required');
-  if (!body.assetId) throw new Error('assetId is required');
-  if (!pool) {
-    const row = {
-      id: randomUUID(),
-      asset_id: body.assetId,
-      anchor,
-      color: body.color || 'yellow',
-      note: body.note || null,
-      selected_text: body.selectedText || null,
-      tags: normalizeTags(body.tags),
-      status: 'active',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    demoAnnotations.push(row);
-    return row;
-  }
-  return withTenant(async (client) => {
-    const { rows } = await client.query(
-      `insert into annotations (tenant_id, user_id, asset_id, anchor, color, note, selected_text, tags)
-       values ($1, $2, $3, $4::jsonb, $5, $6, $7, $8)
-       returning id, asset_id, anchor, color, note, selected_text, tags, status, created_at, updated_at`,
-      [TENANT_ID, userId, body.assetId, JSON.stringify(anchor), body.color || 'yellow', body.note || null, body.selectedText || null, normalizeTags(body.tags)],
-    );
-    return rows[0];
-  });
-}
-
-async function updateAnnotation(id, body, userId) {
-  const colors = ['yellow', 'green', 'blue', 'pink', 'bookmark'];
-  const hasNote = Object.prototype.hasOwnProperty.call(body, 'note');
-  const hasColor = Object.prototype.hasOwnProperty.call(body, 'color');
-  const hasTags = Object.prototype.hasOwnProperty.call(body, 'tags');
-  if (!hasNote && !hasColor && !hasTags) throw new Error('note, color or tags is required');
-  if (hasColor && !colors.includes(body.color)) throw new Error('invalid color');
-
-  if (!pool) {
-    const row = demoAnnotations.find((item) => item.id === id);
-    if (!row) return null;
-    if (hasNote) row.note = body.note ? String(body.note).trim() || null : null;
-    if (hasColor) row.color = body.color;
-    if (hasTags) row.tags = normalizeTags(body.tags);
-    row.updated_at = new Date().toISOString();
-    return row;
-  }
-
-  return withTenant(async (client) => {
-    const sets = [];
-    const params = [];
-    if (hasNote) {
-      params.push(body.note ? String(body.note).trim() || null : null);
-      sets.push(`note = $${params.length}`);
+async function annotationMutation(method, id, body, userId) {
+  const context = { method, id, body, userId, tenantId: TENANT_ID };
+  if (!pool) return mutateDemoAnnotation(context);
+  return withTenant(async client => {
+    // withTenant leases a connection; this unit needs an explicit transaction.
+    await client.query('begin');
+    try {
+      const result = await mutateAnnotation(client, context);
+      await client.query('commit');
+      return result;
+    } catch (error) {
+      await client.query('rollback');
+      throw error;
     }
-    if (hasColor) {
-      params.push(body.color);
-      sets.push(`color = $${params.length}`);
-    }
-    if (hasTags) {
-      params.push(normalizeTags(body.tags));
-      sets.push(`tags = $${params.length}`);
-    }
-    params.push(id, userId);
-    const { rows } = await client.query(
-      `update annotations
-          set ${sets.join(', ')}, updated_at = now()
-        where id = $${params.length - 1} and user_id = $${params.length}
-        returning id, asset_id, anchor, color, note, selected_text, tags, status, created_at, updated_at`,
-      params,
-    );
-    return rows[0] || null;
   });
 }
 
@@ -2629,38 +2558,17 @@ const server = http.createServer(async (req, res) => {
       await servePdf(req, res, storageKey);
       return;
     }
-    if (pathname === '/api/annotations' && req.method === 'GET') {
+    const annotationBase = pathname.startsWith('/api/annotations/v1') ? '/api/annotations/v1' : '/api/annotations';
+    if (pathname === annotationBase && req.method === 'GET') {
+      if (url.searchParams.has('ownerId') && url.searchParams.get('ownerId') !== auth.userId) { json(res, 403, { error: 'annotation owner mismatch' }); return; }
       json(res, 200, await listAnnotations(url.searchParams.get('assetId'), auth.userId));
       return;
     }
-    if (pathname === '/api/annotations' && req.method === 'POST') {
-      const body = await readJson(req);
-      if (Object.hasOwn(body, 'ownerId') && body.ownerId !== auth.userId) {
-        json(res, 403, { error: 'annotation owner mismatch' });
-        return;
-      }
-      json(res, 201, await createAnnotation(body, auth.userId));
-      return;
-    }
-    if (pathname.startsWith('/api/annotations/') && req.method === 'PATCH') {
-      const id = pathname.slice('/api/annotations/'.length);
-      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
-        json(res, 400, { error: 'invalid annotation id' });
-        return;
-      }
-      const body = await readJson(req);
-      if (Object.hasOwn(body, 'ownerId') && body.ownerId !== auth.userId) {
-        json(res, 403, { error: 'annotation owner mismatch' });
-        return;
-      }
-      const updated = await updateAnnotation(id, body, auth.userId);
-      json(res, updated ? 200 : 404, updated || { error: 'annotation not found' });
-      return;
-    }
-    if (pathname.startsWith('/api/annotations/') && req.method === 'DELETE') {
-      const id = pathname.slice('/api/annotations/'.length);
-      const removed = await deleteAnnotation(id, auth.userId);
-      json(res, removed ? 200 : 404, { ok: removed });
+    if ((pathname === annotationBase && req.method === 'POST')
+        || (pathname.startsWith(annotationBase + '/') && ['PATCH', 'DELETE'].includes(req.method))) {
+      const id = req.method === 'POST' ? null : pathname.slice(annotationBase.length + 1);
+      const result = await annotationMutation(req.method, id, await readJson(req), auth.userId);
+      json(res, result.status, result.body);
       return;
     }
     if (pathname === '/api/progress' && req.method === 'GET') {

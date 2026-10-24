@@ -1,0 +1,520 @@
+{
+  "createdAt": "2026-10-24T01:20:34.771Z",
+  "version": 121,
+  "productionVersionUnchanged": 120,
+  "migrationRequired": "015-annotation-sync.sql",
+  "deploymentPerformed": false,
+  "scope": "Implementing agent, isolated PostgreSQL/demo servers and real Edge/IndexedDB; independent review pending. Historical runs are retained, not final acceptance.",
+  "runs": [
+    {
+      "kind": "conflict-idempotency",
+      "results": "docs/reader-evidence/v121-annotation-sync/87e88d84-72ae-4f6f-99a4-5f49d7dc3d9b/results.json",
+      "passed": 27,
+      "total": 27,
+      "browserErrors": [],
+      "cleanup": {
+        "browser": true,
+        "app": true,
+        "secondServer": true,
+        "database": true,
+        "temporaryCopy": true
+      },
+      "currentSourceMatches": {
+        "server.mjs": true,
+        "indexer.mjs": true,
+        "download-tickets.mjs": true,
+        "annotation-sync.mjs": true,
+        "social-watermark.mjs": true,
+        "public/app.js": true,
+        "public/index.html": true,
+        "public/offline.mjs": true,
+        "public/downloads.mjs": true,
+        "public/sw.js": true,
+        "public/epub-engine.mjs": true,
+        "public/styles.css": true,
+        "public/i18n.mjs": true,
+        "public/citations.mjs": true,
+        "db/schema.sql": true,
+        "db/seed.sql": true,
+        "db/migrations/015-annotation-sync.sql": true
+      }
+    },
+    {
+      "kind": "offline-note-privacy",
+      "results": "docs/reader-evidence/v121-offline-edit/218c3129-a98f-418b-8c3f-cb55afbdf78f/results.json",
+      "passed": 20,
+      "total": 20,
+      "browserErrors": [],
+      "cleanup": {
+        "browser": true,
+        "server": true,
+        "temp": true
+      },
+      "currentSourceMatches": {
+        "server.mjs": true,
+        "public/app.js": true,
+        "public/offline.mjs": true,
+        "public/index.html": true,
+        "public/sw.js": true,
+        "public/i18n.mjs": true
+      }
+    },
+    {
+      "kind": "offline-bookmarks",
+      "results": "docs/reader-evidence/v121-bookmark-regression/aac8ca8b-b9e3-4e5e-80b4-20e555d98082/results.json",
+      "passed": 17,
+      "total": 17,
+      "browserErrors": [],
+      "cleanup": {
+        "browser": true,
+        "app": true,
+        "database": true,
+        "temporaryCopy": true
+      },
+      "currentSourceMatches": {
+        "server.mjs": true,
+        "indexer.mjs": true,
+        "download-tickets.mjs": true,
+        "annotation-sync.mjs": true,
+        "social-watermark.mjs": true,
+        "public/app.js": true,
+        "public/index.html": true,
+        "public/offline.mjs": true,
+        "public/downloads.mjs": true,
+        "public/sw.js": true,
+        "public/epub-engine.mjs": true,
+        "public/styles.css": true,
+        "public/i18n.mjs": true,
+        "public/citations.mjs": true,
+        "db/schema.sql": true,
+        "db/seed.sql": true
+      }
+    }
+  ],
+  "securityRegression": {
+    "scenarios": 3,
+    "checks": 68,
+    "output": "docs/reader-evidence/v121-annotation-sync/security.txt",
+    "scope": "Same server/module/schema before later public auth-epoch and local-editor guards."
+  },
+  "unitRegression": {
+    "passed": 62,
+    "total": 62,
+    "output": "docs/reader-evidence/v121-annotation-sync/units.tap.txt"
+  },
+  "sources": {
+    "db/migrations/015-annotation-sync.sql": {
+      "rawSha256": "d43ce4afec836511f5f8c01abb55d67cfb13671232e7dd511da331581acee176",
+      "lfNormalizedSha256": "d43ce4afec836511f5f8c01abb55d67cfb13671232e7dd511da331581acee176"
+    },
+    "db/schema.sql": {
+      "rawSha256": "182e0b2d9edbfce846ac74a1c84d559b779371e6f8b746ec138d297a8b8358ab",
+      "lfNormalizedSha256": "182e0b2d9edbfce846ac74a1c84d559b779371e6f8b746ec138d297a8b8358ab"
+    },
+    "db/seed.sql": {
+      "rawSha256": "b8d845cea00579ccd0b13fcbb94e9d050c42d1fff736ec4dd36e1137f67ce587",
+      "lfNormalizedSha256": "b8d845cea00579ccd0b13fcbb94e9d050c42d1fff736ec4dd36e1137f67ce587"
+    },
+    "docker-compose.prod.yml": {
+      "rawSha256": "dc548817b79cb000549d5c54d775d04b55da69db458ba1daebca5e5ac842a001",
+      "lfNormalizedSha256": "dc548817b79cb000549d5c54d775d04b55da69db458ba1daebca5e5ac842a001"
+    },
+    "spike/app/annotation-sync.mjs": {
+      "rawSha256": "904257d723227499c22601ef2293bc89b75407b58616afd710977e95c3eb843e",
+      "lfNormalizedSha256": "904257d723227499c22601ef2293bc89b75407b58616afd710977e95c3eb843e"
+    },
+    "spike/app/download-tickets.mjs": {
+      "rawSha256": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+      "lfNormalizedSha256": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f"
+    },
+    "spike/app/indexer.mjs": {
+      "rawSha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+      "lfNormalizedSha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f"
+    },
+    "spike/app/public/app.js": {
+      "rawSha256": "2bd08b5927384f2b7382ab024c2576cee26d126babd518b530d1f62595925be9",
+      "lfNormalizedSha256": "2bd08b5927384f2b7382ab024c2576cee26d126babd518b530d1f62595925be9"
+    },
+    "spike/app/public/citations.mjs": {
+      "rawSha256": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+      "lfNormalizedSha256": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86"
+    },
+    "spike/app/public/downloads.mjs": {
+      "rawSha256": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+      "lfNormalizedSha256": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9"
+    },
+    "spike/app/public/epub-engine.mjs": {
+      "rawSha256": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885",
+      "lfNormalizedSha256": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885"
+    },
+    "spike/app/public/i18n.mjs": {
+      "rawSha256": "670ad9c258e99aaf25bcc9d5329aa3d43ce779a30d3eda08251a575a990a03b8",
+      "lfNormalizedSha256": "670ad9c258e99aaf25bcc9d5329aa3d43ce779a30d3eda08251a575a990a03b8"
+    },
+    "spike/app/public/index.html": {
+      "rawSha256": "a819c94c031d08bc025bcef185db8db593af06fabdceac6d9869122bbe88aac8",
+      "lfNormalizedSha256": "a819c94c031d08bc025bcef185db8db593af06fabdceac6d9869122bbe88aac8"
+    },
+    "spike/app/public/offline.mjs": {
+      "rawSha256": "d9a087f22b57c84d6a5df54e7e6a76f3f9a8cc5b86ed46323fa70d1082dfb35c",
+      "lfNormalizedSha256": "d9a087f22b57c84d6a5df54e7e6a76f3f9a8cc5b86ed46323fa70d1082dfb35c"
+    },
+    "spike/app/public/styles.css": {
+      "rawSha256": "a1d87008bb5c518fd8047c077ac8438a0a3a0e0cf5f97859858a371daae95ee9",
+      "lfNormalizedSha256": "a1d87008bb5c518fd8047c077ac8438a0a3a0e0cf5f97859858a371daae95ee9"
+    },
+    "spike/app/public/sw.js": {
+      "rawSha256": "90d7e5083daaa5d657f1c46f0d34e8d4a98f23e9eced78518d0a1cca0b005260",
+      "lfNormalizedSha256": "90d7e5083daaa5d657f1c46f0d34e8d4a98f23e9eced78518d0a1cca0b005260"
+    },
+    "spike/app/server.mjs": {
+      "rawSha256": "405fd7de6ce8dd8c6229990c3a0dede6e50753aa96c71d6a3ee0abdd499711b1",
+      "lfNormalizedSha256": "405fd7de6ce8dd8c6229990c3a0dede6e50753aa96c71d6a3ee0abdd499711b1"
+    },
+    "spike/app/social-watermark.mjs": {
+      "rawSha256": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+      "lfNormalizedSha256": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531"
+    },
+    "spike/app/test/annotation-sync.integration.mjs": {
+      "rawSha256": "7e1820e314c9ee628813794f1a2e812884fe3fd5cacafe0a25771f5d240e6abe",
+      "lfNormalizedSha256": "7e1820e314c9ee628813794f1a2e812884fe3fd5cacafe0a25771f5d240e6abe"
+    },
+    "spike/app/test/offline-bookmarks.browser.mjs": {
+      "rawSha256": "f455d55ae53c905022eba2e86660058c6dafc2276aca89e153ef5d49db94c6e8",
+      "lfNormalizedSha256": "f455d55ae53c905022eba2e86660058c6dafc2276aca89e153ef5d49db94c6e8"
+    },
+    "spike/app/test/offline-browser.integration.mjs": {
+      "rawSha256": "105cf5bfb9f267328d80161d08ef03334910e76db99bca5d56012836563e7ed4",
+      "lfNormalizedSha256": "105cf5bfb9f267328d80161d08ef03334910e76db99bca5d56012836563e7ed4"
+    },
+    "spike/app/test/offline-edit.browser.mjs": {
+      "rawSha256": "2d47964efdd7070c07eaaef0efa5debb313cff5663950dc255b968c269c388d3",
+      "lfNormalizedSha256": "2d47964efdd7070c07eaaef0efa5debb313cff5663950dc255b968c269c388d3"
+    },
+    "spike/app/test/security.integration.mjs": {
+      "rawSha256": "961c8af52fe73dd6662f52505659730836cce7e8af41dc30cba94ac91852f3fb",
+      "lfNormalizedSha256": "961c8af52fe73dd6662f52505659730836cce7e8af41dc30cba94ac91852f3fb"
+    },
+    "spike/app/test/social-drm.integration.mjs": {
+      "rawSha256": "d1b88a47f565f08b9d17a0882485849006ba3a7340c06ba1c83d6f5e8161084d",
+      "lfNormalizedSha256": "d1b88a47f565f08b9d17a0882485849006ba3a7340c06ba1c83d6f5e8161084d"
+    }
+  },
+  "historicalRuns": [
+    {
+      "results": "docs/reader-evidence/v121-annotation-sync/34cfd02d-9f39-4456-8663-dcd463b07583/results.json",
+      "status": "passed",
+      "passed": 26,
+      "total": 26,
+      "acceptedFinal": false
+    },
+    {
+      "results": "docs/reader-evidence/v121-annotation-sync/452c1b28-4438-47ba-be35-8929778b4877/results.json",
+      "status": "passed",
+      "passed": 19,
+      "total": 19,
+      "acceptedFinal": false
+    },
+    {
+      "results": "docs/reader-evidence/v121-annotation-sync/9f1b22c5-f363-4fa4-adbf-27c73b8ad66b/results.json",
+      "status": "failed",
+      "passed": 4,
+      "total": 5,
+      "acceptedFinal": false
+    },
+    {
+      "results": "docs/reader-evidence/v121-annotation-sync/a2eed91f-bf37-4307-a84d-0f724fe99448/results.json",
+      "status": "passed",
+      "passed": 26,
+      "total": 26,
+      "acceptedFinal": false
+    },
+    {
+      "results": "docs/reader-evidence/v121-offline-edit/99d4b5c0-bd20-477d-a2bd-71f659120cad/results.json",
+      "status": "passed",
+      "passed": 20,
+      "total": 20,
+      "acceptedFinal": false
+    },
+    {
+      "results": "docs/reader-evidence/v121-offline-edit/a5ed70c7-e7cb-4179-a160-806029f2f392/results.json",
+      "status": "passed",
+      "passed": 20,
+      "total": 20,
+      "acceptedFinal": false
+    },
+    {
+      "results": "docs/reader-evidence/v121-bookmark-regression/92ba71ac-0920-490d-b60d-77fccdf5c739/results.json",
+      "status": "failed",
+      "passed": 14,
+      "total": 15,
+      "acceptedFinal": false
+    }
+  ],
+  "artifacts": {
+    "docs/reader-evidence/v121-annotation-sync/.gitattributes": {
+      "bytes": 92,
+      "sha256": "46ae9442e216b592f02c166c01c547d20e2bfc138e0074cd84b82ecc178df59b"
+    },
+    "docs/reader-evidence/v121-annotation-sync/34cfd02d-9f39-4456-8663-dcd463b07583/epub-conflict-both-versions.png": {
+      "bytes": 46950,
+      "sha256": "9b0b3d1c2db69083cb0bd2d46bccde0dca3f82c008ebc105381b3d0aca907906"
+    },
+    "docs/reader-evidence/v121-annotation-sync/34cfd02d-9f39-4456-8663-dcd463b07583/manifest.json": {
+      "bytes": 2286,
+      "sha256": "0c877a9c8bd48a71fa88470360f4a41ece2175274888bad83a0f07c5ec72807c"
+    },
+    "docs/reader-evidence/v121-annotation-sync/34cfd02d-9f39-4456-8663-dcd463b07583/pdf-conflict-resolved.png": {
+      "bytes": 59821,
+      "sha256": "6bd2a339c9b4aba3f2dbc1ac1139fc3e3eca5d7d695bb4277156dc1609abbf44"
+    },
+    "docs/reader-evidence/v121-annotation-sync/34cfd02d-9f39-4456-8663-dcd463b07583/results.json": {
+      "bytes": 9934,
+      "sha256": "495669298e1802571891c9d291b3f967aae81abe966515b94525ff323a724711"
+    },
+    "docs/reader-evidence/v121-annotation-sync/452c1b28-4438-47ba-be35-8929778b4877/epub-conflict-both-versions.png": {
+      "bytes": 46950,
+      "sha256": "9b0b3d1c2db69083cb0bd2d46bccde0dca3f82c008ebc105381b3d0aca907906"
+    },
+    "docs/reader-evidence/v121-annotation-sync/452c1b28-4438-47ba-be35-8929778b4877/manifest.json": {
+      "bytes": 2286,
+      "sha256": "9b0b6ee6d6a80df579a11c7b7a31ce90697a125639a6bc026b4347295428c77a"
+    },
+    "docs/reader-evidence/v121-annotation-sync/452c1b28-4438-47ba-be35-8929778b4877/pdf-conflict-resolved.png": {
+      "bytes": 64623,
+      "sha256": "e4bb94bf21ad8dbfb58149e40ba50a2fea127779daa28ecd72dbdbbb150b2d17"
+    },
+    "docs/reader-evidence/v121-annotation-sync/452c1b28-4438-47ba-be35-8929778b4877/results.json": {
+      "bytes": 8281,
+      "sha256": "c21baf2312ae42ab05959f3d4acadf1b86669ccc74a176108951c058ee6386a7"
+    },
+    "docs/reader-evidence/v121-annotation-sync/87e88d84-72ae-4f6f-99a4-5f49d7dc3d9b/epub-conflict-both-versions.png": {
+      "bytes": 46950,
+      "sha256": "9b0b3d1c2db69083cb0bd2d46bccde0dca3f82c008ebc105381b3d0aca907906"
+    },
+    "docs/reader-evidence/v121-annotation-sync/87e88d84-72ae-4f6f-99a4-5f49d7dc3d9b/manifest.json": {
+      "bytes": 2287,
+      "sha256": "ad7b235920ef04cdb5a399ca258bdee438025d87b4238f9ee8411389105b47b6"
+    },
+    "docs/reader-evidence/v121-annotation-sync/87e88d84-72ae-4f6f-99a4-5f49d7dc3d9b/pdf-conflict-resolved.png": {
+      "bytes": 59220,
+      "sha256": "7f0ccc03cff4f90ca2b4941cba506dac0bbd06cd0386b6e05f5fa6748e500d03"
+    },
+    "docs/reader-evidence/v121-annotation-sync/87e88d84-72ae-4f6f-99a4-5f49d7dc3d9b/results.json": {
+      "bytes": 10164,
+      "sha256": "17af9abce6ac3c400d0e809fd51f390f1cf29f3c894f3428bc709c94ac5a4c25"
+    },
+    "docs/reader-evidence/v121-annotation-sync/9f1b22c5-f363-4fa4-adbf-27c73b8ad66b/failure.png": {
+      "bytes": 227131,
+      "sha256": "60c258caff256e64f8744e674c801a525e18c1e5c137acc3d30c95fcaec37b67"
+    },
+    "docs/reader-evidence/v121-annotation-sync/9f1b22c5-f363-4fa4-adbf-27c73b8ad66b/manifest.json": {
+      "bytes": 2106,
+      "sha256": "25aecbca2089c060bea30d6312d0404c3a9861abdec8457b44595718b208f7d0"
+    },
+    "docs/reader-evidence/v121-annotation-sync/9f1b22c5-f363-4fa4-adbf-27c73b8ad66b/results.json": {
+      "bytes": 7282,
+      "sha256": "bb98acd2eb36b6ae2812ba6b1b34366b6e7150fb33065679e4588edadb7be332"
+    },
+    "docs/reader-evidence/v121-annotation-sync/a2eed91f-bf37-4307-a84d-0f724fe99448/epub-conflict-both-versions.png": {
+      "bytes": 46950,
+      "sha256": "9b0b3d1c2db69083cb0bd2d46bccde0dca3f82c008ebc105381b3d0aca907906"
+    },
+    "docs/reader-evidence/v121-annotation-sync/a2eed91f-bf37-4307-a84d-0f724fe99448/manifest.json": {
+      "bytes": 2286,
+      "sha256": "3282520fee230ccf8057342572903c73b10c3c2b035081d591412ba5393978b9"
+    },
+    "docs/reader-evidence/v121-annotation-sync/a2eed91f-bf37-4307-a84d-0f724fe99448/pdf-conflict-resolved.png": {
+      "bytes": 59787,
+      "sha256": "c78e5c49145b816b2fc1f54dc35933aa0a31b35123b925093bd27471e3b73e44"
+    },
+    "docs/reader-evidence/v121-annotation-sync/a2eed91f-bf37-4307-a84d-0f724fe99448/results.json": {
+      "bytes": 9934,
+      "sha256": "288dd84a39f54d1177cfd17a07ab037a2cc51bce083a33871c72713158a2ee67"
+    },
+    "docs/reader-evidence/v121-annotation-sync/security.txt": {
+      "bytes": 823,
+      "sha256": "fd08dd4c62db64561b5aaea28df63b7e3effaeecb11db95a362276d2871521a0"
+    },
+    "docs/reader-evidence/v121-annotation-sync/units.tap.txt": {
+      "bytes": 11793,
+      "sha256": "0807b8e32e77aaefae467dd7d85d0c18b6d79d274004e79c83a81eea5527fc97"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/.gitattributes": {
+      "bytes": 92,
+      "sha256": "46ae9442e216b592f02c166c01c547d20e2bfc138e0074cd84b82ecc178df59b"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/92ba71ac-0920-490d-b60d-77fccdf5c739/epub-B-bookmark-privacy.png": {
+      "bytes": 37794,
+      "sha256": "28a3a7ffc3f031ee508e9c4d8eb6954dd8e7b3d503e07df06d7328825924ea2a"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/92ba71ac-0920-490d-b60d-77fccdf5c739/epub-offline-bookmark.png": {
+      "bytes": 37651,
+      "sha256": "cd8da12da620551aa06447962b25d6a7c6046395dfe4245a42e35763743477b5"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/92ba71ac-0920-490d-b60d-77fccdf5c739/failure.png": {
+      "bytes": 204934,
+      "sha256": "56c7d5d54a192f74c7f113b54787d7d174db2bee26ac764e5de095c9204d9a36"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/92ba71ac-0920-490d-b60d-77fccdf5c739/manifest.json": {
+      "bytes": 3213,
+      "sha256": "9018ceb9858e2880c816a4ed6c27e35681d93dc27ecb2b11a318fc6e974b2fc6"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/92ba71ac-0920-490d-b60d-77fccdf5c739/pdf-B-bookmark-privacy.png": {
+      "bytes": 33148,
+      "sha256": "9784d3f4e5d3769775be88187fd8c5cc0fcaec64afd86e44562109c07ac46541"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/92ba71ac-0920-490d-b60d-77fccdf5c739/pdf-offline-bookmark.png": {
+      "bytes": 34101,
+      "sha256": "0eb696abe8029baae367bde7b4ca53a545ac04ac57e79e666c0098dde4e5e410"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/92ba71ac-0920-490d-b60d-77fccdf5c739/results.json": {
+      "bytes": 10010,
+      "sha256": "800f3d708ccce288244f316fe0a7abed10734eed11272fd28ef44c8373594014"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/92ba71ac-0920-490d-b60d-77fccdf5c739/saved-epub.epub": {
+      "bytes": 1478,
+      "sha256": "c5577c7638a955b668d35da6acd6255f729477520ca895a3be8497cce5ab2b78"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/92ba71ac-0920-490d-b60d-77fccdf5c739/saved-epub.png": {
+      "bytes": 240156,
+      "sha256": "d8d7be2495aec0ed526a1abd7b4459f6bad7efd99e206f3ab2056c06097c4a31"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/92ba71ac-0920-490d-b60d-77fccdf5c739/saved-pdf.pdf": {
+      "bytes": 2261,
+      "sha256": "e13bc3672d3037c3a876d673ba7986483efb2310a4940098d096a2d0b79ac00e"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/92ba71ac-0920-490d-b60d-77fccdf5c739/saved-pdf.png": {
+      "bytes": 239051,
+      "sha256": "40d31c79e0affa80cb938b61126f2ddd87ec1df332a0f1a641232bec8b4732b5"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/aac8ca8b-b9e3-4e5e-80b4-20e555d98082/epub-B-bookmark-privacy.png": {
+      "bytes": 37716,
+      "sha256": "59a8d5e9d70e668d7767ff5985032e3b17fa959d378105b25b1ee2035e29ccd7"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/aac8ca8b-b9e3-4e5e-80b4-20e555d98082/epub-offline-bookmark.png": {
+      "bytes": 37556,
+      "sha256": "3a1f95cdd7fa55256d776fe41fc28d70ae5516d4383098b084b54e36825b4743"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/aac8ca8b-b9e3-4e5e-80b4-20e555d98082/manifest.json": {
+      "bytes": 3064,
+      "sha256": "7fbd5fc11f416eb33219e2ef492a581c0db52d814771d94f667cf602ddb56251"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/aac8ca8b-b9e3-4e5e-80b4-20e555d98082/pdf-B-bookmark-privacy.png": {
+      "bytes": 33151,
+      "sha256": "25305548176313ba02c3166ebfe88e4c0a0a2141afd19e3f4f795d4b6c3a5f3d"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/aac8ca8b-b9e3-4e5e-80b4-20e555d98082/pdf-offline-bookmark.png": {
+      "bytes": 34104,
+      "sha256": "5e8fdd8edfe218644c26b40f1c353530c99fba5e6d8e0b971be08f93f3911946"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/aac8ca8b-b9e3-4e5e-80b4-20e555d98082/results.json": {
+      "bytes": 9860,
+      "sha256": "4ebc624250ca0ec66afcd7830db26fd5e74ea36f895e0cab723fdb76b8fbbbcc"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/aac8ca8b-b9e3-4e5e-80b4-20e555d98082/saved-epub.epub": {
+      "bytes": 1478,
+      "sha256": "289228448e9a05d67c381468fefbc1bfdd33a1eeef6f5b8a6df27fdb81346ae8"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/aac8ca8b-b9e3-4e5e-80b4-20e555d98082/saved-epub.png": {
+      "bytes": 240376,
+      "sha256": "3652ade4d64af0dcf23e72aa5f6110563d81655aa8ac5767c516394d5da821a0"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/aac8ca8b-b9e3-4e5e-80b4-20e555d98082/saved-pdf.pdf": {
+      "bytes": 2269,
+      "sha256": "627a6f5dceebbf3935912373f3a14814afa308d38f55d2b3ca233e841a87e482"
+    },
+    "docs/reader-evidence/v121-bookmark-regression/aac8ca8b-b9e3-4e5e-80b4-20e555d98082/saved-pdf.png": {
+      "bytes": 239051,
+      "sha256": "40d31c79e0affa80cb938b61126f2ddd87ec1df332a0f1a641232bec8b4732b5"
+    },
+    "docs/reader-evidence/v121-offline-edit/.gitattributes": {
+      "bytes": 92,
+      "sha256": "46ae9442e216b592f02c166c01c547d20e2bfc138e0074cd84b82ecc178df59b"
+    },
+    "docs/reader-evidence/v121-offline-edit/218c3129-a98f-418b-8c3f-cb55afbdf78f/epub-account-B-private-notes-hidden.png": {
+      "bytes": 29803,
+      "sha256": "c036dfdeb5d970ba96c27376746b598a4ff328aa0b6d8df015dfd8e7c4245ef9"
+    },
+    "docs/reader-evidence/v121-offline-edit/218c3129-a98f-418b-8c3f-cb55afbdf78f/epub-logged-out-private-notes-hidden.png": {
+      "bytes": 29575,
+      "sha256": "d0aa91d46049b4f9fdad83b2e4487dee908b6fdf52a1ce463a7930e20e65d99b"
+    },
+    "docs/reader-evidence/v121-offline-edit/218c3129-a98f-418b-8c3f-cb55afbdf78f/epub-offline-edited.png": {
+      "bytes": 33080,
+      "sha256": "52f04b3bef88b9d67cd736b1993c5104c3428a67b0b1369087c48449c1af72d2"
+    },
+    "docs/reader-evidence/v121-offline-edit/218c3129-a98f-418b-8c3f-cb55afbdf78f/pdf-account-B-private-notes-hidden.png": {
+      "bytes": 29868,
+      "sha256": "967dd17316930d793c71cf302fc41d58025b5a3450ec146bb7f4c00a38337a14"
+    },
+    "docs/reader-evidence/v121-offline-edit/218c3129-a98f-418b-8c3f-cb55afbdf78f/pdf-logged-out-private-notes-hidden.png": {
+      "bytes": 29281,
+      "sha256": "cf372be20c05e4eb566701aab89d151229fb97240c607b14bfbc29321eac6119"
+    },
+    "docs/reader-evidence/v121-offline-edit/218c3129-a98f-418b-8c3f-cb55afbdf78f/pdf-offline-edited.png": {
+      "bytes": 33581,
+      "sha256": "34bf47ce6c42ebcb0e5a2149c0049e179b1b39f54790fe9ca07f7ce9bbb93391"
+    },
+    "docs/reader-evidence/v121-offline-edit/218c3129-a98f-418b-8c3f-cb55afbdf78f/results.json": {
+      "bytes": 5155,
+      "sha256": "602001270866957937541819836812ff808e1b2398fe1270a0f603884c76bfab"
+    },
+    "docs/reader-evidence/v121-offline-edit/99d4b5c0-bd20-477d-a2bd-71f659120cad/epub-account-B-private-notes-hidden.png": {
+      "bytes": 29900,
+      "sha256": "90f3a5a9485c6ddf949d7fb7ed0e91aef08ac339045f52451c098bcfc5c14bfd"
+    },
+    "docs/reader-evidence/v121-offline-edit/99d4b5c0-bd20-477d-a2bd-71f659120cad/epub-logged-out-private-notes-hidden.png": {
+      "bytes": 29671,
+      "sha256": "1b339e0baad1e3c9f3018749133deb688f9b963e706485567d54a849f31c0bdb"
+    },
+    "docs/reader-evidence/v121-offline-edit/99d4b5c0-bd20-477d-a2bd-71f659120cad/epub-offline-edited.png": {
+      "bytes": 33174,
+      "sha256": "f32e84448a2c14ef94a10323ac1390131fb4774d9032e784194b0b4d747f5603"
+    },
+    "docs/reader-evidence/v121-offline-edit/99d4b5c0-bd20-477d-a2bd-71f659120cad/pdf-account-B-private-notes-hidden.png": {
+      "bytes": 29949,
+      "sha256": "d0ad0c4ff6bc5d0c8b7fadd6d520ba46b1c86e76013a10e169fe113dc0bc06c0"
+    },
+    "docs/reader-evidence/v121-offline-edit/99d4b5c0-bd20-477d-a2bd-71f659120cad/pdf-logged-out-private-notes-hidden.png": {
+      "bytes": 29363,
+      "sha256": "e42a98633cce9cf0852e634e39503c3eb69e388a617134c445e37b534863ea7b"
+    },
+    "docs/reader-evidence/v121-offline-edit/99d4b5c0-bd20-477d-a2bd-71f659120cad/pdf-offline-edited.png": {
+      "bytes": 33662,
+      "sha256": "d12b4b810f71f24e191ca3ae37db57eb26def04c285ceb846c5f810e028b01da"
+    },
+    "docs/reader-evidence/v121-offline-edit/99d4b5c0-bd20-477d-a2bd-71f659120cad/results.json": {
+      "bytes": 5155,
+      "sha256": "1b6517d2d9138dd834b88076b5d09c2b67050e202d91030d6a365ad026827e48"
+    },
+    "docs/reader-evidence/v121-offline-edit/a5ed70c7-e7cb-4179-a160-806029f2f392/epub-account-B-private-notes-hidden.png": {
+      "bytes": 29875,
+      "sha256": "7e1b76006e0532b60f690785e3ecf97ddbe04f79fa1ff32adc66b0fbc2af3340"
+    },
+    "docs/reader-evidence/v121-offline-edit/a5ed70c7-e7cb-4179-a160-806029f2f392/epub-logged-out-private-notes-hidden.png": {
+      "bytes": 29645,
+      "sha256": "ab5ab88fbf20f99e06a536c7a789d419ba02e566ea3e677d3b98dc2ae5d5d9db"
+    },
+    "docs/reader-evidence/v121-offline-edit/a5ed70c7-e7cb-4179-a160-806029f2f392/epub-offline-edited.png": {
+      "bytes": 33150,
+      "sha256": "44831bbaf5f03895a643433a52d2b2b6224a8b810217c13b713e5ee44851e118"
+    },
+    "docs/reader-evidence/v121-offline-edit/a5ed70c7-e7cb-4179-a160-806029f2f392/pdf-account-B-private-notes-hidden.png": {
+      "bytes": 30198,
+      "sha256": "472cd474ef2b58fc48da0462d2b6a50c12b327ddf3d528f38f53ba12763579c9"
+    },
+    "docs/reader-evidence/v121-offline-edit/a5ed70c7-e7cb-4179-a160-806029f2f392/pdf-logged-out-private-notes-hidden.png": {
+      "bytes": 29610,
+      "sha256": "1c22441838462cfd362ee77c86c7449d92a8bceca95801d14f9ca0cadd4de13e"
+    },
+    "docs/reader-evidence/v121-offline-edit/a5ed70c7-e7cb-4179-a160-806029f2f392/pdf-offline-edited.png": {
+      "bytes": 33910,
+      "sha256": "94c364474f1ce6507f3493d9aabb12aee8cd3fbaf59011f4da71e333fb1d1fad"
+    },
+    "docs/reader-evidence/v121-offline-edit/a5ed70c7-e7cb-4179-a160-806029f2f392/results.json": {
+      "bytes": 5155,
+      "sha256": "dbc88a7f4f34230e7926a867114cc6a6a6329e73b4575a5918faaa72642fe18c"
+    }
+  }
+}

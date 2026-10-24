@@ -1,0 +1,46 @@
+{
+  "runId": "452c1b28-4438-47ba-be35-8929778b4877",
+  "source": {
+    "server.mjs": "1336c77d35fff71f644b7affed1abb2d921b4854f82875a6f0d543e0fd72f2d8",
+    "indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+    "download-tickets.mjs": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+    "annotation-sync.mjs": "8a3ccd5668be93e1bcfa33c5cbb701e70e25d1e0fa0998ac577ed3f38a038f77",
+    "social-watermark.mjs": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+    "public/app.js": "e277ccf95ff322e382ac3da57ff5ed76142835ec18b6851682e5d93f046acc24",
+    "public/index.html": "a819c94c031d08bc025bcef185db8db593af06fabdceac6d9869122bbe88aac8",
+    "public/offline.mjs": "06a04f20cbb160545d89d03d08e2ea7665cd351463e8cfd89b45142e257fa168",
+    "public/downloads.mjs": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+    "public/sw.js": "90d7e5083daaa5d657f1c46f0d34e8d4a98f23e9eced78518d0a1cca0b005260",
+    "public/epub-engine.mjs": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885",
+    "public/styles.css": "a1d87008bb5c518fd8047c077ac8438a0a3a0e0cf5f97859858a371daae95ee9",
+    "public/i18n.mjs": "45b13847d32fcb3ee4ba02213f243396c6d499015fb73b2f57e7d8aa1195975d",
+    "public/citations.mjs": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+    "db/schema.sql": "182e0b2d9edbfce846ac74a1c84d559b779371e6f8b746ec138d297a8b8358ab",
+    "db/seed.sql": "b8d845cea00579ccd0b13fcbb94e9d050c42d1fff736ec4dd36e1137f67ce587",
+    "db/migrations/015-annotation-sync.sql": "d43ce4afec836511f5f8c01abb55d67cfb13671232e7dd511da331581acee176"
+  },
+  "artifacts": [
+    {
+      "file": "epub-conflict-both-versions.png",
+      "bytes": 46950,
+      "sha256": "9b0b3d1c2db69083cb0bd2d46bccde0dca3f82c008ebc105381b3d0aca907906"
+    },
+    {
+      "file": "pdf-conflict-resolved.png",
+      "bytes": 64623,
+      "sha256": "e4bb94bf21ad8dbfb58149e40ba50a2fea127779daa28ecd72dbdbbb150b2d17"
+    },
+    {
+      "file": "results.json",
+      "bytes": 8281,
+      "sha256": "c21baf2312ae42ab05959f3d4acadf1b86669ccc74a176108951c058ee6386a7"
+    }
+  ],
+  "cleanup": {
+    "browser": true,
+    "app": true,
+    "secondServer": true,
+    "database": true,
+    "temporaryCopy": true
+  }
+}

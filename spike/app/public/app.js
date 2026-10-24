@@ -9,13 +9,13 @@ import {
   deleteOfflineBook,
   storageEstimate,
   listLocalAnnotations,
-  saveLocalAnnotation,
-  deleteLocalAnnotation,
   editLocalAnnotation,
   saveAnnotationWithOperation,
   removeLocalAnnotationWithOperation,
   cacheServerAnnotations,
   syncAnnotationOperations,
+  resolveAnnotationConflict,
+  subscribeAnnotationChanges,
 } from '/offline.mjs';
 
 initializeLanguage();
@@ -1075,6 +1075,7 @@ function setAppInert(inert) {
 }
 
 function setUser(user) {
+  state.authEpoch = (state.authEpoch || 0) + 1;
   state.user = user;
   try {
     if (user?.id) localStorage.setItem('offlineAnnotationUser', user.id);
@@ -1211,13 +1212,13 @@ async function logoutAll() {
 }
 
 async function logout() {
+  setUser(null);
+  state.annotations = [];
   try {
     await fetch('/api/logout', { method: 'POST' });
   } catch {
     // Cookie is cleared server-side on the next successful request.
   }
-  setUser(null);
-  state.annotations = [];
   window.location.href = '/';
 }
 
@@ -1695,8 +1696,8 @@ async function toggleBookmark() {
         && item.color === 'bookmark' && item.anchor?.type === 'epub') : null;
     const existing = active || (state.epubMode ? bookmarkForEpubCfi(cfi) : bookmarkForPage());
     if (existing) {
-      await deleteAnnotation(existing.id, { silent: true });
-      toast(t('Yer imi kaldırıldı'));
+      const removed = await deleteAnnotation(existing.id, { silent: true });
+      if (removed) toast(t('Yer imi kaldırıldı'));
       return;
     }
     const anchor = state.epubMode ? {
@@ -2596,41 +2597,13 @@ function formatNoteDate(value) {
   return new Intl.DateTimeFormat(getLang() === 'en' ? 'en-GB' : 'tr-TR', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
 }
 
-async function updateAnnotation(id, changes) {
-  const annotation = state.annotations.find(item => item.id === id);
-  const saveOffline = async () => {
-    const edited = await editLocalAnnotation(id, changes, annotationOwnerId());
-    const index = state.annotations.findIndex(item => item.id === id);
-    if (index >= 0) state.annotations[index] = edited;
-    renderNotes();
-    renderHighlights();
-    if (navigator.onLine) syncOfflineAnnotations().then(async () => {
-      const assetId = edited.asset_id;
-      const items = await listLocalAnnotations(assetId, annotationOwnerId());
-      if (state.book?.asset_id !== assetId) return;
-      state.annotations = items;
-      if (!notesList.querySelector('.note-edit')) renderNotes();
-      renderHighlights();
-    }).catch(() => {});
-    return edited;
-  };
-  if (state.offlineMode || !navigator.onLine || annotation?.pending) return saveOffline();
-  let response;
-  try {
-    response = await fetch(`/api/annotations/${encodeURIComponent(annotation?.server_id || id)}`, {
-      method: 'PATCH', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ ...changes, ownerId: annotationOwnerId() }),
-    });
-  } catch { return saveOffline(); }
-  if (!response.ok) throw new Error('annotation update failed');
-  const updated = await response.json();
-  const cached = { ...updated, id, server_id: updated.id, ownerId: annotationOwnerId(), pending: false };
-  await saveLocalAnnotation(cached).catch(() => {});
-  const index = state.annotations.findIndex((annotation) => annotation.id === id);
-  if (index >= 0) state.annotations[index] = cached;
-  renderNotes();
-  renderHighlights();
-  return updated;
+async function updateAnnotation(id, changes, expected = state.annotations.find(item => item.id === id)) {
+  const ownerId = annotationOwnerId();
+  const edited = await editLocalAnnotation(id, changes, ownerId, expected);
+  state.annotations = await listLocalAnnotations(edited.asset_id, ownerId);
+  renderNotes(); renderHighlights();
+  if (navigator.onLine) syncReaderAnnotations(edited.asset_id, ownerId).catch(() => {});
+  return edited;
 }
 
 function downloadFile(filename, content, type) {
@@ -2740,10 +2713,10 @@ function startEditNote(annotation, item) {
       const updated = await updateAnnotation(annotation.id, {
         note: textarea.value.trim(),
         tags: tagsInput.value,
-      });
-      toast(t(updated.pending ? 'Not cihazda kaydedildi; eşitleme bekliyor' : 'Not güncellendi'));
+      }, annotation);
+      toast(t(updated.conflict ? 'Notta çakışma var; iki sürüm de korundu' : updated.pending ? 'Not cihazda kaydedildi; eşitleme bekliyor' : 'Not güncellendi'));
     } catch (error) {
-      toast(t(error.code === 'ANNOTATION_OWNER_REQUIRED'
+      toast(t(error.code === 'ANNOTATION_CONFLICT_CHANGED' ? 'Çakışma başka sekmede değişti; metniniz düzenleyicide korunuyor' : error.code === 'ANNOTATION_OWNER_REQUIRED'
         ? 'Bu eski yerel notun hesabı doğrulanamıyor. Önce JSON olarak dışa aktarın.' : 'Not güncellenemedi'));
     } finally { save.disabled = false; }
   });
@@ -2758,10 +2731,45 @@ async function cycleAnnotationColor(annotation) {
   const current = COLOR_ORDER.indexOf(annotation.color);
   const next = COLOR_ORDER[(current + 1) % COLOR_ORDER.length];
   try {
-    await updateAnnotation(annotation.id, { color: next });
+    await updateAnnotation(annotation.id, { color: next }, annotation);
   } catch {
     toast('Renk değiştirilemedi');
   }
+}
+
+function appendAnnotationConflict(annotation, item) {
+  const conflict = annotation.conflict;
+  if (!conflict) return;
+  const box = document.createElement('section'); box.className = 'note-conflict';
+  box.setAttribute('aria-label', t('Not çakışması'));
+  const status = document.createElement('p'); status.setAttribute('role', 'status');
+  status.textContent = t('Notta çakışma var; iki sürüm de korundu'); box.appendChild(status);
+  for (const [label, value] of [[t('Bu cihazdaki taslak'), annotation], [t('Diğer sürüm'), conflict.current]]) {
+    const heading = document.createElement('strong'); heading.textContent = label;
+    const text = document.createElement('pre');
+    text.textContent = value ? [value.note || '', (value.tags || []).join('; '), COLOR_LABELS[value.color] || value.color || ''].join('\n') : t(conflict.reason === 'legacy_unconfirmed_create' ? 'Eski isteğin teslimatı bilinmiyor; yeni kayıt oluşturmadan önce notlarınızı kontrol edin' : 'Not diğer cihazda silinmiş veya bulunamıyor');
+    box.append(heading, text);
+  }
+  const choices = [
+    ['local', conflict.desiredType === 'delete' ? 'Silme işlemini uygula' : !conflict.current ? 'Yeni not olarak kaydet' : 'Bu taslağı kullan'],
+    ['server', conflict.current ? 'Diğer sürümü kullan' : conflict.reason === 'legacy_unconfirmed_create' ? 'Yerel taslağı kaldır' : 'Silinmeyi kabul et'],
+  ];
+  if (conflict.current && conflict.desiredType !== 'delete') choices.push(['copy', 'İkisini de sakla']);
+  for (const [choice, label] of choices) {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'ghost-btn';
+    button.dataset.conflictChoice = choice; button.textContent = t(label);
+    button.addEventListener('click', async event => {
+      event.stopPropagation(); button.disabled = true;
+      try {
+        await resolveAnnotationConflict(annotation.id, choice, annotationOwnerId());
+        state.annotations = await listLocalAnnotations(annotation.asset_id, annotationOwnerId());
+        renderNotes(); noteFilter.focus(); if (!state.epubMode) renderHighlights();
+        if (navigator.onLine) syncReaderAnnotations(annotation.asset_id).catch(() => {});
+      } catch (error) { toast(t(error.code === 'SYNC_PENDING' ? 'Önce bekleyen isteğin sonucu doğrulanmalı; bağlantı gelince tekrar deneyin' : 'Çakışma çözülemedi')); }
+      finally { button.disabled = false; }
+    }); box.appendChild(button);
+  }
+  box.addEventListener('click', event => event.stopPropagation()); item.appendChild(box);
 }
 
 function renderNotes() {
@@ -2808,7 +2816,7 @@ function renderNotes() {
     if (annotation.pending) {
       const status = document.createElement('div');
       status.className = 'note-date';
-      status.textContent = t('Eşitleme bekliyor');
+      status.textContent = t(annotation.conflict ? 'Not çakışması' : 'Eşitleme bekliyor');
       status.setAttribute('role', 'status');
       item.appendChild(status);
     }
@@ -2865,6 +2873,7 @@ function renderNotes() {
       await deleteAnnotation(annotation.id);
     });
     item.appendChild(remove);
+    appendAnnotationConflict(annotation, item);
     if (!isBookmark) {
       const edit = document.createElement('button');
       edit.type = 'button';
@@ -3488,79 +3497,29 @@ function paneForNode(node) {
 async function saveEpubHighlight() {
   const selection = state.epubSelection;
   if (!selection || !state.book) return;
-  state.epubSelection = null;
-  hlBar.hidden = true;
-  if (state.offlineMode) {
-    const annotation = await saveLocalReaderAnnotation({
-      assetId: state.book.asset_id,
-      anchor: {
-        asset_version_id: state.book.asset_id,
-        type: 'epub',
-        cfi: selection.cfiRange,
-        text_quote: selection.text.slice(0, 500),
-      },
-      color: state.highlightColor,
-      selectedText: selection.text,
-    });
-    state.epubEngine?.addAnnotation({
-      id: annotation.id,
-      cfiRange: selection.cfiRange,
-      color: state.highlightColor,
-    });
-    try {
-      epubView.querySelector('iframe')?.contentWindow?.getSelection()?.removeAllRanges();
-    } catch { /* same-origin iframe */ }
-    return;
-  }
+  state.epubSelection = null; hlBar.hidden = true;
   try {
-    const response = await fetch('/api/annotations', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        assetId: state.book.asset_id,
-        anchor: {
-          asset_version_id: state.book.asset_id,
-          type: 'epub',
-          cfi: selection.cfiRange,
-          text_quote: selection.text.slice(0, 500),
-        },
-        color: state.highlightColor,
-        note: hlNote.value.trim() || null,
-        selectedText: selection.text,
-      }),
-    });
-    if (!response.ok) throw new Error('annotation failed');
-    const saved = await response.json();
-    const cached = { ...saved, selected_text: saved.selected_text || selection.text,
-      server_id: saved.id, ownerId: annotationOwnerId(), pending: false };
-    await saveLocalAnnotation(cached).catch(() => {});
-    state.annotations.push(cached);
-    state.epubEngine?.addAnnotation({
-      id: saved.id,
-      cfiRange: selection.cfiRange,
-      color: state.highlightColor,
-    });
-    renderNotes();
-    toast('Vurgu kaydedildi');
-    try {
-      epubView.querySelector('iframe')?.contentWindow?.getSelection()?.removeAllRanges();
-    } catch { /* same-origin iframe */ }
-  } catch (error) {
-    console.error(error);
-    toast('Vurgu kaydedilemedi');
-  }
+    const annotation = await saveLocalReaderAnnotation({ assetId: state.book.asset_id,
+      anchor: { asset_version_id: state.book.asset_id, type: 'epub', cfi: selection.cfiRange,
+        text_quote: selection.text.slice(0, 500) }, color: state.highlightColor, selectedText: selection.text });
+    state.epubEngine?.addAnnotation({ id: annotation.id, cfiRange: selection.cfiRange, color: annotation.color });
+    try { epubView.querySelector('iframe')?.contentWindow?.getSelection()?.removeAllRanges(); } catch { /* same origin */ }
+  } catch (error) { console.error(error); toast(t('Vurgu kaydedilemedi')); }
 }
 
 async function syncOfflineAnnotations() {
   if (!navigator.onLine) return;
   if (state.annotationSyncing) return state.annotationSyncing;
+  const authEpoch = state.authEpoch;
   state.annotationSyncing = (async () => {
     const response = await fetch('/api/me');
     if (!response.ok) return;
     const user = await response.json();
-    if (!user.id) return;
+    if (state.authEpoch !== authEpoch || !user.id) return;
     if (state.user?.id !== user.id) setUser(user);
-    return syncAnnotationOperations(user.id);
+    const result = await syncAnnotationOperations(user.id);
+    if (result?.sent === 100 && result.pending) setTimeout(() => syncOfflineAnnotations().catch(() => {}), 0);
+    return result;
   })().catch(error => { console.warn('offline annotation sync failed', error); })
     .finally(() => { state.annotationSyncing = false; });
   return state.annotationSyncing;
@@ -3578,17 +3537,19 @@ async function syncReaderAnnotations(assetId, ownerId = annotationOwnerId()) {
 async function loadAnnotationsFor(assetId, offline) {
   if (offline) return listLocalAnnotations(assetId, annotationOwnerId()).catch(() => []);
   await syncOfflineAnnotations();
+  const ownerId = annotationOwnerId();
   try {
-    const response = await fetch(`/api/annotations?assetId=${encodeURIComponent(assetId)}`);
-    if (response.ok) await cacheServerAnnotations(assetId, await response.json(), annotationOwnerId());
-  } catch { /* offline */ }
+    const response = await fetch('/api/annotations/v1?assetId=' + encodeURIComponent(assetId) + '&ownerId=' + encodeURIComponent(ownerId || ''));
+    if (response.ok && annotationOwnerId() === ownerId) await cacheServerAnnotations(assetId, await response.json(), ownerId);
+  } catch { /* retain local data */ }
   return listLocalAnnotations(assetId, annotationOwnerId()).catch(() => []);
 }
 
 async function saveLocalReaderAnnotation({ assetId, anchor, color, selectedText, note = hlNote.value.trim() || null }) {
+  if (!annotationOwnerId()) throw new Error('annotation owner required');
   const id = `offline-${crypto.randomUUID()}`;
   const now = new Date().toISOString();
-  const annotation = {
+  let annotation = {
     id,
     asset_id: assetId,
     anchor,
@@ -3602,7 +3563,7 @@ async function saveLocalReaderAnnotation({ assetId, anchor, color, selectedText,
     pending: true,
     ownerId: annotationOwnerId(),
   };
-  await saveAnnotationWithOperation(annotation, {
+  annotation = await saveAnnotationWithOperation(annotation, {
     opId: crypto.randomUUID(),
     type: 'create',
     localId: id,
@@ -3620,85 +3581,36 @@ async function saveLocalReaderAnnotation({ assetId, anchor, color, selectedText,
   if (color === 'bookmark' && state.epubMode) state.activeBookmarkId = annotation.id;
   renderNotes();
   toast(t(color === 'bookmark' ? 'Yer imi cihazda kaydedildi; eşitleme bekliyor' : 'Vurgu çevrimdışı kaydedildi'));
+  if (navigator.onLine) syncReaderAnnotations(assetId, annotation.ownerId).catch(() => {});
   return annotation;
 }
 
 async function saveHighlight() {
-  if (state.epubSelection) {
-    await saveEpubHighlight();
-    return;
-  }
+  if (state.epubSelection) return saveEpubHighlight();
   if (!state.pending || !state.book) return;
-  const pending = state.pending;
-  state.pending = null;
-  hlBar.hidden = true;
-  if (state.offlineMode) {
-    await saveLocalReaderAnnotation({
-      assetId: state.book.asset_id,
-      anchor: pending.anchor,
-      color: state.highlightColor,
-      selectedText: pending.text,
-    });
-    renderHighlights();
-    window.getSelection()?.removeAllRanges();
-    return;
-  }
+  const pending = state.pending; state.pending = null; hlBar.hidden = true;
   try {
-    const response = await fetch('/api/annotations', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        assetId: state.book.asset_id,
-        anchor: pending.anchor,
-        color: state.highlightColor,
-        note: hlNote.value.trim() || null,
-        selectedText: pending.text,
-      }),
-    });
-    if (!response.ok) throw new Error('annotation failed');
-    const saved = await response.json();
-    const cached = { ...saved, selected_text: saved.selected_text || pending.text,
-      server_id: saved.id, ownerId: annotationOwnerId(), pending: false };
-    await saveLocalAnnotation(cached).catch(() => {});
-    state.annotations.push(cached);
-    renderNotes();
-    renderHighlights();
-    toast('Vurgu kaydedildi');
-    window.getSelection()?.removeAllRanges();
-  } catch (error) {
-    console.error(error);
-    toast('Vurgu kaydedilemedi');
-  }
+    await saveLocalReaderAnnotation({ assetId: state.book.asset_id, anchor: pending.anchor,
+      color: state.highlightColor, selectedText: pending.text });
+    renderHighlights(); window.getSelection()?.removeAllRanges();
+  } catch (error) { console.error(error); toast(t('Vurgu kaydedilemedi')); }
 }
 
 async function deleteAnnotation(id, options = {}) {
-  if (state.activeBookmarkId === id) state.activeBookmarkId = null;
-  const annotation = state.annotations.find((item) => item.id === id);
-  if (state.offlineMode || !navigator.onLine || annotation?.pending || annotation?.color === 'bookmark') {
-    if (!annotation) return;
-    // A pending edit and its deletion must not replay in the opposite order.
-    await removeLocalAnnotationWithOperation(annotation, annotationOwnerId());
-    state.annotations = state.annotations.filter((item) => item.id !== id);
-    if (state.epubMode) state.epubEngine?.removeAnnotation(id);
-    renderNotes();
-    if (!state.epubMode) renderHighlights();
-    if (navigator.onLine) syncReaderAnnotations(annotation.asset_id).catch(() => {});
-    if (!options.silent) toast(t(annotation.color === 'bookmark' ? 'Yer imi bu cihazdan kaldırıldı' : 'Not bu cihazdan kaldırıldı'));
-    return;
-  }
+  const annotation = state.annotations.find(item => item.id === id);
+  if (!annotation) return false;
   try {
-    const response = await fetch(`/api/annotations/${encodeURIComponent(annotation?.server_id || id)}`, { method: 'DELETE' });
-    if (!response.ok) throw new Error('delete failed');
-    await deleteLocalAnnotation(id).catch(() => {});
-    state.annotations = state.annotations.filter((annotation) => annotation.id !== id);
+    const ownerId = annotationOwnerId();
+    const result = await removeLocalAnnotationWithOperation(annotation, ownerId);
+    if (state.activeBookmarkId === id) state.activeBookmarkId = null;
+    state.annotations = await listLocalAnnotations(annotation.asset_id, ownerId);
     if (state.epubMode) state.epubEngine?.removeAnnotation(id);
-    renderNotes();
-    if (!state.epubMode) renderHighlights();
-    if (!options.silent) toast('Not silindi');
-  } catch (error) {
-    console.error(error);
-    toast('Not silinemedi');
-  }
+    renderNotes(); if (!state.epubMode) renderHighlights();
+    if (navigator.onLine) syncReaderAnnotations(annotation.asset_id, ownerId).catch(() => {});
+    if (result?.conflict) { toast(t('Notta çakışma var; iki sürüm de korundu')); return false; }
+    if (!options.silent) toast(t(annotation.color === 'bookmark' ? 'Yer imi bu cihazdan kaldırıldı' : 'Not bu cihazdan kaldırıldı'));
+    return true;
+  } catch (error) { console.error(error); toast(t('Not silinemedi')); return false; }
 }
 
 function changePage(delta) {
@@ -4241,6 +4153,42 @@ pageArea.addEventListener('scroll', () => {
   });
 });
 
+window.addEventListener('storage', event => {
+  if (event.key !== 'offlineAnnotationUser') return;
+  state.authEpoch = (state.authEpoch || 0) + 1;
+  if (!state.user?.id || event.newValue === state.user.id) return;
+  // Another tab changed accounts. Do not clear the new account's shared key.
+  state.user = null;
+  state.annotations = [];
+  userChip.textContent = ''; userChip.hidden = true; logoutBtn.hidden = true; passwordBtn.hidden = true;
+  applyRoleUi();
+  if (!reader.hidden) closeReader();
+  notesList.replaceChildren();
+  showLogin(t('Hesap başka sekmede değişti; yeniden giriş yapın'));
+});
+
+subscribeAnnotationChanges(() => {
+  const assetId = state.book?.asset_id, ownerId = annotationOwnerId();
+  if (!assetId || !ownerId) return;
+  listLocalAnnotations(assetId, ownerId).then(items => {
+    if (state.book?.asset_id !== assetId || annotationOwnerId() !== ownerId) return;
+    state.annotations = items;
+    if (!notesList.querySelector('.note-edit')) renderNotes();
+    if (!state.epubMode) renderHighlights();
+  }).catch(() => {});
+});
+window.addEventListener('focus', () => {
+  if (navigator.onLine && state.book && state.user?.id) {
+    const assetId = state.book.asset_id, ownerId = state.user.id;
+    loadAnnotationsFor(assetId, false).then(items => {
+      if (state.book?.asset_id !== assetId || annotationOwnerId() !== ownerId) return;
+      state.annotations = items;
+      if (!notesList.querySelector('.note-edit')) renderNotes();
+      if (!state.epubMode) renderHighlights();
+    }).catch(() => {});
+  }
+});
+
 window.addEventListener('online', () => {
   if (state.user) {
     syncOfflineAnnotations().then(() => {
@@ -4287,12 +4235,16 @@ window.__readerStress = stressPages;
     updatePerfPanel();
   }
   try {
+    const authEpoch = state.authEpoch;
     const me = await fetch('/api/me');
+    if (state.authEpoch !== authEpoch) { showLogin(t('Hesap başka sekmede değişti; yeniden giriş yapın')); return; }
     if (!me.ok) {
       showLogin();
       return;
     }
-    setUser(await me.json());
+    const initialUser = await me.json();
+    if (state.authEpoch !== authEpoch) { showLogin(); return; }
+    setUser(initialUser);
     await bootData();
     syncOfflineAnnotations().catch(() => {});
   } catch (error) {

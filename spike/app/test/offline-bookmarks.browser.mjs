@@ -19,7 +19,7 @@ const appDir = fileURLToPath(new URL('../', import.meta.url));
 const repoDir = path.resolve(appDir, '../..');
 const tempParent = path.join(appDir, 'tmp');
 const runId = randomUUID(), container = `akademik-offline-browser-${runId}`;
-const output = path.join(repoDir, 'docs/reader-evidence/v120-offline-bookmarks',runId);
+const output = path.join(repoDir, 'docs/reader-evidence/v121-bookmark-regression',runId);
 const tenantId = '11111111-1111-1111-1111-111111111111';
 const userId = randomUUID(), email = 'offline-reader@browser.test', secondUserId=randomUUID(), secondEmail='bookmark-second@browser.test';
 const fixtures = [
@@ -32,7 +32,7 @@ const [dbPassword, appPassword, password, sessionSecret] = secrets;
 const tickets = [], traffic = [], deliveryBodies = new Map(), pending = [], browserErrors = [];
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-const report = { runId, startedAt: new Date().toISOString(), version: 120, status: 'running', source: {}, cases: [], cleanup: {}, limitations: ['Small generated PDF/reflowable EPUB only; not large-file, screen-reader, multi-tab idempotency or cross-device conflict acceptance.', 'Isolated owned PostgreSQL and real Edge; production/dev services untouched.', '401/403/429/500 retry and retaining A queue during account switch use explicitly controlled HTTP failures.'] };
+const report = { runId, startedAt: new Date().toISOString(), version: 121, status: 'running', source: {}, cases: [], cleanup: {}, limitations: ['Small generated PDF/reflowable EPUB only; not large-file, screen-reader, multi-tab idempotency or cross-device conflict acceptance.', 'Isolated owned PostgreSQL and real Edge; production/dev services untouched.', '401/403/429/500 retry and retaining A queue during account switch use explicitly controlled HTTP failures.'] };
 let temporary, admin, app, browser, context, page, base, cdp, containerCreated = false, phase = 'setup', appLog = '';
 function redact(error) { let value = String(error?.stack || error); for (const token of [...secrets, ...tickets]) value = value.replaceAll(token, '[redacted]'); return value.replace(/postgres(?:ql)?:\/\/[^\s]+/g, '[database connection redacted]'); }
 async function persist() { const text = JSON.stringify(report, null, 2); assert.ok(![...secrets, ...tickets].some(secret => text.includes(secret)), 'evidence contains no secrets'); await writeFile(path.join(output, 'results.json'), text); }
@@ -58,9 +58,9 @@ async function setup() {
   await mkdir(output, { recursive: true }); await mkdir(tempParent, { recursive: true });
   temporary = await mkdtemp(path.join(tempParent, 'offline-browser-'));
   const isolated = path.join(temporary, 'app'); await mkdir(isolated);
-  for (const name of ['server.mjs', 'indexer.mjs', 'download-tickets.mjs', 'social-watermark.mjs']) await copyFile(path.join(appDir, name), path.join(isolated, name));
+  for (const name of ['server.mjs', 'indexer.mjs', 'download-tickets.mjs', 'annotation-sync.mjs', 'social-watermark.mjs']) await copyFile(path.join(appDir, name), path.join(isolated, name));
   await cp(path.join(appDir, 'public'), path.join(isolated, 'public'), { recursive: true, filter: file => !['uploads', 'ocr'].some(name => file === path.join(appDir, 'public', name) || file.startsWith(path.join(appDir, 'public', name) + path.sep)) });
-  const sourceFiles = ['server.mjs', 'indexer.mjs', 'download-tickets.mjs', 'social-watermark.mjs', 'public/app.js', 'public/index.html', 'public/offline.mjs', 'public/downloads.mjs', 'public/sw.js', 'public/epub-engine.mjs', 'public/styles.css', 'public/i18n.mjs', 'public/citations.mjs'];
+  const sourceFiles = ['server.mjs', 'indexer.mjs', 'download-tickets.mjs', 'annotation-sync.mjs', 'social-watermark.mjs', 'public/app.js', 'public/index.html', 'public/offline.mjs', 'public/downloads.mjs', 'public/sw.js', 'public/epub-engine.mjs', 'public/styles.css', 'public/i18n.mjs', 'public/citations.mjs'];
   for (const file of sourceFiles) { const bytes = await readFile(path.join(isolated, file)); assert.equal(sha(bytes), sha(await readFile(path.join(appDir, file)))); report.source[file] = sha(bytes); }
   await mkdir(path.join(isolated, 'public/seed'), { recursive: true });
   for (const fixture of fixtures) await writeFile(path.join(isolated, 'public/seed', fixture.filename), fixture.format === 'epub' ? await epub() : await pdf(fixture.original));
@@ -81,7 +81,7 @@ async function setup() {
   await admin.query("insert into users(id,tenant_id,email,display_name,role,password_hash,max_sessions) values($1,$2,$3,$3,'reader',$4,10)",[secondUserId,tenantId,secondEmail,hash]);
   for (const fixture of fixtures.slice(1)) { await admin.query('insert into works(id,tenant_id,title,language) values($1,$2,$3,\'en\')', [fixture.id, tenantId, fixture.title]); await admin.query('insert into editions(id,tenant_id,work_id) values($1,$2,$3)', [fixture.edition, tenantId, fixture.id]); await admin.query('insert into assets(id,tenant_id,edition_id,format,storage_key,watermark,allow_download,page_count) values($1,$2,$3,$4,$5,false,true,1)', [fixture.asset, tenantId, fixture.edition, fixture.format, 'seed/' + fixture.filename]); }
   const appPort = await freePort(); base = `http://127.0.0.1:${appPort}`;
-  const env = { ...process.env, DATABASE_URL: `postgres://akademik_app:${appPassword}@127.0.0.1:${port}/browser_test`, PORT: String(appPort), SESSION_SECRET: sessionSecret, DEMO_TENANT_ID: tenantId, NODE_ENV: 'test', NODE_OPTIONS: '', APP_VERSION: '120' }; delete env.SOCIAL_DRM_B2B;
+  const env = { ...process.env, DATABASE_URL: `postgres://akademik_app:${appPassword}@127.0.0.1:${port}/browser_test`, PORT: String(appPort), SESSION_SECRET: sessionSecret, DEMO_TENANT_ID: tenantId, NODE_ENV: 'test', NODE_OPTIONS: '', APP_VERSION: '121' }; delete env.SOCIAL_DRM_B2B;
   app = spawn(process.execPath, ['server.mjs'], { cwd: isolated, env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true }); app.on('error', e => { appLog += redact(e); }); for (const stream of [app.stdout, app.stderr]) stream.on('data', bytes => appLog = (appLog + bytes).slice(-12000));
   await until('app ready', async () => { assert.equal(app.exitCode, null, redact(appLog)); return (await fetch(base + '/api/health')).ok; });
   browser = await chromium.launch({ channel: 'msedge', headless: true }); report.browser = browser.version();
@@ -112,8 +112,8 @@ async function captureBook(fixture) {
 }
 async function shellReady() {
   await page.evaluate(async () => { await navigator.serviceWorker.ready; if (!navigator.serviceWorker.controller) await new Promise(resolve => navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true })); });
-  await until('SW12 complete required shell', () => page.evaluate(async () => { const cache = await caches.open('akademik-shell-v12'); const required = ['/', '/app.js', '/downloads.mjs', '/offline.mjs', '/vendor/pdfjs/pdf.mjs', '/vendor/pdfjs/pdf.worker.mjs', '/vendor/epubjs/jszip.min.js', '/vendor/epubjs/epub.min.js', '/epub-engine.mjs']; return (await Promise.all(required.map(file => cache.match(file, { ignoreSearch: true })))).every(Boolean); }));
-  return { cache: 'akademik-shell-v12', controller: await page.evaluate(() => Boolean(navigator.serviceWorker.controller)) };
+  await until('SW13 complete required shell', () => page.evaluate(async () => { const cache = await caches.open('akademik-shell-v13'); const required = ['/', '/app.js', '/downloads.mjs', '/offline.mjs', '/vendor/pdfjs/pdf.mjs', '/vendor/pdfjs/pdf.worker.mjs', '/vendor/epubjs/jszip.min.js', '/vendor/epubjs/epub.min.js', '/epub-engine.mjs']; return (await Promise.all(required.map(file => cache.match(file, { ignoreSearch: true })))).every(Boolean); }));
+  return { cache: 'akademik-shell-v13', controller: await page.evaluate(() => Boolean(navigator.serviceWorker.controller)) };
 }
 async function cleanup() {
   await context?.setOffline(false).catch(() => {}); await browser?.close().catch(() => {}); report.cleanup.browser = !browser || !browser.isConnected();
@@ -134,7 +134,7 @@ async function reloadOffline(){await page.evaluate(()=>history.replaceState(null
 async function loginAs(address){await page.locator('#loginScreen').waitFor({state:'visible'});await page.evaluate(()=>history.replaceState(null,'','/'));await page.locator('#loginEmail').fill(address);await page.locator('#loginPassword').fill(password);await page.locator('#loginPassword').press('Enter');await page.locator('#loginScreen').waitFor({state:'hidden'});await page.locator('#grid .card').first().waitFor();}
 async function logout(){await close();await Promise.all([page.waitForEvent('domcontentloaded'),page.locator('#logoutBtn').click()]);await page.locator('#loginScreen').waitFor({state:'visible'});assert.equal(await page.evaluate(()=>localStorage.getItem('offlineAnnotationUser')),null);}
 try {
- await setup();await stage('pdf-native-ticketed-offline-copy',()=>captureBook(fixtures[0]));await stage('epub-native-ticketed-offline-copy',()=>captureBook(fixtures[1]));await stage('serviceworker-v12-complete-shell',shellReady);
+ await setup();await stage('pdf-native-ticketed-offline-copy',()=>captureBook(fixtures[0]));await stage('epub-native-ticketed-offline-copy',()=>captureBook(fixtures[1]));await stage('serviceworker-v13-complete-shell',shellReady);
  for(const f of fixtures.slice(0,2)){
   await context.setOffline(true);await open(f);
   await stage(f.format+'-unsent-bookmark-toggle-cancels-create',async()=>{await toggle(true);let x=await local(f);assert.equal(x.ops.length,1);assert.equal(x.ops[0].type,'create');assert.equal(x.ops[0].ownerId,userId);assert.equal(x.notes[0].color,'bookmark');await toggle(false);x=await local(f);assert.equal(x.ops.length,0);assert.equal(x.notes.length,0);assert.equal((await dbMarks(f)).length,0);return{nativeAtomicQueue:true,noServerWrite:true};});
@@ -161,17 +161,17 @@ try {
   await close();
  }
  await stage('http-failures-retain-bookmark-until-retry',async()=>{
-  const f=fixtures[0];await open(f);let code=401,hits=0;const observed=[];await page.route('**/api/annotations',route=>{if(route.request().method()==='POST'){hits++;observed.push(code);return route.fulfill({status:code,contentType:'application/json',body:'{}'});}return route.continue();});await toggle(true);await until('first controlled failure',()=>hits>0);await until('retained after first failure',async()=>(await local(f)).ops.length===1);
+  const f=fixtures[0];await open(f);let code=401,hits=0;const observed=[];await page.route('**/api/annotations/v1',route=>{if(route.request().method()==='POST'){hits++;observed.push(code);return route.fulfill({status:code,contentType:'application/json',body:'{}'});}return route.continue();});await toggle(true);await until('first controlled failure',()=>hits>0);await until('retained after first failure',async()=>(await local(f)).ops.length===1);
   for(const status of[403,429,500]){code=status;await page.evaluate(async owner=>(await import('/offline.mjs')).syncAnnotationOperations(owner),userId);assert.equal((await local(f)).ops.length,1);assert.equal((await dbMarks(f)).length,0);}
-  assert.deepEqual(observed,[401,403,429,500]);await page.unroute('**/api/annotations');await page.evaluate(async owner=>(await import('/offline.mjs')).syncAnnotationOperations(owner),userId);assert.equal((await dbMarks(f)).length,1);assert.equal((await local(f)).ops.length,0);await toggle(false);await until('retry fixture deleted',async()=>(await dbMarks(f)).length===0);await close();return{controlledStatuses:observed,draftRetained:true,realPostgresRetry:true,staleUiAliasDeletion:true};
+  assert.deepEqual(observed,[401,403,429,500]);await page.unroute('**/api/annotations/v1');await page.evaluate(async owner=>(await import('/offline.mjs')).syncAnnotationOperations(owner),userId);assert.equal((await dbMarks(f)).length,1);assert.equal((await local(f)).ops.length,0);await toggle(false);await until('retry fixture deleted',async()=>(await dbMarks(f)).length===0);await close();return{controlledStatuses:observed,draftRetained:true,realPostgresRetry:true,staleUiAliasDeletion:true};
  });
  // Hold A's queue with an explicit 403 until the real logout/login completes.
  await context.setOffline(true);for(const f of fixtures.slice(0,2)){await open(f);await toggle(true);await close();}
  assert.equal((await local(fixtures[0])).ops.length,2);
- await page.route('**/api/annotations',route=>route.request().method()==='POST'&&route.request().postDataJSON()?.ownerId===userId?route.fulfill({status:403,contentType:'application/json',body:'{}'}):route.continue());
- await context.setOffline(false);await page.reload();await page.locator('#logoutBtn').waitFor();await logout();await loginAs(secondEmail);await page.unroute('**/api/annotations');
+ await page.route('**/api/annotations/v1',route=>route.request().method()==='POST'&&route.request().postDataJSON()?.ownerId===userId?route.fulfill({status:403,contentType:'application/json',body:'{}'}):route.continue());
+ await context.setOffline(false);await page.reload();await page.locator('#logoutBtn').waitFor();await logout();await loginAs(secondEmail);await page.unroute('**/api/annotations/v1');
  for(const f of fixtures.slice(0,2)){
-  const r=await api('/api/annotations',{method:'POST',data:{assetId:f.asset,anchor:f.anchor,color:'bookmark',note:'B own bookmark',ownerId:secondUserId}});assert.equal(r.status(),201);
+  const r=await api('/api/annotations',{method:'POST',data:{operationId:randomUUID(),assetId:f.asset,anchor:f.anchor,color:'bookmark',note:'B own bookmark',ownerId:secondUserId}});assert.equal(r.status(),201);
   await open(f);await page.evaluate(async({asset,owner})=>{const r=await fetch('/api/annotations?assetId='+asset);await(await import('/offline.mjs')).cacheServerAnnotations(asset,await r.json(),owner);},{asset:f.asset,owner:secondUserId});await close();
  }
  await context.setOffline(true);await reloadOffline();

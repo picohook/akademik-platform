@@ -1,0 +1,137 @@
+{
+  "runId": "9f1b22c5-f363-4fa4-adbf-27c73b8ad66b",
+  "startedAt": "2026-10-24T00:54:36.461Z",
+  "version": 121,
+  "status": "failed",
+  "source": {
+    "server.mjs": "a8f27a920c065579e1bb0686505a1b680bdae2145859a64903cb86e37bdc957d",
+    "indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+    "download-tickets.mjs": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+    "annotation-sync.mjs": "8a3ccd5668be93e1bcfa33c5cbb701e70e25d1e0fa0998ac577ed3f38a038f77",
+    "social-watermark.mjs": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+    "public/app.js": "e277ccf95ff322e382ac3da57ff5ed76142835ec18b6851682e5d93f046acc24",
+    "public/index.html": "a819c94c031d08bc025bcef185db8db593af06fabdceac6d9869122bbe88aac8",
+    "public/offline.mjs": "06a04f20cbb160545d89d03d08e2ea7665cd351463e8cfd89b45142e257fa168",
+    "public/downloads.mjs": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+    "public/sw.js": "90d7e5083daaa5d657f1c46f0d34e8d4a98f23e9eced78518d0a1cca0b005260",
+    "public/epub-engine.mjs": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885",
+    "public/styles.css": "a1d87008bb5c518fd8047c077ac8438a0a3a0e0cf5f97859858a371daae95ee9",
+    "public/i18n.mjs": "45b13847d32fcb3ee4ba02213f243396c6d499015fb73b2f57e7d8aa1195975d",
+    "public/citations.mjs": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+    "db/schema.sql": "182e0b2d9edbfce846ac74a1c84d559b779371e6f8b746ec138d297a8b8358ab",
+    "db/seed.sql": "b8d845cea00579ccd0b13fcbb94e9d050c42d1fff736ec4dd36e1137f67ce587",
+    "db/migrations/015-annotation-sync.sql": "d43ce4afec836511f5f8c01abb55d67cfb13671232e7dd511da331581acee176"
+  },
+  "cases": [
+    {
+      "reappliedTwice": true,
+      "versionPreserved": true,
+      "forcedRls": true,
+      "id": "migration-015-reapply-retains-data-and-rls",
+      "status": "PASS"
+    },
+    {
+      "previousSchema": true,
+      "doubleApply": true,
+      "noteRetained": true,
+      "id": "legacy-v120-schema-upgrade-preserves-notes",
+      "status": "PASS"
+    },
+    {
+      "missingOperation": 428,
+      "missingPatchVersion": 428,
+      "missingDeleteVersion": 428,
+      "id": "api-requires-operation-and-cas-preconditions",
+      "status": "PASS"
+    },
+    {
+      "requests": 12,
+      "processes": 2,
+      "serverRows": 1,
+      "receiptRows": 1,
+      "mismatchedPayload": 409,
+      "id": "two-process-concurrent-create-idempotency-and-key-misuse",
+      "status": "PASS"
+    },
+    {
+      "id": "two-process-cas-one-winner-one-conflict-and-receipt-replay",
+      "status": "FAIL",
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n    200,\n+   500\n-   409\n  ]\n\n    at file:///C:/Users/OWNER/Documents/deepseek-harness/default-workspace/akademik-platform/spike/app/test/annotation-sync.integration.mjs:154:246\n    at async stage (file:///C:/Users/OWNER/Documents/deepseek-harness/default-workspace/akademik-platform/spike/app/test/annotation-sync.integration.mjs:43:59)\n    at async file:///C:/Users/OWNER/Documents/deepseek-harness/default-workspace/akademik-platform/spike/app/test/annotation-sync.integration.mjs:154:2"
+    }
+  ],
+  "cleanup": {
+    "browser": true,
+    "app": true,
+    "secondServer": true,
+    "database": true,
+    "temporaryCopy": true
+  },
+  "limitations": [
+    "Owned PostgreSQL/two Node processes and real Edge contexts; not production, large files or human screen-reader acceptance.",
+    "Isolated owned PostgreSQL and real Edge; production/dev services untouched.",
+    "401/403/429/500 retry and retaining A queue during account switch use explicitly controlled HTTP failures."
+  ],
+  "postgresImage": "sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea",
+  "databaseRole": {
+    "rolsuper": false,
+    "rolbypassrls": false
+  },
+  "browser": "155.0.4283.45",
+  "login": "real API login with browser cookie jar, followed by actual UI offline card clicks",
+  "fixture": {
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "userId": "fbf038b7-f031-4844-b841-fcc2c2d3a229",
+    "email": "offline-reader@browser.test",
+    "books": [
+      {
+        "id": "33333333-3333-3333-3333-333333333333",
+        "asset": "55555555-5555-5555-5555-555555555555",
+        "title": "Browser PDF fixture",
+        "format": "pdf",
+        "filename": "browser.pdf",
+        "original": "Original offline PDF fixture"
+      },
+      {
+        "id": "205f9f56-f0d0-4ddb-b7cb-44e8e7075b2c",
+        "asset": "ca5e8b3d-ef86-479f-b9e8-eaaad66f96c5",
+        "title": "Browser EPUB fixture",
+        "format": "epub",
+        "filename": "browser.epub",
+        "original": "Original offline EPUB fixture"
+      },
+      {
+        "id": "d28c3deb-3ac4-40d4-bf42-5f377ab24c9a",
+        "asset": "2793fd4e-d05d-4b03-a5ec-b66148411e0a",
+        "title": "Browser quota rate fixture",
+        "format": "pdf",
+        "filename": "quota.pdf",
+        "original": "Original quota fixture"
+      }
+    ],
+    "b2bEnvironment": "unset; secure default exercised",
+    "watermarkMetadata": false
+  },
+  "appLog": "[db] PostgreSQL pool created\n[web] http://localhost:61781 (db mode)\n[db] PostgreSQL pool created\n[web] http://localhost:55985 (db mode)\n[request] error: null value in column \"response_body\" of relation \"annotation_operations\" violates not-null constraint\n    at C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\spike\\app\\node_modules\\pg\\lib\\client.js:694:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async mutateAnnotation (file:///C:/Users/OWNER/Documents/deepseek-harness/default-workspace/akademik-platform/spike/app/tmp/offline-browser-e6RcC2/app/annotation-sync.mjs:74:3)\n    at async withTenant (file:///C:/Users/OWNER/Documents/deepseek-harness/default-workspace/akademik-platform/spike/app/tmp/offline-browser-e6RcC2/app/server.mjs:116:12)\n    at async Server.<anonymous> (file:///C:/Users/OWNER/Documents/deepseek-harness/default-workspace/akademik-platform/spike/app/tmp/offline-browser-e6RcC2/app/server.mjs:2557:22) {\n  length: 210,\n  severity: 'ERROR',\n  code: '23502',\n  detail: undefined,\n  hint: undefined,\n  position: undefined,\n  internalPosition: undefined,\n  internalQuery: undefined,\n  where: undefined,\n  schema: 'public',\n  table: 'annotation_operations',\n  column: 'response_body',\n  dataType: undefined,\n  constraint: undefined,\n  file: 'execMain.c',\n  line: '2057',\n  routine: 'ExecConstraints'\n}\n",
+  "completedAt": "2026-10-24T00:54:59.517Z",
+  "requests": [],
+  "browserErrors": [],
+  "sourceStillMatches": {
+    "server.mjs": true,
+    "indexer.mjs": true,
+    "download-tickets.mjs": true,
+    "annotation-sync.mjs": true,
+    "social-watermark.mjs": true,
+    "public/app.js": true,
+    "public/index.html": true,
+    "public/offline.mjs": true,
+    "public/downloads.mjs": true,
+    "public/sw.js": true,
+    "public/epub-engine.mjs": true,
+    "public/styles.css": true,
+    "public/i18n.mjs": true,
+    "public/citations.mjs": true,
+    "db/schema.sql": true,
+    "db/seed.sql": true,
+    "db/migrations/015-annotation-sync.sql": true
+  }
+}
