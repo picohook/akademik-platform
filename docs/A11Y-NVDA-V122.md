@@ -1,6 +1,6 @@
 # v122 — NVDA + Edge manuel kabul oturumu
 
-**Durum: NOT RUN — gerçek kullanıcı konuşma gözlemi bekleniyor.** Bu formdaki adımlar otomatik olarak geçti sayılmaz. Ürün sahibi Windows/NVDA + Edge ortamını seçti; VoiceOver ayrı testtir.
+**Durum: IN PROGRESS — S01 hata duyurusu kullanıcı tarafından doğrulandı; diğer konuşma kontrolleri açık.** Bu formdaki adımlar otomatik olarak geçti sayılmaz. Ürün sahibi Windows/NVDA + Edge ortamını seçti; VoiceOver ayrı testtir.
 
 ## Hazırlık
 
@@ -41,11 +41,11 @@
 
 ## Sonuç formu
 
-Her satıra PASS / FAIL / NOT RUN; gerçekten duyulan metin, klavye adımları ve kanıt dosyası ekle. Hata varsa etkiyi (engelleyici/ciddi/orta/düşük), yeniden üretim adımlarını ve sürümü yaz. Beklenen metni kopyalamak gözlem değildir.
+Her satıra PASS / FAIL / IN PROGRESS / NOT RUN; gerçekten duyulan metin, klavye adımları ve kanıt dosyası ekle. Hata varsa etkiyi (engelleyici/ciddi/orta/düşük), yeniden üretim adımlarını ve sürümü yaz. Beklenen metni kopyalamak gözlem değildir.
 
 | ID | Sonuç | Duyulan / fiilen olan | Kanıt / etki |
 | --- | --- | --- | --- |
-| S01 | NOT RUN | — | — |
+| S01 | IN PROGRESS — hata duyurusu PASS | Kullanıcı önce “okuyor, alert”, ardından “okuyor tüm mesajı” bildirdi. Tam hata mesajı NVDA ile duyuluyor; birebir mesaj dökümü verilmedi. | Kullanıcı gözlemi, 2026-10-24; Edge 155.0.4283.45 64-bit / NVDA 2026.2 (2026.2.0.57664). Başlık/alan adları, parola gizliliği ve başarılı giriş ayrıca bekleniyor. |
 | S02 | NOT RUN | — | — |
 | S03 | NOT RUN | — | — |
 | S04 | NOT RUN | — | — |

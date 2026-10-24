@@ -203,3 +203,8 @@ Two observations are queued for the real NVDA session rather than declared WCAG 
 ### Manual environment reported — 2026-10-24
 
 The product owner reports Edge **155.0.4283.45 (Official build), 64-bit** and NVDA **2026.2 (2026.2.0.57664)** on the selected Windows environment. This is user-reported environment metadata, not a completed speech observation. Windows version, voice/language configuration and the actual S01 login-error announcement were not supplied. S01 remains **NOT RUN / result not reported**; no PASS or FAIL inferred. Historical automated evidence and manifests are unchanged.
+
+
+### S01 partial speech observation — 2026-10-24
+
+On the reported Edge **155.0.4283.45 (64-bit)** / NVDA **2026.2 (2026.2.0.57664)** environment, the user first reported “okuyor, alert”, then clarified “okuyor tüm mesajı”. **Login-error announcement subcheck: PASS (user-reported)** — the full error message is spoken. No verbatim error-message transcript, recording or independent agent speech run was supplied; automatic timing versus navigation-triggered reading was not separately reported. This does not establish the rest of S01: heading/field names, password privacy and successful login still need observations. S01 is **IN PROGRESS** and the overall ACR stays OPEN; criterion-wide statuses and historical evidence manifests are unchanged.
