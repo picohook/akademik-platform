@@ -86,33 +86,45 @@ export async function mutateAnnotation(client, context) {
 export async function purgeAnnotationReceipts(client, { tenantId, retentionDays = 90, tombstoneDays = 365, limit = 1000 }) {
   const retention = Math.max(1, Math.trunc(retentionDays));
   const tombstoneRetention = Math.max(retention, Math.trunc(tombstoneDays));
+  // Do not use SELECT ... FOR UPDATE here: that would require UPDATE privilege
+  // and an UPDATE RLS policy for the application role. A transaction advisory
+  // lock gives one maintenance runner per tenant; normal writes are unaffected.
+  const lock = await client.query(
+    "select pg_try_advisory_xact_lock(hashtextextended($1, 0)) as acquired",
+    [`annotation-retention:${tenantId}`],
+  );
+  if (!lock.rows[0]?.acquired) {
+    return { skipped: true, receiptsMoved: 0, receiptsDeleted: 0, tombstonesDeleted: 0,
+      retentionDays: retention, tombstoneDays: tombstoneRetention };
+  }
   const stale = `select tenant_id, user_id, operation_id, request_hash, method, annotation_id, created_at
                    from annotation_operations
                   where tenant_id = $1 and created_at < clock_timestamp() - ($2::int * interval '1 day')
                   order by created_at
-                  limit $3
-                  for update skip locked`;
+                  limit $3`;
+  // INSERT ... RETURNING would require tombstone SELECT visibility for the
+  // maintenance role. rowCount is enough; the delete below is keyed by the
+  // same selected rows.
   const moved = await client.query(`
     with stale as (${stale})
     insert into annotation_operation_tombstones
       (tenant_id, user_id, operation_id, request_hash, method, annotation_id, created_at, purged_at)
     select tenant_id, user_id, operation_id, request_hash, method, annotation_id, created_at, clock_timestamp()
       from stale
-    on conflict (tenant_id, user_id, operation_id) do nothing
-    returning operation_id`, [tenantId, retention, limit]);
+    on conflict (tenant_id, user_id, operation_id) do nothing`, [tenantId, retention, limit]);
   const deleted = await client.query(`
     with stale as (${stale})
     delete from annotation_operations operations using stale
      where operations.tenant_id = stale.tenant_id
        and operations.user_id = stale.user_id
-       and operations.operation_id = stale.operation_id
-    returning operations.operation_id`, [tenantId, retention, limit]);
+       and operations.operation_id = stale.operation_id`, [tenantId, retention, limit]);
   const expiredTombstones = await client.query(
     `delete from annotation_operation_tombstones
       where tenant_id = $1 and purged_at < clock_timestamp() - ($2::int * interval '1 day')`,
     [tenantId, tombstoneRetention],
   );
   return {
+    skipped: false,
     receiptsMoved: moved.rowCount,
     receiptsDeleted: deleted.rowCount,
     tombstonesDeleted: expiredTombstones.rowCount,

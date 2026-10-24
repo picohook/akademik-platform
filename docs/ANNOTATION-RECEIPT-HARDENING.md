@@ -1,6 +1,6 @@
 # Annotation receipt retention and RLS — v122 hardening
 
-**2026-10-24 independent review: HOLD.** Real restored-PostgreSQL app-role purge fails (privilege/RLS), and writable v121 rollback can replay tombstoned POSTs into duplicate notes. Prod remains v121; migration 016 was applied only to an isolated backup copy. [Findings and evidence](ANNOTATION-RECEIPT-HARDENING-REVIEW-2026-10-24.md). The design claims below predate that verification.
+**2026-10-24 independent review: HOLD; blockers fixed in the current working tree, re-test pending.** The review found app-role purge privilege/RLS failures and writable v121 rollback replaying tombstoned POSTs. The purge no longer uses `FOR UPDATE`; a v121 write for a tombstoned operation is now rejected by a DB trigger. Prod remains v121; migration 016 was applied only to an isolated backup copy. [Findings and evidence](ANNOTATION-RECEIPT-HARDENING-REVIEW-2026-10-24.md).
 
 This package closes the two v121 follow-ups:
 
@@ -24,14 +24,20 @@ Defaults (configurable):
 
 The maintenance job runs once after 60 seconds and then every 6 hours. It:
 
-1. Locks up to 1 000 expired receipt rows with `FOR UPDATE SKIP LOCKED`.
-2. Copies only `operation_id`, request hash, method, annotation id and timestamps
-   to `annotation_operation_tombstones`.
-3. Deletes the full receipt, including its note response body.
-4. Deletes tombstones older than the tombstone window.
+1. Acquires a tenant-scoped transaction advisory lock; a concurrent run returns
+   `skipped` without touching rows.
+2. Selects up to 1 000 expired receipts **without** `FOR UPDATE` (no UPDATE
+   privilege or UPDATE RLS policy is required).
+3. Copies only `operation_id`, request hash, method, annotation id and timestamps
+   to `annotation_operation_tombstones`. No `RETURNING` is used, so maintenance
+   does not need tombstone SELECT visibility.
+4. Deletes the full receipt, including its note response body.
+5. Deletes tombstones older than the tombstone window.
 
-`SKIP LOCKED` makes two Node processes safe to run concurrently. The tombstone
-insert and receipt delete are in one transaction.
+The advisory lock makes two Node processes safe; tombstone insert and receipt
+delete are in one transaction. The trigger on `annotation_operations` rejects an
+insert whose operation key is in an active tombstone, which protects a writable
+v121 rollback even though v121 does not know the tombstone protocol.
 
 If an offline client retries a purged operation:
 
@@ -58,8 +64,10 @@ select set_config('app.user_id', $1, true);
 - `app.maintenance = 'on'` allows the retention job to select rows.
 - If `app.user_id` is unset or empty, the policy falls back to tenant scope. This
   is required for a v120/v121 rollback: those servers do not set the new setting.
-  A v121 rollback therefore works with migration 016, but does not get the new
-  user-scoped defense. Re-deploy v122 to restore it.
+  A v121 rollback can still create **new** operations, but an insert for a key in
+  an active tombstone is rejected by the DB trigger and its transaction rolls
+  back. v121 returns a generic 500 for that case, not 410. It does not get the
+  user-scoped defense; re-deploy v122 to restore it.
 
 `annotation_operation_tombstones` is user-selectable, tenant-insertable and
 tenant-deletable for maintenance.
@@ -74,8 +82,9 @@ docker compose --env-file .env.production -f docker-compose.prod.yml exec -T db 
 ```
 
 Do **not** drop migration 016 on rollback. v120/v121 servers can still write
-receipts because of the unset-user fallback; re-deploy v122 to restore
-user-scoped RLS and the purge job.
+receipts for keys that have no tombstone, but a tombstoned key is rejected by the
+trigger and cannot recreate a deleted note. Re-deploy v122 to restore user-scoped
+RLS and the 410 response.
 
 ## Operational checks
 
@@ -106,7 +115,7 @@ failed`), and any `410 operation_expired` increase after a long offline period.
 ## Validation
 
 - `node --check` on server, sync module, offline module and reader.
-- Unit suite 64/64 (the two retention tests included).
+- Unit suite 65/65 (the three retention tests included).
 - Migration must be applied on a restored production copy before deployment;
   run a create/PATCH/DELETE receipt replay and a forced 410 path there.
 - Browser/Edge retention expiry is not practical to wait for; test by setting

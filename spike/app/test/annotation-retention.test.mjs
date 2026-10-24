@@ -21,6 +21,7 @@ test('retention moves full receipts to content-free tombstones', async () => {
   const client = {
     async query(sql, params) {
       calls.push({ sql, params });
+      if (sql.includes('pg_try_advisory_xact_lock')) return { rows: [{ acquired: true }] };
       if (sql.includes('insert into annotation_operation_tombstones')) return { rowCount: 2 };
       if (sql.includes('delete from annotation_operations')) return { rowCount: 2 };
       if (sql.includes('delete from annotation_operation_tombstones')) return { rowCount: 1 };
@@ -31,13 +32,29 @@ test('retention moves full receipts to content-free tombstones', async () => {
     tenantId: TENANT, retentionDays: 90, tombstoneDays: 365, limit: 500,
   });
   assert.deepEqual(result, {
-    receiptsMoved: 2, receiptsDeleted: 2, tombstonesDeleted: 1,
+    skipped: false, receiptsMoved: 2, receiptsDeleted: 2, tombstonesDeleted: 1,
     retentionDays: 90, tombstoneDays: 365,
   });
-  assert.equal(calls.length, 3);
-  assert.match(calls[0].sql, /for update skip locked/);
-  assert.equal(calls[0].params[1], 90);
-  assert.equal(calls[0].params[2], 500);
+  assert.equal(calls.length, 4);
+  assert.match(calls[0].sql, /pg_try_advisory_xact_lock/);
+  assert.doesNotMatch(calls[1].sql, /for update/i);
+  assert.match(calls[1].sql, /on conflict .* do nothing/);
+  assert.equal(calls[1].params[1], 90);
+  assert.equal(calls[1].params[2], 500);
+});
+
+test('a concurrent maintenance run skips without deleting receipts', async () => {
+  const calls = [];
+  const client = {
+    async query(sql) {
+      calls.push(sql);
+      if (sql.includes('pg_try_advisory_xact_lock')) return { rows: [{ acquired: false }] };
+      throw new Error(`unexpected query: ${sql}`);
+    },
+  };
+  const result = await purgeAnnotationReceipts(client, { tenantId: TENANT });
+  assert.equal(result.skipped, true);
+  assert.equal(calls.length, 1);
 });
 
 test('a purged operation returns 410 without mutating annotations', async () => {

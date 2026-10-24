@@ -79,4 +79,4 @@ Receipt not metninin silme sonrası saklanması ve büyüme politikası çözül
 
 ## v122 hardening
 
-v122 closes these two follow-ups: 90-day full receipts followed by content-free 365-day operation tombstones, user-scoped receipt RLS, and **410 `operation_expired`** for old offline retries (local draft preserved). See [ANNOTATION-RECEIPT-HARDENING.md](ANNOTATION-RECEIPT-HARDENING.md). Migration 016 must run before the v122 server; v121 rollback remains compatible through the unset-user policy fallback but does not get the new user-scoped defense.
+v122 closes these two follow-ups: 90-day full receipts followed by content-free 365-day operation tombstones, user-scoped receipt RLS, and **410 `operation_expired`** for old offline retries (local draft preserved). See [ANNOTATION-RECEIPT-HARDENING.md](ANNOTATION-RECEIPT-HARDENING.md). Migration 016 must run before the v122 server. A v121 rollback can create new operations, but an insert for a tombstoned operation key is rejected by a DB trigger, so it cannot recreate a deleted note; it returns 500 for that case and does not get the 410/user-scoped defense until v122 is restored.

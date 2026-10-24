@@ -59,12 +59,36 @@ drop policy if exists annotation_operation_tombstones_tenant_delete on annotatio
 create policy annotation_operation_tombstones_user_select on annotation_operation_tombstones
   for select using (
     tenant_id = current_setting('app.tenant_id', true)::uuid
-    and user_id = nullif(current_setting('app.user_id', true), '')::uuid
+    and (
+      nullif(current_setting('app.user_id', true), '') is null
+      or user_id = nullif(current_setting('app.user_id', true), '')::uuid
+    )
   );
 create policy annotation_operation_tombstones_tenant_insert on annotation_operation_tombstones
   for insert with check (tenant_id = current_setting('app.tenant_id', true)::uuid);
 create policy annotation_operation_tombstones_tenant_delete on annotation_operation_tombstones
   for delete using (tenant_id = current_setting('app.tenant_id', true)::uuid);
 grant select, insert, delete on annotation_operation_tombstones to akademik_app;
+
+-- A v120/v121 server does not know about tombstones. Block its receipt INSERT
+-- for an expired operation so its surrounding transaction rolls back instead of
+-- recreating a deleted note. v122 normally returns 410 before reaching this.
+create or replace function reject_expired_annotation_operation() returns trigger language plpgsql as $$
+begin
+  if exists (
+    select 1 from annotation_operation_tombstones
+     where tenant_id = new.tenant_id
+       and user_id = new.user_id
+       and operation_id = new.operation_id
+  ) then
+    raise exception 'annotation operation expired' using errcode = 'P0001';
+  end if;
+  return new;
+end
+$$;
+drop trigger if exists annotation_operations_tombstone_guard on annotation_operations;
+create trigger annotation_operations_tombstone_guard
+  before insert on annotation_operations
+  for each row execute function reject_expired_annotation_operation();
 
 commit;
