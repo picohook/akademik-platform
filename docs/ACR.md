@@ -8,7 +8,7 @@
 - Hedef: WCAG 2.2 A/AA. Aşağıda **55 kriterin tamamı** bulunur; 4.1.1 WCAG 2.2’den çıkarıldığı için bu matrise dahil değildir.
 - Kapsam: login, katalog, modallar, PDF/EPUB okuyucu, seçim/kopyalama/not/yer imi, offline ve çatışma/410 durumları. Yayın içeriği örnekleri arayüzden ayrı kayıtlanır; tüm yayınların erişilebilir olduğu varsayılmaz.
 - Ortam: Windows 25H2 build 26200.9711, Edge 155.0.4283.45, axe-core 4.13.0. Güncel otomasyon headless Edge kullanır; gerçek NVDA kabulünün yerine geçmez.
-- Seçilen manuel ortam: **NVDA + Edge / Windows** (ürün sahibi). NVDA sürümü, ses/sentezleyici, TR/EN ayarları ve test eden kişi henüz bildirilmedi.
+- Seçilen manuel ortam: **NVDA + Edge / Windows** (ürün sahibi). Kullanıcı 2026-10-24 tarihinde **Edge 155.0.4283.45 (Official build), 64-bit** ve **NVDA 2026.2 (2026.2.0.57664)** bildirdi. Windows sürümü, ses/sentezleyici, TR/EN ayarları ve test eden kişi henüz kaydedilmedi. Sürüm bildirimi konuşma testi sonucu değildir; S01 gözlemi bekleniyor.
 - VoiceOver + Safari: **NOT RUN**, Windows kapsamında yok; ayrı ortam kabulü gerektirir.
 
 ## Kanıt ve durum kullanımı

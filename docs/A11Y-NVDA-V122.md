@@ -14,7 +14,9 @@
 | --- | --- |
 | Test eden / tarih / saat | DOLDURULACAK |
 | Ürün / commit | v122 / 8b598a3; gerçekten görülen sürümü teyit et |
-| Windows / Edge / NVDA sürümleri | DOLDURULACAK |
+| Windows sürümü | DOLDURULACAK; Windows ortamı kullanıcı tarafından seçildi |
+| Edge sürümü | 155.0.4283.45 (Official build), 64-bit — kullanıcı bildirimi, 2026-10-24 |
+| NVDA sürümü | 2026.2 (2026.2.0.57664) — kullanıcı bildirimi, 2026-10-24 |
 | NVDA dil / sentezleyici / ses / konuşma hızı | DOLDURULACAK |
 | Ekran ölçeği / tarayıcı zoom | DOLDURULACAK |
 | PDF / EPUB adı, dil, metin/OCR ve içerik özellikleri | DOLDURULACAK |

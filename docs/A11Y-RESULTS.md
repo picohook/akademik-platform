@@ -198,3 +198,8 @@ Pinned source **8b598a3**, CSS45/SW14; actual deployed image hashes match all 14
 Two observations are queued for the real NVDA session rather than declared WCAG failures: six reader icon controls have glyph primary AX names and descriptive title text in AX descriptions; the footer/Shortcuts remains in the AX tree while main is inert. Verify announcement clarity and modal browse-mode isolation in S04/S05.
 
 [Summary](a11y-evidence/v122-2026-10-24/summary.json), [final results](a11y-evidence/v122-2026-10-24/final/results.json), [first attempt](a11y-evidence/v122-2026-10-24/first-attempt/results.json), [manual S01–S12 form](A11Y-NVDA-V122.md), [55-criterion ACR draft](ACR.md). **Overall record stays OPEN; no WCAG AA conformance or completed VPAT is asserted.**
+
+
+### Manual environment reported — 2026-10-24
+
+The product owner reports Edge **155.0.4283.45 (Official build), 64-bit** and NVDA **2026.2 (2026.2.0.57664)** on the selected Windows environment. This is user-reported environment metadata, not a completed speech observation. Windows version, voice/language configuration and the actual S01 login-error announcement were not supplied. S01 remains **NOT RUN / result not reported**; no PASS or FAIL inferred. Historical automated evidence and manifests are unchanged.
