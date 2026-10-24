@@ -375,8 +375,8 @@ drop trigger if exists annotations_version on annotations;
 create trigger annotations_version before update on annotations
   for each row execute function bump_annotation_version();
 
--- Receipts intentionally survive annotation deletion and have no expiry: an
--- arbitrarily old offline retry must not recreate a previously deleted note.
+-- Receipts preserve idempotency; full note content is retained for a bounded
+-- window, then replaced by a content-free tombstone (migration 016).
 create table if not exists annotation_operations (
   tenant_id uuid not null references tenants(id) on delete cascade,
   user_id uuid not null references users(id) on delete cascade,
@@ -389,11 +389,58 @@ create table if not exists annotation_operations (
   created_at timestamptz not null default now(),
   primary key (tenant_id, user_id, operation_id)
 );
+create index if not exists annotation_operations_created
+  on annotation_operations (tenant_id, created_at);
 alter table annotation_operations enable row level security;
 alter table annotation_operations force row level security;
 drop policy if exists annotation_operations_tenant on annotation_operations;
-create policy annotation_operations_tenant on annotation_operations
-  using (tenant_id = current_setting('app.tenant_id', true)::uuid)
-  with check (tenant_id = current_setting('app.tenant_id', true)::uuid);
-grant select, insert on annotation_operations to akademik_app;
+drop policy if exists annotation_operations_user_select on annotation_operations;
+drop policy if exists annotation_operations_user_insert on annotation_operations;
+drop policy if exists annotation_operations_tenant_delete on annotation_operations;
+create policy annotation_operations_user_select on annotation_operations
+  for select using (
+    tenant_id = current_setting('app.tenant_id', true)::uuid
+    and (
+      nullif(current_setting('app.user_id', true), '') is null
+      or user_id = nullif(current_setting('app.user_id', true), '')::uuid
+      or current_setting('app.maintenance', true) = 'on'
+    )
+  );
+create policy annotation_operations_user_insert on annotation_operations
+  for insert with check (
+    tenant_id = current_setting('app.tenant_id', true)::uuid
+    and (
+      nullif(current_setting('app.user_id', true), '') is null
+      or user_id = nullif(current_setting('app.user_id', true), '')::uuid
+    )
+  );
+create policy annotation_operations_tenant_delete on annotation_operations
+  for delete using (tenant_id = current_setting('app.tenant_id', true)::uuid);
+
+create table if not exists annotation_operation_tombstones (
+  tenant_id uuid not null references tenants(id) on delete cascade,
+  user_id uuid not null references users(id) on delete cascade,
+  operation_id uuid not null,
+  request_hash text not null check (request_hash ~ '^[0-9a-f]{64}$'),
+  method text not null check (method in ('POST', 'PATCH', 'DELETE')),
+  annotation_id uuid not null,
+  created_at timestamptz not null,
+  purged_at timestamptz not null default now(),
+  primary key (tenant_id, user_id, operation_id)
+);
+create index if not exists annotation_operation_tombstones_purged
+  on annotation_operation_tombstones (tenant_id, purged_at);
+alter table annotation_operation_tombstones enable row level security;
+alter table annotation_operation_tombstones force row level security;
+create policy annotation_operation_tombstones_user_select on annotation_operation_tombstones
+  for select using (
+    tenant_id = current_setting('app.tenant_id', true)::uuid
+    and user_id = nullif(current_setting('app.user_id', true), '')::uuid
+  );
+create policy annotation_operation_tombstones_tenant_insert on annotation_operation_tombstones
+  for insert with check (tenant_id = current_setting('app.tenant_id', true)::uuid);
+create policy annotation_operation_tombstones_tenant_delete on annotation_operation_tombstones
+  for delete using (tenant_id = current_setting('app.tenant_id', true)::uuid);
+grant select, insert, delete on annotation_operations to akademik_app;
+grant select, insert, delete on annotation_operation_tombstones to akademik_app;
 commit;

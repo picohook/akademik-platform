@@ -47,6 +47,10 @@ export async function mutateAnnotation(client, context) {
   await client.query('select pg_advisory_xact_lock(hashtextextended($1, 0))', [`annotation:${tenantId}:${userId}:${operationId}`]);
   const previous = (await client.query('select request_hash, response_status, response_body from annotation_operations where tenant_id=$1 and user_id=$2 and operation_id=$3', [tenantId, userId, operationId])).rows[0];
   if (previous) return previous.request_hash === hash ? reply(previous.response_status, previous.response_body) : error(409, 'idempotency_key_reused');
+  const tombstone = (await client.query('select request_hash from annotation_operation_tombstones where tenant_id=$1 and user_id=$2 and operation_id=$3', [tenantId, userId, operationId])).rows[0];
+  if (tombstone) {
+    return tombstone.request_hash === hash ? error(410, 'operation_expired') : error(409, 'idempotency_key_reused');
+  }
   let result;
   let annotationId = id;
   if (method === 'POST') {
@@ -75,6 +79,46 @@ export async function mutateAnnotation(client, context) {
   await client.query(`insert into annotation_operations(tenant_id,user_id,operation_id,request_hash,method,annotation_id,response_status,response_body)
     values($1,$2,$3,$4,$5,$6,$7,$8::jsonb)`, [tenantId, userId, operationId, hash, method, annotationId, result.status, JSON.stringify(result.body)]);
   return result;
+}
+
+// Full receipts contain note text. Move old ones to content-free tombstones so
+// an old retry cannot recreate a deleted note, then expire very old tombstones.
+export async function purgeAnnotationReceipts(client, { tenantId, retentionDays = 90, tombstoneDays = 365, limit = 1000 }) {
+  const retention = Math.max(1, Math.trunc(retentionDays));
+  const tombstoneRetention = Math.max(retention, Math.trunc(tombstoneDays));
+  const stale = `select tenant_id, user_id, operation_id, request_hash, method, annotation_id, created_at
+                   from annotation_operations
+                  where tenant_id = $1 and created_at < clock_timestamp() - ($2::int * interval '1 day')
+                  order by created_at
+                  limit $3
+                  for update skip locked`;
+  const moved = await client.query(`
+    with stale as (${stale})
+    insert into annotation_operation_tombstones
+      (tenant_id, user_id, operation_id, request_hash, method, annotation_id, created_at, purged_at)
+    select tenant_id, user_id, operation_id, request_hash, method, annotation_id, created_at, clock_timestamp()
+      from stale
+    on conflict (tenant_id, user_id, operation_id) do nothing
+    returning operation_id`, [tenantId, retention, limit]);
+  const deleted = await client.query(`
+    with stale as (${stale})
+    delete from annotation_operations operations using stale
+     where operations.tenant_id = stale.tenant_id
+       and operations.user_id = stale.user_id
+       and operations.operation_id = stale.operation_id
+    returning operations.operation_id`, [tenantId, retention, limit]);
+  const expiredTombstones = await client.query(
+    `delete from annotation_operation_tombstones
+      where tenant_id = $1 and purged_at < clock_timestamp() - ($2::int * interval '1 day')`,
+    [tenantId, tombstoneRetention],
+  );
+  return {
+    receiptsMoved: moved.rowCount,
+    receiptsDeleted: deleted.rowCount,
+    tombstonesDeleted: expiredTombstones.rowCount,
+    retentionDays: retention,
+    tombstoneDays: tombstoneRetention,
+  };
 }
 
 // Demo API has the same owner/version/replay semantics; no shared-account notes.

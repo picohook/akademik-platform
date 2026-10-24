@@ -393,6 +393,9 @@ export function syncAnnotationOperations(ownerId, request = globalThis.fetch) {
         if (response.status === 409 || (response.status === 404 && body?.error === 'annotation_not_found' && op.request.type === 'update')) {
           await markConflict(op, body); continue;
         }
+        if (response.status === 410 && body?.error === 'operation_expired') {
+          await markConflict(op, { reason: 'operation_expired' }); continue;
+        }
         if (!response.ok && !(response.status === 404 && body?.error === 'annotation_not_found' && op.request.type === 'delete')) {
           if ([401, 403, 429].includes(response.status)) break;
           continue;

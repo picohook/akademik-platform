@@ -84,6 +84,7 @@ const DICT = {
   'Yakınlaştır': 'Zoom in',
   'Uzaklaştır': 'Zoom out',
   "Eski isteğin teslimatı bilinmiyor; yeni kayıt oluşturmadan önce notlarınızı kontrol edin": "Delivery of this old request is unknown; check your notes before creating another record",
+  "Bu işlemin sunucu kaydı saklama süresi doldu; taslak korunuyor, yeni not olarak kaydedebilirsiniz": "This operation's server record has expired; your draft is preserved and can be saved as a new note",
   "Yerel taslağı kaldır": "Remove local draft",
   "Hesap başka sekmede değişti; yeniden giriş yapın": "The account changed in another tab; sign in again",
   "Çakışma başka sekmede değişti; metniniz düzenleyicide korunuyor": "The conflict changed in another tab; your text remains in the editor",

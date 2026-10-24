@@ -23,6 +23,8 @@ docker compose exec db psql -U akademik -d akademik -f /migrations/011-grant-aud
 docker compose exec db psql -U akademik -d akademik -f /migrations/012-groups.sql
 docker compose exec db psql -U akademik -d akademik -f /migrations/013-download-tickets.sql
 docker compose exec db psql -U akademik -d akademik -f /migrations/014-download-ticket-limits.sql
+docker compose exec db psql -U akademik -d akademik -f /migrations/015-annotation-sync.sql
+docker compose exec db psql -U akademik -d akademik -f /migrations/016-annotation-receipt-retention.sql
 ```
 
 Demo login: `reader@example.edu.tr` (reader) or `librarian@example.edu.tr` (upload/edit) / `demo1234`.

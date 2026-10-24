@@ -1,4 +1,4 @@
-import { mutateAnnotation, memoryAnnotationMutations } from './annotation-sync.mjs';
+import { mutateAnnotation, memoryAnnotationMutations, purgeAnnotationReceipts } from './annotation-sync.mjs';
 import http from 'node:http';
 import path from 'node:path';
 import { createReadStream, createWriteStream } from 'node:fs';
@@ -45,11 +45,17 @@ const DEMO_EMAIL = process.env.DEMO_EMAIL || 'reader@example.edu.tr';
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'demo1234';
 const BRAND_NAME = process.env.BRAND_NAME || 'Akademik Platform';
 const BRAND_TAGLINE = process.env.BRAND_TAGLINE || 'spike';
-const APP_VERSION = process.env.APP_VERSION || '121';
+const APP_VERSION = process.env.APP_VERSION || '122';
 const BUILD_SHA = process.env.BUILD_SHA || '';
 const BUILD_DATE = process.env.BUILD_DATE || '';
 const APP_ENV = process.env.APP_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'development');
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || '';
+function integerEnv(name, fallback, min, max) {
+  const value = Number(process.env[name]);
+  return Number.isInteger(value) && value >= min && value <= max ? value : fallback;
+}
+const ANNOTATION_RECEIPT_RETENTION_DAYS = integerEnv('ANNOTATION_RECEIPT_RETENTION_DAYS', 90, 1, 3650);
+const ANNOTATION_TOMBSTONE_RETENTION_DAYS = integerEnv('ANNOTATION_TOMBSTONE_RETENTION_DAYS', 365, ANNOTATION_RECEIPT_RETENTION_DAYS, 3650);
 // Safe by default: per-title watermark=false never disables B2B download stamps.
 const B2B_DOWNLOADS = process.env.SOCIAL_DRM_B2B !== 'false';
 
@@ -1470,6 +1476,7 @@ async function annotationMutation(method, id, body, userId) {
   return withTenant(async client => {
     // withTenant leases a connection; this unit needs an explicit transaction.
     await client.query('begin');
+    await client.query("select set_config('app.user_id', $1, true)", [userId]);
     try {
       const result = await mutateAnnotation(client, context);
       await client.query('commit');
@@ -2596,6 +2603,46 @@ const server = http.createServer(async (req, res) => {
 
 const stopDownloadMaintenance = pool ? startDownloadMaintenance(downloadService) : () => {};
 server.once('close', stopDownloadMaintenance);
+
+let annotationMaintenanceTimer;
+let annotationMaintenanceStart;
+async function runAnnotationMaintenance() {
+  if (!pool) return;
+  const result = await withTenant(async (client) => {
+    await client.query('begin');
+    await client.query("select set_config('app.maintenance', 'on', true)");
+    try {
+      const purged = await purgeAnnotationReceipts(client, {
+        tenantId: TENANT_ID,
+        retentionDays: ANNOTATION_RECEIPT_RETENTION_DAYS,
+        tombstoneDays: ANNOTATION_TOMBSTONE_RETENTION_DAYS,
+      });
+      await client.query('commit');
+      return purged;
+    } catch (error) {
+      await client.query('rollback').catch(() => {});
+      throw error;
+    }
+  });
+  if (result.receiptsDeleted || result.tombstonesDeleted) {
+    console.log(`[annotations] retention: ${result.receiptsDeleted} receipts, ${result.tombstonesDeleted} tombstones`);
+  }
+}
+if (pool) {
+  annotationMaintenanceStart = setTimeout(() => {
+    runAnnotationMaintenance().catch(error => console.warn('[annotations] retention failed:', error.message));
+  }, 60_000);
+  annotationMaintenanceStart.unref?.();
+  annotationMaintenanceTimer = setInterval(() => {
+    runAnnotationMaintenance().catch(error => console.warn('[annotations] retention failed:', error.message));
+  }, 6 * 60 * 60 * 1000);
+  annotationMaintenanceTimer.unref?.();
+}
+server.once('close', () => {
+  clearTimeout(annotationMaintenanceStart);
+  clearInterval(annotationMaintenanceTimer);
+});
+
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`[web] http://localhost:${PORT} (${pool ? 'db' : 'demo'} mode)`);
 });

@@ -76,3 +76,7 @@ Rollback'te migration 015'i geri almayın; v120, ek sürüm sütunu/trigger/rece
 Kullanıcı deploy edilebilir olarak koşullu PASS bildirdi; bağımsız reviewer 62/62 birimi tekrarladı, tarayıcı koşturamadı. Taze prod yedeği restore edildi; migration 015 çift uygulandı ve not içeriği özeti korundu. Ardından prod DB admin migration 015 ve sabit 933615a imajıyla v121 web başlatıldı. HTTPS smoke **16/16**, gerçek prod PostgreSQL/Edge offline edit/yer imi, iki bağımsız bağlamda PDF/EPUB CAS çatışması ve A→B→A dahil **14/14**, 0 JS hatası, cleanup 4/4. v120 rollback korunur; 015 geri alınmaz.
 
 Receipt not metninin silme sonrası saklanması ve büyüme politikası çözülmüş sayılmaz: müşteri üretimi öncesi süre/silme/tombstone protokolü kararı gerekir. Yalnız annotation ID tombstone’u eski POST’u tanımaya yetmez; operationId eşlemesi korunmalı veya eski işlemler açıkça reddedilmelidir. Tenant-only receipt RLS kullanıcı policy’si için takip işidir. [Dağıtım ve açık kararlar](deployments/2026-10-24-v121.md).
+
+## v122 hardening
+
+v122 closes these two follow-ups: 90-day full receipts followed by content-free 365-day operation tombstones, user-scoped receipt RLS, and **410 `operation_expired`** for old offline retries (local draft preserved). See [ANNOTATION-RECEIPT-HARDENING.md](ANNOTATION-RECEIPT-HARDENING.md). Migration 016 must run before the v122 server; v121 rollback remains compatible through the unset-user policy fallback but does not get the new user-scoped defense.

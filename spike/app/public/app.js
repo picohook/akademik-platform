@@ -2747,12 +2747,18 @@ function appendAnnotationConflict(annotation, item) {
   for (const [label, value] of [[t('Bu cihazdaki taslak'), annotation], [t('Diğer sürüm'), conflict.current]]) {
     const heading = document.createElement('strong'); heading.textContent = label;
     const text = document.createElement('pre');
-    text.textContent = value ? [value.note || '', (value.tags || []).join('; '), COLOR_LABELS[value.color] || value.color || ''].join('\n') : t(conflict.reason === 'legacy_unconfirmed_create' ? 'Eski isteğin teslimatı bilinmiyor; yeni kayıt oluşturmadan önce notlarınızı kontrol edin' : 'Not diğer cihazda silinmiş veya bulunamıyor');
+    text.textContent = value ? [value.note || '', (value.tags || []).join('; '), COLOR_LABELS[value.color] || value.color || ''].join('\n') : t(conflict.reason === 'legacy_unconfirmed_create'
+      ? 'Eski isteğin teslimatı bilinmiyor; yeni kayıt oluşturmadan önce notlarınızı kontrol edin'
+      : conflict.reason === 'operation_expired'
+        ? 'Bu işlemin sunucu kaydı saklama süresi doldu; taslak korunuyor, yeni not olarak kaydedebilirsiniz'
+        : 'Not diğer cihazda silinmiş veya bulunamıyor');
     box.append(heading, text);
   }
   const choices = [
     ['local', conflict.desiredType === 'delete' ? 'Silme işlemini uygula' : !conflict.current ? 'Yeni not olarak kaydet' : 'Bu taslağı kullan'],
-    ['server', conflict.current ? 'Diğer sürümü kullan' : conflict.reason === 'legacy_unconfirmed_create' ? 'Yerel taslağı kaldır' : 'Silinmeyi kabul et'],
+    ['server', conflict.current ? 'Diğer sürümü kullan'
+      : (conflict.reason === 'legacy_unconfirmed_create' || conflict.reason === 'operation_expired')
+        ? 'Yerel taslağı kaldır' : 'Silinmeyi kabul et'],
   ];
   if (conflict.current && conflict.desiredType !== 'delete') choices.push(['copy', 'İkisini de sakla']);
   for (const [choice, label] of choices) {
