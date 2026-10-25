@@ -1422,34 +1422,49 @@ function applyTheme(theme) {
   }
 }
 
-async function resolveDest(dest) {
+async function resolveDest(dest, pdf) {
   try {
-    const explicit = typeof dest === 'string' ? await state.pdf.getDestination(dest) : dest;
+    const explicit = typeof dest === 'string' ? await pdf.getDestination(dest) : dest;
     if (!explicit || !explicit[0]) return null;
-    const index = await state.pdf.getPageIndex(explicit[0]);
+    const index = await pdf.getPageIndex(explicit[0]);
     return index + 1;
   } catch {
     return null;
   }
 }
 
-async function loadOutline() {
-  state.outline = [];
-  if (!state.pdf) return;
+async function loadOutline(pdf = state.pdf) {
+  if (!pdf || state.pdf !== pdf) return false;
+  const entries = [];
   try {
-    const outline = await state.pdf.getOutline();
-    if (!outline || !outline.length) return;
+    const outline = await pdf.getOutline();
+    if (state.pdf !== pdf) return false;
     const walk = async (nodes, depth) => {
       for (const node of nodes) {
-        const page = await resolveDest(node.dest);
-        if (page) state.outline.push({ title: node.title || 'Başlıksız', page, depth });
+        if (state.pdf !== pdf) return;
+        const page = await resolveDest(node.dest, pdf);
+        if (state.pdf !== pdf) return;
+        if (page) entries.push({ title: node.title || 'Başlıksız', page, depth });
         if (node.items && node.items.length) await walk(node.items, depth + 1);
       }
     };
-    await walk(outline, 0);
+    if (outline?.length) await walk(outline, 0);
   } catch (error) {
     console.warn('outline failed', error);
   }
+  if (state.pdf !== pdf) return false;
+  state.outline = entries;
+  return true;
+}
+
+function scheduleOutline(pdf) {
+  // Yield to the browser after the first page; never block opening on TOC destinations.
+  setTimeout(() => {
+    if (state.pdf !== pdf) return;
+    void loadOutline(pdf).then((current) => {
+      if (current && state.pdf === pdf) renderToc();
+    }).catch((error) => console.warn('outline refresh failed', error));
+  }, 0);
 }
 
 function renderEpubToc(query) {
@@ -3430,12 +3445,12 @@ async function openBook(book, options = {}) {
         : 1;
     }
 
-    await loadOutline();
-    renderToc();
     renderNotes();
     updatePageUi();
     await renderPage();
+    if (state.pdf !== loadedPdf) return;
     $('closeReader').focus();
+    scheduleOutline(loadedPdf);
   } catch (error) {
     console.error(error);
     toast('PDF yüklenemedi. Sunucu ve dosya yolunu kontrol edin.');
