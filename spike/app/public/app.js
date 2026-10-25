@@ -217,6 +217,9 @@ const hlNote = $('hlNote');
 const hlCopy = $('hlCopy');
 const hlCopyCite = $('hlCopyCite');
 const toastEl = $('toast');
+const readerStatus = $('readerStatus');
+let readerStatusTimer;
+let readerConflictSignature = '';
 const perfPanel = $('perfPanel');
 const perfBody = $('perfBody');
 
@@ -266,9 +269,45 @@ const citePage = $('citePage');
 const citeOutput = $('citeOutput');
 const citeWarning = $('citeWarning');
 
+function resetReaderStatus() {
+  clearTimeout(readerStatusTimer);
+  readerConflictSignature = '';
+  if (readerStatus) readerStatus.textContent = '';
+}
+
+function announceReaderStatus(message) {
+  if (!readerStatus || reader.hidden) return;
+  clearTimeout(readerStatusTimer);
+  readerStatus.textContent = '';
+  const assetId = state.book?.asset_id;
+  const ownerId = annotationOwnerId();
+  readerStatusTimer = setTimeout(() => {
+    if (!reader.hidden && state.book?.asset_id === assetId && annotationOwnerId() === ownerId) {
+      readerStatus.textContent = t(message);
+    }
+  }, 120);
+}
+
+function announceReaderConflicts() {
+  if (reader.hidden) return;
+  const conflicts = state.annotations.filter(item => item.conflict);
+  const signature = JSON.stringify(conflicts.map(item => [item.id, item.conflict.reason, item.conflict.current?.version || null]).sort());
+  if (signature === readerConflictSignature) return;
+  readerConflictSignature = signature;
+  if (!conflicts.length) return;
+  announceReaderStatus(conflicts.some(item => item.conflict.reason === 'operation_expired')
+    ? 'Bu işlemin sunucu kaydı saklama süresi doldu; taslak korunuyor, yeni not olarak kaydedebilirsiniz'
+    : 'Notta çakışma var; iki sürüm de korundu');
+}
+
 function toast(message) {
+  // The visible toast is outside the modal and is hidden between messages.
+  // Reader announcements use a persistent region inside the active dialog.
+  const inReader = !reader.hidden && Boolean(readerStatus);
+  toastEl.setAttribute('aria-hidden', inReader ? 'true' : 'false');
   toastEl.textContent = t(message);
   toastEl.hidden = false;
+  if (inReader) announceReaderStatus(message);
   clearTimeout(toast._timer);
   toast._timer = setTimeout(() => { toastEl.hidden = true; }, 2600);
 }
@@ -2779,6 +2818,7 @@ function appendAnnotationConflict(annotation, item) {
 }
 
 function renderNotes() {
+  announceReaderConflicts();
   notesList.replaceChildren();
   const query = String(noteFilter.value || '').toLocaleLowerCase('tr').trim();
   const colorFilter = noteColorFilter.value;
@@ -2993,6 +3033,7 @@ async function openEpubBook(book, options = {}) {
     state.epubEngine = null;
   }
   resetSearch();
+  resetReaderStatus();
   state.book = book;
   state.pending = null;
   state.epubSelection = null;
@@ -3132,6 +3173,7 @@ async function openBook(book, options = {}) {
   const offlineBlob = options.offlineBlob || null;
   state.offlineMode = Boolean(offlineBlob) || !navigator.onLine;
   state.offlineBlob = offlineBlob;
+  resetReaderStatus();
   state.book = book;
   state.pending = null;
   state.epubSelection = null;
@@ -3282,6 +3324,7 @@ async function openBook(book, options = {}) {
 }
 
 async function closeReader() {
+  resetReaderStatus();
   if (state.epubFrameObserver) {
     state.epubFrameObserver.disconnect();
     state.epubFrameObserver = null;

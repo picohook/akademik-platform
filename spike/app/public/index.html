@@ -9,7 +9,7 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/icons/icon-180.png" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=45" />
+  <link rel="stylesheet" href="/styles.css?v=46" />
   <link rel="prefetch" href="/vendor/pdfjs/pdf.worker.mjs" as="script" />
 </head>
 <body>
@@ -266,6 +266,7 @@
   </div>
 
   <div class="reader" id="reader" role="dialog" aria-modal="true" aria-label="Okuyucu" hidden>
+    <div id="readerStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
     <div class="reader-top">
       <button class="icon-btn" id="closeReader" aria-label="Kapat">✕</button>
       <div class="reader-title">
@@ -410,6 +411,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=122"></script>
+  <script type="module" src="/app.js?v=123"></script>
 </body>
 </html>
