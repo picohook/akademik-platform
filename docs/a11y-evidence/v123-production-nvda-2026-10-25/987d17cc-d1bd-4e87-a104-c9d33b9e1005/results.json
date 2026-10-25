@@ -1,0 +1,83 @@
+{
+  "runId": "987d17cc-d1bd-4e87-a104-c9d33b9e1005",
+  "dateIstanbul": "2026-10-25",
+  "startedAt": "2026-10-25T01:01:09.385Z",
+  "base": "https://localhost",
+  "status": "passed",
+  "scope": "Actual production reader-role UI login, PDF note offline edit using native Tab/Enter, readerStatus DOM and real NVDA Speech Viewer capture, online sync and removal of only the generated note. No env/migration/deploy commands.",
+  "steps": [
+    {
+      "id": "reader-ui-login",
+      "status": "PASS"
+    },
+    {
+      "id": "production-pdf-reader-open",
+      "status": "PASS"
+    },
+    {
+      "id": "offline-note-readerStatus-NVDA",
+      "status": "PASS",
+      "nativeSave": true,
+      "browserOffline": true
+    },
+    {
+      "id": "online-note-sync",
+      "status": "PASS"
+    }
+  ],
+  "jsErrors": [],
+  "cleanup": {
+    "fixtureNoteDeleted": true,
+    "loggedOut": true,
+    "ownedBrowserClosed": true,
+    "nvdaNotRestartedOrReconfigured": true,
+    "normalOperationReceiptsRetained": true
+  },
+  "noEnvMigrationDeployChanges": true,
+  "nvda": {
+    "version": "2026.2",
+    "build": "2026.2.0.57664",
+    "processId": 26052
+  },
+  "edge": "155.0.4283.45",
+  "tls": "Dedicated browser ignores local Caddy CA errors; OS trust unchanged.",
+  "config": {
+    "version": "123",
+    "buildSha": "e8ddb3d"
+  },
+  "servedAppSha256": "206b26f45ee505132e9a333dc8091cacfec27d7a52e54d85f70e9da913214670",
+  "login": {
+    "method": "Actual login form",
+    "role": "reader",
+    "successful": true
+  },
+  "book": {
+    "id": "43c8cab5-6ebb-45bd-be54-607d3db942b5",
+    "assetId": "ca9ef7bb-2bdb-4f81-bb65-a922393e21b5",
+    "format": "pdf"
+  },
+  "fixtureNoteId": "95410778-ce59-43ee-a4f5-7667eba6fb69",
+  "readerStatus": {
+    "role": "status",
+    "live": "polite",
+    "atomic": "true",
+    "insideReader": true,
+    "hidden": false,
+    "display": "block",
+    "text": "Not cihazda kaydedildi; eşitleme bekliyor",
+    "mutations": [
+      "Not cihazda kaydedildi; eşitleme bekliyor"
+    ]
+  },
+  "scenario": "Reader login → production PDF → offline note edit/save → readerStatus announcement → online CAS sync",
+  "heardText": "Not cihazda kaydedildi; eşitleme bekliyor",
+  "spokenMatch": true,
+  "speech": {
+    "from": "2026-10-25T01:01:25.6648017Z",
+    "processId": 26052,
+    "text": "unavailable\r\ndialog    Okuyucu\r\nNot cihazda kaydedildi; eşitleme bekliyor \r\n",
+    "capturedAt": "2026-10-25T01:01:35.1835704Z"
+  },
+  "jsErrorCount": 0,
+  "completedAt": "2026-10-25T01:01:36.830Z"
+}

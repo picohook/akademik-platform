@@ -1,0 +1,41 @@
+{
+  "dateIstanbul": "2026-10-25",
+  "status": "PASS",
+  "scope": "Production NVDA reader acceptance only",
+  "runId": "987d17cc-d1bd-4e87-a104-c9d33b9e1005",
+  "config": {
+    "version": "123",
+    "buildSha": "e8ddb3d"
+  },
+  "nvda": {
+    "version": "2026.2",
+    "build": "2026.2.0.57664",
+    "processId": 26052
+  },
+  "jsErrors": 0,
+  "noEnvMigrationDeployChanges": true,
+  "acrClosed": false,
+  "helperTrailingWhitespaceNormalized": true,
+  "artifacts": {
+    ".gitattributes": {
+      "bytes": 74,
+      "sha256": "574dca45282c721e228acd15bf9aaeef98616404a08f68a929e460f25f1b6cd1"
+    },
+    "native-keys.ps1": {
+      "bytes": 3120,
+      "sha256": "f7ef282b5058c0893a115e88617fe98773d5e29795d8ca9d93637acd9deaa679"
+    },
+    "results.json": {
+      "bytes": 2508,
+      "sha256": "765a0d8b4306570a55c354542ff48317df244c7c853be2d7da9ac7c1cb9cc019"
+    },
+    "speech.ps1": {
+      "bytes": 3075,
+      "sha256": "4f45b2a9438850ceb158eb189750309ff8245a22040e3e2d02d364d762200767"
+    },
+    "test.mjs": {
+      "bytes": 10299,
+      "sha256": "c5e45e6b0dfef0e8189cbe8221d4ff16528ed21160c1ee1600f2a57ecbbc0147"
+    }
+  }
+}
