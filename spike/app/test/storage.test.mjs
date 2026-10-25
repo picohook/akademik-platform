@@ -21,8 +21,12 @@ function fakeClient() {
     if (name === 'HeadObjectCommand') return { ContentLength: bytes.length, ETag: 'test-etag' };
     assert.equal(name, 'GetObjectCommand');
     if (IfMatch) assert.equal(IfMatch, 'test-etag');
-    const match = Range?.match(/^bytes=(\d+)-(\d+)$/);
-    return { Body: Readable.from([match ? bytes.subarray(Number(match[1]), Number(match[2]) + 1) : bytes]) };
+    const range = Range ? parseRange(Range, bytes.length) : null;
+    if (Range && !range) throw Object.assign(new Error('range'), {name:'InvalidRange', $metadata:{httpStatusCode:416}});
+    const output = range ? bytes.subarray(range.start, range.end + 1) : bytes;
+    return { Body: Readable.from([output]), ContentLength: output.length,
+      ContentRange: range ? `bytes ${range.start}-${range.end}/${bytes.length}` : undefined,
+      $metadata: { httpStatusCode: range ? 206 : 200 } };
   } };
 }
 
@@ -102,9 +106,36 @@ test('HTTP delivery: remote PDF/EPUB, ranges, no public URL, missing and upstrea
   const bad = await fetch(base, { headers: { range: 'bytes=99-' } }); assert.equal(bad.status, 416); assert.equal(bad.headers.get('content-range'), 'bytes */10');
   const missing = await fetch(base + '/missing'); assert.equal(missing.status, 404); await missing.text();
   const book = await fetch(base + '/epub'); assert.equal(book.headers.get('content-type'), 'application/epub+zip'); assert.equal(await book.text(), 'epub');
-  assert.ok(client.calls.some(c => c.constructor.name === 'GetObjectCommand' && c.input.IfMatch === 'test-etag'));
+  assert.ok(client.calls.some(c => c.constructor.name === 'GetObjectCommand' && c.input.Range === 'bytes=-3')); 
   const broken = createStorage({ publicDir: dir, env, client: { send: async () => { throw new Error('secret'); } } });
   const fail = http.createServer((req, res) => serveStoredAsset(broken, req, res, key));
   await new Promise(resolve => fail.listen(0, '127.0.0.1', resolve)); t.after(() => { fail.closeAllConnections(); fail.close(); });
   const response = await fetch(`http://127.0.0.1:${fail.address().port}`); assert.equal(response.status, 502); assert.doesNotMatch(await response.text(), /secret/);
+});
+
+
+test('valid reader requests use one GET and zero HEAD, including repeated suffix reads', async t => {
+  const {storage, client} = await setup(t,true);
+  const key = await storage.put('uploads/single.pdf',Buffer.from('0123456789'),'application/pdf');
+  for (const range of [undefined,'bytes=2-4','bytes=-3','bytes=7-','bytes=0-99']) {
+    client.calls.length=0;
+    const opened=await storage.open(key,range);
+    for await (const chunk of opened.body) {}
+    assert.deepEqual(client.calls.map(c=>c.constructor.name),['GetObjectCommand']);
+  }
+});
+
+test('range metadata mismatch fails closed and destroys upstream body',async t=>{
+ const {dir}=await setup(t);
+ for (const result of [
+   {ContentLength:3,ContentRange:'bytes 0-2/10'},
+   {ContentLength:3},
+   {ContentLength:3,ContentRange:'bytes 2-4/10',$metadata:{httpStatusCode:200}},
+   {ContentLength:99,ContentRange:'bytes 2-4/10'},
+ ]) {
+   const body=Readable.from(['234']);
+   const storage=createStorage({publicDir:dir,env,client:{send:async()=>({...result,Body:body})}});
+   await assert.rejects(storage.open('r2://pilot/a.pdf','bytes=2-4'),/metadata/);
+   assert.equal(body.destroyed,true);
+ }
 });

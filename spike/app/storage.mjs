@@ -54,6 +54,7 @@ export function createStorage({ publicDir, env = process.env, client } = {}) {
     catch (error) {
       // Do not leak request URLs, credentials, or provider response bodies to clients/logs.
       const clean = new Error('object storage operation failed');
+      if (error.$metadata?.httpStatusCode === 416 || error.name === 'InvalidRange') clean.code = 'ERANGE';
       if (error.$metadata?.httpStatusCode === 404 || error.name === 'NoSuchKey' || error.name === 'NotFound') clean.code = 'ENOENT';
       throw clean;
     }
@@ -73,8 +74,45 @@ export function createStorage({ publicDir, env = process.env, client } = {}) {
     });
     return result.Body instanceof Readable ? result.Body : Readable.fromWeb(result.Body);
   }
+  async function open(key, rangeHeader) {
+    const target = locate(key);
+    const rangeError = size => Object.assign(new Error('invalid byte range'), { code: 'ERANGE', size });
+    // Invalid/multiple ranges may need a metadata lookup for the 416 response.
+    // Valid reader requests always use exactly one remote GET, with its metadata.
+    if (rangeHeader && !validRangeSyntax(rangeHeader)) throw rangeError((await info(key)).size);
+    if (target.file) {
+      const metadata = await stat(target.file);
+      const range = rangeHeader ? parseRange(rangeHeader, metadata.size) : undefined;
+      if (rangeHeader && !range) throw rangeError(metadata.size);
+      return { body: createReadStream(target.file, range), status: range ? 206 : 200,
+        length: range ? range.end - range.start + 1 : metadata.size,
+        contentRange: range ? `bytes ${range.start}-${range.end}/${metadata.size}` : undefined };
+    }
+    let result;
+    try {
+      result = await send(GetObjectCommand, target.remoteKey, rangeHeader ? { Range: rangeHeader } : {});
+    } catch (error) {
+      if (error.code === 'ERANGE') throw rangeError((await info(key)).size);
+      throw error;
+    }
+    const body = result.Body instanceof Readable ? result.Body : Readable.fromWeb(result.Body);
+    let valid = Number.isSafeInteger(result.ContentLength) && result.ContentLength >= 0;
+    if (rangeHeader) {
+      const match = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(result.ContentRange || '');
+      const expected = match ? parseRange(rangeHeader, Number(match[3])) : null;
+      valid &&= Boolean(expected && expected.start === Number(match[1]) && expected.end === Number(match[2])
+        && expected.end - expected.start + 1 === result.ContentLength
+        && Number.isSafeInteger(Number(match[3]))
+        && (!result.$metadata?.httpStatusCode || result.$metadata.httpStatusCode === 206));
+    } else {
+      valid &&= !result.ContentRange && (!result.$metadata?.httpStatusCode || result.$metadata.httpStatusCode === 200);
+    }
+    if (!valid) { body.destroy(); throw new Error('invalid object response metadata'); }
+    return { body, status: rangeHeader ? 206 : 200, length: result.ContentLength,
+      contentRange: rangeHeader ? result.ContentRange : undefined };
+  }
   return {
-    driver, validate: key => { locate(key); }, info, stream,
+    driver, validate: key => { locate(key); }, info, stream, open,
     async read(key) {
       const metadata = await info(key);
       if (metadata.size > MAX_ASSET_BYTES) throw new Error('asset exceeds read limit');
@@ -110,6 +148,16 @@ export function createStorage({ publicDir, env = process.env, client } = {}) {
   };
 }
 
+export function validRangeSyntax(value) {
+  if (typeof value !== 'string' || value.length > 128) return false;
+  const match = /^bytes=(\d*)-(\d*)$/.exec(value);
+  if (!match || (!match[1] && !match[2])) return false;
+  if (!match[1]) return Number.isSafeInteger(Number(match[2])) && Number(match[2]) > 0;
+  const start = Number(match[1]);
+  return Number.isSafeInteger(start) && (!match[2] ||
+    (Number.isSafeInteger(Number(match[2])) && Number(match[2]) >= start));
+}
+
 export function parseRange(value, size) {
   const match = /^bytes=(\d*)-(\d*)$/.exec(value || '');
   if (!match || (!match[1] && !match[2])) return null;
@@ -127,27 +175,22 @@ export function parseRange(value, size) {
 
 // Call only after session and grant authorization. Never redirect to a public bucket URL.
 export async function serveStoredAsset(storage, req, res, key) {
-  let metadata;
-  try { metadata = await storage.info(key); }
+  let opened;
+  try { opened = await storage.open(key, req.headers.range); }
   catch (error) {
-    res.writeHead(error.code === 'ENOENT' ? 404 : 502, { 'content-type': 'application/json', 'cache-control': 'no-store' });
-    res.end(JSON.stringify({ error: 'file unavailable' })); return;
+    const status = error.code === 'ENOENT' ? 404 : error.code === 'ERANGE' ? 416 : 502;
+    res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store',
+      ...(status === 416 && Number.isSafeInteger(error.size) ? { 'content-range': `bytes */${error.size}` } : {}) });
+    res.end(JSON.stringify({ error: status === 416 ? 'invalid byte range' : 'file unavailable' })); return;
   }
-  const range = req.headers.range ? parseRange(req.headers.range, metadata.size) : undefined;
-  if (req.headers.range && !range) {
-    res.writeHead(416, { 'content-range': `bytes */${metadata.size}`, 'cache-control': 'no-store' }); res.end(); return;
-  }
-  let body;
-  try { body = await storage.stream(key, range, metadata.etag); }
-  catch {
-    res.writeHead(502, { 'cache-control': 'no-store' }); res.end(); return;
-  }
+  const { body, status, length, contentRange } = opened;
   const close = () => body.destroy();
   res.once('close', close);
-  res.writeHead(range ? 206 : 200, {
+  if (res.destroyed) { body.destroy(); return; }
+  res.writeHead(status, {
     'content-type': key.toLowerCase().endsWith('.epub') ? 'application/epub+zip' : 'application/pdf',
-    'content-length': range ? range.end - range.start + 1 : metadata.size,
-    ...(range ? { 'content-range': `bytes ${range.start}-${range.end}/${metadata.size}` } : {}),
+    'content-length': length,
+    ...(contentRange ? { 'content-range': contentRange } : {}),
     'accept-ranges': 'bytes', 'cache-control': 'private, no-store',
   });
   try { await pipeline(body, res); }
