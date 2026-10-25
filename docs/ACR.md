@@ -1,13 +1,13 @@
-# Accessibility Conformance Report — v126 / Windows değerlendirmesi
+# Accessibility Conformance Report — v127 / Windows değerlendirmesi
 
 **Windows/NVDA için bu değerlendirme turu tamamlandı; ürün geneli WCAG 2.2 AA iddiası yok.** Bu, bağımsız sertifika veya tamamlanmış çok platformlu VPAT değildir. Doğrulanan PDF sınırlamaları ve yayın içeriği kapsamı aşağıda açıkça korunur.
 
 - Tarih/test eden: **2026-10-25 Europe/Istanbul**, Codex ajanı; gerçek NVDA Speech Viewer + OS klavyesi/zoom + Playwright/axe. İnsan ses/telaffuz değerlendirmesi yapılmadı.
-- Değerlendirilen sürüm: **v126**, CSS **v49**, SW **v18**, kod **90c7b727e50d41def50486bd621789a39cdb8826**; üretime alındı. Yerelde PDF kaynak başlık/formül açıklaması için gerçek NVDA dahil 19/19, regresyon 74/74, birim 65/65; 32 temiz axe taraması/0 ihlal, JS0.
+- Değerlendirilen yerel aday: **v127**, CSS **v49**, SW **v19**, kod **fbeed6e6fefcad00f13ddb80b98b91fb9ef67351**; **deploy edilmedi**. OCR kaynak dil/paragraf ve açık okuma planı için gerçek NVDA dahil 26/26, yerel OCR araçları 10/10, regresyon 74/74, birim 65/65; 34 temiz axe/0 ihlal, JS0.
 - Üretim: **v126/90c7b72**; [dağıtım](deployments/2026-10-25-v126.md), [gerçek canlı NVDA başlık/formül kabulü](a11y-evidence/v126-production-nvda-2026-10-25/ACCEPTANCE.md): **6/6**, JS **0**. Bu retestte deploy/env/migration değiştirilmedi; v125 rollback korunur. Geçici fixture normal upload/silme yoluyla temizlendi. Bu dar canlı kabul, yerel H2/spread/seçim kapsamını veya açık PDF/VoiceOver sınırlarını genişletmez.
 - Ortam: Windows 25H2 build 26200.9711; Edge **155.0.4283.45**; NVDA **2026.2 / 2026.2.0.57664**; axe **4.13.0**.
 - Kapsam: giriş/katalog, Upload/Edit/Grants/Password/Offline ve önceki Citation kanıtı, PDF/EPUB okuyucu kontrolleri, seçim araçları, not/yer imi, offline reload, CAS ve kontrollü 410. Sentetik altı sayfalı PageLabels PDF ve iki bölümlü reflow EPUB kullanıldı.
-- [v126 PDF yapı kanıtı](a11y-evidence/v126-2026-10-25/ACCEPTANCE.md), [v125 sonuçları](a11y-evidence/v125-2026-10-25/ACCEPTANCE.md), [genel sonuçlar](A11Y-RESULTS.md), [önceki Windows oturumu](A11Y-NVDA-V124.md), [arşivlenmiş v125 değerlendirmesi](a11y-evidence/v125-2026-10-25/ACR-assessment.md).
+- [v127 OCR ve okuma sırası kanıtı](a11y-evidence/v127-2026-10-25/ACCEPTANCE.md), [yayın hazırlama/kontrol yordamı](PUBLICATION-ACCESSIBILITY.md), [gerçek Mac test şablonu](A11Y-VOICEOVER-ACCEPTANCE.md), [genel sonuçlar](A11Y-RESULTS.md), [arşivlenmiş v126 değerlendirmesi](a11y-evidence/v126-2026-10-25/ACR-assessment.md).
 
 ## Kararın kapsamı
 
@@ -23,14 +23,14 @@ Offline a11y testinde blob sentetik fixture olarak IndexedDB’ye hazırlandı; 
 
 | SC | Düzey | Kriter | Arayüz/örneklem sonucu | Kanıt / sınır |
 | --- | --- | --- | --- | --- |
-| 1.1.1 | A | Metin alternatifleri | Partially Supports | Arayüz simge adları ve EPUB görsel alt metni doğrulandı. Görüntüden oluşan PDF fixture’ında metin/OCR alternatifi yok; bütün yayınlar için destek iddia edilmez. |
+| 1.1.1 | A | Metin alternatifleri | Partially Supports | Arayüz simge adları ve EPUB görsel alternatifleri kanıtlı. v127’de gerçek OCR’den hazırlanan tarama metni NVDA’da okundu; hOCR’siz tarama hâlâ metinsizdir. OCR şekil/diyagram anlamını açıklamaz; yayıncı alternatifleri ve orijinal/indirilen PDF ayrıca değerlendirilir. |
 | 1.2.1 | A | Önceden kaydedilmiş ses/video | Not Applicable | Arayüzde kayıt ses/video oynatıcısı yok. |
 | 1.2.2 | A | Kayıt altyazıları | Not Applicable | Arayüzde kayıt video yok. |
 | 1.2.3 | A | Sesli betimleme alternatifi | Not Applicable | Arayüzde kayıt video yok. |
 | 1.2.4 | AA | Canlı altyazılar | Not Applicable | Canlı yayın özelliği yok. |
 | 1.2.5 | AA | Sesli betimleme | Not Applicable | Arayüzde kayıt video yok. |
-| 1.3.1 | A | Bilgi ilişkileri | Partially Supports | v126 yerel adayında PDF kaynak H1/H2 düzeyleri ve paragraf ilişkileri gerçek metne aria-owns ile bağlı; NVDA H gezinmesi geçti. Formula kaynak açıklaması atomik alternatif olarak okunuyor; kaynakta olmayan MathML üretilmiyor. EPUB başlık/tablo kanıtı korunur. Etiketsiz/OCR içeriğinde olmayan başlık/tablo ilişkileri üretilmez; tüm yayınlar için tam destek iddia edilmez. |
-| 1.3.2 | A | Anlamlı okuma sırası | Partially Supports | Arayüz/örnek EPUB sırası uygun. Adversarial etiketsiz iki sütunlu PDF’de DOM sırası RIGHT SECOND → LEFT FIRST; görsel sıra tersi. Kaynak/reader sınırlaması doğrulandı. |
+| 1.3.1 | A | Bilgi ilişkileri | Partially Supports | v126 ile PDF kaynak H1/H2 düzeyleri ve paragraf ilişkileri gerçek metne aria-owns ile bağlı; NVDA H gezinmesi geçti. Formula kaynak açıklaması atomik alternatif olarak okunuyor; kaynakta olmayan MathML üretilmiyor. EPUB başlık/tablo kanıtı korunur. Etiketsiz/OCR içeriğinde olmayan başlık/tablo ilişkileri üretilmez; tüm yayınlar için tam destek iddia edilmez. |
+| 1.3.2 | A | Anlamlı okuma sırası | Partially Supports | Ham etiketsiz PDF’de akış sırası sorunu sürer. v127’de kişi tarafından açıkça sıralanan bölgelerden gerçek hOCR üretildi; NVDA sol sütun sonu → sağ sütun sırasını doğruladı. hOCR kaynak paragraf/sırası korunur; tam sayfa OCR tek başına sütunları karıştırabildi. Her gerçek yayın için sıra/bütünlük incelemesi gerekir, genel otomatik onarım iddiası yok. |
 | 1.3.3 | A | Duyusal yönergeler | Supports | Yönergeler kontrol adı ve metinle; yalnız renk/konumla verilmiş zorunlu adım yok. |
 | 1.3.4 | AA | Ekran yönü | Supports | Dikey/yatay yön kilidi yok; dar/geniş viewport matrisinde aynı işlemler var. |
 | 1.3.5 | AA | Girdi amacı | Supports | Girişte username/current-password autocomplete; diğer kişi/kitap metadatası kişinin kendi verisi olarak yorumlanmadı. |
@@ -81,12 +81,12 @@ Offline a11y testinde blob sentetik fixture olarak IndexedDB’ye hazırlandı; 
 
 ## Kalan kapsam — genel uygunluk iddiasını sınırlar
 
-1. **VoiceOver/Safari: NOT RUN.** Windows’ta gerçek VoiceOver yok; NVDA kanıtı bunun yerine yazılmadı.
-2. **PDF belgesinin semantiği/alternatifleri:** tagged PDF H1/H2 ve Formula kaynak açıklamasının aktarılmaması v126 yerel adayında kapandı; gerçek NVDA başlık ve açıklamayı okudu. Kaynaksız matematik yapısı tahmin edilmez, PDF formül açıklaması etkileşimli MathML değildir. Etiketsiz iki sütunlu örnekteki okuma sırası ve metin/OCR alternatifi olmayan tarama sınırları sürer; eksik yayıncı etiketleri/alternatifleri tamamlanmış sayılmaz. 1.1.1/1.3.1/1.3.2 sonuçları bütün yayınlara genişletilmez.
+1. **VoiceOver/Safari: NOT RUN.** Windows’ta gerçek VoiceOver yok; NVDA kanıtı bunun yerine yazılmadı. [12 maddelik gerçek Mac kabulü](A11Y-VOICEOVER-ACCEPTANCE.md) hazırlanmış, sonuçlar boş/NOT RUN bırakılmıştır.
+2. **PDF belgesinin semantiği/alternatifleri:** tagged PDF H1/H2 ve Formula kaynak açıklamasının aktarılmaması v126 sürümünde kapandı; gerçek NVDA başlık ve açıklamayı okudu. Kaynaksız matematik yapısı tahmin edilmez, PDF formül açıklaması etkileşimli MathML değildir. Etiketsiz iki sütunlu örnekteki okuma sırası ve metin/OCR alternatifi olmayan tarama sınırları sürer; eksik yayıncı etiketleri/alternatifleri tamamlanmış sayılmaz. 1.1.1/1.3.1/1.3.2 sonuçları bütün yayınlara genişletilmez.
 3. **Native seçim ve UI mesaj süresi hedefli açıkları v125’te kapandı:** gerçek NVDA + Windows tuşlarıyla seçim/kopyalama/vurgulama; zamansız bildirim geçmişi ve form/hesap gizliliği test edildi. Tüm yardımcı teknolojiler/işletim sistemlerine genişletilmez.
 4. **MathML/RTL/fixed-layout örnekleri:** sentetik EPUB tablo/görsel/formül NVDA çıktısı, Arapça dil/direction ve iki pre-paginated sayfa gezinmesi geçti. Her yayının karmaşık formülü, etkileşimli MathCAT gezinmesi, ses/video alternatifi veya tüm sabit düzenlerin AA uyumu doğrulanmadı.
 5. **İnsan dinlemesi:** Speech Viewer üretilen konuşma metnini gösterir; telaffuz ve gerçek dinleme kalitesi ayrıca insan değerlendirmesidir.
 
-Bu sınırlar raporu saklamayı engellemez; **tam AA/“her kitap erişilebilir” satış iddiasını engeller**. v125 kısayol/bildirim ve v126 PDF kaynak başlık/formül açıklaması düzeltmeleri canlıdır; v126 gerçek canlı NVDA başlık/açıklama kabulü geçti. Etiketsiz okuma sırası ve OCR/içerik alternatifleri bu paketle düzeltilmiş sayılmaz.
+Bu sınırlar raporu saklamayı engellemez; **tam AA/“her kitap erişilebilir” satış iddiasını engeller**. v126 canlıdır. v127 OCR kaynak dil/paragraf düzeltmesi ve operatör kontrol/hazırlama araçları yereldedir. [Yayın hazırlama yordamı](PUBLICATION-ACCESSIBILITY.md) belirli bir yayının OCR/sıra kontrolünü mümkün kılar; tüm mevcut yayınlar onaylanmış veya otomatik düzeltilmiş sayılmaz. OCR yan dosyaları özgün PDF’ye gömülmez ve offline kitap blob’unda otomatik paketlenmez. İnsan dinlemesi ve Mac kabulü sürer.
 
 Normatif çerçeve: [WCAG 2.2](https://www.w3.org/TR/WCAG22/). [Tek karakter kısayolları](https://www.w3.org/WAI/WCAG22/Understanding/character-key-shortcuts.html), [reflow ve iki boyutlu içerik istisnası](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html), [veri hatasını önleme](https://www.w3.org/WAI/WCAG22/Understanding/error-prevention-legal-financial-data.html) birincil kaynaklarla kontrol edildi. Standart kapsamı ile müşteri kabul şartı aynı şey değildir.

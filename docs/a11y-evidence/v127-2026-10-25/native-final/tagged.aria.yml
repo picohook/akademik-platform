@@ -1,0 +1,4 @@
+- document "PDF sayfası 1":
+  - heading "Tagged PDF heading" [level=1]
+  - paragraph: Tagged PDF paragraph.
+  - img "x squared plus y squared equals z squared": x^2 + y^2 = z^2

@@ -2,6 +2,8 @@
 
 Runs OCR over the synthetic scan pages and writes text, hOCR and a CER estimate.
 
+For a real local PDF, use `prepare-pdf.mjs` from the repository root. It uses installed local models only, writes reader-compatible `page-NNN.hocr` files and a review-required report, and refuses existing output files. Explicit region order is available for columns; full-page OCR alone can interleave them. See [the publication preparation runbook](../../docs/PUBLICATION-ACCESSIBILITY.md). This is a workstation workflow, not an automatic upload/production service or a WCAG certificate.
+
 ```bash
 npm install --ignore-scripts     # --ignore-scripts avoids the opencollective postinstall
 node ocr.mjs \

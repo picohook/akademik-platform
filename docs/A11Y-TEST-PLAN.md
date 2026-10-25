@@ -1,6 +1,6 @@
 # Accessibility test plan — WCAG 2.2 AA
 
-Current target: **v122 / 8b598a3**, CSS v45, SW v14. Manual platform: **NVDA + Edge on Windows** (selected by product owner). Run and record [S01–S12](A11Y-NVDA-V122.md); VoiceOver/Safari is a separate NOT RUN environment. Historical v104–v106 results are not v122 sign-off.
+Current local target: **v127 / fbeed6e**, CSS49/SW19; production **v126/90c7b72**. Windows NVDA/Edge OCR evidence is in [v127 acceptance](a11y-evidence/v127-2026-10-25/ACCEPTANCE.md). [Real Mac/VoiceOver acceptance](A11Y-VOICEOVER-ACCEPTANCE.md) is NOT RUN; [publication review](PUBLICATION-ACCESSIBILITY.md) remains per document. Older version-specific checklists below are historical.
 
 ## 1. axe DevTools (automated)
 
@@ -91,3 +91,7 @@ Native selection initiation and transient-message timing were tested and remedia
 ## Latest follow-up — v126 / 2026-10-25
 
 The source-tagged PDF heading/formula-description omission is fixed and verified in local **90c7b72**: [19 targeted checks with actual NVDA, 74 regressions and source proof](a11y-evidence/v126-2026-10-25/ACCEPTANCE.md). H1/H2/source language, formula alternatives, ownership uniqueness, spread/scroll/zoom/rotation, decode/OCR fallback, controlled old-book race, offline module cache and native copy/highlight passed. Production remains v125; migration none. VoiceOver, human listening, untagged reading order, OCR/text alternatives and broader publication/math accessibility remain open.
+
+## Latest follow-up — v127 / 2026-10-25
+
+Local OCR source-language/paragraph fix and workstation inspection/preparation tools: [26 browser/native NVDA checks, 10 real OCR/tool cases, 74 regressions](a11y-evidence/v127-2026-10-25/ACCEPTANCE.md). A specific scan can receive reviewed hOCR in explicit column order; source paragraphs/language and native copy/highlight were verified. No generic repair/AA decision. VoiceOver, human listening and each publication's alternatives/completeness remain open. Prod v126, no deploy/env/migration changes this round.

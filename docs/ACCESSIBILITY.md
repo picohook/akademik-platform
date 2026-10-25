@@ -1,6 +1,6 @@
 # Accessibility audit history — WCAG 2.2 AA
 
-Current assessment: [v126 Windows/NVDA report](ACR.md) and [PDF structure evidence](a11y-evidence/v126-2026-10-25/ACCEPTANCE.md). Local candidate v126; production v125. The statements below describe the historical 2026-10-22 audit and are not a current full-conformance claim.
+Current assessment: [v127 Windows/NVDA report](ACR.md), [real OCR/reading-order evidence](a11y-evidence/v127-2026-10-25/ACCEPTANCE.md), [publication workflow](PUBLICATION-ACCESSIBILITY.md), [Mac acceptance template](A11Y-VOICEOVER-ACCEPTANCE.md). Local candidate v127; production v126. The statements below describe the historical 2026-10-22 audit and are not a current full-conformance claim.
 
 Date: 2026-10-22  
 Scope: login, catalog, modals, PDF reader, EPUB reader, notes/search/highlight UI.

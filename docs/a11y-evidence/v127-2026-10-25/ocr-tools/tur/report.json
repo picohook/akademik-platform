@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "kind": "ocr-preparation",
+  "source": {
+    "name": "turkish-scan.pdf",
+    "sha256": "18edba3cd28f66bd1beaaa8428d7f343032ec002eb8792c199664a41235089b3",
+    "bytes": 25995,
+    "totalPages": 1
+  },
+  "model": "tur",
+  "language": "tr",
+  "dpi": 150,
+  "scope": {
+    "requested": "1",
+    "complete": true
+  },
+  "reviewRequired": true,
+  "conformance": "not_assessed",
+  "pages": [
+    {
+      "number": 1,
+      "file": "page-001.hocr",
+      "sha256": "3138a5eccfbfb3c4a44e58e723cf2778eb86fd04322ec84006afdce60186f824",
+      "textCharacters": 104,
+      "confidence": 95,
+      "regionConfidence": [
+        95
+      ],
+      "readingOrderMode": "full-page-OCR",
+      "regions": [
+        {
+          "left": 0,
+          "top": 0,
+          "width": 1,
+          "height": 1
+        }
+      ],
+      "coverageRatio": 1,
+      "reviewRequired": true
+    }
+  ]
+}

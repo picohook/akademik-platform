@@ -1,0 +1,14 @@
+- document "PDF sayfası 1":
+  - paragraph: OCR ACCESSIBILITY SAMPLE
+  - paragraph: LEFT COLUMN
+  - paragraph: Research starts here.
+  - paragraph: Alpha beta gamma.
+  - paragraph: Read this column first.
+  - paragraph: The source has paragraphs. Text needs human review. We check words and order. Notes support research. Each reader can select text. Books can contain figures. Their meaning needs a person. This is the end of the left.
+  - paragraph: RIGHT COLUMN
+  - paragraph: The second topic.
+  - paragraph: Delta epsilon zeta.
+  - paragraph: Read this column next.
+  - paragraph: This source is a scan.
+  - paragraph: OCR is a text alternative.
+  - paragraph: It does not describe images. It does not certify access. Review follows recognition. Proof records source facts. Speech is checked separately. This is the end of the right.

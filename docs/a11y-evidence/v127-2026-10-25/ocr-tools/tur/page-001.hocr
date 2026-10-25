@@ -1,0 +1,35 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"></head><body><div class="ocr_page" title="bbox 0 0 1250 1667">
+ <div class='ocr_carea' id='region_0_block_1_1' title="bbox 79 75 497 113">
+  <p class='ocr_par' id='region_0_par_1_1' lang='tur' title="bbox 79 75 497 113">
+   <span class='ocr_line' id='region_0_line_1_1' title="bbox 79 75 497 113; baseline 0 -9; x_size 38; x_descenders 9; x_ascenders 7">
+    <span class='ocrx_word' id='region_0_word_1_1' title='bbox 79 75 213 112; x_wconf 96'>Türkçe</span>
+    <span class='ocrx_word' id='region_0_word_1_2' title='bbox 228 75 359 104; x_wconf 96'>okuma</span>
+    <span class='ocrx_word' id='region_0_word_1_3' title='bbox 374 75 497 113; x_wconf 96'>örneği</span>
+   </span>
+  </p>
+ </div>
+ <div class='ocr_carea' id='region_0_block_1_2' title="bbox 85 217 472 329">
+  <p class='ocr_par' id='region_0_par_1_2' lang='tur' title="bbox 85 217 472 329">
+   <span class='ocr_line' id='region_0_line_1_2' title="bbox 86 217 450 246; baseline 0 -6; x_size 29; x_descenders 6; x_ascenders 6">
+    <span class='ocrx_word' id='region_0_word_1_4' title='bbox 86 217 127 246; x_wconf 96'>Diş</span>
+    <span class='ocrx_word' id='region_0_word_1_5' title='bbox 139 217 310 246; x_wconf 96'>hekimliğinde</span>
+    <span class='ocrx_word' id='region_0_word_1_6' title='bbox 321 218 450 246; x_wconf 96'>araştırma</span>
+   </span>
+   <span class='ocr_line' id='region_0_line_1_3' title="bbox 85 296 472 329; baseline 0 -6; x_size 29; x_descenders 6; x_ascenders 6">
+    <span class='ocrx_word' id='region_0_word_1_7' title='bbox 85 296 191 329; x_wconf 95'>Öğrenci</span>
+    <span class='ocrx_word' id='region_0_word_1_8' title='bbox 204 300 286 323; x_wconf 96'>notları</span>
+    <span class='ocrx_word' id='region_0_word_1_9' title='bbox 298 306 328 323; x_wconf 96'>ve</span>
+    <span class='ocrx_word' id='region_0_word_1_10' title='bbox 341 300 472 329; x_wconf 96'>kaynaklar</span>
+   </span>
+  </p>
+ </div>
+ <div class='ocr_carea' id='region_0_block_1_3' title="bbox 86 379 426 413">
+  <p class='ocr_par' id='region_0_par_1_3' lang='tur' title="bbox 86 379 426 413">
+   <span class='ocr_line' id='region_0_line_1_4' title="bbox 86 379 426 413; baseline 0 -7; x_size 30; x_descenders 7; x_ascenders 7">
+    <span class='ocrx_word' id='region_0_word_1_11' title='bbox 86 379 158 406; x_wconf 96'>İnsan</span>
+    <span class='ocrx_word' id='region_0_word_1_12' title='bbox 170 383 285 406; x_wconf 96'>denetimi</span>
+    <span class='ocrx_word' id='region_0_word_1_13' title='bbox 296 383 426 413; x_wconf 96'>gereklidir.</span>
+   </span>
+  </p>
+ </div>
+</div></body></html>

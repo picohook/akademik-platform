@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "kind": "ocr-preparation",
+  "source": {
+    "name": "columns-scan.pdf",
+    "sha256": "8417895a4d62d0cdcd519a8fb743ec1213d69689c4093281e4e6ef681ffe8743",
+    "bytes": 91951,
+    "totalPages": 1
+  },
+  "model": "eng",
+  "language": "en",
+  "dpi": 150,
+  "scope": {
+    "requested": "1",
+    "complete": true
+  },
+  "reviewRequired": true,
+  "conformance": "not_assessed",
+  "pages": [
+    {
+      "number": 1,
+      "file": "page-001.hocr",
+      "sha256": "50814f7a746452e938332edd0adb5e23779f4272c8282909b8636a523a74cf09",
+      "textCharacters": 630,
+      "confidence": 95,
+      "regionConfidence": [
+        95
+      ],
+      "readingOrderMode": "full-page-OCR",
+      "regions": [
+        {
+          "left": 0,
+          "top": 0,
+          "width": 1,
+          "height": 1
+        }
+      ],
+      "coverageRatio": 1,
+      "reviewRequired": true
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "kind": "pdf-source-inspection",
+  "conformance": "not_assessed",
+  "source": {
+    "name": "columns-scan.pdf",
+    "sha256": "8417895a4d62d0cdcd519a8fb743ec1213d69689c4093281e4e6ef681ffe8743",
+    "bytes": 91951
+  },
+  "totalPages": 1,
+  "pages": [
+    {
+      "number": 1,
+      "textCharacters": 0,
+      "textLanguage": null,
+      "sourceStructure": false,
+      "roles": {},
+      "missingAlternatives": {
+        "Figure": 0,
+        "Formula": 0
+      },
+      "ocrPresent": false,
+      "ocrWords": 0,
+      "structureError": false,
+      "truncated": false
+    }
+  ],
+  "scope": {
+    "requested": "all",
+    "complete": true
+  },
+  "automatedFindings": [
+    {
+      "page": 1,
+      "code": "no_readable_text",
+      "action": "review_required"
+    },
+    {
+      "page": 1,
+      "code": "no_source_structure",
+      "action": "review_required"
+    }
+  ],
+  "humanReview": [
+    "Visual vs reading order on each page",
+    "OCR text accuracy, language and column order where used",
+    "Meaning and adequacy of figure/formula alternatives",
+    "Heading/table relationships and publisher semantics"
+  ],
+  "automatedStatus": "review_required"
+}

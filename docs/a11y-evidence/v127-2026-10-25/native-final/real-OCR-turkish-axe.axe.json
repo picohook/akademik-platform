@@ -1,0 +1,565 @@
+{
+  "url": "http://127.0.0.1:56125/?book=034a4e71-a548-4903-9fb2-997d8c794e34&page=1",
+  "testEngine": {
+    "name": "axe-core",
+    "version": "4.13.0"
+  },
+  "violations": [],
+  "incomplete": [
+    {
+      "id": "aria-valid-attr-value",
+      "impact": "critical",
+      "tags": [
+        "cat.aria",
+        "wcag2a",
+        "wcag412",
+        "EN-301-549",
+        "EN-9.4.1.2",
+        "RGAAv4",
+        "RGAA-7.1.1"
+      ],
+      "description": "Ensure all ARIA attributes have valid values",
+      "help": "ARIA attributes must conform to valid values",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/aria-valid-attr-value?application=axeAPI",
+      "nodes": [
+        {
+          "any": [],
+          "all": [
+            {
+              "id": "aria-valid-attr-value",
+              "data": {
+                "messageKey": "controlsWithinPopup",
+                "needsReview": "aria-controls=\"messagesModal\""
+              },
+              "relatedNodes": [],
+              "impact": "critical",
+              "message": "Unable to determine if aria-controls referenced ID exists on the page while using aria-haspopup: aria-controls=\"messagesModal\""
+            }
+          ],
+          "none": [],
+          "impact": "critical",
+          "html": "<button class=\"ghost-btn\" type=\"button\" data-open-messages=\"\" aria-haspopup=\"dialog\" aria-controls=\"messagesModal\">Bildirimler</button>",
+          "target": [
+            ".reader-actions > button[data-open-messages=\"\"][aria-haspopup=\"dialog\"][aria-controls=\"messagesModal\"]"
+          ],
+          "failureSummary": "Fix all of the following:\n  Unable to determine if aria-controls referenced ID exists on the page while using aria-haspopup: aria-controls=\"messagesModal\""
+        }
+      ]
+    },
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "tags": [
+        "cat.color",
+        "wcag2aa",
+        "wcag143",
+        "TTv5",
+        "TT13.c",
+        "EN-301-549",
+        "EN-9.1.4.3",
+        "ACT",
+        "RGAAv4",
+        "RGAA-3.2.1"
+      ],
+      "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=axeAPI",
+      "nodes": [
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "messageKey": "nonBmp"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element content contains only non-text characters"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button class=\"icon-btn\" id=\"closeReader\" aria-label=\"Kapat\">✕</button>",
+          "target": [
+            "#closeReader"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "messageKey": "nonBmp"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element content contains only non-text characters"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button class=\"ghost-btn\" id=\"toggleToc\" type=\"button\" title=\"İçindekiler\" aria-label=\"İçindekiler\" aria-controls=\"tocPanel\" aria-expanded=\"false\">☰</button>",
+          "target": [
+            "#toggleToc"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "messageKey": "nonBmp"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element content contains only non-text characters"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button class=\"ghost-btn\" id=\"fullscreenBtn\" type=\"button\" aria-label=\"Tam ekran\" title=\"Tam ekran\">⛶</button>",
+          "target": [
+            "#fullscreenBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "messageKey": "nonBmp"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element content contains only non-text characters"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button class=\"ghost-btn\" id=\"spreadBtn\" type=\"button\" aria-label=\"Çift sayfa\" title=\"Çift sayfa\" aria-pressed=\"false\">▥</button>",
+          "target": [
+            "#spreadBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "messageKey": "nonBmp"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element content contains only non-text characters"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button class=\"ghost-btn\" id=\"scrollBtn\" type=\"button\" aria-label=\"Sürekli kaydırma\" title=\"Sürekli kaydırma\" aria-pressed=\"false\">≣</button>",
+          "target": [
+            "#scrollBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "messageKey": "nonBmp"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element content contains only non-text characters"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button class=\"icon-btn\" id=\"zoomOut\" aria-label=\"Uzaklaştır\">−</button>",
+          "target": [
+            "#zoomOut"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "messageKey": "nonBmp"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element content contains only non-text characters"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button class=\"ghost-btn\" id=\"bookmarkBtn\" type=\"button\" title=\"Yer imi ekle\" aria-label=\"Yer imi\" aria-pressed=\"false\">☆</button>",
+          "target": [
+            "#bookmarkBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "17.3pt (23.088px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"tr\" style=\"position: absolute; left: 49.296px; top: 46.8px; width: 83.616px; height: 23.088px; font-size: 23.088px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">Türkçe </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"tr\"]:nth-child(1) > .ocr-word[lang=\"tr\"]:nth-child(1)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "13.6pt (18.096px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"tr\" style=\"position: absolute; left: 142.272px; top: 46.8px; width: 81.744px; height: 18.096px; font-size: 18.096px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">okuma </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"tr\"]:nth-child(1) > .ocr-word[lang=\"tr\"]:nth-child(2)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "17.8pt (23.712px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"tr\" style=\"position: absolute; left: 233.376px; top: 46.8px; width: 76.752px; height: 23.712px; font-size: 23.712px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">örneği </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"tr\"]:nth-child(1) > .ocr-word[lang=\"tr\"]:nth-child(3)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "13.6pt (18.096px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"tr\" style=\"position: absolute; left: 53.664px; top: 135.408px; width: 25.584px; height: 18.096px; font-size: 18.096px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">Diş </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"tr\"]:nth-child(2) > .ocr-word[lang=\"tr\"]:nth-child(1)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "13.6pt (18.096px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"tr\" style=\"position: absolute; left: 86.736px; top: 135.408px; width: 106.704px; height: 18.096px; font-size: 18.096px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">hekimliğinde </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"tr\"]:nth-child(2) > .ocr-word[lang=\"tr\"]:nth-child(2)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "13.1pt (17.472px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"tr\" style=\"position: absolute; left: 200.304px; top: 136.032px; width: 80.496px; height: 17.472px; font-size: 17.472px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">araştırma </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"tr\"]:nth-child(2) > .ocr-word[lang=\"tr\"]:nth-child(3)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "15.4pt (20.592px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"tr\" style=\"position: absolute; left: 53.04px; top: 184.704px; width: 66.144px; height: 20.592px; font-size: 20.592px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">Öğrenci </span>",
+          "target": [
+            ".ocr-word[lang=\"tr\"]:nth-child(4)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"tr\" style=\"position: absolute; left: 127.296px; top: 187.2px; width: 51.168px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">notları </span>",
+          "target": [
+            ".ocr-word[lang=\"tr\"]:nth-child(5)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "8.0pt (10.608px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"tr\" style=\"position: absolute; left: 185.952px; top: 190.944px; width: 18.72px; height: 10.608px; font-size: 10.608px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">ve </span>",
+          "target": [
+            ".ocr-word[lang=\"tr\"]:nth-child(6)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "13.6pt (18.096px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"tr\" style=\"position: absolute; left: 212.784px; top: 187.2px; width: 81.744px; height: 18.096px; font-size: 18.096px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">kaynaklar </span>",
+          "target": [
+            ".ocr-word[lang=\"tr\"]:nth-child(7)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "12.6pt (16.848px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"tr\" style=\"position: absolute; left: 53.664px; top: 236.496px; width: 44.928px; height: 16.848px; font-size: 16.848px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">İnsan </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"tr\"]:nth-child(3) > .ocr-word[lang=\"tr\"]:nth-child(1)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"tr\" style=\"position: absolute; left: 106.08px; top: 238.992px; width: 71.76px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">denetimi </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"tr\"]:nth-child(3) > .ocr-word[lang=\"tr\"]:nth-child(2)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "14.0pt (18.72px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"tr\" style=\"position: absolute; left: 184.704px; top: 238.992px; width: 81.12px; height: 18.72px; font-size: 18.72px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">gereklidir. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"tr\"]:nth-child(3) > .ocr-word[lang=\"tr\"]:nth-child(3)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "messageKey": "nonBmp"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element content contains only non-text characters"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button class=\"mini-btn\" id=\"closeNotes\" type=\"button\" aria-label=\"Notları kapat\">✕</button>",
+          "target": [
+            "#closeNotes"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+        }
+      ]
+    }
+  ],
+  "passes": 26
+}

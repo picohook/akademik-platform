@@ -1,0 +1,77 @@
+{
+  "root": "C:\\Users\\OWNER\\Documents\\deepseek-harness\\default-workspace\\akademik-platform\\tmp\\a11y-v127\\ocr-tools-final-3",
+  "status": "passed",
+  "cases": [
+    {
+      "id": "image-only-source-is-not-falsely-accessible",
+      "status": "PASS",
+      "automatedStatus": "review_required",
+      "flags": [
+        {
+          "page": 1,
+          "code": "no_readable_text",
+          "action": "review_required"
+        },
+        {
+          "page": 1,
+          "code": "no_source_structure",
+          "action": "review_required"
+        }
+      ]
+    },
+    {
+      "id": "source-tagging-and-formula-alternatives-report",
+      "status": "PASS",
+      "sourceLevelsPreserved": true,
+      "samplingNotFullAudit": true
+    },
+    {
+      "id": "page-selection-is-explicit-and-bounded",
+      "status": "PASS",
+      "invalidRangesRejected": true
+    },
+    {
+      "id": "real-English-OCR-from-PDF-local-model",
+      "status": "PASS",
+      "characters": 630,
+      "confidence": 95,
+      "allProcessingLocal": true
+    },
+    {
+      "id": "real-Turkish-OCR-local-model-and-characters",
+      "status": "PASS",
+      "confidence": 95,
+      "TurkishCharactersPreserved": true
+    },
+    {
+      "id": "OCR-availability-still-requires-review",
+      "status": "PASS",
+      "words": 102,
+      "humanReviewStillRequired": true
+    },
+    {
+      "id": "existing-OCR-and-source-cannot-be-overwritten",
+      "status": "PASS",
+      "originalOutputPreserved": true
+    },
+    {
+      "id": "missing-model-is-not-downloaded",
+      "status": "PASS",
+      "offlineFailure": true
+    },
+    {
+      "id": "explicit-regions-repair-known-two-column-source-order",
+      "status": "PASS",
+      "explicitPlan": true,
+      "fullPageCoverage": true,
+      "allLeftBeforeRight": true,
+      "confidence": 94.66666666666667
+    },
+    {
+      "id": "overlapping-explicit-regions-rejected",
+      "status": "PASS",
+      "duplicateTextPrevented": true
+    }
+  ],
+  "productionChanges": false
+}

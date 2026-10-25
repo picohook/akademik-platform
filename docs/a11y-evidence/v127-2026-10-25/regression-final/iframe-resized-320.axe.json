@@ -1,0 +1,10 @@
+{
+  "sandboxBefore": "allow-same-origin",
+  "sandboxAfter": "allow-same-origin",
+  "url": "about:srcdoc",
+  "violations": [],
+  "incomplete": [],
+  "passes": 11,
+  "language": "en",
+  "viewport": "width=320, height=605, initial-scale=1"
+}

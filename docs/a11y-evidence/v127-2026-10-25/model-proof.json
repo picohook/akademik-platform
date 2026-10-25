@@ -1,0 +1,11 @@
+{
+  "tesseractJs": "6.0.1",
+  "models": {
+    "eng": {
+      "sha256": "5dc5d8d640a212c9d6184921ba103b186f50e0fed9ee716c53e6b312b400d747"
+    },
+    "tur": {
+      "sha256": "f0127d0f3745f9c65e2ae7ec6b23198fbe5aa186a61b35661426f5e1ef9dedd7"
+    }
+  }
+}

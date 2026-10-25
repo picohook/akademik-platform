@@ -1,0 +1,2790 @@
+{
+  "url": "http://127.0.0.1:56125/?book=fec193eb-5d9a-4300-b7ea-d6d9faf45696&page=1",
+  "testEngine": {
+    "name": "axe-core",
+    "version": "4.13.0"
+  },
+  "violations": [],
+  "incomplete": [
+    {
+      "id": "aria-valid-attr-value",
+      "impact": "critical",
+      "tags": [
+        "cat.aria",
+        "wcag2a",
+        "wcag412",
+        "EN-301-549",
+        "EN-9.4.1.2",
+        "RGAAv4",
+        "RGAA-7.1.1"
+      ],
+      "description": "Ensure all ARIA attributes have valid values",
+      "help": "ARIA attributes must conform to valid values",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/aria-valid-attr-value?application=axeAPI",
+      "nodes": [
+        {
+          "any": [],
+          "all": [
+            {
+              "id": "aria-valid-attr-value",
+              "data": {
+                "messageKey": "controlsWithinPopup",
+                "needsReview": "aria-controls=\"messagesModal\""
+              },
+              "relatedNodes": [],
+              "impact": "critical",
+              "message": "Unable to determine if aria-controls referenced ID exists on the page while using aria-haspopup: aria-controls=\"messagesModal\""
+            }
+          ],
+          "none": [],
+          "impact": "critical",
+          "html": "<button class=\"ghost-btn\" type=\"button\" data-open-messages=\"\" aria-haspopup=\"dialog\" aria-controls=\"messagesModal\">Bildirimler</button>",
+          "target": [
+            ".reader-actions > button[data-open-messages=\"\"][aria-haspopup=\"dialog\"][aria-controls=\"messagesModal\"]"
+          ],
+          "failureSummary": "Fix all of the following:\n  Unable to determine if aria-controls referenced ID exists on the page while using aria-haspopup: aria-controls=\"messagesModal\""
+        }
+      ]
+    },
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "tags": [
+        "cat.color",
+        "wcag2aa",
+        "wcag143",
+        "TTv5",
+        "TT13.c",
+        "EN-301-549",
+        "EN-9.1.4.3",
+        "ACT",
+        "RGAAv4",
+        "RGAA-3.2.1"
+      ],
+      "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=axeAPI",
+      "nodes": [
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "messageKey": "nonBmp"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element content contains only non-text characters"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button class=\"icon-btn\" id=\"closeReader\" aria-label=\"Kapat\">✕</button>",
+          "target": [
+            "#closeReader"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "messageKey": "nonBmp"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element content contains only non-text characters"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button class=\"ghost-btn\" id=\"toggleToc\" type=\"button\" title=\"İçindekiler\" aria-label=\"İçindekiler\" aria-controls=\"tocPanel\" aria-expanded=\"false\">☰</button>",
+          "target": [
+            "#toggleToc"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "messageKey": "nonBmp"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element content contains only non-text characters"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button class=\"ghost-btn\" id=\"fullscreenBtn\" type=\"button\" aria-label=\"Tam ekran\" title=\"Tam ekran\">⛶</button>",
+          "target": [
+            "#fullscreenBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "messageKey": "nonBmp"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element content contains only non-text characters"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button class=\"ghost-btn\" id=\"spreadBtn\" type=\"button\" aria-label=\"Çift sayfa\" title=\"Çift sayfa\" aria-pressed=\"false\">▥</button>",
+          "target": [
+            "#spreadBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "messageKey": "nonBmp"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element content contains only non-text characters"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button class=\"ghost-btn\" id=\"scrollBtn\" type=\"button\" aria-label=\"Sürekli kaydırma\" title=\"Sürekli kaydırma\" aria-pressed=\"false\">≣</button>",
+          "target": [
+            "#scrollBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "messageKey": "nonBmp"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element content contains only non-text characters"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button class=\"icon-btn\" id=\"zoomOut\" aria-label=\"Uzaklaştır\">−</button>",
+          "target": [
+            "#zoomOut"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "messageKey": "nonBmp"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element content contains only non-text characters"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button class=\"ghost-btn\" id=\"bookmarkBtn\" type=\"button\" title=\"Yer imi ekle\" aria-label=\"Yer imi\" aria-pressed=\"false\">☆</button>",
+          "target": [
+            "#bookmarkBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "13.6pt (18.096px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 49.92px; top: 46.8px; width: 56.16px; height: 18.096px; font-size: 18.096px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">OCR </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(1) > .ocr-word[lang=\"en\"]:nth-child(1)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "13.6pt (18.096px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 112.944px; top: 46.8px; width: 197.184px; height: 18.096px; font-size: 18.096px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">ACCESSIBILITY </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(1) > .ocr-word[lang=\"en\"]:nth-child(2)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "13.6pt (18.096px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 318.864px; top: 46.8px; width: 105.456px; height: 18.096px; font-size: 18.096px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">SAMPLE </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(1) > .ocr-word[lang=\"en\"]:nth-child(3)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 43.68px; top: 141.648px; width: 46.176px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">LEFT </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(2) > .ocr-word[lang=\"en\"]:nth-child(1)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 96.096px; top: 141.648px; width: 81.744px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">COLUMN </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(2) > .ocr-word[lang=\"en\"]:nth-child(2)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 43.68px; top: 187.2px; width: 80.496px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">Research </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(3) > .ocr-word[lang=\"en\"]:nth-child(1)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.3pt (13.728px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 131.664px; top: 187.824px; width: 46.176px; height: 13.728px; font-size: 13.728px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">starts </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(3) > .ocr-word[lang=\"en\"]:nth-child(2)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 185.328px; top: 187.2px; width: 41.808px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">here. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(3) > .ocr-word[lang=\"en\"]:nth-child(3)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "13.6pt (18.096px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 42.432px; top: 232.752px; width: 48.672px; height: 18.096px; font-size: 18.096px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">Alpha </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(4) > .ocr-word[lang=\"en\"]:nth-child(1)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 98.592px; top: 232.752px; width: 36.192px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">beta </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(4) > .ocr-word[lang=\"en\"]:nth-child(2)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 141.648px; top: 236.496px; width: 68.016px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">gamma. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(4) > .ocr-word[lang=\"en\"]:nth-child(3)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 43.68px; top: 278.304px; width: 43.68px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">Read </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(5) > .ocr-word[lang=\"en\"]:nth-child(1)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 94.848px; top: 278.304px; width: 28.704px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">this </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(5) > .ocr-word[lang=\"en\"]:nth-child(2)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 131.04px; top: 278.304px; width: 60.528px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">column </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(5) > .ocr-word[lang=\"en\"]:nth-child(3)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 198.432px; top: 278.304px; width: 34.944px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">first. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(5) > .ocr-word[lang=\"en\"]:nth-child(4)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 42.432px; top: 323.856px; width: 32.448px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">The </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(1)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "8.0pt (10.608px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 81.744px; top: 327.6px; width: 57.408px; height: 10.608px; font-size: 10.608px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">source </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(2)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 146.64px; top: 323.856px; width: 29.328px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">has </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(3)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "13.6pt (18.096px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 183.456px; top: 323.856px; width: 101.088px; height: 18.096px; font-size: 18.096px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">paragraphs. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(4)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 42.432px; top: 369.408px; width: 35.568px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">Text </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(5)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 84.864px; top: 369.408px; width: 51.168px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">needs </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(6)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 143.52px; top: 369.408px; width: 56.784px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">human </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(7)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 208.416px; top: 369.408px; width: 57.408px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">review. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(8)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 42.432px; top: 414.96px; width: 28.08px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">We </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(9)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 77.376px; top: 414.96px; width: 49.92px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">check </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(10)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 132.912px; top: 414.96px; width: 51.168px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">words </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(11)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 190.944px; top: 414.96px; width: 30.576px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">and </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(12)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 229.008px; top: 414.96px; width: 47.424px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">order. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(13)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 43.68px; top: 460.512px; width: 48.672px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">Notes </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(14)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "13.1pt (17.472px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 99.216px; top: 461.136px; width: 64.272px; height: 17.472px; font-size: 17.472px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">support </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(15)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 170.352px; top: 460.512px; width: 78px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">research. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(16)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "11.2pt (14.976px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 43.68px; top: 505.44px; width: 41.808px; height: 14.976px; font-size: 14.976px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">Each </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(17)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "11.2pt (14.976px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 93.6px; top: 505.44px; width: 54.912px; height: 14.976px; font-size: 14.976px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">reader </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(18)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "8.0pt (10.608px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 154.752px; top: 509.808px; width: 29.328px; height: 10.608px; font-size: 10.608px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">can </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(19)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 191.568px; top: 506.064px; width: 49.92px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">select </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(20)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.3pt (13.728px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 247.728px; top: 506.688px; width: 34.32px; height: 13.728px; font-size: 13.728px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">text. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(21)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "11.2pt (14.976px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 43.68px; top: 550.992px; width: 51.792px; height: 14.976px; font-size: 14.976px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">Books </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(22)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "8.0pt (10.608px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 102.336px; top: 555.36px; width: 29.952px; height: 10.608px; font-size: 10.608px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">can </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(23)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "11.2pt (14.976px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 139.776px; top: 550.992px; width: 60.528px; height: 14.976px; font-size: 14.976px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">contain </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(24)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "14.0pt (18.72px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 207.168px; top: 550.992px; width: 61.776px; height: 18.72px; font-size: 18.72px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">figures. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(25)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 42.432px; top: 596.544px; width: 44.304px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">Their </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(26)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "14.0pt (18.72px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 93.6px; top: 596.544px; width: 71.76px; height: 18.72px; font-size: 18.72px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">meaning </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(27)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 173.472px; top: 596.544px; width: 51.168px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">needs </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(6) > .ocr-word[lang=\"en\"]:nth-child(28)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "7.5pt (9.984px)",
+                "fontWeight": "normal",
+                "messageKey": "shortTextContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element content is too short to determine if it is actual text content"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 231.504px; top: 600.912px; width: 9.36px; height: 9.984px; font-size: 9.984px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">a </span>",
+          "target": [
+            ".ocr-word[lang=\"en\"]:nth-child(29)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element content is too short to determine if it is actual text content"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 248.352px; top: 600.912px; width: 62.4px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">person. </span>",
+          "target": [
+            ".ocr-word[lang=\"en\"]:nth-child(30)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 42.432px; top: 642.096px; width: 36.192px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">This </span>",
+          "target": [
+            ".ocr-word[lang=\"en\"]:nth-child(31)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 85.488px; top: 642.096px; width: 12.48px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">is </span>",
+          "target": [
+            ".ocr-word[lang=\"en\"]:nth-child(32)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 104.208px; top: 642.096px; width: 26.208px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">the </span>",
+          "target": [
+            ".ocr-word[lang=\"en\"]:nth-child(33)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 137.28px; top: 642.096px; width: 30.576px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">end </span>",
+          "target": [
+            ".ocr-word[lang=\"en\"]:nth-child(34)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 175.344px; top: 642.096px; width: 15.6px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">of </span>",
+          "target": [
+            ".ocr-word[lang=\"en\"]:nth-child(35)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 196.56px; top: 642.096px; width: 25.584px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">the </span>",
+          "target": [
+            ".ocr-word[lang=\"en\"]:nth-child(36)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 229.632px; top: 642.096px; width: 28.704px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">left. </span>",
+          "target": [
+            ".ocr-word[lang=\"en\"]:nth-child(37)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 427.44px; top: 141.648px; width: 58.656px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">RIGHT </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(7) > .ocr-word[lang=\"en\"]:nth-child(1)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 492.336px; top: 141.648px; width: 82.368px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">COLUMN </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(7) > .ocr-word[lang=\"en\"]:nth-child(2)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 426.192px; top: 187.2px; width: 32.448px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">The </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(8) > .ocr-word[lang=\"en\"]:nth-child(1)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 465.504px; top: 187.2px; width: 60.528px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">second </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(8) > .ocr-word[lang=\"en\"]:nth-child(2)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "13.6pt (18.096px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 533.52px; top: 187.2px; width: 44.304px; height: 18.096px; font-size: 18.096px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">topic. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(8) > .ocr-word[lang=\"en\"]:nth-child(3)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 427.44px; top: 232.752px; width: 42.432px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">Delta </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(9) > .ocr-word[lang=\"en\"]:nth-child(1)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "13.6pt (18.096px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 477.36px; top: 232.752px; width: 59.904px; height: 18.096px; font-size: 18.096px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">epsilon </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(9) > .ocr-word[lang=\"en\"]:nth-child(2)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.3pt (13.728px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 544.128px; top: 233.376px; width: 40.56px; height: 13.728px; font-size: 13.728px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">zeta. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(9) > .ocr-word[lang=\"en\"]:nth-child(3)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 427.44px; top: 278.304px; width: 43.68px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">Read </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(10) > .ocr-word[lang=\"en\"]:nth-child(1)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 477.984px; top: 278.304px; width: 29.328px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">this </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(10) > .ocr-word[lang=\"en\"]:nth-child(2)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 514.176px; top: 278.304px; width: 61.152px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">column </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(10) > .ocr-word[lang=\"en\"]:nth-child(3)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.3pt (13.728px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 582.816px; top: 278.928px; width: 39.312px; height: 13.728px; font-size: 13.728px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">next. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(10) > .ocr-word[lang=\"en\"]:nth-child(4)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 426.192px; top: 323.856px; width: 35.568px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">This </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(11) > .ocr-word[lang=\"en\"]:nth-child(1)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "8.0pt (10.608px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 468.624px; top: 327.6px; width: 56.784px; height: 10.608px; font-size: 10.608px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">source </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(11) > .ocr-word[lang=\"en\"]:nth-child(2)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 533.52px; top: 323.856px; width: 11.856px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">is </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(11) > .ocr-word[lang=\"en\"]:nth-child(3)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "8.0pt (10.608px)",
+                "fontWeight": "normal",
+                "messageKey": "shortTextContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element content is too short to determine if it is actual text content"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 552.24px; top: 327.6px; width: 8.736px; height: 10.608px; font-size: 10.608px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">a </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(11) > .ocr-word[lang=\"en\"]:nth-child(4)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element content is too short to determine if it is actual text content"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "8.0pt (10.608px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 568.464px; top: 327.6px; width: 44.304px; height: 10.608px; font-size: 10.608px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">scan. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(11) > .ocr-word[lang=\"en\"]:nth-child(5)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 426.816px; top: 369.408px; width: 41.808px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">OCR </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(12) > .ocr-word[lang=\"en\"]:nth-child(1)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 475.488px; top: 369.408px; width: 12.48px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">is </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(12) > .ocr-word[lang=\"en\"]:nth-child(2)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "8.0pt (10.608px)",
+                "fontWeight": "normal",
+                "messageKey": "shortTextContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element content is too short to determine if it is actual text content"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 494.832px; top: 373.152px; width: 8.736px; height: 10.608px; font-size: 10.608px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">a </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(12) > .ocr-word[lang=\"en\"]:nth-child(3)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element content is too short to determine if it is actual text content"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.3pt (13.728px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 510.432px; top: 370.032px; width: 31.2px; height: 13.728px; font-size: 13.728px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">text </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(12) > .ocr-word[lang=\"en\"]:nth-child(4)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 547.872px; top: 369.408px; width: 92.976px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">alternative. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(12) > .ocr-word[lang=\"en\"]:nth-child(5)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 427.44px; top: 414.96px; width: 8.736px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">It </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(1)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 442.416px; top: 414.96px; width: 41.184px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">does </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(2)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.3pt (13.728px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 491.088px; top: 415.584px; width: 25.584px; height: 13.728px; font-size: 13.728px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">not </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(3)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 522.912px; top: 414.96px; width: 72.384px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">describe </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(4)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "13.6pt (18.096px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 602.784px; top: 414.96px; width: 64.896px; height: 18.096px; font-size: 18.096px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">images. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(5)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 427.44px; top: 460.512px; width: 8.736px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">It </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(6)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 442.416px; top: 460.512px; width: 41.184px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">does </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(7)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.3pt (13.728px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 491.088px; top: 461.136px; width: 25.584px; height: 13.728px; font-size: 13.728px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">not </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(8)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "13.6pt (18.096px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 522.912px; top: 460.512px; width: 51.168px; height: 18.096px; font-size: 18.096px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">certify </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(9)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "8.0pt (10.608px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 580.32px; top: 464.256px; width: 63.648px; height: 10.608px; font-size: 10.608px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">access. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(10)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "11.2pt (14.976px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 427.44px; top: 505.44px; width: 61.776px; height: 14.976px; font-size: 14.976px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">Review </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(11)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "11.2pt (14.976px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 495.456px; top: 505.44px; width: 58.656px; height: 14.976px; font-size: 14.976px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">follows </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(12)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "14.0pt (18.72px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 561.6px; top: 505.44px; width: 97.344px; height: 18.72px; font-size: 18.72px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">recognition. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(13)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "11.2pt (14.976px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 427.44px; top: 550.992px; width: 45.552px; height: 14.976px; font-size: 14.976px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">Proof </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(14)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "11.2pt (14.976px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 479.232px; top: 550.992px; width: 63.024px; height: 14.976px; font-size: 14.976px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">records </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(15)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "8.0pt (10.608px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 549.12px; top: 555.36px; width: 56.784px; height: 10.608px; font-size: 10.608px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">source </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(16)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "11.2pt (14.976px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 612.144px; top: 550.992px; width: 44.928px; height: 14.976px; font-size: 14.976px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">facts. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(17)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "14.0pt (18.72px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 426.816px; top: 596.544px; width: 63.648px; height: 18.72px; font-size: 18.72px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">Speech </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(18)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 498.576px; top: 596.544px; width: 11.856px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">is </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(19)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 517.296px; top: 596.544px; width: 71.136px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">checked </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(20)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "14.0pt (18.72px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 595.92px; top: 596.544px; width: 91.104px; height: 18.72px; font-size: 18.72px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">separately. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(21)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 426.192px; top: 642.096px; width: 35.568px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">This </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(22)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 469.248px; top: 642.096px; width: 11.856px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">is </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(23)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 487.968px; top: 642.096px; width: 25.584px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">the </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(24)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 520.416px; top: 642.096px; width: 30.576px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">end </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(25)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 558.48px; top: 642.096px; width: 16.224px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">of </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(26)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.8pt (14.352px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 579.696px; top: 642.096px; width: 26.208px; height: 14.352px; font-size: 14.352px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">the </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(27)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "14.0pt (18.72px)",
+                "fontWeight": "normal",
+                "messageKey": "bgOverlap",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"ocr-word\" lang=\"en\" style=\"position: absolute; left: 613.392px; top: 642.096px; width: 40.56px; height: 18.72px; font-size: 18.72px; line-height: 1; white-space: pre; overflow: hidden; color: transparent; transform-origin: 0px 0px;\">right. </span>",
+          "target": [
+            ".ocr-paragraph[role=\"paragraph\"][lang=\"en\"]:nth-child(13) > .ocr-word[lang=\"en\"]:nth-child(28)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "messageKey": "nonBmp"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Element content contains only non-text characters"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button class=\"mini-btn\" id=\"closeNotes\" type=\"button\" aria-label=\"Notları kapat\">✕</button>",
+          "target": [
+            "#closeNotes"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+        }
+      ]
+    }
+  ],
+  "passes": 26
+}

@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-25",
+  "timeZone": "Europe/Istanbul",
+  "codeCommit": "fbeed6e6fefcad00f13ddb80b98b91fb9ef67351",
+  "localVersion": 127,
+  "productionVersion": 126,
+  "productionBuild": "90c7b72",
+  "noDeployEnvMigrationChanges": true,
+  "runs": [
+    {
+      "name": "native-final",
+      "passed": 26,
+      "failed": 0,
+      "jsErrors": 0
+    },
+    {
+      "name": "regression-final",
+      "passed": 74,
+      "failed": 0,
+      "jsErrors": 0
+    },
+    {
+      "name": "ocr-tools",
+      "passed": 10,
+      "failed": 0,
+      "scope": "Actual local PDF.js/canvas/Tesseract eng/tur models; explicit-region reading order"
+    }
+  ],
+  "cleanAxeScans": 34,
+  "violations": 0,
+  "unitTests": {
+    "passed": 65,
+    "failed": 0
+  },
+  "voiceOver": "NOT RUN",
+  "humanListening": "NOT RUN"
+}

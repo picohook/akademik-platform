@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "kind": "pdf-source-inspection",
+  "conformance": "not_assessed",
+  "source": {
+    "name": "tagged-multipage.pdf",
+    "sha256": "0131ebf707be24aa717bc5f9c0068011244e2094970985069bc17c29b63e27f8",
+    "bytes": 1587
+  },
+  "totalPages": 2,
+  "pages": [
+    {
+      "number": 1,
+      "textCharacters": 50,
+      "textLanguage": "en",
+      "sourceStructure": true,
+      "roles": {
+        "Root": 1,
+        "Sect": 1,
+        "H1": 1,
+        "P": 1,
+        "Formula": 1
+      },
+      "missingAlternatives": {
+        "Figure": 0,
+        "Formula": 0
+      },
+      "ocrPresent": false,
+      "ocrWords": 0,
+      "structureError": false,
+      "truncated": false
+    },
+    {
+      "number": 2,
+      "textCharacters": 44,
+      "textLanguage": "en",
+      "sourceStructure": true,
+      "roles": {
+        "Root": 1,
+        "Sect": 1,
+        "H2": 1,
+        "P": 1,
+        "Formula": 1
+      },
+      "missingAlternatives": {
+        "Figure": 0,
+        "Formula": 1
+      },
+      "ocrPresent": false,
+      "ocrWords": 0,
+      "structureError": false,
+      "truncated": false
+    }
+  ],
+  "scope": {
+    "requested": "all",
+    "complete": true
+  },
+  "automatedFindings": [
+    {
+      "page": 2,
+      "code": "formula_missing_source_alternative",
+      "action": "review_required"
+    }
+  ],
+  "humanReview": [
+    "Visual vs reading order on each page",
+    "OCR text accuracy, language and column order where used",
+    "Meaning and adequacy of figure/formula alternatives",
+    "Heading/table relationships and publisher semantics"
+  ],
+  "automatedStatus": "review_required"
+}
