@@ -466,11 +466,15 @@ let modalReturnFocus = null;
 function openModal(modal, focusElement) {
   modalReturnFocus = document.activeElement;
   modal.hidden = false;
+  setAppInert(true);
+  reader.inert = !reader.hidden;
   setTimeout(() => focusElement?.focus(), 0);
 }
 
 function closeModal(modal) {
   modal.hidden = true;
+  reader.inert = false;
+  setAppInert(!loginScreen.hidden || !reader.hidden);
   const previous = modalReturnFocus;
   modalReturnFocus = null;
   if (previous && previous.isConnected) previous.focus();
@@ -501,9 +505,9 @@ function trapModalFocus(event) {
 
 function trapReaderFocus(event) {
   if (event.key !== 'Tab' || reader.hidden) return false;
-  const focusable = [reader, ...(!hlBar.hidden ? [hlBar] : [])].flatMap((root) => [...root.querySelectorAll(
+  const focusable = [reader, ...(!hlBar.hidden && !reader.contains(hlBar) ? [hlBar] : [])].flatMap((root) => [...root.querySelectorAll(
     'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], iframe, [tabindex]:not([tabindex="-1"])',
-  )]).filter((element) => element.offsetParent !== null);
+  )]).filter((element) => element.offsetParent !== null && !element.closest('[inert]'));
   if (!focusable.length) return false;
   const first = focusable[0];
   const last = focusable[focusable.length - 1];
@@ -1111,11 +1115,14 @@ function setAppInert(inert) {
   if (topbar) topbar.inert = inert;
   if (main) main.inert = inert;
   if (skip) skip.inert = inert;
+  const footer = document.getElementById('siteFooter');
+  if (footer) footer.inert = inert;
 }
 
 function setUser(user) {
   state.authEpoch = (state.authEpoch || 0) + 1;
   state.user = user;
+  syncShortcutControls();
   try {
     if (user?.id) localStorage.setItem('offlineAnnotationUser', user.id);
     else if (!user) localStorage.removeItem('offlineAnnotationUser');
@@ -1305,6 +1312,8 @@ function updateViewControls() {
   const fitPage = state.fitMode === 'page';
   fitToggle.textContent = fitPage ? '⤢' : '↔';
   fitToggle.title = fitPage ? 'Sayfaya sığdır' : 'Genişliğe sığdır';
+  fitToggle.setAttribute('aria-label', t(fitToggle.title));
+  fitToggle.title = t(fitToggle.title);
   fitToggle.setAttribute('aria-pressed', fitPage ? 'true' : 'false');
   fitToggle.classList.toggle('active', fitPage);
 }
@@ -1335,6 +1344,7 @@ function applyTheme(theme) {
   reader.dataset.theme = next;
   themeBtn.textContent = next === 'dark' ? '☾' : next === 'sepia' ? '◐' : '☀';
   themeBtn.title = t(next === 'dark' ? 'Koyu tema' : next === 'sepia' ? 'Sepia tema' : 'Açık tema');
+  themeBtn.setAttribute('aria-label', themeBtn.title);
   try {
     localStorage.setItem(themeStorageKey(), next);
   } catch {
@@ -1518,15 +1528,18 @@ function renderThumbs() {
 function syncPanelA11y() {
   $('toggleToc').setAttribute('aria-expanded', tocPanel.hidden ? 'false' : 'true');
   $('toggleNotes').setAttribute('aria-expanded', notesPanel.hidden ? 'false' : 'true');
+  // Narrow panels cover the document, so its controls must not take focus
+  // behind them. The visible reader toolbar and panel close buttons remain.
+  pageArea.inert = window.innerWidth <= 820 && (!tocPanel.hidden || !notesPanel.hidden);
 }
 
 function setNotesOpen(open) {
   const next = Boolean(open);
   const hadFocus = notesPanel.contains(document.activeElement);
   notesPanel.hidden = !next;
+  if (next && window.innerWidth <= 820) tocPanel.hidden = true;
   syncPanelA11y();
   if (next) {
-    if (window.innerWidth < 820) tocPanel.hidden = true;
     setTimeout(() => $('noteFilter').focus(), 0);
   } else if (hadFocus) {
     $('toggleNotes').focus();
@@ -1552,10 +1565,11 @@ function updatePageUi() {
     pageInput.hidden = true;
     pageTotal.hidden = true;
     bookmarkBtn.hidden = false;
-    pageLabel.textContent = `${state.epubProgress?.percent || 0}%`;
+    updateEpubLocation(state.epubProgress, false);
     updateBookmarkUi();
     return;
   }
+  pageLabel.setAttribute('aria-live', 'polite');
   pageInput.hidden = false;
   pageTotal.hidden = false;
   bookmarkBtn.hidden = false;
@@ -1728,6 +1742,7 @@ async function toggleBookmark() {
   if (!ownerId) { toast(t('Yer imi için giriş yapın')); return; }
   const cfi = state.epubMode ? currentEpubCfi() : null;
   if (state.epubMode && !cfi) return;
+  const hadFocus = document.activeElement === bookmarkBtn;
   bookmarkBtn.disabled = true;
   try {
     const active = state.epubMode && state.activeBookmarkId
@@ -1754,11 +1769,22 @@ async function toggleBookmark() {
   } catch (error) {
     console.error(error);
     toast(t('Yer imi eklenemedi'));
-  } finally { bookmarkBtn.disabled = false; }
+  } finally {
+    bookmarkBtn.disabled = false;
+    if (hadFocus && !reader.hidden && document.activeElement === document.body) bookmarkBtn.focus();
+  }
+}
+
+function singleKeyShortcutsEnabled() {
+  try { return localStorage.getItem(`singleKeyShortcuts:${annotationOwnerId() || storageUserKey()}`) !== 'off'; } catch { return true; }
+}
+
+function syncShortcutControls() {
+  document.querySelectorAll('[data-single-key-shortcuts]').forEach(input => { input.checked = singleKeyShortcutsEnabled(); });
 }
 
 function showShortcuts() {
-  toast('j/k veya ←/→ sayfa · / kitapta ara · n notlar · b yer imi · ? yardım · Esc kapat');
+  toast('j/k veya ←/→ sayfa · / kitapta ara · n notlar · b yer imi · ? yardım · Esc kapat · Alt+Shift+H seçim araçları');
 }
 
 function showTocTab(tab) {
@@ -2818,6 +2844,9 @@ function appendAnnotationConflict(annotation, item) {
 }
 
 function renderNotes() {
+  const previousFocus = notesList.contains(document.activeElement) ? document.activeElement : null;
+  const focusedId = previousFocus?.closest('.note-item')?.dataset.annotationId;
+  const focusClass = ['note-edit-btn', 'note-delete', 'note-color', 'note-tag', 'note-page'].find(name => previousFocus?.classList.contains(name));
   announceReaderConflicts();
   notesList.replaceChildren();
   const query = String(noteFilter.value || '').toLocaleLowerCase('tr').trim();
@@ -2842,17 +2871,20 @@ function renderNotes() {
     const isBookmark = annotation.color === 'bookmark';
     const item = document.createElement('div');
     item.className = 'note-item';
+    item.dataset.annotationId = annotation.id;
     const color = document.createElement('button');
     color.type = 'button';
     color.className = `note-color ${annotation.color || 'yellow'}`;
     color.title = 'Rengi değiştir';
     color.setAttribute('aria-label', 'Rengi değiştir');
+    if (isBookmark) { color.disabled = true; color.setAttribute('aria-hidden', 'true'); }
     color.addEventListener('click', async (event) => {
       event.stopPropagation();
       await cycleAnnotationColor(annotation);
     });
     item.appendChild(color);
-    const page = document.createElement('div');
+    const page = document.createElement('button');
+    page.type = 'button';
     page.className = 'note-page';
     const epubAnchor = annotation.anchor?.type === 'epub';
     page.textContent = epubAnchor
@@ -2913,9 +2945,11 @@ function renderNotes() {
     remove.type = 'button';
     remove.className = 'note-delete';
     remove.title = 'Sil';
+    remove.setAttribute('aria-label', t('Sil'));
     remove.textContent = '×';
     remove.addEventListener('click', async (event) => {
       event.stopPropagation();
+      if (!isBookmark && !window.confirm(t('Bu not ve vurgusu silinsin mi?'))) return;
       await deleteAnnotation(annotation.id);
     });
     item.appendChild(remove);
@@ -2925,6 +2959,7 @@ function renderNotes() {
       edit.type = 'button';
       edit.className = 'note-edit-btn';
       edit.title = 'Notu düzenle';
+      edit.setAttribute('aria-label', t('Notu düzenle'));
       edit.textContent = '✎';
       edit.addEventListener('click', (event) => {
         event.stopPropagation();
@@ -2951,6 +2986,10 @@ function renderNotes() {
     notesList.appendChild(item);
   });
   translateDom(notesList);
+  if (previousFocus && !previousFocus.isConnected && !notesPanel.hidden) {
+    const replacement = [...notesList.querySelectorAll('.note-item')].find(item => item.dataset.annotationId === focusedId);
+    (replacement?.querySelector(`.${focusClass || 'note-edit-btn'}`) || noteFilter).focus();
+  }
   updateBookmarkUi();
 }
 
@@ -3006,6 +3045,17 @@ async function saveProgress() {
   }
 }
 
+let announcedEpubChapter = null;
+function updateEpubLocation(progress, announce = true) {
+  const href = (progress?.href || '').split('#')[0];
+  const chapter = epubChapterLabel(href);
+  pageLabel.textContent = `${chapter ? `${chapter} · ` : ''}${progress?.percent || 0}%`;
+  if (announce && announcedEpubChapter !== null && href && href !== announcedEpubChapter && chapter) {
+    announceReaderStatus(`${t('Bölüm')}: ${chapter}`);
+  }
+  if (href) announcedEpubChapter = href;
+}
+
 function labelEpubFrames() {
   for (const frame of epubView.querySelectorAll('iframe')) {
     const lang = state.book?.language === 'en' ? 'en' : 'tr';
@@ -3047,6 +3097,7 @@ async function openEpubBook(book, options = {}) {
   state.secondPage = null;
   state.secondViewport = null;
   state.epubProgress = null;
+  announcedEpubChapter = null;
   state.annotations = [];
   reader.hidden = false;
   setAppInert(true);
@@ -3070,6 +3121,7 @@ async function openEpubBook(book, options = {}) {
   pageInput.hidden = true;
   pageTotal.hidden = true;
   bookmarkBtn.hidden = false;
+  pageLabel.setAttribute('aria-live', 'off');
   pageLabel.textContent = 'EPUB';
 
   try {
@@ -3094,7 +3146,7 @@ async function openEpubBook(book, options = {}) {
       onCopyBlocked: () => toast('Bu kitapta kopyalama kapalı'),
       onRelocated: (next) => {
         state.epubProgress = next;
-        pageLabel.textContent = `${next.percent}%`;
+        updateEpubLocation(next);
         labelEpubFrames();
         if (state.bookmarkJump) {
           state.bookmarkJump = false;
@@ -3114,6 +3166,7 @@ async function openEpubBook(book, options = {}) {
         }
       },
       onSelected: handleEpubSelection,
+      onSelectionTools: openSelectionTools,
       onDeselected: () => {
         state.epubSelection = null;
         hlBar.hidden = true;
@@ -3140,7 +3193,7 @@ async function openEpubBook(book, options = {}) {
       throw new Error('EPUB içeriği boş');
     }
     state.epubProgress = engine.getProgress();
-    pageLabel.textContent = `${state.epubProgress.percent}%`;
+    updateEpubLocation(state.epubProgress, false);
     const metaPrefix = [book.publisher, book.publication_year].filter(Boolean).join(' · ');
     readerMeta.textContent = t(`${metaPrefix ? `${metaPrefix} · ` : ''}EPUB · ${engine.getSpineCount()} bölüm`);
     const savedTheme = storedTheme();
@@ -3489,6 +3542,19 @@ function buildSelection(selection, pane = {}) {
   return { text, ocrSpans, range, rects, last, pane };
 }
 
+function openSelectionTools() {
+  if (reader.hidden) return;
+  if (state.epubMode) {
+    const selected = state.epubEngine?.getSelection();
+    if (selected) handleEpubSelection(selected);
+  } else {
+    const selection = window.getSelection();
+    if (selection?.anchorNode) onSelection(paneForNode(selection.anchorNode));
+  }
+  if (!hlBar.hidden) hlNote.focus();
+  else toast('Önce metin seçin');
+}
+
 function onSelection(pane = {}) {
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed) return;
@@ -3546,7 +3612,9 @@ function paneForNode(node) {
 async function saveEpubHighlight() {
   const selection = state.epubSelection;
   if (!selection || !state.book) return;
+  const toolbarFocused = hlBar.contains(document.activeElement);
   state.epubSelection = null; hlBar.hidden = true;
+  if (toolbarFocused) $('selectionTools').focus();
   try {
     const annotation = await saveLocalReaderAnnotation({ assetId: state.book.asset_id,
       anchor: { asset_version_id: state.book.asset_id, type: 'epub', cfi: selection.cfiRange,
@@ -3637,7 +3705,9 @@ async function saveLocalReaderAnnotation({ assetId, anchor, color, selectedText,
 async function saveHighlight() {
   if (state.epubSelection) return saveEpubHighlight();
   if (!state.pending || !state.book) return;
+  const toolbarFocused = hlBar.contains(document.activeElement);
   const pending = state.pending; state.pending = null; hlBar.hidden = true;
+  if (toolbarFocused) $('selectionTools').focus();
   try {
     await saveLocalReaderAnnotation({ assetId: state.book.asset_id, anchor: pending.anchor,
       color: state.highlightColor, selectedText: pending.text });
@@ -3735,12 +3805,24 @@ document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') closeOffline();
     return;
   }
-  if (event.key === '?' && !typing) {
+  if (event.key === 'Escape' && !hlBar.hidden) {
+    event.preventDefault();
+    cancelSelection();
+    return;
+  }
+  if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey && event.code === 'KeyH' && !reader.hidden) {
+    event.preventDefault();
+    openSelectionTools();
+    return;
+  }
+  if (event.ctrlKey || event.altKey || event.metaKey) return;
+  if (!loginScreen.hidden) return;
+  if (event.key === '?' && !typing && singleKeyShortcutsEnabled()) {
     event.preventDefault();
     showShortcuts();
     return;
   }
-  if (event.key === '/' && !typing) {
+  if (event.key === '/' && !typing && singleKeyShortcutsEnabled()) {
     event.preventDefault();
     if (reader.hidden) {
       search.focus();
@@ -3764,6 +3846,8 @@ document.addEventListener('keydown', (event) => {
     return;
   }
   if (reader.hidden) return;
+
+  if (event.shiftKey || (event.key.length === 1 && !singleKeyShortcutsEnabled())) return;
 
   switch (event.key) {
     case 'Escape':
@@ -3794,7 +3878,12 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
+$('selectionTools').addEventListener('click', openSelectionTools);
 $('footerShortcuts').addEventListener('click', showShortcuts);
+document.querySelectorAll('[data-single-key-shortcuts]').forEach(input => input.addEventListener('change', () => {
+  try { localStorage.setItem(`singleKeyShortcuts:${annotationOwnerId() || storageUserKey()}`, input.checked ? 'on' : 'off'); } catch { /* private storage */ }
+  document.querySelectorAll('[data-single-key-shortcuts]').forEach(other => { other.checked = input.checked; });
+}));
 $('openUpload').addEventListener('click', openUpload);
 $('offlineBtn').addEventListener('click', openOfflineModal);
 $('closeOffline').addEventListener('click', closeOffline);
@@ -4074,7 +4163,8 @@ hlColors.addEventListener('click', (event) => {
   const button = event.target.closest('.hl-color');
   if (button) setHighlightColor(button.dataset.color);
 });
-$('hlCancel').addEventListener('click', () => {
+function cancelSelection() {
+  const hadFocus = hlBar.contains(document.activeElement);
   state.pending = null;
   state.epubSelection = null;
   hlBar.hidden = true;
@@ -4082,14 +4172,15 @@ $('hlCancel').addEventListener('click', () => {
   clearPending(highlights2);
   window.getSelection()?.removeAllRanges();
   try { epubView.querySelector('iframe')?.contentWindow?.getSelection()?.removeAllRanges(); } catch { /* noop */ }
-});
+  if (hadFocus && !reader.hidden) $('selectionTools').focus();
+}
+$('hlCancel').addEventListener('click', cancelSelection);
 hlNote.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') saveHighlight();
   if (event.key === 'Escape') {
-    state.pending = null;
-    hlBar.hidden = true;
-    clearPending(highlightsEl);
-  clearPending(highlights2);
+    event.preventDefault();
+    event.stopPropagation();
+    cancelSelection();
   }
 });
 
@@ -4252,6 +4343,7 @@ window.addEventListener('online', () => {
   }
 });
 window.addEventListener('resize', () => {
+  syncPanelA11y();
   if (reader.hidden || !state.pdf) return;
   clearTimeout(window._resizeTimer);
   window._resizeTimer = setTimeout(() => {

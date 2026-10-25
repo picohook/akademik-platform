@@ -74,11 +74,12 @@ export function bindEpubCopyPolicy(doc, {
 }
 
 export class EpubEngine {
-  constructor(container, { onRelocated, onSelected, onDeselected, onSwipe, canCopy, onCopyBlocked } = {}) {
+  constructor(container, { onRelocated, onSelected, onDeselected, onSwipe, canCopy, onCopyBlocked, onSelectionTools } = {}) {
     this.container = container;
     this.onRelocated = onRelocated || (() => {});
     this.onSelected = onSelected || (() => {});
     this.onDeselected = onDeselected || (() => {});
+    this.onSelectionTools = onSelectionTools || (() => {});
     this.onSwipe = onSwipe || (() => {});
     this.canCopy = canCopy || (() => true);
     this.onCopyBlocked = onCopyBlocked || (() => {});
@@ -128,11 +129,34 @@ export class EpubEngine {
     this.rendition.hooks.content.register((contents) => {
       let start = null;
       const doc = contents.document;
+      const handleSelectionTools = event => {
+        if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey && event.code === 'KeyH') {
+          event.preventDefault();
+          this.onSelectionTools();
+        }
+      };
+      doc.addEventListener('keydown', handleSelectionTools);
+      // epub.js rewrites this tag on pagination/resize. Keep its dimensions,
+      // but never let a publisher or the pagination engine disable text zoom.
+      const allowZoom = () => {
+        const viewport = doc.querySelector('meta[name="viewport"]');
+        if (!viewport) return;
+        const content = viewport.content.split(',').map(part => part.trim())
+          .filter(part => !/^(user-scalable|maximum-scale|minimum-scale)\s*=/i.test(part)).join(', ');
+        if (viewport.content !== content) viewport.content = content;
+      };
+      const viewportObserver = new MutationObserver(allowZoom);
+      viewportObserver.observe(doc.head, { childList: true, subtree: true, attributes: true, attributeFilter: ['content'] });
+      allowZoom();
       const dispose = bindEpubCopyPolicy(doc, {
         canCopy: () => this.canCopy(),
         onCopyBlocked: (event) => this.onCopyBlocked(event),
         onDeselected: (event) => this.onDeselected(event),
-        onDispose: () => this.copyPolicyDisposers.delete(dispose),
+        onDispose: () => {
+          viewportObserver.disconnect();
+          doc.removeEventListener('keydown', handleSelectionTools);
+          this.copyPolicyDisposers.delete(dispose);
+        },
       });
       this.copyPolicyDisposers.add(dispose);
       doc.addEventListener('touchstart', (event) => {
@@ -178,6 +202,15 @@ export class EpubEngine {
     try { this.book?.destroy(); } catch { /* noop */ }
     this.rendition = null;
     this.book = null;
+  }
+
+  getSelection() {
+    for (const contents of this.rendition?.getContents() || []) {
+      const selection = contents.window.getSelection();
+      if (!selection?.rangeCount || selection.isCollapsed || !String(selection).trim()) continue;
+      return { cfiRange: contents.cfiFromRange(selection.getRangeAt(0)), text: String(selection).trim(), contents };
+    }
+    return null;
   }
 
   getToc() {

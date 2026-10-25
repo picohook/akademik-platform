@@ -9,7 +9,7 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/icons/icon-180.png" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=46" />
+  <link rel="stylesheet" href="/styles.css?v=47" />
   <link rel="prefetch" href="/vendor/pdfjs/pdf.worker.mjs" as="script" />
 </head>
 <body>
@@ -71,6 +71,7 @@
   <footer class="site-footer" id="siteFooter">
     <span>© <span id="footerYear"></span> <span id="footerBrand">Akademik Platform</span> · <span id="footerVersion"></span> · <span id="footerEnvironment"></span><span id="footerBuildDate"></span></span>
     <span class="footer-links">
+      <label class="shortcut-setting"><input type="checkbox" data-single-key-shortcuts checked /><span>Tek tuş kısayolları</span></label>
       <button class="footer-link" id="footerShortcuts" type="button">Kısayollar</button>
       <a class="footer-link" id="footerSupport" href="#" hidden>Destek</a>
     </span>
@@ -274,21 +275,23 @@
         <span id="readerMeta"></span>
       </div>
       <div class="reader-actions">
+        <label class="shortcut-setting"><input type="checkbox" data-single-key-shortcuts checked /><span>Tek tuş kısayolları</span></label>
         <button class="ghost-btn" id="toggleToc" type="button" title="İçindekiler" aria-label="İçindekiler" aria-controls="tocPanel" aria-expanded="false">☰</button>
         <div class="page-jump">
           <input id="pageInput" type="number" min="1" value="1" aria-label="PDF sayfa numarası" title="PDF dosyasındaki sıra numarası" />
           <span id="pageTotal">/ 1</span>
         </div>
-        <button class="ghost-btn" id="fitToggle" type="button" title="Genişliğe sığdır" aria-pressed="false">↔</button>
-        <button class="ghost-btn" id="rotateBtn" type="button" title="Döndür">⟳</button>
-        <button class="ghost-btn" id="fullscreenBtn" type="button" title="Tam ekran">⛶</button>
-        <button class="ghost-btn" id="themeBtn" type="button" title="Tema">☀</button>
-        <button class="ghost-btn" id="spreadBtn" type="button" title="Çift sayfa" aria-pressed="false">▥</button>
-        <button class="ghost-btn" id="scrollBtn" type="button" title="Sürekli kaydırma" aria-pressed="false">≣</button>
+        <button class="ghost-btn" id="fitToggle" type="button" aria-label="Genişliğe sığdır" title="Genişliğe sığdır" aria-pressed="false">↔</button>
+        <button class="ghost-btn" id="rotateBtn" type="button" aria-label="Döndür" title="Döndür">⟳</button>
+        <button class="ghost-btn" id="fullscreenBtn" type="button" aria-label="Tam ekran" title="Tam ekran">⛶</button>
+        <button class="ghost-btn" id="themeBtn" type="button" aria-label="Tema" title="Tema">☀</button>
+        <button class="ghost-btn" id="spreadBtn" type="button" aria-label="Çift sayfa" title="Çift sayfa" aria-pressed="false">▥</button>
+        <button class="ghost-btn" id="scrollBtn" type="button" aria-label="Sürekli kaydırma" title="Sürekli kaydırma" aria-pressed="false">≣</button>
         <button class="icon-btn" id="zoomOut" aria-label="Uzaklaştır">−</button>
         <span class="zoom" id="zoomLabel">100%</span>
         <button class="icon-btn" id="zoomIn" aria-label="Yakınlaştır">+</button>
         <button class="ghost-btn" id="bookmarkBtn" type="button" title="Yer imi" aria-label="Yer imi" aria-pressed="false">☆</button>
+        <button class="ghost-btn" id="selectionTools" type="button" title="Seçim araçları (Alt+Shift+H)" aria-keyshortcuts="Alt+Shift+H">Seçim</button>
         <button class="ghost-btn" id="citeBook" type="button" title="Atıf">Atıf</button>
         <button class="ghost-btn" id="downloadBtn" type="button" title="PDF indir" hidden>İndir</button>
         <button class="ghost-btn" id="toggleNotes" aria-controls="notesPanel" aria-expanded="false">Notlar <span id="noteCount">0</span></button>
@@ -384,7 +387,6 @@
         </div>
       </aside>
     </div>
-  </div>
 
   <div class="hl-bar" id="hlBar" role="toolbar" aria-label="Vurgu araçları" hidden>
     <div class="hl-colors" id="hlColors" role="group" aria-label="Vurgu rengi">
@@ -400,6 +402,8 @@
     <button class="icon-btn" id="hlCancel" aria-label="İptal">✕</button>
   </div>
 
+  </div>
+
   <aside class="perf-panel" id="perfPanel" hidden>
     <div class="perf-head">
       <strong>Reader perf</strong>
@@ -411,6 +415,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=123"></script>
+  <script type="module" src="/app.js?v=124"></script>
 </body>
 </html>

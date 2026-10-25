@@ -19,7 +19,10 @@ function chapter() {
   const viewListeners = new Map();
   const text = { nodeType: 3, parentElement: element() };
   const selection = { anchorNode: text, focusNode: text, isCollapsed: false, toString: () => 'Selected book text' };
+  const viewport = { content: 'width=800, height=600, initial-scale=1, maximum-scale=1, user-scalable=no' };
   const doc = {
+    head: {},
+    querySelector(selector) { return selector === 'meta[name="viewport"]' ? viewport : null; },
     activeElement: element(),
     getSelection: () => selection,
     addEventListener(type, listener, capture) { listeners.set(type, { listener, capture }); },
@@ -38,7 +41,7 @@ function chapter() {
     listeners.get(type)?.listener(event);
     return event;
   }
-  return { doc, selection, dispatch, listeners, viewListeners };
+  return { doc, selection, viewport, dispatch, listeners, viewListeners };
 }
 
 test('denied chapter copy and cut are stopped in capture phase without changing selection', () => {
@@ -143,6 +146,13 @@ test('each newly rendered chapter receives policy and engine destruction removes
     locations: { generate: async () => {} }, destroy() {},
   };
   const previousWindow = globalThis.window;
+  const previousObserver = globalThis.MutationObserver;
+  const observers = [];
+  globalThis.MutationObserver = class {
+    constructor(callback) { this.callback = callback; observers.push(this); }
+    observe() {}
+    disconnect() { this.disconnected = true; }
+  };
   globalThis.window = { ePub: () => book, innerWidth: 800, innerHeight: 600, addEventListener() {}, removeEventListener() {} };
   try {
     let blocked = 0;
@@ -153,21 +163,30 @@ test('each newly rendered chapter receives policy and engine destruction removes
     });
     await engine.open('fixture.epub');
     contentHook({ document: frames[1].doc });
+    for (const frame of frames) assert.equal(frame.viewport.content, 'width=800, height=600, initial-scale=1');
+    frames[1].viewport.content = 'width=320, height=420, maximum-scale=1, minimum-scale=1, user-scalable=no';
+    observers[1].callback();
+    assert.equal(frames[1].viewport.content, 'width=320, height=420');
     for (const frame of frames) assert.equal(frame.dispatch('copy').defaultPrevented, true);
     assert.equal(blocked, 2);
     for (const frame of frames) frame.dispatch('pointerdown');
     assert.equal(deselected, 2);
     frames[0].viewListeners.get('pagehide')();
     assert.equal(engine.copyPolicyDisposers.size, 1);
+    assert.equal(observers[0].disconnected, true);
     engine.destroy();
     assert.equal(engine.copyPolicyDisposers.size, 0);
     for (const frame of frames) assert.equal(frame.listeners.has('copy'), false);
     for (const frame of frames) {
       assert.equal(frame.listeners.has('pointerdown'), false);
+      assert.equal(frame.listeners.has('keydown'), false);
       frame.dispatch('pointerdown');
     }
     assert.equal(deselected, 2);
+    assert.ok(observers.every(observer => observer.disconnected));
   } finally {
+    if (previousObserver === undefined) delete globalThis.MutationObserver;
+    else globalThis.MutationObserver = previousObserver;
     if (previousWindow === undefined) delete globalThis.window;
     else globalThis.window = previousWindow;
   }

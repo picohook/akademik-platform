@@ -2,6 +2,14 @@
 // Static DOM is translated on load; dynamic renderers call translateDom()/t().
 
 const DICT = {
+  'Bu not ve vurgusu silinsin mi?': 'Delete this note and its highlight?',
+  'j/k veya ←/→ sayfa · / kitapta ara · n notlar · b yer imi · ? yardım · Esc kapat · Alt+Shift+H seçim araçları': 'j/k or ←/→ page · / search in book · n notes · b bookmark · ? help · Esc close · Alt+Shift+H selection tools',
+  'Seçim': 'Selection',
+  'Önce metin seçin': 'Select text first',
+  'Seçim araçları (Alt+Shift+H)': 'Selection tools (Alt+Shift+H)',
+  'Tek tuş kısayolları': 'Single-key shortcuts',
+  'Bölüm': 'Chapter',
+  'Sayfaya sığdır': 'Fit page',
   'İçeriğe atla': 'Skip to content',
   'Okuyucu': 'Reader',
   'EPUB içeriği': 'EPUB content',
