@@ -1,0 +1,96 @@
+{
+  "runId": "fbff2356-f6e8-48fa-a8f6-5bb35e6639c2",
+  "dateIstanbul": "2026-10-25",
+  "startedAt": "2026-10-25T11:40:42.496Z",
+  "base": "https://localhost",
+  "version": 126,
+  "buildSha": "90c7b72",
+  "status": "passed",
+  "scope": "Actual production librarian login, temporary controlled tagged PDF upload, reader AX tree and real NVDA source heading/formula announcement, then removal of only that generated book. No deploy/env/migration changes.",
+  "steps": [
+    {
+      "id": "production-build-and-source-match",
+      "status": "PASS"
+    },
+    {
+      "id": "production-librarian-ui-login",
+      "status": "PASS"
+    },
+    {
+      "id": "temporary-controlled-tagged-PDF-upload",
+      "status": "PASS"
+    },
+    {
+      "id": "production-reader-source-heading-and-formula-AX",
+      "status": "PASS"
+    },
+    {
+      "id": "real-NVDA-source-heading-level-1",
+      "status": "PASS"
+    },
+    {
+      "id": "real-NVDA-formula-source-alternative",
+      "status": "PASS"
+    }
+  ],
+  "jsErrors": [],
+  "source": {
+    "app.js": {
+      "servedSha256": "4dd689d039edb1197ddffe7032384d383e550e84026ace29e30a3c9adcc42abd",
+      "localSha256": "4dd689d039edb1197ddffe7032384d383e550e84026ace29e30a3c9adcc42abd",
+      "match": true
+    },
+    "pdf-structure.mjs": {
+      "servedSha256": "1060fde4e22c0cd378778f5249eb29372a68744c13b993c75ab6caa83a5e241a",
+      "localSha256": "1060fde4e22c0cd378778f5249eb29372a68744c13b993c75ab6caa83a5e241a",
+      "match": true
+    }
+  },
+  "cleanup": {
+    "fixtureBookDeleted": true,
+    "loggedOut": true,
+    "ownedBrowserClosed": true,
+    "noNvdaConfigOrStartupSettingEdited": true,
+    "normalAuditAndUsageRecordsRetained": true
+  },
+  "noDeployEnvMigrationChanges": true,
+  "nvda": {
+    "version": "2026.2",
+    "build": "2026.2.0.57664",
+    "executable": "nvda_noUIAccess.exe",
+    "setup": "Installed NVDA started normally without UIAccess after the initial UIAccess session prevented automation focus/speech access. Speech Viewer opened via NVDA Tools; startup setting unchanged.",
+    "processId": 42896
+  },
+  "edge": "155.0.4283.45",
+  "tls": "Dedicated test browser tolerates local Caddy CA; OS trust unchanged.",
+  "config": {
+    "version": "126",
+    "buildSha": "90c7b72"
+  },
+  "login": {
+    "role": "librarian",
+    "method": "Actual UI login",
+    "successful": true
+  },
+  "fixture": {
+    "title": "NVDA v126 tagged acceptance fbff2356-f6e8-48fa-a8f6-5bb35e6639c2",
+    "sha256": "c5f3ca0c2cc04b2975038e5e3dcf840b636b647437ea33a42d4bd8813f69441b",
+    "bytes": 1177,
+    "source": "Generated source-tagged H1/P/Formula fixture from v126 local acceptance",
+    "bookId": "8547538a-f89f-4f05-9990-c7919ea66f0e",
+    "assetId": "9035eed0-9649-4217-b1ea-69eee16dbbd8"
+  },
+  "readerAX": "- document \"PDF sayfası 1\":\n  - heading \"Tagged PDF heading\" [level=1]\n  - paragraph: Tagged PDF paragraph.\n  - img \"x squared plus y squared equals z squared\": x^2 + y^2 = z^2",
+  "speech": {
+    "from": "2026-10-25T11:40:55.3782103Z",
+    "processId": 42896,
+    "text": "button    Kapat\r\nSayfa alanı  region  Tagged PDF heading  heading    level 1\r\nTagged PDF paragraph.\r\ngraphic    x squared plus y squared equals z squared\r\nclickable\r\nbutton    Sonraki sayfa\r\n",
+    "capturedAt": "2026-10-25T11:41:10.8648547Z"
+  },
+  "heardText": {
+    "heading": "Tagged PDF heading … heading … level 1",
+    "formula": "graphic … x squared plus y squared equals z squared"
+  },
+  "jsErrorCount": 0,
+  "completedAt": "2026-10-25T11:41:13.412Z"
+}
