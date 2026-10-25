@@ -1,0 +1,218 @@
+{
+  "version": 125,
+  "baselineCommit": "52c846c11f539b57ca3c531b72658da80c13976a",
+  "startedAt": "2026-10-25T09:47:51.049Z",
+  "scope": "Isolated working-tree runtime; fixture-only demo backend; original sandbox EPUB iframe; visual, keyboard and optional native NVDA checks. No production, env or deployment changes.",
+  "status": "passed",
+  "cases": [
+    {
+      "id": "notifications-modal-axe",
+      "status": "PASS",
+      "scanFile": "notifications-modal-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "timed-help-remains-available-without-expiry",
+      "status": "PASS",
+      "toastExpiredAfter2600ms": true,
+      "untimedHistoryPreserved": true,
+      "keyboardCloseAndReturn": true
+    },
+    {
+      "id": "reader-notifications-preserve-status-and-modal-focus",
+      "status": "PASS",
+      "readerStatusUnchanged": true,
+      "backgroundInert": true,
+      "keyboardTrapAndReturn": true
+    },
+    {
+      "id": "form-history-preserves-draft-and-return-focus",
+      "status": "PASS",
+      "draftPreserved": true,
+      "focusReturnedThroughBothDialogs": true
+    },
+    {
+      "id": "notification-reading-is-not-replaced-by-async-message",
+      "status": "PASS",
+      "visibleSnapshotStable": true,
+      "newMessageAvailableOnReopen": true,
+      "formDataPreserved": true,
+      "controlledHttp400": true
+    },
+    {
+      "id": "completed-background-form-is-not-reopened-by-history",
+      "status": "PASS",
+      "completedFormStaysClosed": true,
+      "notificationReaderStaysOpenUntilUserCloses": true,
+      "focusRestored": true,
+      "controlledHttp201": true
+    },
+    {
+      "id": "citation-history-restores-reader-isolation",
+      "status": "PASS",
+      "nestedDialogReturnsToCitation": true,
+      "readerIsolationRestored": true
+    },
+    {
+      "id": "EPUB-table-image-MathML-structure",
+      "status": "PASS",
+      "lang": "en",
+      "heading": "Structured academic content",
+      "caption": "Participants by group",
+      "headers": [
+        {
+          "text": "Group",
+          "scope": "col"
+        },
+        {
+          "text": "Count",
+          "scope": "col"
+        },
+        {
+          "text": "A",
+          "scope": "row"
+        }
+      ],
+      "image": {
+        "alt": "Right triangle with sides a, b and c",
+        "loaded": true
+      },
+      "math": {
+        "namespace": "http://www.w3.org/1998/Math/MathML",
+        "powers": 3
+      }
+    },
+    {
+      "id": "EPUB-RTL-language-and-direction",
+      "status": "PASS",
+      "lang": "ar",
+      "dir": "rtl",
+      "direction": "rtl",
+      "text": "مثال عربيهذا مثال للقراءة من اليمين إلى اليسار.الصفحة ١٢ والمرجع ٣.",
+      "rootLang": "en",
+      "humanPronunciation": "NOT EVALUATED"
+    },
+    {
+      "id": "fixed-layout-EPUB-render-and-chapter-navigation",
+      "status": "PASS",
+      "first": {
+        "frame": {
+          "width": 1248,
+          "height": 709
+        },
+        "viewport": "width=600, height=800",
+        "heading": "Fixed page one",
+        "imageAlt": "Right triangle with sides a, b and c"
+      },
+      "navigation": true,
+      "scope": "One synthetic pre-paginated EPUB; broad fixed-layout/reflow/DRM support not claimed"
+    },
+    {
+      "id": "tagged-PDF-source-vs-rendered-semantics",
+      "status": "PASS",
+      "original": {
+        "text": [
+          "Tagged PDF heading",
+          "Tagged PDF paragraph.",
+          "x^2 + y^2 = z^2"
+        ],
+        "tree": {
+          "children": [
+            {
+              "role": "H1",
+              "children": [
+                {
+                  "type": "content",
+                  "id": "p5R_mc0"
+                }
+              ]
+            },
+            {
+              "role": "P",
+              "children": [
+                {
+                  "type": "content",
+                  "id": "p5R_mc1"
+                }
+              ]
+            },
+            {
+              "role": "Formula",
+              "children": [
+                {
+                  "type": "content",
+                  "id": "p5R_mc2"
+                }
+              ],
+              "alt": "x squared plus y squared equals z squared"
+            }
+          ],
+          "role": "Root"
+        }
+      },
+      "actual": {
+        "text": "Tagged PDF headingTagged PDF paragraph.x^2 + y^2 = z^2",
+        "headings": 0,
+        "formula": 0
+      },
+      "finding": "Source PDF H1 is not exposed as a heading by this reader",
+      "conformance": "Not a full PDF semantic-support pass"
+    },
+    {
+      "id": "untagged-PDF-column-reading-order-negative-fixture",
+      "status": "PASS",
+      "domOrder": [
+        "RIGHT SECOND",
+        "LEFT FIRST"
+      ],
+      "visualOrder": [
+        "LEFT FIRST",
+        "RIGHT SECOND"
+      ],
+      "finding": "Untagged stream order differs from visual columns; reader cannot infer an authoritative order",
+      "conformance": "Expected content limitation detected, not an accessible-document pass"
+    },
+    {
+      "id": "image-only-PDF-without-OCR-negative-fixture",
+      "status": "PASS",
+      "sourceTextItems": 0,
+      "renderedText": "",
+      "finding": "Image-only PDF has no usable text/OCR alternative in this fixture",
+      "requiredRemediation": "Publisher supplies accessible text/OCR and image alternatives",
+      "conformance": "Expected inaccessible content detected"
+    },
+    {
+      "id": "notification-history-account-isolation",
+      "status": "PASS",
+      "crossTabAccountSwitchClearsHistory": true,
+      "anonymousCannotReadPreviousMessages": true
+    }
+  ],
+  "source": {
+    "server.mjs": "7611f4abf4355859ff88d931e86b5b9e9adea79f3f6a6fb74f6054ee47306e24",
+    "indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+    "download-tickets.mjs": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+    "annotation-sync.mjs": "553eec49001914c58e9f019caab734e8f0f61da307bde64958a6d2bd15e8e106",
+    "social-watermark.mjs": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+    "public/app.js": "f11f253bea5a1270c47d9ae2d20500fabe5bca3eb5e548a3dc619a5635966919",
+    "public/index.html": "cf8b080175ac42c0c1ab94397e7fde2b3b5443b8848b38fea1aa95671a25e224",
+    "public/offline.mjs": "cba7a4e9a1371bccf35e55d4c67275ddf28946b2e64799452382a73dcd12feea",
+    "public/downloads.mjs": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+    "public/sw.js": "be80e54065c38e8a84da3bd2d543cf1aa3c18548b7dab870ed18047d9366c519",
+    "public/epub-engine.mjs": "b0347630f69255ece8aad9d0dee74feae791a97fa499f8f4518ba8f0ff184c23",
+    "public/styles.css": "6b548bd081394ae304d8eaf1d975d67ca8c04d0c69d38cf267dd704998a66931",
+    "public/i18n.mjs": "5dedf02ddba798da37c74a5f7b8c25af973d140738a649f28fbbc22b45b7947f",
+    "public/citations.mjs": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86"
+  },
+  "browserErrors": [],
+  "cleanup": {
+    "browserClosed": true,
+    "ownedServerStopped": true
+  },
+  "url": "http://127.0.0.1:54411",
+  "browser": "155.0.4283.45",
+  "completedAt": "2026-10-25T09:48:20.876Z"
+}

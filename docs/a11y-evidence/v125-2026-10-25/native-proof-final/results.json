@@ -1,0 +1,98 @@
+{
+  "version": 125,
+  "baselineCommit": "52c846c11f539b57ca3c531b72658da80c13976a",
+  "startedAt": "2026-10-25T09:46:23.295Z",
+  "scope": "Isolated working-tree runtime; fixture-only demo backend; original sandbox EPUB iframe; visual, keyboard and optional native NVDA checks. No production, env or deployment changes.",
+  "status": "passed",
+  "cases": [
+    {
+      "id": "NVDA-browse-native-mode",
+      "status": "PASS",
+      "speech": "button    Kapat\r\nNative app selection mode enabled\r\n",
+      "selection": {
+        "parent": "",
+        "frame": [
+          {
+            "text": "",
+            "count": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "EPUB-NVDA-heading-and-keyboard-selection",
+      "status": "PASS",
+      "speech": "Sayfa alanı  region  EPUB içeriği  frame    EPUB içeriği  Chapter one  heading    level 1\r\nReader accessibility fixture.   Türkçe örnek bölüm.\r\n\r\nR\r\nReader  selected\r\naccessibility  selected\r\n",
+      "selected": {
+        "parent": "",
+        "frame": [
+          {
+            "text": "Reader accessibility ",
+            "count": 1
+          }
+        ]
+      },
+      "nativeKeysOnly": true,
+      "domRangeInjected": false
+    },
+    {
+      "id": "EPUB-native-selected-copy-and-highlight",
+      "status": "PASS",
+      "copied": "Reader accessibility",
+      "highlightCreated": true,
+      "domRangeInjected": false
+    },
+    {
+      "id": "PDF-NVDA-native-selection-from-document",
+      "status": "PASS",
+      "mode": "button    Kapat\r\nNative app selection mode enabled\r\n",
+      "speech": "Sayfa alanı  region  Önceki sayfa  button  \r\nclickable  Visual page 1\r\n\r\nV\r\nVisual  selected\r\n",
+      "selected": {
+        "text": "Visual ",
+        "inPdf": true,
+        "anchor": ""
+      },
+      "domRangeInjected": false,
+      "nativeKeysOnly": true
+    },
+    {
+      "id": "PDF-native-selection-copy-highlight",
+      "status": "PASS",
+      "copied": "Visual",
+      "highlightCreated": true,
+      "domRangeInjected": false
+    },
+    {
+      "id": "NVDA-semantic-table-image-MathML-reading",
+      "status": "PASS",
+      "tableSpoken": true,
+      "imageAlternativeSpoken": true,
+      "mathSpoken": true,
+      "scope": "Speech Viewer text; no human pronunciation review or interactive math navigation claim"
+    }
+  ],
+  "source": {
+    "server.mjs": "7611f4abf4355859ff88d931e86b5b9e9adea79f3f6a6fb74f6054ee47306e24",
+    "indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+    "download-tickets.mjs": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+    "annotation-sync.mjs": "553eec49001914c58e9f019caab734e8f0f61da307bde64958a6d2bd15e8e106",
+    "social-watermark.mjs": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+    "public/app.js": "f11f253bea5a1270c47d9ae2d20500fabe5bca3eb5e548a3dc619a5635966919",
+    "public/index.html": "cf8b080175ac42c0c1ab94397e7fde2b3b5443b8848b38fea1aa95671a25e224",
+    "public/offline.mjs": "cba7a4e9a1371bccf35e55d4c67275ddf28946b2e64799452382a73dcd12feea",
+    "public/downloads.mjs": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+    "public/sw.js": "be80e54065c38e8a84da3bd2d543cf1aa3c18548b7dab870ed18047d9366c519",
+    "public/epub-engine.mjs": "b0347630f69255ece8aad9d0dee74feae791a97fa499f8f4518ba8f0ff184c23",
+    "public/styles.css": "6b548bd081394ae304d8eaf1d975d67ca8c04d0c69d38cf267dd704998a66931",
+    "public/i18n.mjs": "5dedf02ddba798da37c74a5f7b8c25af973d140738a649f28fbbc22b45b7947f",
+    "public/citations.mjs": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86"
+  },
+  "browserErrors": [],
+  "cleanup": {
+    "browserClosed": true,
+    "ownedServerStopped": true
+  },
+  "url": "http://127.0.0.1:52822",
+  "browser": "155.0.4283.45",
+  "completedAt": "2026-10-25T09:48:42.376Z"
+}

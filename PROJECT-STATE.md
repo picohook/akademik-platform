@@ -4,7 +4,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
-- Web kaynak ve prod: **v124/52c846c**, stiller **v47**, SW **v16**; app-only deploy tamam. v124 Windows/NVDA hedefli bulguları düzeltildi: 74/74 kabul, 65/65 birim, 28 axe taraması 0 ihlal. Canlı v124 NVDA offline kayıt duyurusu gerçek NVDA ile **PASS** (`d55daa0`, dağıtım kaydı `f676da0`). docs/deployments/2026-10-25-v124.md.
+- Web kaynak: **v125 yerel aday**, CSS **v48**, SW **v17**; prod **v124/52c846c**, CSS47/SW16; app-only deploy tamam. v124 Windows/NVDA hedefli bulguları düzeltildi: 74/74 kabul, 65/65 birim, 28 axe taraması 0 ihlal. Canlı v124 NVDA offline kayıt duyurusu gerçek NVDA ile **PASS** (`d55daa0`, dağıtım kaydı `f676da0`). docs/deployments/2026-10-25-v124.md.
 - DB migration kaynak ve prod **001–016**. Taze restore kopyasında 016 çift uygulandı; annotation/receipt fingerprint’leri korundu. DB admin 016 → v122 web sırası tamam. 016 rollback’te korunur; v123/v124 migration değiştirmedi.
 - Prod: **v124** (2026-10-25 11:05:38 Europe/Istanbul), kaynak **52c846c**, imaj `sha256:f4dcceecc96fc43e8eac57d0f56db59aae7cec6df8ea5e1c4043fdb5cc74a47c`, etiket akademik-platform-prod-web:v124-52c846c; healthy/0, smoke **16/16**, config **124/52c846c**. v123 rollback (`v123-e8ddb3d`) korunur. Canlı NVDA kabulü PASS, JS hatası 0. docs/deployments/2026-10-25-v124.md.
 - Son doğrulama v122/4300f1f: istenen birebir app-role retest **11/11**, 0 JS hatası, cleanup **6/6**. İki 91 günlük receipt aynı turda **2 moved / 2 deleted / 2 tombstone**; batch **1000+5**; iki ayrı Node sürecinde kazanan **2/2** ve 2 tombstone, diğeri skipped/0 silme. Gerçek v121 HTTP **500/P0001** ile not sayısı sabit; v122 **410**, Edge taslak/reload geçti. Önceki aynı kod **65/65** birim kanıtı korunur; yeniden koşulmadı. Bu izole retest sırasında prod değiştirilmedi; ardından GO ile v122/001–016 deploy tamamlandı. docs/reader-evidence/v122-retention-exact/requested-checks.json.
@@ -104,3 +104,10 @@ docker compose -f docker-compose.prod.yml --env-file .env.production exec db psq
 ## v124 accessibility deployment — 2026-10-25
 
 Code: 52c846c11f539b57ca3c531b72658da80c13976a. Original EPUB iframe zoom/axe, chapter announcements, keyboard selection tools/native annotation position buttons, shortcut opt-out, background isolation, focus restoration, note confirmation and responsive/theme/target fixes. [Windows acceptance](docs/A11Y-NVDA-V124.md), [evidence](docs/a11y-evidence/v124-2026-10-25/ACCEPTANCE.md). v124 is live (config 124/52c846c); v123 remains the rollback image. Canlı NVDA offline kayıt kabulü PASS (`d55daa0`). Full WCAG AA/VoiceOver/publication conformance is not claimed.
+
+
+## v125 local accessibility follow-up — 2026-10-25
+
+Code **10546bfb91c643ffa1a0ebc8aa8f28b72d824874**. Gerçek NVDA Native Selection ile PDF/EPUB sıfırdan seçim → kopya → vurgu ve MathML/tablo/görsel okuması doğrulandı. Boş KeyboardEvent.code için key fallback; kalıcı, son 200 oturum bildirimini tutan ve hesap/giriş değişiminde temizlenen Bildirimler penceresi eklendi. Okurken liste sabit; iç içe form verisi/odak ve arka planda biten formun kapalı kalması korundu. Yerel: 74 regresyon, 65 birim, 6 native, 14 içerik/form ve 6 native zoom kontrolü; JS0. Kanıt docs/a11y-evidence/v125-2026-10-25/ACCEPTANCE.md.
+
+Açık: VoiceOver/insan dinlemesi ve PDF semantik yapı desteği. Tagged PDF H1/Formula kaynağı reader’da rol olarak aktarılmıyor; etiketsiz sütun sırası ve OCR’siz görüntü fixture’ı erişilebilir sayılmadı. Sentetik MathML/RTL/fixed-layout EPUB örnekleri geçti; genel yayın uyumu iddia edilmez. Prod/env/migration/deploy bu turda değişmedi; canlı v124 ve v123 rollback korunur.

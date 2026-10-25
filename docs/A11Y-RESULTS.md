@@ -256,3 +256,12 @@ Fixed: EPUB viewport zoom restriction (including engine resize rewrites); chapte
 Real NVDA speaks chapter, offline pending, CAS, explicit expiry and login alert. Original sandbox iframe scans use its actual DOM/layout with unchanged allow-same-origin; injected missing lang/alt negative control fails as expected, then is restored. Native Edge 100/200/400%, native Windows high contrast (restored in finally), text spacing and 320 CSS px were checked. Unit regressions 65/65. Browser/JS results and source provenance are in the acceptance record.
 
 **Scope stays explicit:** Native AT text-selection initiation, all message timing, VoiceOver/Safari and arbitrary publication semantics/content are not certified by these runs. ACR is a bounded assessment, not a full AA declaration.
+
+
+## v125 follow-up — 2026-10-25
+
+Local candidate **10546bfb91c643ffa1a0ebc8aa8f28b72d824874**, CSS48/SW17; prod remains v124/52c846c. [Evidence and known limitations](a11y-evidence/v125-2026-10-25/ACCEPTANCE.md).
+
+Real NVDA Native Selection (NVDA+Shift+F10) created both PDF and EPUB selections without DOM Range injection. Copy text matched the clipboard and a highlight was created via keyboard. Logical-key fallback handles code-less keyboard events. Transient toast/help is available through untimed notification history, including inside forms; snapshots stay stable during reading, form fields/focus survive, completed background forms stay closed and account/auth changes clear the history.
+
+Native EPUB table/image alternative/MathML speech was captured; RTL language/direction and one fixed-layout two-page fixture worked. Three negative PDF diagnostics are intentionally retained: tagged H1/Formula is not mapped to reader roles, untagged columns have a different text order and image-only PDF has no OCR/text alternative. These are limitations, not conformance passes. ACR updated accordingly; no full AA declaration.

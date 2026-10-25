@@ -1,0 +1,6 @@
+{
+  "sandbox": "allow-same-origin",
+  "violations": [],
+  "incomplete": [],
+  "passes": 9
+}

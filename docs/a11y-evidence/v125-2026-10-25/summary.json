@@ -1,0 +1,62 @@
+{
+  "candidateVersion": 125,
+  "codeCommit": "10546bfb91c643ffa1a0ebc8aa8f28b72d824874",
+  "date": "2026-10-25",
+  "timezone": "Europe/Istanbul",
+  "productionUnchanged": "124/52c846c",
+  "fullConformanceClaim": false,
+  "unitTests": {
+    "pass": 65,
+    "fail": 0
+  },
+  "runs": {
+    "native-proof-final": {
+      "pass": 6,
+      "status": "passed",
+      "jsErrors": 0,
+      "exactCurrentSource": true,
+      "differingFiles": []
+    },
+    "regression-proof-final": {
+      "pass": 74,
+      "status": "passed",
+      "jsErrors": 0,
+      "exactCurrentSource": true,
+      "differingFiles": []
+    },
+    "content-proof-final": {
+      "pass": 14,
+      "status": "passed",
+      "jsErrors": 0,
+      "exactCurrentSource": true,
+      "differingFiles": []
+    },
+    "notification-layout-final": {
+      "pass": 6,
+      "status": "passed",
+      "jsErrors": 0,
+      "exactCurrentSource": false,
+      "differingFiles": [
+        "public/app.js"
+      ],
+      "note": "Same final markup/styles; subsequent logic-only background-form completion and on-demand history rendering covered by the exact-source content/regression runs."
+    },
+    "native-os-visual": {
+      "pass": 1,
+      "status": "passed",
+      "jsErrors": 0,
+      "exactCurrentSource": true,
+      "screenshotRetained": false,
+      "reason": "OS pixels reviewed; AT overlay contained prior unrelated speech"
+    }
+  },
+  "knownPdfLimitations": [
+    "Tagged source H1 is not exposed as a reader heading",
+    "Adversarial untagged column order differs from visual order",
+    "Image-only fixture lacks text/OCR alternative"
+  ],
+  "voiceOver": "NOT RUN",
+  "humanPronunciation": "NOT EVALUATED",
+  "cleanAxeScans": 34,
+  "axeViolations": 0
+}

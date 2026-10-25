@@ -1,0 +1,47 @@
+{
+  "original": {
+    "text": [
+      "Tagged PDF heading",
+      "Tagged PDF paragraph.",
+      "x^2 + y^2 = z^2"
+    ],
+    "tree": {
+      "children": [
+        {
+          "role": "H1",
+          "children": [
+            {
+              "type": "content",
+              "id": "p5R_mc0"
+            }
+          ]
+        },
+        {
+          "role": "P",
+          "children": [
+            {
+              "type": "content",
+              "id": "p5R_mc1"
+            }
+          ]
+        },
+        {
+          "role": "Formula",
+          "children": [
+            {
+              "type": "content",
+              "id": "p5R_mc2"
+            }
+          ],
+          "alt": "x squared plus y squared equals z squared"
+        }
+      ],
+      "role": "Root"
+    }
+  },
+  "actual": {
+    "text": "Tagged PDF headingTagged PDF paragraph.x^2 + y^2 = z^2",
+    "headings": 0,
+    "formula": 0
+  }
+}
