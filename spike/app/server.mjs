@@ -45,7 +45,7 @@ const DEMO_EMAIL = process.env.DEMO_EMAIL || 'reader@example.edu.tr';
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'demo1234';
 const BRAND_NAME = process.env.BRAND_NAME || 'Akademik Platform';
 const BRAND_TAGLINE = process.env.BRAND_TAGLINE || 'spike';
-const APP_VERSION = process.env.APP_VERSION || '126';
+const APP_VERSION = process.env.APP_VERSION || '127';
 const BUILD_SHA = process.env.BUILD_SHA || '';
 const BUILD_DATE = process.env.BUILD_DATE || '';
 const APP_ENV = process.env.APP_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'development');
@@ -1842,7 +1842,7 @@ async function serveStatic(req, res, pathname) {
   const relative = '/' + path.relative(PUBLIC_DIR, filePath).split(path.sep).join('/');
   const allowedFiles = new Set([
     '/index.html', '/app.js', '/styles.css', '/i18n.mjs', '/citations.mjs', '/pdf-structure.mjs',
-    '/search.mjs', '/epub-engine.mjs', '/offline.mjs', '/downloads.mjs', '/sw.js', '/manifest.webmanifest',
+    '/search.mjs', '/epub-engine.mjs', '/offline.mjs', '/downloads.mjs', '/ocr-layer.mjs', '/sw.js', '/manifest.webmanifest',
   ]);
   const allowedPrefixes = ['/icons/', '/vendor/'];
   if (relative.includes('..') || (!allowedFiles.has(relative) && !allowedPrefixes.some((prefix) => relative.startsWith(prefix)))) {

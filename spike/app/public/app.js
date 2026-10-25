@@ -1,5 +1,6 @@
 import * as pdfjsLib from '/vendor/pdfjs/pdf.mjs';
 import { buildPdfStructure } from '/pdf-structure.mjs';
+import { renderHocrText } from '/ocr-layer.mjs';
 import { formatCitation, normalizePdfPageLabels, pdfPageLabel, pdfPageDescription, pdfCitationPage, formatCopiedSelection } from '/citations.mjs';
 import { EpubEngine } from '/epub-engine.mjs';
 import { initializeLanguage, toggleLanguage, t, translateDom, getLang } from '/i18n.mjs';
@@ -2259,53 +2260,7 @@ async function renderOcrLayer(viewport, pageNumber = state.page, container = tex
   }
   if (!hocr) return false;
 
-  const doc = new DOMParser().parseFromString(hocr, 'text/html');
-  const pageEl = doc.querySelector('.ocr_page');
-  const pageBox = /bbox\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/.exec(pageEl?.getAttribute('title') || '');
-  if (!pageBox) return false;
-  const pageWidth = Number(pageBox[3]) - Number(pageBox[1]);
-  if (!pageWidth) return false;
-  const scale = viewport.width / pageWidth;
-  const words = [...doc.querySelectorAll('.ocrx_word')];
-  if (!words.length) return false;
-
-  const fragment = document.createDocumentFragment();
-  for (const word of words) {
-    const box = /bbox\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/.exec(word.getAttribute('title') || '');
-    const text = (word.textContent || '').trim();
-    if (!box || !text) continue;
-    const x0 = Number(box[1]);
-    const y0 = Number(box[2]);
-    const x1 = Number(box[3]);
-    const y1 = Number(box[4]);
-    const width = (x1 - x0) * scale;
-    const height = (y1 - y0) * scale;
-    if (width <= 0 || height <= 0) continue;
-    const span = document.createElement('span');
-    span.className = 'ocr-word';
-    // hOCR words are separate spans; without a trailing space the browser
-    // concatenates the selection ("DişHekimliğinde"). The space stays in the
-    // DOM text even when overflow clips it visually.
-    span.textContent = `${text} `;
-    span.style.position = 'absolute';
-    span.style.left = `${x0 * scale}px`;
-    span.style.top = `${y0 * scale}px`;
-    span.style.width = `${width}px`;
-    span.style.height = `${height}px`;
-    span.style.fontSize = `${height}px`;
-    span.style.lineHeight = '1';
-    span.style.whiteSpace = 'pre';
-    span.style.overflow = 'hidden';
-    span.style.color = 'transparent';
-    span.style.transformOrigin = '0 0';
-    fragment.appendChild(span);
-    // A real whitespace text node between absolutely positioned word spans is
-    // what makes the browser's native selection include spaces.
-    fragment.appendChild(document.createTextNode(' '));
-  }
-  if (!fragment.childNodes.length) return false;
-  container.appendChild(fragment);
-  return true;
+  return renderHocrText(hocr, viewport, container);
 }
 
 function readerPerf() {
@@ -2558,10 +2513,12 @@ async function renderPagePane(pageNumber, pane, scale, rotationOffset, isPrimary
   // page or book after the canvas has finished.
   const textContainer = pane.textLayer.cloneNode(false);
   textContainer.removeAttribute('id');
+  textContainer.removeAttribute('lang');
   let structure = null;
   let textLang = '';
   const usedOcr = await renderOcrLayer(viewport, pageNumber, textContainer);
   if (!isCurrent()) return null;
+  if (usedOcr) textLang = textContainer.getAttribute('lang') || '';
   if (!usedOcr) {
     try {
       const [textContent, tree] = await Promise.all([
