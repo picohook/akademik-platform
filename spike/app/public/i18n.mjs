@@ -2,6 +2,12 @@
 // Static DOM is translated on load; dynamic renderers call translateDom()/t().
 
 const DICT = {
+  'NVDA: NVDA+Shift+F10 ile yerel seçimi açın; Shift+ok ile metni seçin, Alt+Shift+H ile seçim araçlarını açın.': 'NVDA: press NVDA+Shift+F10 to enable native selection; select text with Shift+arrows, then press Alt+Shift+H to open selection tools.',
+  'Bildirimler': 'Notifications',
+  'Bildirim listesi': 'Notification list',
+  'Bildirimleri temizle': 'Clear notifications',
+  'Henüz bildirim yok.': 'No notifications yet.',
+  'Son 200 bildirim bu oturumda saklanır; çıkışta temizlenir.': 'The last 200 notifications are kept for this session and cleared on sign-out.',
   'Bu not ve vurgusu silinsin mi?': 'Delete this note and its highlight?',
   'j/k veya ←/→ sayfa · / kitapta ara · n notlar · b yer imi · ? yardım · Esc kapat · Alt+Shift+H seçim araçları': 'j/k or ←/→ page · / search in book · n notes · b bookmark · ? help · Esc close · Alt+Shift+H selection tools',
   'Seçim': 'Selection',

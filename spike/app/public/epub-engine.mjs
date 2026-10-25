@@ -130,7 +130,8 @@ export class EpubEngine {
       let start = null;
       const doc = contents.document;
       const handleSelectionTools = event => {
-        if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey && event.code === 'KeyH') {
+        if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey
+            && (event.code === 'KeyH' || event.key?.toLowerCase() === 'h')) {
           event.preventDefault();
           this.onSelectionTools();
         }

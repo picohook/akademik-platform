@@ -9,7 +9,7 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/icons/icon-180.png" />
   <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=47" />
+  <link rel="stylesheet" href="/styles.css?v=48" />
   <link rel="prefetch" href="/vendor/pdfjs/pdf.worker.mjs" as="script" />
 </head>
 <body>
@@ -27,6 +27,7 @@
       <label>Parola<input id="loginPassword" type="password" autocomplete="current-password" required /></label>
       <div class="login-error" id="loginError" role="alert" hidden></div>
       <button class="primary" type="submit">Giriş yap</button>
+      <button class="footer-link" type="button" data-open-messages aria-haspopup="dialog" aria-controls="messagesModal">Bildirimler</button>
     </form>
   </div>
 
@@ -73,6 +74,7 @@
     <span class="footer-links">
       <label class="shortcut-setting"><input type="checkbox" data-single-key-shortcuts checked /><span>Tek tuş kısayolları</span></label>
       <button class="footer-link" id="footerShortcuts" type="button">Kısayollar</button>
+      <button class="footer-link" type="button" data-open-messages aria-haspopup="dialog" aria-controls="messagesModal">Bildirimler</button>
       <a class="footer-link" id="footerSupport" href="#" hidden>Destek</a>
     </span>
   </footer>
@@ -81,6 +83,7 @@
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editHeading">
       <div class="modal-head">
         <strong id="editHeading">Kitabı düzenle</strong>
+        <button class="ghost-btn" type="button" data-open-messages aria-haspopup="dialog" aria-controls="messagesModal">Bildirimler</button>
         <button class="icon-btn" id="closeEdit" type="button" aria-label="Kapat">✕</button>
       </div>
       <form id="editForm">
@@ -119,6 +122,7 @@
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="uploadHeading">
       <div class="modal-head">
         <strong id="uploadHeading">Kitap ekle</strong>
+        <button class="ghost-btn" type="button" data-open-messages aria-haspopup="dialog" aria-controls="messagesModal">Bildirimler</button>
         <button class="icon-btn" id="closeUpload" type="button" aria-label="Kapat">✕</button>
       </div>
       <form id="uploadForm">
@@ -149,6 +153,7 @@
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="citeHeading">
       <div class="modal-head">
         <strong id="citeHeading">Atıf</strong>
+        <button class="ghost-btn" type="button" data-open-messages aria-haspopup="dialog" aria-controls="messagesModal">Bildirimler</button>
         <button class="icon-btn" id="closeCite" type="button" aria-label="Kapat">✕</button>
       </div>
       <label>Stil
@@ -175,6 +180,7 @@
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="passwordHeading">
       <div class="modal-head">
         <strong id="passwordHeading">Parola değiştir</strong>
+        <button class="ghost-btn" type="button" data-open-messages aria-haspopup="dialog" aria-controls="messagesModal">Bildirimler</button>
         <button class="icon-btn" id="closePassword" type="button" aria-label="Kapat">✕</button>
       </div>
       <form id="passwordForm">
@@ -194,6 +200,7 @@
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="grantsHeading">
       <div class="modal-head">
         <strong id="grantsHeading">Erişim grantleri</strong>
+        <button class="ghost-btn" type="button" data-open-messages aria-haspopup="dialog" aria-controls="messagesModal">Bildirimler</button>
         <button class="icon-btn" id="closeGrants" type="button" aria-label="Kapat">✕</button>
       </div>
       <div class="grant-list" id="grantsList" role="region" aria-label="Grant listesi" tabindex="0"></div>
@@ -259,6 +266,7 @@
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="offlineHeading">
       <div class="modal-head">
         <strong id="offlineHeading">Çevrimdışı kitaplar</strong>
+        <button class="ghost-btn" type="button" data-open-messages aria-haspopup="dialog" aria-controls="messagesModal">Bildirimler</button>
         <button class="icon-btn" id="closeOffline" type="button" aria-label="Kapat">✕</button>
       </div>
       <div class="grant-list" id="offlineList" role="region" aria-label="Çevrimdışı kitap listesi" tabindex="0"></div>
@@ -292,6 +300,7 @@
         <button class="icon-btn" id="zoomIn" aria-label="Yakınlaştır">+</button>
         <button class="ghost-btn" id="bookmarkBtn" type="button" title="Yer imi" aria-label="Yer imi" aria-pressed="false">☆</button>
         <button class="ghost-btn" id="selectionTools" type="button" title="Seçim araçları (Alt+Shift+H)" aria-keyshortcuts="Alt+Shift+H">Seçim</button>
+        <button class="ghost-btn" type="button" data-open-messages aria-haspopup="dialog" aria-controls="messagesModal">Bildirimler</button>
         <button class="ghost-btn" id="citeBook" type="button" title="Atıf">Atıf</button>
         <button class="ghost-btn" id="downloadBtn" type="button" title="PDF indir" hidden>İndir</button>
         <button class="ghost-btn" id="toggleNotes" aria-controls="notesPanel" aria-expanded="false">Notlar <span id="noteCount">0</span></button>
@@ -404,6 +413,21 @@
 
   </div>
 
+  <div class="modal" id="messagesModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="messagesHeading">
+      <div class="modal-head">
+        <strong id="messagesHeading">Bildirimler</strong>
+        <button class="icon-btn" id="closeMessages" type="button" aria-label="Kapat">✕</button>
+      </div>
+      <p class="login-hint">Son 200 bildirim bu oturumda saklanır; çıkışta temizlenir.</p>
+      <ol class="message-history" id="messagesList" tabindex="0" aria-label="Bildirim listesi"></ol>
+      <p id="messagesEmpty">Henüz bildirim yok.</p>
+      <div class="modal-actions">
+        <button class="ghost-btn" id="clearMessages" type="button">Bildirimleri temizle</button>
+      </div>
+    </div>
+  </div>
+
   <aside class="perf-panel" id="perfPanel" hidden>
     <div class="perf-head">
       <strong>Reader perf</strong>
@@ -415,6 +439,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=124"></script>
+  <script type="module" src="/app.js?v=125"></script>
 </body>
 </html>

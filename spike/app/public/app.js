@@ -218,6 +218,10 @@ const hlCopy = $('hlCopy');
 const hlCopyCite = $('hlCopyCite');
 const toastEl = $('toast');
 const readerStatus = $('readerStatus');
+const messagesModal = $('messagesModal');
+const messagesList = $('messagesList');
+let messageHistory = [];
+let messagesParent = null;
 let readerStatusTimer;
 let readerConflictSignature = '';
 const perfPanel = $('perfPanel');
@@ -306,10 +310,61 @@ function toast(message) {
   const inReader = !reader.hidden && Boolean(readerStatus);
   toastEl.setAttribute('aria-hidden', inReader ? 'true' : 'false');
   toastEl.textContent = t(message);
+  messageHistory.push({ text: toastEl.textContent, at: new Date().toISOString() });
+  if (messageHistory.length > 200) messageHistory.shift();
   toastEl.hidden = false;
   if (inReader) announceReaderStatus(message);
   clearTimeout(toast._timer);
   toast._timer = setTimeout(() => { toastEl.hidden = true; }, 2600);
+}
+
+function renderMessageHistory() {
+  messagesList.replaceChildren();
+  for (const message of [...messageHistory].reverse()) {
+    const item = document.createElement('li');
+    const time = document.createElement('time');
+    time.dateTime = message.at;
+    time.textContent = new Date(message.at).toLocaleTimeString(getLang() === 'en' ? 'en-GB' : 'tr-TR', { hour: '2-digit', minute: '2-digit' });
+    const text = document.createElement('p');
+    text.textContent = message.text;
+    item.append(time, text);
+    messagesList.append(item);
+  }
+  $('messagesEmpty').hidden = Boolean(messageHistory.length);
+  $('clearMessages').disabled = !messageHistory.length;
+}
+
+function openMessages() {
+  if (!messagesModal.hidden) return;
+  const parent = [...document.querySelectorAll('.modal')].find(modal => modal !== messagesModal && !modal.hidden);
+  if (parent) {
+    messagesParent = { modal: parent, returnFocus: modalReturnFocus, active: document.activeElement };
+    parent.hidden = true;
+  }
+  renderMessageHistory();
+  openModal(messagesModal, $('closeMessages'));
+}
+
+function closeMessages() {
+  closeModal(messagesModal);
+  if (messagesParent) {
+    const parent = messagesParent;
+    messagesParent = null;
+    parent.modal.hidden = false;
+    modalReturnFocus = parent.returnFocus;
+    setAppInert(true);
+    reader.inert = !reader.hidden;
+    loginScreen.inert = !loginScreen.hidden;
+    if (parent.active?.isConnected) parent.active.focus();
+  }
+}
+
+function clearMessageHistory() {
+  // An account/auth change must not restore an old account's suspended form.
+  messagesParent = null;
+  messageHistory = [];
+  renderMessageHistory();
+  if (!messagesModal.hidden) closeMessages();
 }
 
 function hue(text) {
@@ -468,12 +523,21 @@ function openModal(modal, focusElement) {
   modal.hidden = false;
   setAppInert(true);
   reader.inert = !reader.hidden;
+  loginScreen.inert = !loginScreen.hidden;
   setTimeout(() => focusElement?.focus(), 0);
 }
 
 function closeModal(modal) {
   modal.hidden = true;
+  if (!messagesModal.hidden && messagesParent?.modal === modal) {
+    // A background save may finish while its notification history is open.
+    // Keep that history active, then return to the completed form's opener.
+    modalReturnFocus = messagesParent.returnFocus;
+    messagesParent = null;
+    return;
+  }
   reader.inert = false;
+  loginScreen.inert = false;
   setAppInert(!loginScreen.hidden || !reader.hidden);
   const previous = modalReturnFocus;
   modalReturnFocus = null;
@@ -1120,6 +1184,9 @@ function setAppInert(inert) {
 }
 
 function setUser(user) {
+  if (state.user?.id !== user?.id) {
+    clearMessageHistory();
+  }
   state.authEpoch = (state.authEpoch || 0) + 1;
   state.user = user;
   syncShortcutControls();
@@ -1153,6 +1220,7 @@ async function showOfflineLibrary(entries) {
 }
 
 function showLogin(message = '') {
+  clearMessageHistory();
   setAppInert(true);
   loginScreen.hidden = false;
   loginError.hidden = !message;
@@ -1784,7 +1852,10 @@ function syncShortcutControls() {
 }
 
 function showShortcuts() {
-  toast('j/k veya ←/→ sayfa · / kitapta ara · n notlar · b yer imi · ? yardım · Esc kapat · Alt+Shift+H seçim araçları');
+  const commands = t('j/k veya ←/→ sayfa · / kitapta ara · n notlar · b yer imi · ? yardım · Esc kapat · Alt+Shift+H seçim araçları');
+  const selectionHelp = t('NVDA: NVDA+Shift+F10 ile yerel seçimi açın; Shift+ok ile metni seçin, Alt+Shift+H ile seçim araçlarını açın.');
+  toast(`${commands}\n\n${selectionHelp}`);
+  openMessages();
 }
 
 function showTocTab(tab) {
@@ -3805,12 +3876,17 @@ document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') closeOffline();
     return;
   }
+  if (!messagesModal.hidden) {
+    if (event.key === 'Escape') closeMessages();
+    return;
+  }
   if (event.key === 'Escape' && !hlBar.hidden) {
     event.preventDefault();
     cancelSelection();
     return;
   }
-  if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey && event.code === 'KeyH' && !reader.hidden) {
+  if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey
+      && (event.code === 'KeyH' || event.key?.toLowerCase() === 'h') && !reader.hidden) {
     event.preventDefault();
     openSelectionTools();
     return;
@@ -3880,6 +3956,14 @@ document.addEventListener('keydown', (event) => {
 
 $('selectionTools').addEventListener('click', openSelectionTools);
 $('footerShortcuts').addEventListener('click', showShortcuts);
+document.querySelectorAll('[data-open-messages]').forEach(button => button.addEventListener('click', openMessages));
+$('closeMessages').addEventListener('click', closeMessages);
+$('clearMessages').addEventListener('click', () => {
+  messageHistory = [];
+  renderMessageHistory();
+  $('closeMessages').focus();
+});
+messagesModal.addEventListener('click', event => { if (event.target === messagesModal) closeMessages(); });
 document.querySelectorAll('[data-single-key-shortcuts]').forEach(input => input.addEventListener('change', () => {
   try { localStorage.setItem(`singleKeyShortcuts:${annotationOwnerId() || storageUserKey()}`, input.checked ? 'on' : 'off'); } catch { /* private storage */ }
   document.querySelectorAll('[data-single-key-shortcuts]').forEach(other => { other.checked = input.checked; });
@@ -4299,6 +4383,7 @@ window.addEventListener('storage', event => {
   if (!state.user?.id || event.newValue === state.user.id) return;
   // Another tab changed accounts. Do not clear the new account's shared key.
   state.user = null;
+  clearMessageHistory();
   state.annotations = [];
   userChip.textContent = ''; userChip.hidden = true; logoutBtn.hidden = true; passwordBtn.hidden = true;
   applyRoleUi();

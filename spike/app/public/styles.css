@@ -547,6 +547,12 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
   font-size: 12.5px; z-index: 80; box-shadow: var(--shadow);
   max-width: min(90vw, 680px); text-align: center; line-height: 1.4;
 }
+.message-history { max-height: 55vh; overflow: auto; padding-left: 24px; overflow-wrap: anywhere; }
+.message-history li { margin: 12px 0; padding-left: 4px; }
+.message-history time { color: var(--muted); font-size: 12px; }
+.message-history p { margin: 3px 0; }
+.modal-head { gap: 8px; flex-wrap: wrap; }
+.modal-head strong { margin-right: auto; }
 .perf-panel {
   position: fixed; right: 16px; bottom: 16px; z-index: 90; width: 300px;
   background: #fffdf8; border: 1px solid var(--line); border-radius: 10px;
