@@ -265,3 +265,11 @@ Local candidate **10546bfb91c643ffa1a0ebc8aa8f28b72d824874**, CSS48/SW17; prod r
 Real NVDA Native Selection (NVDA+Shift+F10) created both PDF and EPUB selections without DOM Range injection. Copy text matched the clipboard and a highlight was created via keyboard. Logical-key fallback handles code-less keyboard events. Transient toast/help is available through untimed notification history, including inside forms; snapshots stay stable during reading, form fields/focus survive, completed background forms stay closed and account/auth changes clear the history.
 
 Native EPUB table/image alternative/MathML speech was captured; RTL language/direction and one fixed-layout two-page fixture worked. Three negative PDF diagnostics are intentionally retained: tagged H1/Formula is not mapped to reader roles, untagged columns have a different text order and image-only PDF has no OCR/text alternative. These are limitations, not conformance passes. ACR updated accordingly; no full AA declaration.
+
+## v126 source PDF structure — 2026-10-25
+
+Local candidate **90c7b727e50d41def50486bd621789a39cdb8826**, CSS49/SW18; production **v125/10546bf** is unchanged. [Acceptance, native speech and raw results](a11y-evidence/v126-2026-10-25/ACCEPTANCE.md).
+
+Source H1/H2/paragraph structure now owns the actual PDF.js marked text. NVDA H navigation announces level 1; the source Formula alternate text is spoken as an atomic graphic alternative without invalid-math warnings. Raw formula text remains selectable; no source MathML/heading/order is invented. Actual native selection → copy → highlight passed without injected Range. Layer IDs are page/render-specific, missing/duplicate references are contained, and controlled delayed old-book structure cannot overwrite the next document. OCR/untagged/decode failures retain text fallback.
+
+Targeted **19/19**, regression **74/74**, units **65/65**; **32 clean axe scans/0 violations**, JS0. Native 200/400% zoom/high-contrast was not re-run; existing evidence remains version-scoped. All content is generated/isolated demo data. No deploy/env/migration changes. The tagged heading/formula-description omission closes in the local v126 candidate; untagged column order, OCR-less scans, publication alternatives, VoiceOver, advanced math exploration and human listening remain. ACR stays open.

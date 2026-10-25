@@ -1,0 +1,8 @@
+- group:
+  - heading "Source heading 1" [level=1]
+  - paragraph: Source paragraph 1.
+  - img "x squared plus y squared equals z squared": x^2 + y^2 = z^2
+- group:
+  - heading "Source heading 2" [level=2]
+  - paragraph: Source paragraph 2.
+  - group: a + b = c

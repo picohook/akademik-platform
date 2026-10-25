@@ -1,13 +1,13 @@
-# Accessibility Conformance Report — v125 / Windows değerlendirmesi
+# Accessibility Conformance Report — v126 / Windows değerlendirmesi
 
 **Windows/NVDA için bu değerlendirme turu tamamlandı; ürün geneli WCAG 2.2 AA iddiası yok.** Bu, bağımsız sertifika veya tamamlanmış çok platformlu VPAT değildir. Doğrulanan PDF sınırlamaları ve yayın içeriği kapsamı aşağıda açıkça korunur.
 
 - Tarih/test eden: **2026-10-25 Europe/Istanbul**, Codex ajanı; gerçek NVDA Speech Viewer + OS klavyesi/zoom + Playwright/axe. İnsan ses/telaffuz değerlendirmesi yapılmadı.
-- Değerlendirilen sürüm: **v125**, CSS **v48**, SW **v17**, kod **10546bfb91c643ffa1a0ebc8aa8f28b72d824874**; üretime alındı.
+- Değerlendirilen yerel aday: **v126**, CSS **v49**, SW **v18**, kod **90c7b727e50d41def50486bd621789a39cdb8826**; **deploy edilmedi**. PDF kaynak başlık/formül açıklaması için gerçek NVDA dahil 19/19, regresyon 74/74, birim 65/65; 32 temiz axe taraması/0 ihlal, JS0.
 - Üretim: **v125/10546bf**; [dağıtım](deployments/2026-10-25-v125.md), [gerçek canlı NVDA bildirim kabulü](a11y-evidence/v125-production-nvda-2026-10-25/ACCEPTANCE.md): **6/6**, JS **0**. Canlı NVDA retestinde prod/env/migration/deploy değiştirilmedi; v124 rollback korunur. Bu dar canlı kabul, aşağıdaki yerel test kapsamını veya açık PDF/VoiceOver sınırlarını genişletmez.
 - Ortam: Windows 25H2 build 26200.9711; Edge **155.0.4283.45**; NVDA **2026.2 / 2026.2.0.57664**; axe **4.13.0**.
 - Kapsam: giriş/katalog, Upload/Edit/Grants/Password/Offline ve önceki Citation kanıtı, PDF/EPUB okuyucu kontrolleri, seçim araçları, not/yer imi, offline reload, CAS ve kontrollü 410. Sentetik altı sayfalı PageLabels PDF ve iki bölümlü reflow EPUB kullanıldı.
-- [v125 sonuçları ve kanıt](a11y-evidence/v125-2026-10-25/ACCEPTANCE.md), [genel sonuçlar](A11Y-RESULTS.md), [önceki Windows oturumu](A11Y-NVDA-V124.md), [arşivlenmiş v124 değerlendirmesi](a11y-evidence/v124-2026-10-25/ACR-assessment.md).
+- [v126 PDF yapı kanıtı](a11y-evidence/v126-2026-10-25/ACCEPTANCE.md), [v125 sonuçları](a11y-evidence/v125-2026-10-25/ACCEPTANCE.md), [genel sonuçlar](A11Y-RESULTS.md), [önceki Windows oturumu](A11Y-NVDA-V124.md), [arşivlenmiş v125 değerlendirmesi](a11y-evidence/v125-2026-10-25/ACR-assessment.md).
 
 ## Kararın kapsamı
 
@@ -29,7 +29,7 @@ Offline a11y testinde blob sentetik fixture olarak IndexedDB’ye hazırlandı; 
 | 1.2.3 | A | Sesli betimleme alternatifi | Not Applicable | Arayüzde kayıt video yok. |
 | 1.2.4 | AA | Canlı altyazılar | Not Applicable | Canlı yayın özelliği yok. |
 | 1.2.5 | AA | Sesli betimleme | Not Applicable | Arayüzde kayıt video yok. |
-| 1.3.1 | A | Bilgi ilişkileri | Partially Supports | EPUB başlık/tablo ilişkileri NVDA’da okundu. Tagged PDF kaynağındaki H1/Formula yapısı mevcut okuyucuda semantik rol olarak aktarılmıyor; doğrulanmış okuyucu sınırı. |
+| 1.3.1 | A | Bilgi ilişkileri | Partially Supports | v126 yerel adayında PDF kaynak H1/H2 düzeyleri ve paragraf ilişkileri gerçek metne aria-owns ile bağlı; NVDA H gezinmesi geçti. Formula kaynak açıklaması atomik alternatif olarak okunuyor; kaynakta olmayan MathML üretilmiyor. EPUB başlık/tablo kanıtı korunur. Etiketsiz/OCR içeriğinde olmayan başlık/tablo ilişkileri üretilmez; tüm yayınlar için tam destek iddia edilmez. |
 | 1.3.2 | A | Anlamlı okuma sırası | Partially Supports | Arayüz/örnek EPUB sırası uygun. Adversarial etiketsiz iki sütunlu PDF’de DOM sırası RIGHT SECOND → LEFT FIRST; görsel sıra tersi. Kaynak/reader sınırlaması doğrulandı. |
 | 1.3.3 | A | Duyusal yönergeler | Supports | Yönergeler kontrol adı ve metinle; yalnız renk/konumla verilmiş zorunlu adım yok. |
 | 1.3.4 | AA | Ekran yönü | Supports | Dikey/yatay yön kilidi yok; dar/geniş viewport matrisinde aynı işlemler var. |
@@ -43,7 +43,7 @@ Offline a11y testinde blob sentetik fixture olarak IndexedDB’ye hazırlandı; 
 | 1.4.11 | AA | Arayüz kontrastı | Supports | Kontrol sınırları/odak renkleri ölçüldü; native Windows forced-colors ve Chromium emülasyonu çalıştırıldı. Tüm yayın şekilleri değerlendirilmedi. |
 | 1.4.12 | AA | Metin aralıkları | Supports | 320 CSS px’de line-height 1.5, paragraph 2em, letter .12em, word .16em override; kontrol erişimi korundu. |
 | 1.4.13 | AA | Hover/odak içeriği | Not Applicable | Özel hover/focus popup’ı yok; yerel tarayıcı title balonları ve açık kullanıcı eylemiyle açılan seçim araçları ayrı. |
-| 2.1.1 | A | Klavye kullanımı | Supports | v125’te gerçek NVDA Native Selection modu ile sıfırdan PDF/EPUB seçimi → pano kopyası → vurgu geçti. DOM Range enjekte edilmedi. Kısayol code boşken key üzerinden de çalışır. Bu sonuç test edilen metinli örneklerle sınırlı. |
+| 2.1.1 | A | Klavye kullanımı | Supports | v125’te gerçek NVDA Native Selection ile PDF/EPUB seçimi → pano → vurgu geçti; v126’da aria-owns ile bağlı tagged PDF metninde aynı native akış yeniden geçti. H başlık gezinmesi çalışır. Bu native seçimlerde Range enjekte edilmedi; genel toolbar regresyonunda ayrı DOM Range fixture’ı vardır. Test edilen metinli örneklerle sınırlı. |
 | 2.1.2 | A | Klavye tuzağı | Supports | İframe’den Tab ile çıkış, okuyucu/modal döngüsü ve Escape/Kapat ile çıkış kanıtlı. |
 | 2.1.4 | A | Tek karakter kısayolları | Supports | Tek tuş kısayolları kullanıcı/cihaz kapsamında kapatılabiliyor; reload/offline kimliği korunuyor. Ctrl/Alt/Meta/Shift seçim kombinasyonları sayfa çevirmiyor. |
 | 2.2.1 | A | Süre ayarları | Supports | Geçici toast bilgisi son 200 kayıtlık, zamansız oturum geçmişinden yeniden okunabilir; açık liste otomatik yenilenmez, form verisi korunur. Çıkış/hesap değişimi/giriş kapısında temizlenir. Yedi günlük session TTL 20 saat istisnasından uzun; diğer UI timer’ları yanıt penceresi oluşturmuyor. Yayın lisans koşulları için genel karar verilmez. |
@@ -82,11 +82,11 @@ Offline a11y testinde blob sentetik fixture olarak IndexedDB’ye hazırlandı; 
 ## Kalan kapsam — genel uygunluk iddiasını sınırlar
 
 1. **VoiceOver/Safari: NOT RUN.** Windows’ta gerçek VoiceOver yok; NVDA kanıtı bunun yerine yazılmadı.
-2. **PDF belgesinin semantiği/alternatifleri:** tagged PDF kaynağındaki H1/Formula yapısı okuyucuda rol olarak aktarılmıyor. Etiketsiz iki sütunlu örnekte DOM ve görsel sıra farklı; metin/OCR alternatifi olmayan tarama örneği erişilebilir değil. Bunlar doğrulanan sınırlamalardır. 1.1.1/1.3.1/1.3.2 sonuçları bütün yayınlara genişletilmez.
+2. **PDF belgesinin semantiği/alternatifleri:** tagged PDF H1/H2 ve Formula kaynak açıklamasının aktarılmaması v126 yerel adayında kapandı; gerçek NVDA başlık ve açıklamayı okudu. Kaynaksız matematik yapısı tahmin edilmez, PDF formül açıklaması etkileşimli MathML değildir. Etiketsiz iki sütunlu örnekteki okuma sırası ve metin/OCR alternatifi olmayan tarama sınırları sürer; eksik yayıncı etiketleri/alternatifleri tamamlanmış sayılmaz. 1.1.1/1.3.1/1.3.2 sonuçları bütün yayınlara genişletilmez.
 3. **Native seçim ve UI mesaj süresi hedefli açıkları v125’te kapandı:** gerçek NVDA + Windows tuşlarıyla seçim/kopyalama/vurgulama; zamansız bildirim geçmişi ve form/hesap gizliliği test edildi. Tüm yardımcı teknolojiler/işletim sistemlerine genişletilmez.
 4. **MathML/RTL/fixed-layout örnekleri:** sentetik EPUB tablo/görsel/formül NVDA çıktısı, Arapça dil/direction ve iki pre-paginated sayfa gezinmesi geçti. Her yayının karmaşık formülü, etkileşimli MathCAT gezinmesi, ses/video alternatifi veya tüm sabit düzenlerin AA uyumu doğrulanmadı.
 5. **İnsan dinlemesi:** Speech Viewer üretilen konuşma metnini gösterir; telaffuz ve gerçek dinleme kalitesi ayrıca insan değerlendirmesidir.
 
-Bu sınırlar raporu saklamayı engellemez; **tam AA/“her kitap erişilebilir” satış iddiasını engeller**. Bu turdaki kısayol/mesaj düzeltmeleri v125 yerel adayındadır. PDF yapı/okuma sırası eksikleri bu paketle düzeltilmiş sayılmaz. Canlıya aktarım ayrı işlemdir.
+Bu sınırlar raporu saklamayı engellemez; **tam AA/“her kitap erişilebilir” satış iddiasını engeller**. v125 kısayol/bildirim düzeltmeleri canlıdır. v126 PDF kaynak başlık/formül açıklaması düzeltmesi yereldedir; deploy ayrı işlemdir. Etiketsiz okuma sırası ve OCR/içerik alternatifleri bu paketle düzeltilmiş sayılmaz.
 
 Normatif çerçeve: [WCAG 2.2](https://www.w3.org/TR/WCAG22/). [Tek karakter kısayolları](https://www.w3.org/WAI/WCAG22/Understanding/character-key-shortcuts.html), [reflow ve iki boyutlu içerik istisnası](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html), [veri hatasını önleme](https://www.w3.org/WAI/WCAG22/Understanding/error-prevention-legal-financial-data.html) birincil kaynaklarla kontrol edildi. Standart kapsamı ile müşteri kabul şartı aynı şey değildir.

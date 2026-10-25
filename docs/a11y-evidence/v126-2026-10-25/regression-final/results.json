@@ -1,0 +1,680 @@
+{
+  "version": 126,
+  "baselineCommit": "10546bfb91c643ffa1a0ebc8aa8f28b72d824874",
+  "startedAt": "2026-10-25T10:41:05.776Z",
+  "scope": "Isolated working-tree runtime; fixture-only demo backend; original sandbox EPUB iframe; visual, keyboard and optional native NVDA checks. No production, env or deployment changes.",
+  "status": "passed",
+  "cases": [
+    {
+      "id": "original-iframe-negative-control",
+      "status": "PASS",
+      "intentionallyInjected": true,
+      "expectedFailures": [
+        "html-has-lang",
+        "image-alt"
+      ],
+      "restored": true
+    },
+    {
+      "id": "original-iframe-chapter-one",
+      "status": "PASS",
+      "passes": 14,
+      "language": "en",
+      "viewport": "width=1248, height=709, initial-scale=1",
+      "sandbox": "allow-same-origin"
+    },
+    {
+      "id": "reader-modal-isolation-and-names",
+      "status": "PASS",
+      "footer": true,
+      "main": true,
+      "topbar": true,
+      "toolsInside": true
+    },
+    {
+      "id": "EPUB-native-chapter-link-and-announcement",
+      "status": "PASS",
+      "chapter": "Chapter two · 100%"
+    },
+    {
+      "id": "original-iframe-chapter-two",
+      "status": "PASS",
+      "passes": 11,
+      "language": "en"
+    },
+    {
+      "id": "iframe-Tab-exit-and-reader-focus-cycle",
+      "status": "PASS",
+      "steps": 50,
+      "escaped": 0
+    },
+    {
+      "id": "single-key-off-modifier-selection-and-persistence",
+      "status": "PASS",
+      "disabledShortcutsInert": true,
+      "selectionDoesNotTurnPage": true,
+      "reloadPreserved": true
+    },
+    {
+      "id": "Notes-Escape-and-close-focus",
+      "status": "PASS",
+      "escapeCount": 1,
+      "returnFocus": "toggleNotes"
+    },
+    {
+      "id": "PDF-keyboard-selection-tools",
+      "status": "PASS",
+      "setup": "DOM Range fixture; toolbar activation via Alt+Shift+H. Native NVDA selection assessed separately.",
+      "toolbarInsideDialog": 1
+    },
+    {
+      "id": "PDF-selection-tools-axe",
+      "status": "PASS",
+      "scanFile": "PDF-selection-tools-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "note-keyboard-edit-and-save",
+      "status": "PASS",
+      "edited": true
+    },
+    {
+      "id": "PDF-notes-axe",
+      "status": "PASS",
+      "scanFile": "PDF-notes-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "bookmark-keyboard-add-remove",
+      "status": "PASS",
+      "roundTrip": true
+    },
+    {
+      "id": "offline-note-edit-reload-and-online-sync",
+      "status": "PASS",
+      "actualOffline": true,
+      "reloadPreserved": true,
+      "onlineSynced": true,
+      "offlineBlobSetup": "Direct synthetic fixture in IndexedDB; ticket/watermark backend is outside this accessibility test"
+    },
+    {
+      "id": "CAS-conflict-axe",
+      "status": "PASS",
+      "scanFile": "CAS-conflict-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "CAS-conflict-keyboard-resolution",
+      "status": "PASS",
+      "twoVersions": true,
+      "resolvedByKeyboard": true,
+      "backend": "demo CAS, second writer via same-user API"
+    },
+    {
+      "id": "expiry-draft-axe",
+      "status": "PASS",
+      "scanFile": "expiry-draft-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "controlled-410-draft-keyboard-recovery",
+      "status": "PASS",
+      "controlledHttp410": true,
+      "draftPreserved": true,
+      "newNoteChosenByKeyboard": true,
+      "liveReceiptsUntouched": true
+    },
+    {
+      "id": "note-delete-confirmation-cancel-and-accept",
+      "status": "PASS",
+      "cancelPreserved": true,
+      "acceptDeleted": true,
+      "focusRestored": true
+    },
+    {
+      "id": "selection-toolbar-Escape-keeps-reader-open",
+      "status": "PASS",
+      "onlyToolbarClosed": true,
+      "returnFocus": "selectionTools"
+    },
+    {
+      "id": "catalog-reflow-1280",
+      "status": "PASS",
+      "width": 1280,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 1280,
+      "horizontalControls": []
+    },
+    {
+      "id": "upload-1280-axe",
+      "status": "PASS",
+      "scanFile": "upload-1280-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "upload-modal-1280",
+      "status": "PASS",
+      "width": 1280,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 1280,
+      "horizontalControls": []
+    },
+    {
+      "id": "edit-1280-axe",
+      "status": "PASS",
+      "scanFile": "edit-1280-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "edit-modal-1280",
+      "status": "PASS",
+      "width": 1280,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 1280,
+      "horizontalControls": []
+    },
+    {
+      "id": "grants-1280-axe",
+      "status": "PASS",
+      "scanFile": "grants-1280-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "grants-modal-1280",
+      "status": "PASS",
+      "width": 1280,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 1280,
+      "horizontalControls": []
+    },
+    {
+      "id": "password-1280-axe",
+      "status": "PASS",
+      "scanFile": "password-1280-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "password-modal-1280",
+      "status": "PASS",
+      "width": 1280,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 1280,
+      "horizontalControls": []
+    },
+    {
+      "id": "offline-1280-axe",
+      "status": "PASS",
+      "scanFile": "offline-1280-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "offline-modal-1280",
+      "status": "PASS",
+      "width": 1280,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 1280,
+      "horizontalControls": []
+    },
+    {
+      "id": "PDF-reader-1280",
+      "status": "PASS",
+      "width": 1280,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 1280,
+      "horizontalControls": []
+    },
+    {
+      "id": "PDF-notes-1280",
+      "status": "PASS",
+      "width": 1280,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 1280,
+      "horizontalControls": []
+    },
+    {
+      "id": "EPUB-reader-1280",
+      "status": "PASS",
+      "width": 1280,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 1280,
+      "horizontalControls": []
+    },
+    {
+      "id": "EPUB-iframe-resized-1280",
+      "status": "PASS",
+      "viewport": "width=1248, height=709, initial-scale=1",
+      "passes": 11
+    },
+    {
+      "id": "catalog-reflow-640",
+      "status": "PASS",
+      "width": 640,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 640,
+      "horizontalControls": []
+    },
+    {
+      "id": "upload-640-axe",
+      "status": "PASS",
+      "scanFile": "upload-640-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "upload-modal-640",
+      "status": "PASS",
+      "width": 640,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 640,
+      "horizontalControls": []
+    },
+    {
+      "id": "edit-640-axe",
+      "status": "PASS",
+      "scanFile": "edit-640-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "edit-modal-640",
+      "status": "PASS",
+      "width": 640,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 640,
+      "horizontalControls": []
+    },
+    {
+      "id": "grants-640-axe",
+      "status": "PASS",
+      "scanFile": "grants-640-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "grants-modal-640",
+      "status": "PASS",
+      "width": 640,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 640,
+      "horizontalControls": []
+    },
+    {
+      "id": "password-640-axe",
+      "status": "PASS",
+      "scanFile": "password-640-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "password-modal-640",
+      "status": "PASS",
+      "width": 640,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 640,
+      "horizontalControls": []
+    },
+    {
+      "id": "offline-640-axe",
+      "status": "PASS",
+      "scanFile": "offline-640-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "offline-modal-640",
+      "status": "PASS",
+      "width": 640,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 640,
+      "horizontalControls": []
+    },
+    {
+      "id": "PDF-reader-640",
+      "status": "PASS",
+      "width": 640,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 640,
+      "horizontalControls": []
+    },
+    {
+      "id": "PDF-notes-640",
+      "status": "PASS",
+      "width": 640,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 640,
+      "horizontalControls": []
+    },
+    {
+      "id": "EPUB-reader-640",
+      "status": "PASS",
+      "width": 640,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 640,
+      "horizontalControls": []
+    },
+    {
+      "id": "EPUB-iframe-resized-640",
+      "status": "PASS",
+      "viewport": "width=624, height=651, initial-scale=1",
+      "passes": 11
+    },
+    {
+      "id": "catalog-reflow-320",
+      "status": "PASS",
+      "width": 320,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 320,
+      "horizontalControls": []
+    },
+    {
+      "id": "upload-320-axe",
+      "status": "PASS",
+      "scanFile": "upload-320-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "upload-modal-320",
+      "status": "PASS",
+      "width": 320,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 320,
+      "horizontalControls": []
+    },
+    {
+      "id": "edit-320-axe",
+      "status": "PASS",
+      "scanFile": "edit-320-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "edit-modal-320",
+      "status": "PASS",
+      "width": 320,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 320,
+      "horizontalControls": []
+    },
+    {
+      "id": "grants-320-axe",
+      "status": "PASS",
+      "scanFile": "grants-320-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "grants-modal-320",
+      "status": "PASS",
+      "width": 320,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 320,
+      "horizontalControls": []
+    },
+    {
+      "id": "password-320-axe",
+      "status": "PASS",
+      "scanFile": "password-320-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "password-modal-320",
+      "status": "PASS",
+      "width": 320,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 320,
+      "horizontalControls": []
+    },
+    {
+      "id": "offline-320-axe",
+      "status": "PASS",
+      "scanFile": "offline-320-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "offline-modal-320",
+      "status": "PASS",
+      "width": 320,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 320,
+      "horizontalControls": []
+    },
+    {
+      "id": "PDF-reader-320",
+      "status": "PASS",
+      "width": 320,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 320,
+      "horizontalControls": []
+    },
+    {
+      "id": "PDF-notes-320",
+      "status": "PASS",
+      "width": 320,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 320,
+      "horizontalControls": []
+    },
+    {
+      "id": "EPUB-reader-320",
+      "status": "PASS",
+      "width": 320,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 320,
+      "horizontalControls": []
+    },
+    {
+      "id": "EPUB-iframe-resized-320",
+      "status": "PASS",
+      "viewport": "width=320, height=605, initial-scale=1",
+      "passes": 11
+    },
+    {
+      "id": "theme-light",
+      "status": "PASS",
+      "scanFile": "theme-light.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "theme-sepia",
+      "status": "PASS",
+      "scanFile": "theme-sepia.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "theme-dark",
+      "status": "PASS",
+      "scanFile": "theme-dark.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "theme-contrast-ratios-and-control-targets",
+      "status": "PASS",
+      "measuredThemes": 3,
+      "minTextRatio": 4.597064052473349,
+      "targets": 0,
+      "source": "Computed theme variables; sRGB luminance; native screenshots separately reviewed"
+    },
+    {
+      "id": "text-spacing-320",
+      "status": "PASS",
+      "width": 320,
+      "height": 800,
+      "dpr": 1,
+      "bodyWidth": 320,
+      "horizontalControls": []
+    },
+    {
+      "id": "pageArea",
+      "status": "PASS",
+      "outlineStyle": "solid",
+      "outlineWidth": "2px",
+      "color": "rgb(55, 0, 110)",
+      "forcedColors": true,
+      "mode": "Chromium media emulation; native Windows scheme separately recorded"
+    },
+    {
+      "id": "login-error-axe",
+      "status": "PASS",
+      "scanFile": "login-error-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "aria-valid-attr-value",
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "login-error-zoom-and-password-manager-fields",
+      "status": "PASS",
+      "error": "E-posta veya parola hatalı.",
+      "layout": {
+        "width": 320,
+        "height": 800,
+        "dpr": 1,
+        "bodyWidth": 320,
+        "horizontalControls": []
+      },
+      "pastePermitted": true
+    },
+    {
+      "id": "English-labels-and-EPUB-language-parts",
+      "status": "PASS",
+      "frame": "en",
+      "root": "en",
+      "part": "tr",
+      "pronunciation": "Not evaluated by a human; language metadata verified"
+    }
+  ],
+  "source": {
+    "server.mjs": "2b0ed67d1ee1f20a761a379b409b415c0d0d4f62d1822f696b5038e3d203e8bf",
+    "indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+    "download-tickets.mjs": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+    "annotation-sync.mjs": "553eec49001914c58e9f019caab734e8f0f61da307bde64958a6d2bd15e8e106",
+    "social-watermark.mjs": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+    "public/app.js": "4dd689d039edb1197ddffe7032384d383e550e84026ace29e30a3c9adcc42abd",
+    "public/index.html": "5eb001dfd1333ca9b5edeab13240bf32a85ac192b471f8ae638e6fd786948cd4",
+    "public/offline.mjs": "cba7a4e9a1371bccf35e55d4c67275ddf28946b2e64799452382a73dcd12feea",
+    "public/downloads.mjs": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+    "public/sw.js": "dcbdf029388ddb8c8148113b7113b29df8f21de0a6af270ea29bcd88a9609f27",
+    "public/epub-engine.mjs": "b0347630f69255ece8aad9d0dee74feae791a97fa499f8f4518ba8f0ff184c23",
+    "public/styles.css": "120f05a23ae13d3cd3d56ec8f66ce22cdb210323b4fac8c81ff5f7180a846416",
+    "public/i18n.mjs": "5dedf02ddba798da37c74a5f7b8c25af973d140738a649f28fbbc22b45b7947f",
+    "public/citations.mjs": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+    "public/pdf-structure.mjs": "1060fde4e22c0cd378778f5249eb29372a68744c13b993c75ab6caa83a5e241a"
+  },
+  "browserErrors": [],
+  "cleanup": {
+    "browserClosed": true,
+    "ownedServerStopped": true
+  },
+  "url": "http://127.0.0.1:51749",
+  "browser": "155.0.4283.45",
+  "completedAt": "2026-10-25T10:42:17.264Z"
+}

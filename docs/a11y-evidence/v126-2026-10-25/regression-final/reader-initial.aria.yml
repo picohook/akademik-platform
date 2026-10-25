@@ -1,0 +1,77 @@
+- link "İçeriğe atla":
+  - /url: "#mainContent"
+- banner:
+  - link "A Akademik Platform spike":
+    - /url: /
+    - text: A Akademik Platform
+    - emphasis: spike
+  - searchbox "Katalogda ara"
+  - text: / Demo modu Demo Kütüphaneci · librarian
+  - button "Switch to English": EN
+  - button "Çevrimdışı"
+  - button "Erişim"
+  - button "Parola"
+  - button "Çıkış"
+- main:
+  - paragraph: Okuma katmanı · 14 günlük spike
+  - heading "Katalog, okuyucu, not ve arama. Tek çalışan dilim." [level=1]
+  - paragraph:
+    - text: Bu ekran ürün değil; PDF.js,
+    - code: anchor
+    - text: modeli ve Postgres aramasını ölçmek için kurulmuş bir iskelet. Örnek içerik kamu malı test PDF'idir.
+  - button "Tümü"
+  - button "Diş Hekimliği"
+  - button "Implantoloji"
+  - text: 3 başlık
+  - button "+ Kitap ekle"
+  - text: AKADEMIK A A11Y PDF fixture
+  - paragraph: A11Y PDF fixture
+  - paragraph: EN · —
+  - text: PDF
+  - button "A11Y PDF fixture kitabını oku": Oku
+  - button "Çevrimdışı indir": ↓
+  - button "Düzenle"
+  - text: AKADEMIK E EPUB accessibility probe
+  - paragraph: EPUB accessibility probe
+  - paragraph: EN · —
+  - text: EPUB
+  - button "EPUB accessibility probe kitabını oku": Oku
+  - button "Çevrimdışı indir": ↓
+  - button "Düzenle"
+  - text: DİŞ HEKİMLİĞİ D Diş Hekimliğinde İmplant Komplikasyonları Demo Akademik Yayıncılık
+  - paragraph: Klinik değerlendirme ve yönetim
+  - paragraph: TR · 2026
+  - text: PDF Diş Hekimliği Implantoloji
+  - button "Diş Hekimliğinde İmplant Komplikasyonları kitabını oku": Oku
+  - button "Çevrimdışı indir": ↓
+  - button "Düzenle"
+- contentinfo:
+  - text: © 2026 Akademik Platform · v126 · Geliştirme
+  - checkbox "Tek tuş kısayolları" [checked]
+  - text: Tek tuş kısayolları
+  - button "Kısayollar"
+  - button "Bildirimler"
+- dialog "Okuyucu":
+  - status
+  - button "Kapat": ✕
+  - strong: EPUB accessibility probe
+  - text: EPUB · 2 bölüm
+  - checkbox "Tek tuş kısayolları" [checked]
+  - text: Tek tuş kısayolları
+  - button "İçindekiler": ☰
+  - button "Tam ekran": ⛶
+  - button "Açık tema": ☀
+  - button "Uzaklaştır": −
+  - text: 100%
+  - button "Yakınlaştır": +
+  - button "Yer imi": ☆
+  - button "Seçim"
+  - button "Bildirimler"
+  - button "Atıf"
+  - button "İndir"
+  - button "Notlar 0"
+  - region "Sayfa alanı":
+    - document "EPUB içeriği":
+      - iframe
+    - button "Önceki sayfa": ‹
+    - button "Sonraki sayfa": ›

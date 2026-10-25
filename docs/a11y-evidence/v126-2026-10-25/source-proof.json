@@ -1,0 +1,47 @@
+{
+  "codeCommit": "90c7b72",
+  "runs": [
+    {
+      "name": "native-final",
+      "allSourcesMatch": true,
+      "sources": {
+        "server.mjs": "2b0ed67d1ee1f20a761a379b409b415c0d0d4f62d1822f696b5038e3d203e8bf",
+        "indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+        "download-tickets.mjs": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+        "annotation-sync.mjs": "553eec49001914c58e9f019caab734e8f0f61da307bde64958a6d2bd15e8e106",
+        "social-watermark.mjs": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+        "public/app.js": "4dd689d039edb1197ddffe7032384d383e550e84026ace29e30a3c9adcc42abd",
+        "public/index.html": "5eb001dfd1333ca9b5edeab13240bf32a85ac192b471f8ae638e6fd786948cd4",
+        "public/offline.mjs": "cba7a4e9a1371bccf35e55d4c67275ddf28946b2e64799452382a73dcd12feea",
+        "public/downloads.mjs": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+        "public/sw.js": "dcbdf029388ddb8c8148113b7113b29df8f21de0a6af270ea29bcd88a9609f27",
+        "public/epub-engine.mjs": "b0347630f69255ece8aad9d0dee74feae791a97fa499f8f4518ba8f0ff184c23",
+        "public/styles.css": "120f05a23ae13d3cd3d56ec8f66ce22cdb210323b4fac8c81ff5f7180a846416",
+        "public/i18n.mjs": "5dedf02ddba798da37c74a5f7b8c25af973d140738a649f28fbbc22b45b7947f",
+        "public/citations.mjs": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+        "public/pdf-structure.mjs": "1060fde4e22c0cd378778f5249eb29372a68744c13b993c75ab6caa83a5e241a"
+      }
+    },
+    {
+      "name": "regression-final",
+      "allSourcesMatch": true,
+      "sources": {
+        "server.mjs": "2b0ed67d1ee1f20a761a379b409b415c0d0d4f62d1822f696b5038e3d203e8bf",
+        "indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+        "download-tickets.mjs": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+        "annotation-sync.mjs": "553eec49001914c58e9f019caab734e8f0f61da307bde64958a6d2bd15e8e106",
+        "social-watermark.mjs": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+        "public/app.js": "4dd689d039edb1197ddffe7032384d383e550e84026ace29e30a3c9adcc42abd",
+        "public/index.html": "5eb001dfd1333ca9b5edeab13240bf32a85ac192b471f8ae638e6fd786948cd4",
+        "public/offline.mjs": "cba7a4e9a1371bccf35e55d4c67275ddf28946b2e64799452382a73dcd12feea",
+        "public/downloads.mjs": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+        "public/sw.js": "dcbdf029388ddb8c8148113b7113b29df8f21de0a6af270ea29bcd88a9609f27",
+        "public/epub-engine.mjs": "b0347630f69255ece8aad9d0dee74feae791a97fa499f8f4518ba8f0ff184c23",
+        "public/styles.css": "120f05a23ae13d3cd3d56ec8f66ce22cdb210323b4fac8c81ff5f7180a846416",
+        "public/i18n.mjs": "5dedf02ddba798da37c74a5f7b8c25af973d140738a649f28fbbc22b45b7947f",
+        "public/citations.mjs": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+        "public/pdf-structure.mjs": "1060fde4e22c0cd378778f5249eb29372a68744c13b993c75ab6caa83a5e241a"
+      }
+    }
+  ]
+}

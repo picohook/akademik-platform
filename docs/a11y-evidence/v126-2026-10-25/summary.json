@@ -1,0 +1,29 @@
+{
+  "date": "2026-10-25",
+  "timeZone": "Europe/Istanbul",
+  "codeCommit": "90c7b72",
+  "localVersion": 126,
+  "productionVersion": 125,
+  "productionBuild": "10546bf",
+  "noDeployEnvMigrationChanges": true,
+  "runs": [
+    {
+      "name": "native-final",
+      "passed": 19,
+      "failed": 0,
+      "jsErrors": 0
+    },
+    {
+      "name": "regression-final",
+      "passed": 74,
+      "failed": 0,
+      "jsErrors": 0
+    }
+  ],
+  "cleanAxeScans": 32,
+  "violations": 0,
+  "unitTests": {
+    "passed": 65,
+    "failed": 0
+  }
+}

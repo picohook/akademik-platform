@@ -87,3 +87,7 @@ The Windows/NVDA UI round and local remediation are recorded in [the acceptance]
 ## Latest follow-up — v125 / 2026-10-25
 
 Native selection initiation and transient-message timing were tested and remediated in the local v125 candidate. [NVDA workflow](A11Y-NVDA-V125.md), [evidence and PDF limitations](a11y-evidence/v125-2026-10-25/ACCEPTANCE.md), [current ACR](ACR.md). Production remains v124; no deploy this round. Earlier version-specific open checklists are historical. VoiceOver, human listening and PDF semantic-structure/publication remediation remain.
+
+## Latest follow-up — v126 / 2026-10-25
+
+The source-tagged PDF heading/formula-description omission is fixed and verified in local **90c7b72**: [19 targeted checks with actual NVDA, 74 regressions and source proof](a11y-evidence/v126-2026-10-25/ACCEPTANCE.md). H1/H2/source language, formula alternatives, ownership uniqueness, spread/scroll/zoom/rotation, decode/OCR fallback, controlled old-book race, offline module cache and native copy/highlight passed. Production remains v125; migration none. VoiceOver, human listening, untagged reading order, OCR/text alternatives and broader publication/math accessibility remain open.
