@@ -3392,7 +3392,10 @@ async function openBook(book, options = {}) {
       cMapPacked: true,
       standardFontDataUrl: '/vendor/pdfjs/standard_fonts/',
       isEvalSupported: false,
+      // Both options are required to stop the full-file stream competing with ranges.
+      disableStream: true,
       disableAutoFetch: true,
+      rangeChunkSize: 256 * 1024,
     });
     state.pdf = await task.promise;
     state.perf.pdfLoadMs = performance.now() - state.perf.openedAt;
