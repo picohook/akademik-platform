@@ -3,8 +3,8 @@
 **Windows/NVDA için bu değerlendirme turu tamamlandı; ürün geneli WCAG 2.2 AA iddiası yok.** Bu, bağımsız sertifika veya tamamlanmış çok platformlu VPAT değildir. Doğrulanan PDF sınırlamaları ve yayın içeriği kapsamı aşağıda açıkça korunur.
 
 - Tarih/test eden: **2026-10-25 Europe/Istanbul**, Codex ajanı; gerçek NVDA Speech Viewer + OS klavyesi/zoom + Playwright/axe. İnsan ses/telaffuz değerlendirmesi yapılmadı.
-- Yerel düzeltme adayı: **v125**, CSS **v48**, SW **v17**, kod **10546bfb91c643ffa1a0ebc8aa8f28b72d824874**. **Deploy edilmedi.**
-- Üretim: **v124/52c846c**; [dağıtım ve gerçek üretim NVDA kabulü](deployments/2026-10-25-v124.md). Bu turda prod/env/migration/deploy değiştirilmedi; v123 rollback korunur.
+- Değerlendirilen sürüm: **v125**, CSS **v48**, SW **v17**, kod **10546bfb91c643ffa1a0ebc8aa8f28b72d824874**; üretime alındı.
+- Üretim: **v125/10546bf**; [dağıtım](deployments/2026-10-25-v125.md), [gerçek canlı NVDA bildirim kabulü](a11y-evidence/v125-production-nvda-2026-10-25/ACCEPTANCE.md): **6/6**, JS **0**. Canlı NVDA retestinde prod/env/migration/deploy değiştirilmedi; v124 rollback korunur. Bu dar canlı kabul, aşağıdaki yerel test kapsamını veya açık PDF/VoiceOver sınırlarını genişletmez.
 - Ortam: Windows 25H2 build 26200.9711; Edge **155.0.4283.45**; NVDA **2026.2 / 2026.2.0.57664**; axe **4.13.0**.
 - Kapsam: giriş/katalog, Upload/Edit/Grants/Password/Offline ve önceki Citation kanıtı, PDF/EPUB okuyucu kontrolleri, seçim araçları, not/yer imi, offline reload, CAS ve kontrollü 410. Sentetik altı sayfalı PageLabels PDF ve iki bölümlü reflow EPUB kullanıldı.
 - [v125 sonuçları ve kanıt](a11y-evidence/v125-2026-10-25/ACCEPTANCE.md), [genel sonuçlar](A11Y-RESULTS.md), [önceki Windows oturumu](A11Y-NVDA-V124.md), [arşivlenmiş v124 değerlendirmesi](a11y-evidence/v124-2026-10-25/ACR-assessment.md).

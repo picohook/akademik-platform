@@ -1,0 +1,105 @@
+{
+  "runId": "dabc0dbe-e67f-426e-855d-7f6c3d156dd0",
+  "dateIstanbul": "2026-10-25",
+  "startedAt": "2026-10-25T10:18:38.697Z",
+  "base": "https://localhost",
+  "status": "passed",
+  "version": 125,
+  "buildSha": "10546bf",
+  "scope": "Actual production reader-role UI login, PDF note offline save using native Tab/Enter, real NVDA readerStatus announcement, untimed notification history read with NVDA, online sync and removal of only the generated note. No env/migration/deploy commands.",
+  "steps": [
+    {
+      "id": "reader-ui-login",
+      "status": "PASS"
+    },
+    {
+      "id": "production-pdf-reader-open",
+      "status": "PASS"
+    },
+    {
+      "id": "offline-note-readerStatus-NVDA",
+      "status": "PASS",
+      "nativeSave": true,
+      "browserOffline": true
+    },
+    {
+      "id": "untimed-notification-history-NVDA",
+      "status": "PASS"
+    },
+    {
+      "id": "notification-close-focus-return",
+      "status": "PASS"
+    },
+    {
+      "id": "online-note-sync",
+      "status": "PASS"
+    }
+  ],
+  "jsErrors": [],
+  "cleanup": {
+    "fixtureNoteDeleted": true,
+    "loggedOut": true,
+    "ownedBrowserClosed": true,
+    "nvdaNotRestartedOrReconfigured": true,
+    "normalOperationReceiptsRetained": true
+  },
+  "noEnvMigrationDeployChanges": true,
+  "nvda": {
+    "version": "2026.2",
+    "build": "2026.2.0.57664",
+    "processId": 27180
+  },
+  "edge": "155.0.4283.45",
+  "tls": "Dedicated browser ignores local Caddy CA errors; OS trust unchanged.",
+  "config": {
+    "version": "125",
+    "buildSha": "10546bf"
+  },
+  "servedAppSha256": "f11f253bea5a1270c47d9ae2d20500fabe5bca3eb5e548a3dc619a5635966919",
+  "expectedAppSha256": "f11f253bea5a1270c47d9ae2d20500fabe5bca3eb5e548a3dc619a5635966919",
+  "login": {
+    "method": "Actual login form",
+    "role": "reader",
+    "successful": true
+  },
+  "book": {
+    "id": "43c8cab5-6ebb-45bd-be54-607d3db942b5",
+    "assetId": "ca9ef7bb-2bdb-4f81-bb65-a922393e21b5",
+    "format": "pdf"
+  },
+  "fixtureNoteId": "29c14f36-d6f7-43d0-bcf2-f369e53504ce",
+  "readerStatus": {
+    "role": "status",
+    "live": "polite",
+    "atomic": "true",
+    "insideReader": true,
+    "hidden": false,
+    "display": "block",
+    "text": "Not cihazda kaydedildi; eşitleme bekliyor",
+    "mutations": [
+      "Not cihazda kaydedildi; eşitleme bekliyor"
+    ]
+  },
+  "scenario": "Reader login → production PDF → offline note save → readerStatus announcement → untimed notification history → online CAS sync",
+  "heardText": "Not cihazda kaydedildi; eşitleme bekliyor",
+  "spokenMatch": true,
+  "speech": {
+    "from": "2026-10-25T10:18:54.0564663Z",
+    "processId": 27180,
+    "text": "unavailable\r\ndialog    Okuyucu\r\nNot cihazda kaydedildi; eşitleme bekliyor \r\n",
+    "capturedAt": "2026-10-25T10:19:03.0179734Z"
+  },
+  "history": {
+    "toastAlreadyExpired": true,
+    "openedWithNativeEnter": true,
+    "listReachedWithNativeTab": true,
+    "speech": {
+      "from": "2026-10-25T10:19:04.2127648Z",
+      "processId": 27180,
+      "text": "Bildirimler  dialog\r\nKapat  button  \r\nBildirimler\r\nbutton    Kapat\r\nSon 200 bildirim bu oturumda saklanır; çıkışta temizlenir.\r\nBildirim listesi  list  with 1 item  1.   13:18  Not cihazda kaydedildi; eşitleme bekliyor\r\nNot cihazda kaydedildi; eşitleme bekliyor\r\nout of list  button    Bildirimleri temizle\r\nbutton    Bildirimleri temizle\r\n",
+      "capturedAt": "2026-10-25T10:19:17.1813360Z"
+    }
+  },
+  "jsErrorCount": 0,
+  "completedAt": "2026-10-25T10:19:20.497Z"
+}
