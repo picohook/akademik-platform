@@ -23,35 +23,33 @@ on conflict (tenant_id, email) do nothing;
 insert into works (id, tenant_id, content_type, title, subtitle, language, abstract, subjects, metadata)
 values ('33333333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111',
         'monograph',
-        'Diş Hekimliğinde İmplant Komplikasyonları',
-        'Klinik değerlendirme ve yönetim',
-        'tr',
-        'İmplant tedavisinde karşılaşılan komplikasyonların sınıflandırılması, tanısı ve yönetimi. Vaka temelli bir yaklaşım.',
-        array['Diş Hekimliği', 'Implantoloji'],
-        '{"sample": true}'::jsonb)
+        'Demo PDF — Dummy PDF file',
+        'One-page English test document',
+        'en',
+        'One-page English PDF used to verify reader, search, download and accessibility flows.',
+        array['Demo', 'Platform testing'],
+        '{"sample": true, "demo_fixture": true, "source_note": "one-page English test PDF"}'::jsonb)
 on conflict (id) do nothing;
 
 insert into editions (id, tenant_id, work_id, publisher, publication_year, edition, isbn13, license_uri, license_note, rights_note)
 values ('44444444-4444-4444-4444-444444444444', '11111111-1111-1111-1111-111111111111',
         '33333333-3333-3333-3333-333333333333',
-        'Demo Akademik Yayıncılık', 2026, '1. baskı', '9780000000000',
-        'https://creativecommons.org/licenses/by-nc/4.0/',
-        'Demo amaçlı örnek içerik; ticari kullanım yoktur.',
-        'Yalnızca scaffold testi için üretilmiş örnek.')
+        'Academic Platform test fixture', null, 'Test fixture', null,
+        null,
+        'Internal one-page demo fixture; not a publication.',
+        'For platform testing only; not scholarly content.')
 on conflict (id) do nothing;
 
 insert into assets (id, tenant_id, edition_id, format, storage_key, page_count, text_content, quality_score, access_status)
 values ('55555555-5555-5555-5555-555555555555', '11111111-1111-1111-1111-111111111111',
-        '44444444-4444-4444-4444-444444444444', 'pdf', 'seed/sample.pdf', 6,
-        'Diş hekimliğinde implant komplikasyonları. Implant complications in dentistry. '
-        || 'Peri-implantitis, implant kaybı, sinir hasarı, estetik komplikasyonlar. '
-        || 'Risk faktörleri, tanı, tedavi ve önleme. Dental implant complications, diagnosis, treatment and prevention.',
+        '44444444-4444-4444-4444-444444444444', 'pdf', 'seed/sample.pdf', 1,
+        'Dummy PDF file',
         80, 'open')
 on conflict (id) do nothing;
 
 insert into collections (id, tenant_id, title, slug, description, visibility)
 values ('66666666-6666-6666-6666-666666666666', '11111111-1111-1111-1111-111111111111',
-        'Diş Hekimliği', 'dis-hekimligi', 'İmplantoloji ve klinik diş hekimliği seçkisi.', 'tenant')
+        'Demo', 'demo', 'One-page English test document for platform checks.', 'tenant')
 on conflict (tenant_id, slug) do nothing;
 
 insert into collection_items (collection_id, work_id, position)

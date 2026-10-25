@@ -78,17 +78,17 @@ const MIME = {
 const demoBooks = [
   {
     id: '33333333-3333-3333-3333-333333333333',
-    title: 'Diş Hekimliğinde İmplant Komplikasyonları',
-    subtitle: 'Klinik değerlendirme ve yönetim',
-    language: 'tr',
+    title: 'Demo PDF — Dummy PDF file',
+    subtitle: 'One-page English test document',
+    language: 'en',
     abstract:
-      'İmplant tedavisinde karşılaşılan komplikasyonların sınıflandırılması, tanısı ve yönetimi. Vaka temelli bir yaklaşım.',
-    subjects: ['Diş Hekimliği', 'Implantoloji'],
-    publisher: 'Demo Akademik Yayıncılık',
-    publication_year: 2026,
+      'One-page English PDF used to verify reader, search, download and accessibility flows.',
+    subjects: ['Demo', 'Platform testing'],
+    publisher: 'Academic Platform test fixture',
+    publication_year: null,
     asset_id: '55555555-5555-5555-5555-555555555555',
     storage_key: 'seed/sample.pdf',
-    page_count: 6,
+    page_count: 1,
   },
 ];
 
