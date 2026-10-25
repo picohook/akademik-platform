@@ -1,0 +1,102 @@
+{
+  "version": 124,
+  "baselineCommit": "e8ddb3d07b6ac07863739de5c0e1ea681666ee97",
+  "startedAt": "2026-10-25T01:58:54.675Z",
+  "scope": "Isolated working-tree runtime; fixture-only demo backend; original sandbox EPUB iframe; visual, keyboard and optional native NVDA checks. No production, env or deployment changes.",
+  "status": "passed",
+  "cases": [
+    {
+      "id": "original-iframe-negative-control",
+      "status": "PASS",
+      "intentionallyInjected": true,
+      "expectedFailures": [
+        "html-has-lang",
+        "image-alt"
+      ],
+      "restored": true
+    },
+    {
+      "id": "original-iframe-chapter-one",
+      "status": "PASS",
+      "passes": 14,
+      "language": "en",
+      "viewport": "width=1248, height=769, initial-scale=1",
+      "sandbox": "allow-same-origin"
+    },
+    {
+      "id": "reader-modal-isolation-and-names",
+      "status": "PASS",
+      "footer": true,
+      "main": true,
+      "topbar": true,
+      "toolsInside": true
+    },
+    {
+      "id": "EPUB-native-chapter-link-and-announcement",
+      "status": "PASS",
+      "chapter": "Chapter two · 100%",
+      "speechFile": "chapter-change.speech.json",
+      "expected": "Bölüm.*Chapter two|Chapter.*Chapter two"
+    },
+    {
+      "id": "original-iframe-chapter-two",
+      "status": "PASS",
+      "passes": 11,
+      "language": "en"
+    },
+    {
+      "id": "iframe-Tab-exit-and-reader-focus-cycle",
+      "status": "PASS",
+      "steps": 50,
+      "escaped": 0
+    },
+    {
+      "id": "NVDA-PDF-physical-page-three-printed-label-one",
+      "status": "PASS",
+      "physical": 3,
+      "printed": "1",
+      "label": "Sayfa 1 (PDF 3) / 6",
+      "speechFile": "printed-page.speech.json",
+      "expected": "Sayfa 1.*PDF 3"
+    },
+    {
+      "id": "citation-modal-axe",
+      "status": "PASS",
+      "scanFile": "citation-modal-axe.axe.json",
+      "violations": [],
+      "manualReview": [
+        "color-contrast"
+      ]
+    },
+    {
+      "id": "Citation-modal-AT-isolation-and-focus-return",
+      "status": "PASS",
+      "nestedBackgroundInert": true,
+      "focusReturned": "citeBook"
+    }
+  ],
+  "source": {
+    "server.mjs": "468823456a2aa72929463de5ed871e03b9cdd83a7c71b4222271cc20444275ba",
+    "indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+    "download-tickets.mjs": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+    "annotation-sync.mjs": "553eec49001914c58e9f019caab734e8f0f61da307bde64958a6d2bd15e8e106",
+    "social-watermark.mjs": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+    "public/app.js": "32acbf70767693897185aef0d0fef6e16689b9a8c14f50dc0e624b28074eefbd",
+    "public/index.html": "832e15e484bed29f5986bf4b55aae8d49975cfe50fce3cdc2e251ad4da0f70c0",
+    "public/offline.mjs": "cba7a4e9a1371bccf35e55d4c67275ddf28946b2e64799452382a73dcd12feea",
+    "public/downloads.mjs": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+    "public/sw.js": "d219e099ebe751ff529382632195d93180327423916e4f83e390fcd0552583e7",
+    "public/epub-engine.mjs": "ce6be6923425154435e17898f24964d56edac0c0e15528b132ad9ef19316b4b2",
+    "public/styles.css": "0af4029f5b869c02439ff13ccd1b442ca590f82c0e9906310cef10cafbef843b",
+    "public/i18n.mjs": "e166d95c8b81c5e527e886df1bd132ce601684fa660be2a8fa4678f9be237ee7",
+    "public/citations.mjs": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86"
+  },
+  "browserErrors": [],
+  "cleanup": {
+    "browserClosed": true,
+    "ownedServerStopped": true
+  },
+  "url": "http://127.0.0.1:58970",
+  "browser": "155.0.4283.45",
+  "completedAt": "2026-10-25T01:59:37.807Z"
+}

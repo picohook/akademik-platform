@@ -245,3 +245,14 @@ Three v122 UI operations worked (offline edit/sync, actual CAS conflict and cont
 [Baseline/control](a11y-evidence/v122-nvda-2026-10-25/summary.json), [candidate/source proof](a11y-evidence/v123-live-status-2026-10-25/summary.json), [speech captures](a11y-evidence/v123-live-status-2026-10-25/speech/results.json), [regressions](a11y-evidence/v123-live-status-2026-10-25/regression/results.json). Raw candidate results inherited a v122 harness scope label; version=123 and 14 source hashes identify the tested candidate, and the summary corrects that metadata without changing raw outcomes.
 
 **No deploy.** Docker read-only inspection failed because the Linux engine named pipe was missing; current production health was not re-certified. Last deployment is v122. Full ACR still OPEN, including chapter-name announcement, full Notes/shortcut/browse-mode and offline reload/bookmark coverage, visual checks, full iframe axe and VoiceOver.
+
+
+## Remediation and Windows assessment — v124 — 2026-10-25
+
+Local candidate only: CSS47/SW16; production remains v123/e8ddb3d. No env, DB migration, build/up or rollback change. [Acceptance and raw evidence](a11y-evidence/v124-2026-10-25/ACCEPTANCE.md), [NVDA task outcomes](A11Y-NVDA-V124.md), [criterion decisions](ACR.md).
+
+Fixed: EPUB viewport zoom restriction (including engine resize rewrites); chapter speech/deduplication; icon names; footer/modal background isolation; single-character shortcut opt-out and modifier handling; keyboard selection tool launcher inside the reader dialog; bookmark/note/toolbar focus restoration; narrow-reader controls/panel scrolling; light/sepia/dark contrast and control borders; note action target sizes/native position buttons; note deletion confirmation; EPUB previous/next arrow overlap.
+
+Real NVDA speaks chapter, offline pending, CAS, explicit expiry and login alert. Original sandbox iframe scans use its actual DOM/layout with unchanged allow-same-origin; injected missing lang/alt negative control fails as expected, then is restored. Native Edge 100/200/400%, native Windows high contrast (restored in finally), text spacing and 320 CSS px were checked. Unit regressions 65/65. Browser/JS results and source provenance are in the acceptance record.
+
+**Scope stays explicit:** Native AT text-selection initiation, all message timing, VoiceOver/Safari and arbitrary publication semantics/content are not certified by these runs. ACR is a bounded assessment, not a full AA declaration.

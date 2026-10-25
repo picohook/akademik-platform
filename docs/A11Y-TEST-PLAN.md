@@ -77,3 +77,8 @@ Use DevTools device toolbar at 320×640 and 1280×720.
 - [ ] Findings fixed or logged with owner and target version.
 
 Evidence: screenshot/recording per finding, axe JSON export, browser/OS versions.
+
+
+## Latest assessment — v124 / 2026-10-25
+
+The Windows/NVDA UI round and local remediation are recorded in [the acceptance](a11y-evidence/v124-2026-10-25/ACCEPTANCE.md) and [current ACR](ACR.md). Production remains v123. Real VoiceOver, arbitrary publication accessibility, native AT selection initiation and comprehensive timing are explicit scope limits; no full AA declaration. Older version-specific checklists above are historical.

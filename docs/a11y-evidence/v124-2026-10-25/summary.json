@@ -1,0 +1,60 @@
+{
+  "codeCommit": "52c846c11f539b57ca3c531b72658da80c13976a",
+  "candidateVersion": 124,
+  "productionUnchanged": "123/e8ddb3d",
+  "date": "2026-10-25",
+  "timezone": "Europe/Istanbul",
+  "fullConformanceClaim": false,
+  "voiceOver": "NOT RUN - Windows host",
+  "unitTests": {
+    "pass": 65,
+    "fail": 0
+  },
+  "runs": {
+    "final-source-all": {
+      "pass": 74,
+      "fail": 0,
+      "jsErrors": 0,
+      "cleanAxeScans": 28,
+      "axeViolations": 0,
+      "cleanup": {
+        "browserClosed": true,
+        "ownedServerStopped": true
+      }
+    },
+    "native-verified": {
+      "pass": 74,
+      "fail": 0,
+      "jsErrors": 0,
+      "cleanAxeScans": 28,
+      "axeViolations": 0,
+      "cleanup": {
+        "nativeContrastRestored": true,
+        "browserClosed": true,
+        "ownedServerStopped": true
+      }
+    },
+    "native-final-source": {
+      "pass": 23,
+      "fail": 0,
+      "jsErrors": 0,
+      "cleanAxeScans": 8,
+      "axeViolations": 0,
+      "cleanup": {
+        "browserClosed": true,
+        "ownedServerStopped": true
+      }
+    },
+    "native-pages": {
+      "pass": 9,
+      "fail": 0,
+      "jsErrors": 0,
+      "cleanAxeScans": 3,
+      "axeViolations": 0,
+      "cleanup": {
+        "browserClosed": true,
+        "ownedServerStopped": true
+      }
+    }
+  }
+}
