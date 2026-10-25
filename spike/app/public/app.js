@@ -2278,6 +2278,26 @@ async function renderOcrLayer(viewport, pageNumber = state.page, container = tex
   return renderHocrText(hocr, viewport, container);
 }
 
+function readerFileTimings(bookId, openedAt) {
+  if (!bookId || !Number.isFinite(openedAt) || !performance.getEntriesByType) return [];
+  const fileUrl = new URL(`/api/books/${encodeURIComponent(bookId)}/file`, window.location.origin).href;
+  return performance.getEntriesByType('resource')
+    .filter((entry) => entry.name === fileUrl && entry.startTime >= openedAt)
+    .slice(-20)
+    .map((entry) => ({
+      startMs: Math.round(entry.startTime - openedAt),
+      totalMs: Math.round(entry.duration),
+      ttfbMs: entry.requestStart > 0 && entry.responseStart > 0
+        ? Math.round(entry.responseStart - entry.requestStart) : null,
+      downloadMs: entry.responseStart > 0 && entry.responseEnd >= entry.responseStart
+        ? Math.round(entry.responseEnd - entry.responseStart) : null,
+      bytes: entry.encodedBodySize || 0,
+      serverMs: Object.fromEntries((entry.serverTiming || [])
+        .filter((metric) => ['app', 'storage'].includes(metric.name))
+        .map((metric) => [metric.name, Math.round(metric.duration)])),
+    }));
+}
+
 function readerPerf() {
   const renders = state.perf?.renders || [];
   const lastPhase = state.perf?.phases?.at(-1) || null;
@@ -2289,6 +2309,9 @@ function readerPerf() {
     pages: state.numPages,
     page: state.page,
     pdfLoadMs: state.perf?.pdfLoadMs ?? null,
+    beforePdfMs: state.perf?.beforePdfMs ?? null,
+    labelsMs: state.perf?.labelsMs ?? null,
+    fileRequests: readerFileTimings(state.book?.id, state.perf?.openedAt),
     firstPageMs: state.perf?.firstPageMs ?? null,
     renders: renders.length,
     averageRenderMs: average === null ? null : Math.round(average),
@@ -3395,6 +3418,7 @@ async function openBook(book, options = {}) {
       state.annotations = await loadAnnotationsFor(book.asset_id, false);
     }
 
+    state.perf.beforePdfMs = Math.round(performance.now() - state.perf.openedAt);
     const task = pdfjsLib.getDocument(offlineBlob ? {
       data: new Uint8Array(await offlineBlob.arrayBuffer()),
       cMapUrl: '/vendor/pdfjs/cmaps/',
@@ -3416,6 +3440,7 @@ async function openBook(book, options = {}) {
     state.perf.pdfLoadMs = performance.now() - state.perf.openedAt;
     state.numPages = state.pdf.numPages;
     const loadedPdf = state.pdf;
+    const labelsStarted = performance.now();
     let labels = null;
     try {
       labels = normalizePdfPageLabels(await loadedPdf.getPageLabels());
@@ -3423,6 +3448,7 @@ async function openBook(book, options = {}) {
       console.warn('PDF page labels unavailable:', error.message);
     }
     if (state.pdf !== loadedPdf) return;
+    state.perf.labelsMs = Math.round(performance.now() - labelsStarted);
     state.pdfPageLabels = labels;
 
     const params = new URLSearchParams(window.location.search);

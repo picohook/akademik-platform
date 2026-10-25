@@ -175,6 +175,7 @@ export function parseRange(value, size) {
 
 // Call only after session and grant authorization. Never redirect to a public bucket URL.
 export async function serveStoredAsset(storage, req, res, key) {
+  const storageStarted = performance.now();
   let opened;
   try { opened = await storage.open(key, req.headers.range); }
   catch (error) {
@@ -183,6 +184,10 @@ export async function serveStoredAsset(storage, req, res, key) {
       ...(status === 416 && Number.isSafeInteger(error.size) ? { 'content-range': `bytes */${error.size}` } : {}) });
     res.end(JSON.stringify({ error: status === 416 ? 'invalid byte range' : 'file unavailable' })); return;
   }
+  // Numeric durations only; no storage keys, credentials or user data in headers.
+  const previousTiming = res.getHeader('server-timing');
+  res.setHeader('server-timing', [previousTiming,
+    `storage;dur=${(performance.now() - storageStarted).toFixed(1)}`].filter(Boolean).join(', '));
   const { body, status, length, contentRange } = opened;
   const close = () => body.destroy();
   res.once('close', close);

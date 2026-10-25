@@ -1843,6 +1843,7 @@ async function serveStatic(req, res, pathname) {
 await mkdir(UPLOAD_DIR, { recursive: true });
 
 const server = http.createServer(async (req, res) => {
+  const requestStarted = performance.now();
   let url;
   let pathname;
   try {
@@ -2532,6 +2533,7 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       if (!req.headers.range) await logUsage('book.view', book, auth);
+      res.setHeader('server-timing', `app;dur=${(performance.now() - requestStarted).toFixed(1)}`);
       await servePdf(req, res, storageKey);
       return;
     }
