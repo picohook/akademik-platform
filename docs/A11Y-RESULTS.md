@@ -1,6 +1,6 @@
 # Accessibility manual results — WCAG 2.2 AA
 
-**Status: OPEN — v122 audit refreshed; NVDA + Edge actual speech observations and complete iframe sign-off remain outstanding. Historical F1–F5 targeted passes remain below.**
+**Status: OPEN — v122 NVDA baseline recorded; F6 reader status announcements fixed in local v123 candidate. Broader screen-reader, visual and iframe sign-off remain open.**
 
 The initial summary/findings below are the v104 baseline; current verification is recorded under **Retest — v105** and **Retest — v106**.
 
@@ -213,3 +213,35 @@ On the reported Edge **155.0.4283.45 (64-bit)** / NVDA **2026.2 (2026.2.0.57664)
 ### S01 field names, password privacy and successful login — 2026-10-24
 
 The user answered “evet” to the combined check of Tab navigation through email/password/submit, correctly spoken field names, hidden password characters and successful login with the correct password. These three subchecks are **PASS (user-reported)** on the previously reported NVDA/Edge versions. Together with the prior full-error announcement, this advances S01; heading speech has not yet been confirmed, so S01 remains **IN PROGRESS**. No criterion-wide conformance status or production code changed.
+
+
+### S02 search announcement and book action — 2026-10-24
+
+The user answered “evet” when asked whether catalog search-result changes are announced and whether tabbing to the Read button speaks the book title and action understandably. **Both subchecks PASS (user-reported)** on the reported NVDA/Edge environment. Heading navigation, filtering and opening the result have not yet been confirmed; S02 remains **IN PROGRESS**. No criterion-wide conformance or independent speech-test claim is made.
+
+
+## NVDA Speech Viewer + keyboard acceptance — 2026-10-25
+
+**Scoped result: 16/16 keyboard/focus checks passed; overall ACR remains OPEN.** Same pinned v122/8b598a3 runtime, Edge 155.0.4283.45 and the user-reported installed NVDA 2026.2. The PDF subrun occurred 2026-10-24 19:25–19:26 Europe/Istanbul; modal/EPUB subruns occurred 2026-10-25. Speech Viewer transcripts are actual NVDA output, not a human audio/pronunciation evaluation.
+
+- PDF 4/4: reader dialog/name, 38 forward and 38 reverse steps without escaping, actual native Tab boundaries and return focus on close.
+- Six modal baselines: actual spoken dialog names, keyboard containment, closing and return focus. First Escape generated no DOM event in four input dialogs; second reached the application and closed them. The failed chained first attempt is retained; later steps in that invalid state were not product findings.
+- EPUB 6/6 scoped functional/keyboard checks: dialog/frame metadata, 66 forward/reverse steps with frame entry and no escape, native frame exit, actual NVDA reading of heading/paragraph/table/link/footnote text, native chapter link and close/return. The original programmatic-focus link case was superseded only by an actual native Tab-to-link and Enter run with verified web-document focus and trusted click.
+- **Chapter-change announcement remains UNVERIFIED:** Chapter two rendered, but its title was not in the capture; only “dialog Okuyucu” was captured. No full page-change announcement PASS is inferred.
+- The stale PDF deep link, harness variable error and refused foreground input diagnostics are retained separately. Translation was disabled only in the final dedicated test profile to remove browser UI interference. Temporary input-thread attachment is detached immediately; OS keys are refused unless the exact owned Edge process is foreground.
+- Publisher scripts stayed disabled; no sandbox/CSP/product code change. Source hashes match all 14 deployed runtime files. Owned browsers/local fixture servers were closed; NVDA was started with its existing settings and left available for the ongoing user session. Unrelated pre-dialog desktop-focus text was excluded from the published PDF-open transcript; no prior Speech Viewer history was published.
+
+[Summary](a11y-evidence/v122-nvda-2026-10-25/summary.json), [PDF](a11y-evidence/v122-nvda-2026-10-25/pdf-2026-10-24/results.json), [modals](a11y-evidence/v122-nvda-2026-10-25/modals/results.json), [EPUB](a11y-evidence/v122-nvda-2026-10-25/epub/results.json), [native chapter link](a11y-evidence/v122-nvda-2026-10-25/link/results.json). S10–S12 screen-reader workflows, full Notes speech, shortcut/browse-mode checks, pronunciation, native contrast/current visual checks and full iframe axe remain open. VoiceOver/Safari is NOT RUN.
+
+
+## F6 — reader status announcements and v123 remediation — 2026-10-25
+
+Three v122 UI operations worked (offline edit/sync, actual CAS conflict and controlled 410 draft preservation), but none of the expected messages appeared in actual NVDA Speech Viewer captures, including a repeated six-second wait. Only Save unavailable / reader dialog output was captured. A temporary persistent polite status region inside the reader was then announced in the same NVDA session. This supports a real reader announcement failure in the tested environment. The old toast is outside the modal and hidden between messages; the diagnostic changed lifecycle and location together, so their individual contributions were not isolated.
+
+**Local candidate v123, e8ddb3d07b6ac07863739de5c0e1ea681666ee97:** persistent visually hidden status inside reader, delayed update after UI focus changes, repeated-conflict deduplication, explicit expiry explanation, close/book reset and delayed-message owner/asset guard. Visual toast is hidden from assistive tech only while its message is mirrored into the reader, avoiding duplicate announcements. CSS46 / SW15. No migration or production-env change.
+
+**Actual NVDA 3/3:** offline pending, conflict and explicit operation-expired/draft-preserved explanation. **Targeted regression 4/4:** expiry spoken again, filter causes zero repeated status mutations, rendered axe reports zero violations (contrast review items remain), close clears announcement and returns focus. The expiry scenario deliberately intercepts HTTP 410 in the local page; it is not another production purge test. CAS is real in-memory server version enforcement, with a same-user API second writer. State UI triggers used pointer actions; this is not a full keyboard journey or human pronunciation pass.
+
+[Baseline/control](a11y-evidence/v122-nvda-2026-10-25/summary.json), [candidate/source proof](a11y-evidence/v123-live-status-2026-10-25/summary.json), [speech captures](a11y-evidence/v123-live-status-2026-10-25/speech/results.json), [regressions](a11y-evidence/v123-live-status-2026-10-25/regression/results.json). Raw candidate results inherited a v122 harness scope label; version=123 and 14 source hashes identify the tested candidate, and the summary corrects that metadata without changing raw outcomes.
+
+**No deploy.** Docker read-only inspection failed because the Linux engine named pipe was missing; current production health was not re-certified. Last deployment is v122. Full ACR still OPEN, including chapter-name announcement, full Notes/shortcut/browse-mode and offline reload/bookmark coverage, visual checks, full iframe axe and VoiceOver.

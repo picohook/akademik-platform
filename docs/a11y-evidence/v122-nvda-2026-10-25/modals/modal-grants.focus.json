@@ -1,0 +1,138 @@
+[
+  {
+    "id": "grantSubjectEmail",
+    "inside": true
+  },
+  {
+    "id": "grantScopeType",
+    "inside": true
+  },
+  {
+    "id": "grantSeatLimit",
+    "inside": true
+  },
+  {
+    "id": "grantSource",
+    "inside": true
+  },
+  {
+    "id": "grantGroupName",
+    "inside": true
+  },
+  {
+    "id": "createGroupBtn",
+    "inside": true
+  },
+  {
+    "id": "grantGroupEmail",
+    "inside": true
+  },
+  {
+    "id": "addGroupMemberBtn",
+    "inside": true
+  },
+  {
+    "id": "removeGroupMemberBtn",
+    "inside": true
+  },
+  {
+    "id": "cancelGrant",
+    "inside": true
+  },
+  {
+    "id": "",
+    "inside": true
+  },
+  {
+    "id": "grantAudit",
+    "inside": true
+  },
+  {
+    "id": "closeGrants",
+    "inside": true
+  },
+  {
+    "id": "grantsList",
+    "inside": true
+  },
+  {
+    "id": "grantSubjectType",
+    "inside": true
+  },
+  {
+    "id": "grantSubjectEmail",
+    "inside": true
+  },
+  {
+    "id": "grantScopeType",
+    "inside": true
+  },
+  {
+    "id": "grantSubjectEmail",
+    "inside": true
+  },
+  {
+    "id": "grantSubjectType",
+    "inside": true
+  },
+  {
+    "id": "grantsList",
+    "inside": true
+  },
+  {
+    "id": "closeGrants",
+    "inside": true
+  },
+  {
+    "id": "grantAudit",
+    "inside": true
+  },
+  {
+    "id": "",
+    "inside": true
+  },
+  {
+    "id": "cancelGrant",
+    "inside": true
+  },
+  {
+    "id": "removeGroupMemberBtn",
+    "inside": true
+  },
+  {
+    "id": "addGroupMemberBtn",
+    "inside": true
+  },
+  {
+    "id": "grantGroupEmail",
+    "inside": true
+  },
+  {
+    "id": "createGroupBtn",
+    "inside": true
+  },
+  {
+    "id": "grantGroupName",
+    "inside": true
+  },
+  {
+    "id": "grantSource",
+    "inside": true
+  },
+  {
+    "id": "grantSeatLimit",
+    "inside": true
+  },
+  {
+    "id": "grantScopeType",
+    "inside": true
+  },
+  {
+    "id": "grantSubjectEmail",
+    "inside": true
+  },
+  {
+    "id": "grantSubjectType",
+    "inside": true
+  }
+]

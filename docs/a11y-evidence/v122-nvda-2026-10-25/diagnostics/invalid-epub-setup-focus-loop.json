@@ -1,0 +1,72 @@
+[
+  {
+    "key": "Tab",
+    "outerId": "",
+    "outerTag": "BODY",
+    "inReader": false,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "",
+    "outerTag": "A",
+    "inReader": false,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "",
+    "outerTag": "A",
+    "inReader": false,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "search",
+    "outerTag": "INPUT",
+    "inReader": false,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "",
+    "outerTag": "BUTTON",
+    "inReader": false,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "search",
+    "outerTag": "INPUT",
+    "inReader": false,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "",
+    "outerTag": "A",
+    "inReader": false,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "",
+    "outerTag": "A",
+    "inReader": false,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "",
+    "outerTag": "BODY",
+    "inReader": false,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "footerShortcuts",
+    "outerTag": "BUTTON",
+    "inReader": false,
+    "inHighlight": false
+  }
+]

@@ -1,0 +1,190 @@
+{
+  "sourceCommit": "8b598a37416aabbe18ce1c846a052a9787b4f0b1",
+  "source": {
+    "server.mjs": "ac71318760296b89cd923b5973c40a550fb3d8a1e7d2edc8dcfb162d9bbbbf29",
+    "indexer.mjs": "10bd599125fc9253d970b0b6f847c55eb5b90b31da46cb9b0c3b7c0f1d2c8da8",
+    "download-tickets.mjs": "129ddbfb91673e8bc47af0d06ed6f7eeccb4333ff3ab9e6ae28cb72428d999f8",
+    "annotation-sync.mjs": "d7ab0658e3a2aed4a5b5d55a4d3ac7d37bd3cde5d0e8f01952a8778e7a1bb9c1",
+    "social-watermark.mjs": "145ba2260d079f7e436d714f75364ed8551c50b620affe99535b309976152fa5",
+    "public/app.js": "f0b09b99453a5fc8b931cc86a85fdd08aecd66f37960b493e5f26cccab54b680",
+    "public/index.html": "7953cce5031e5d3325b1efdbe5100ea63b8f83f50a1d2202e1bb7fea1c63be98",
+    "public/offline.mjs": "75d9ab806bc645e871016e1851f092a63b993dabd4ca69507e8aaa3d6673261a",
+    "public/downloads.mjs": "7e908a175f0ff0dc521d70f508269a1e6d4bc2c0bf1c34e56802af62a3fafb72",
+    "public/sw.js": "054a88e60f75790b94914ce3b0fbb4c18887d53e809e535d506fd7495ea6ce75",
+    "public/epub-engine.mjs": "f52179b07d83b8f93ca7fbdf67ca8c4d301851e663c63db2667015e71af3ca6b",
+    "public/styles.css": "8bf1e9a30c7b5d993e1ef64f9e5458f2fe7feb1269e0e2fde7cf88d0fb3a8045",
+    "public/i18n.mjs": "e38e9ae5e71fd7afd4b3632f734bd32107e20f89c977356ec2b516b5feda095f",
+    "public/citations.mjs": "96b00fa2be1be8cdc582dd1a2dfcff1d67435eb0c1a6d6e161bd7e8873c4a015"
+  },
+  "browser": "155.0.4283.45",
+  "startedAt": "2026-10-24T23:32:03.706Z",
+  "completedAt": "2026-10-24T23:41:29.881Z",
+  "status": "passed",
+  "scope": "Six modal opening names in actual NVDA Speech Viewer, Tab/Shift+Tab containment and keyboard closing/focus return; independent of invalid EPUB setup attempt in raw report.",
+  "cases": [
+    {
+      "id": "modal-upload",
+      "status": "PASS",
+      "heading": "Kitap ekle",
+      "keyboardSteps": 26,
+      "escaped": 0,
+      "returnFocus": true,
+      "speechStatus": "PASS",
+      "speechFile": "modal-upload.speech.json",
+      "speechCharacters": 633
+    },
+    {
+      "id": "modal-password",
+      "status": "PASS",
+      "heading": "Parola değiştir",
+      "keyboardSteps": 16,
+      "escaped": 0,
+      "returnFocus": true,
+      "closeMethod": "Escape",
+      "escapes": [
+        {
+          "attempt": 1,
+          "hidden": false,
+          "events": []
+        },
+        {
+          "attempt": 2,
+          "hidden": true,
+          "events": [
+            {
+              "target": "passwordCurrent",
+              "key": "Escape",
+              "at": 11372.099999904633
+            }
+          ]
+        }
+      ],
+      "speechStatus": "PASS",
+      "speechFile": "modal-password.speech.json",
+      "speechCharacters": 379
+    },
+    {
+      "id": "modal-grants",
+      "status": "PASS",
+      "heading": "Erişim grantleri",
+      "keyboardSteps": 34,
+      "escaped": 0,
+      "returnFocus": true,
+      "closeMethod": "Escape",
+      "escapes": [
+        {
+          "attempt": 1,
+          "hidden": false,
+          "events": []
+        },
+        {
+          "attempt": 2,
+          "hidden": true,
+          "events": [
+            {
+              "target": "grantSubjectType",
+              "key": "Escape",
+              "at": 21187.399999976158
+            }
+          ]
+        }
+      ],
+      "speechStatus": "PASS",
+      "speechFile": "modal-grants.speech.json",
+      "speechCharacters": 429
+    },
+    {
+      "id": "modal-offline",
+      "status": "PASS",
+      "heading": "Çevrimdışı kitaplar",
+      "keyboardSteps": 8,
+      "escaped": 0,
+      "returnFocus": true,
+      "closeMethod": "Escape",
+      "escapes": [
+        {
+          "attempt": 1,
+          "hidden": true,
+          "events": [
+            {
+              "target": "closeOffline",
+              "key": "Escape",
+              "at": 28048.599999904633
+            }
+          ]
+        }
+      ],
+      "speechStatus": "PASS",
+      "speechFile": "modal-offline.speech.json",
+      "speechCharacters": 335
+    },
+    {
+      "id": "modal-edit",
+      "status": "PASS",
+      "heading": "Kitabı düzenle",
+      "keyboardSteps": 32,
+      "escaped": 0,
+      "returnFocus": true,
+      "closeMethod": "Escape",
+      "escapes": [
+        {
+          "attempt": 1,
+          "hidden": false,
+          "events": []
+        },
+        {
+          "attempt": 2,
+          "hidden": true,
+          "events": [
+            {
+              "target": "editTitle",
+              "key": "Escape",
+              "at": 38700
+            }
+          ]
+        }
+      ],
+      "speechStatus": "PASS",
+      "speechFile": "modal-edit.speech.json",
+      "speechCharacters": 599
+    },
+    {
+      "id": "modal-citation",
+      "status": "PASS",
+      "heading": "Atıf",
+      "keyboardSteps": 14,
+      "escaped": 0,
+      "returnFocus": true,
+      "closeMethod": "Escape",
+      "escapes": [
+        {
+          "attempt": 1,
+          "hidden": false,
+          "events": []
+        },
+        {
+          "attempt": 2,
+          "hidden": true,
+          "events": [
+            {
+              "target": "citeStyle",
+              "key": "Escape",
+              "at": 48872.199999928474
+            }
+          ]
+        }
+      ],
+      "speechStatus": "PASS",
+      "speechFile": "modal-citation.speech.json",
+      "speechCharacters": 444
+    }
+  ],
+  "browserErrors": [],
+  "escapeInterpretation": "For some inputs, first OS Escape produced no DOM keydown; second produced keydown and closed modal. Specific NVDA mode change is not inferred without speech/other evidence.",
+  "diagnostics": "../diagnostics/",
+  "cleanup": {
+    "browserClosed": true,
+    "ownedServerStopped": true,
+    "existingNvdaNotRestartedOrReconfigured": true
+  }
+}

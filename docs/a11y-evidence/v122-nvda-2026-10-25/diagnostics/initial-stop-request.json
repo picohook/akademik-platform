@@ -1,0 +1,6 @@
+{
+  "nvdaStopped": false,
+  "scope": "Only exact Node test script process and its child server/Edge tree",
+  "stoppedAt": "2026-10-24T23:36:43.4962645Z",
+  "reason": "Stop invalid chained run after modal remained open; preserve report for diagnosis"
+}

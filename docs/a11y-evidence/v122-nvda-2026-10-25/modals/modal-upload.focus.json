@@ -1,0 +1,106 @@
+[
+  {
+    "id": "uploadTitle",
+    "inside": true
+  },
+  {
+    "id": "uploadSubtitle",
+    "inside": true
+  },
+  {
+    "id": "uploadAuthors",
+    "inside": true
+  },
+  {
+    "id": "uploadLanguage",
+    "inside": true
+  },
+  {
+    "id": "uploadYear",
+    "inside": true
+  },
+  {
+    "id": "uploadPublisher",
+    "inside": true
+  },
+  {
+    "id": "uploadSubjects",
+    "inside": true
+  },
+  {
+    "id": "cancelUpload",
+    "inside": true
+  },
+  {
+    "id": "submitUpload",
+    "inside": true
+  },
+  {
+    "id": "closeUpload",
+    "inside": true
+  },
+  {
+    "id": "uploadFile",
+    "inside": true
+  },
+  {
+    "id": "uploadTitle",
+    "inside": true
+  },
+  {
+    "id": "uploadSubtitle",
+    "inside": true
+  },
+  {
+    "id": "uploadTitle",
+    "inside": true
+  },
+  {
+    "id": "uploadFile",
+    "inside": true
+  },
+  {
+    "id": "closeUpload",
+    "inside": true
+  },
+  {
+    "id": "submitUpload",
+    "inside": true
+  },
+  {
+    "id": "cancelUpload",
+    "inside": true
+  },
+  {
+    "id": "uploadSubjects",
+    "inside": true
+  },
+  {
+    "id": "uploadPublisher",
+    "inside": true
+  },
+  {
+    "id": "uploadYear",
+    "inside": true
+  },
+  {
+    "id": "uploadLanguage",
+    "inside": true
+  },
+  {
+    "id": "uploadAuthors",
+    "inside": true
+  },
+  {
+    "id": "uploadSubtitle",
+    "inside": true
+  },
+  {
+    "id": "uploadTitle",
+    "inside": true
+  },
+  {
+    "id": "uploadFile",
+    "inside": true
+  }
+]

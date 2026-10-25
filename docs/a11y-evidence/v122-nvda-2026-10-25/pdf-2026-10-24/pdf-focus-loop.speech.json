@@ -1,0 +1,8 @@
+{
+  "from": "2026-10-24T16:26:25.0320540Z",
+  "processId": 43128,
+  "text": "İçindekiler  button  collapsed  \r\nPDF sayfa numarası  spin button  editable  PDF dosyasındaki sıra numarası  selected 1\r\n☀  button    Açık tema\r\n▥  toggle button  not pressed    Çift sayfa\r\nNotlar   0  button  collapsed  \r\nSayfa alanı  region  Önceki sayfa  button    clickable  Dummy PDF file  Sonraki sayfa\r\nİçindekiler  button  collapsed  \r\nPDF sayfa numarası  spin button  editable  PDF dosyasındaki sıra numarası  selected 1\r\n↔  toggle button  not pressed    Genişliğe sığdır\r\nUzaklaştır  button  \r\nYakınlaştır  button  \r\nYer imi  toggle button  not pressed    Yer imi ekle\r\nSayfa alanı  region  Sonraki sayfa  button  \r\nKapat  button  \r\nİçindekiler  button  collapsed  \r\nİndir  button    PDF indir\r\nAtıf  button  \r\n≣  toggle button  not pressed    Sürekli kaydırma\r\n▥  toggle button  not pressed    Çift sayfa\r\n↔  toggle button  not pressed    Genişliğe sığdır\r\nPDF sayfa numarası  spin button  editable  PDF dosyasındaki sıra numarası  selected 1\r\nSayfa alanı  region  Önceki sayfa  button    clickable  Dummy PDF file  Sonraki sayfa\r\nNotlar   0  button  collapsed  \r\nİndir  button    PDF indir\r\n▥  toggle button  not pressed    Çift sayfa\r\n☀  button    Açık tema\r\n⛶  button    Tam ekran\r\nPDF sayfa numarası  spin button  editable  PDF dosyasındaki sıra numarası  selected 1\r\nKapat  button  \r\nSayfa alanı  region  Sonraki sayfa  button  \r\nÖnceki sayfa  button  \r\n",
+  "capturedAt": "2026-10-24T16:26:37.8749587Z",
+  "captureScope": "Only new Speech Viewer output for the owned local fixture session; unrelated pre-dialog desktop focus events omitted from public PDF-open capture.",
+  "omittedPrefixCharacters": 0
+}

@@ -1,6 +1,6 @@
 # v122 — NVDA + Edge manuel kabul oturumu
 
-**Durum: IN PROGRESS — S01 hata duyurusu, alan adları, parola gizliliği ve başarılı giriş kullanıcı tarafından doğrulandı; başlık duyurusu ve diğer görevler açık.** Bu formdaki adımlar otomatik olarak geçti sayılmaz. Ürün sahibi Windows/NVDA + Edge ortamını seçti; VoiceOver ayrı testtir.
+**Durum: IN PROGRESS — kullanıcı gözlemlerine ek olarak PDF/modal/EPUB için 16 hedefli klavye/odak kontrolü ve gerçek NVDA Speech Viewer kanıtı eklendi. Tam konuşma/ACR kabulü açık.** Bu formdaki adımlar otomatik olarak geçti sayılmaz. Ürün sahibi Windows/NVDA + Edge ortamını seçti; VoiceOver ayrı testtir.
 
 ## Hazırlık
 
@@ -46,17 +46,17 @@ Her satıra PASS / FAIL / IN PROGRESS / NOT RUN; gerçekten duyulan metin, klavy
 | ID | Sonuç | Duyulan / fiilen olan | Kanıt / etki |
 | --- | --- | --- | --- |
 | S01 | IN PROGRESS — hata duyurusu, alan adları, parola gizliliği ve başarılı giriş PASS | Kullanıcı tam hata mesajının okunduğunu doğruladı; ardından Tab ile e-posta/parola/Giriş yap alan adlarının doğru okunması, parola karakterlerinin gizli kalması ve doğru parolayla girişin tamamlanması sorusuna “evet” yanıtı verdi. Birebir konuşma dökümü verilmedi. | Kullanıcı gözlemi, 2026-10-24; Edge 155.0.4283.45 64-bit / NVDA 2026.2 (2026.2.0.57664). Başlık duyurusu ayrıca bekleniyor; tüm S01 henüz PASS sayılmadı. |
-| S02 | NOT RUN | — | — |
-| S03 | NOT RUN | — | — |
-| S04 | NOT RUN | — | — |
+| S02 | IN PROGRESS — arama duyurusu ve Oku adı PASS | Kullanıcı, kitap aramasında sonuç değişiminin duyurulması ve Tab ile Oku düğmesine gelindiğinde kitap adı/işlevinin anlaşılır okunması sorusuna “evet” yanıtı verdi. | Kullanıcı gözlemi, 2026-10-24; aynı NVDA/Edge ortamı. Başlıklar, filtreler ve sonucu açma ayrıca doğrulanmadı. |
+| S03 | IN PROGRESS — ad/odak/çıkış 6/6 PASS | Upload, Password, Grants, Offline, Edit, Citation: NVDA pencere adını okudu; Tab/Shift+Tab içeride kaldı; klavyeyle kapatma ve açan düğmeye dönüş geçti. Bazı alanlarda ilk Escape belgeye ulaşmadı; ikinci Escape kapattı. | 2026-10-25 otomatik NVDA Speech Viewer + klavye kanıtı. Her alanın tek tek ses kalitesi ve tüm hata/dolu durumları için genel PASS verilmedi. |
+| S04 | IN PROGRESS — PDF hedefli 4/4 PASS | PDF klavyeyle açıldı, NVDA “Okuyucu” dedi. 38 ileri + 38 geri Tab adımında kaçış yok; gerçek Tab/Shift+Tab sınırları ve Escape sonrası açan karta dönüş geçti. | Koşu 2026-10-24; 2026-10-25 kayda alındı. Tek karakter kısayolları ve browse-mode arka plan izolasyonu ayrıca açık. |
 | S05 | NOT RUN | — | — |
 | S06 | NOT RUN | — | — |
-| S07 | NOT RUN | — | — |
-| S08 | NOT RUN | — | — |
-| S09 | NOT RUN | — | — |
-| S10 | NOT RUN | — | — |
-| S11 | NOT RUN | — | — |
-| S12 | NOT RUN | — | — |
+| S07 | IN PROGRESS — okuyucudan odak dönüşü PASS | PDF Escape ve EPUB kapatma sonrası odak açan kitap düğmesine döndü. Notes Escape için önceki DOM kanıtı korunuyor. | Tam Notes aç/filtre/kapama konuşma akışı bu koşuda tamamlanmadı. |
+| S08 | IN PROGRESS — iframe/okuma/çıkış hedefli PASS | Gerçek NVDA çıktısında bölüm başlığı, paragraf, Türkçe bölüm metni, tablo başlığı/satır-sütun etiketleri, bağlantı ve dipnot metni var. İframe içeriğine girildi; gerçek Tab ile okuyucu kontrollerine dönüldü; 66 odak adımında kaçış yok. | 2026-10-25. Örnek reflow EPUB ve değişmeyen sandbox allow-same-origin; telaffuz/otomatik ses değişimi ve tam iframe axe açık. |
+| S09 | IN PROGRESS — bölüm bağlantısı klavyeyle PASS | Gerçek Tab ile two.xhtml bağlantısına ulaşıldı; Enter trusted click üretti ve Chapter two görüntülendi. | Yeni bölüm adının otomatik konuşması UNVERIFIED; ilgili yakalamada yalnız “dialog Okuyucu” var. Yer imi/ayarların NVDA akışı ayrıca açık. |
+| S10 | IN PROGRESS — v122 duyuru eksik; v123 hedefli PASS | PDF notu gerçek tarayıcı offline modunda yerelde korundu ve online eşitlendi. v122 bekleme duyurusu 6 saniyede yakalanmadı; v123 adayı açıkça okudu. | Tam offline reload/yer imi konuşma akışı ayrıca açık. |
+| S11 | IN PROGRESS — v122 duyuru eksik; v123 hedefli PASS | Yerel demo sunucusunda gerçek CAS çatışması üretildi, iki sürüm gösterildi ve sunucu sürümüyle çözüldü. v123 adayı çakışmayı NVDA ile duyurdu. | İkinci yazıcı aynı hesabın API isteği; fiziksel ikinci cihaz veya tam klavye karar akışı iddiası yok. |
+| S12 | IN PROGRESS — v123 kontrollü 410 açıklaması PASS | Kontrollü HTTP 410 ile taslak korundu ve açıklama görünürdü. v122 sesli açıklama yoktu; v123 adayı süre dolduğunu ve taslağın korunduğunu açıkça okudu. | Bu a11y koşusu sayfa route’unda 410 taklididir; canlı receipt değişmedi. Gerçek purge/410 backend kabulü ayrı kanıtta. |
 
 ## Kapanış
 
@@ -66,3 +66,13 @@ Her satıra PASS / FAIL / IN PROGRESS / NOT RUN; gerçekten duyulan metin, klavy
 - Gerçek test eden / onaylayan / tarih: DOLDURULACAK
 
 Bu oturum ekran okuyucu bölümünü tamamlar. [ACR](ACR.md) içindeki diğer kriterlerin kontrast, metin aralıkları, güncel zoom/reflow ve içerik değerlendirmeleri ayrıca kanıtlanır; otomatik tarama veya yalnız bu akış tam AA uyumu anlamına gelmez.
+
+
+## 2026-10-25 ajan doğrulaması
+
+[16 kontrol ve kapsam özeti](a11y-evidence/v122-nvda-2026-10-25/summary.json). Kanıtlar sabit v122 kopyasına aittir; prod değiştirilmedi. Speech Viewer, NVDA’nın ürettiği konuşma metnini gösterir; insanın sesi dinleyip telaffuzu doğrulaması yerine geçmez. İlk Escape’in NVDA tarafından belgeye iletilmediği durumlarda sonraki Escape veya erişilebilir Kapat düğmesiyle çıkış ayrıca kaydedilir.
+
+
+## F6 remediation candidate — v123
+
+Kod **e8ddb3d07b6ac07863739de5c0e1ea681666ee97**; prod’a çıkmadı. [NVDA 3/3 ve regresyon 4/4](a11y-evidence/v123-live-status-2026-10-25/summary.json). v122’deki üç durum işlevsel olarak geçti ancak duyurulmadı; bu yüzden tüm S10–S12 veya ACR için PASS verilmedi.

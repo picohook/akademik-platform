@@ -1,0 +1,491 @@
+[
+  {
+    "key": "Tab",
+    "outerId": "toggleToc",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "fullscreenBtn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "themeBtn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "zoomOut",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "zoomIn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "bookmarkBtn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "citeBook",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "downloadBtn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "toggleNotes",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "pageArea",
+    "outerTag": "DIV",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "epubjs-view-ad320c27-eb8a-46c6-b86e-a9ac7e136b9f",
+    "outerTag": "IFRAME",
+    "innerId": "",
+    "innerTag": "A",
+    "innerText": "Read chapter two",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "epubjs-view-ad320c27-eb8a-46c6-b86e-a9ac7e136b9f",
+    "outerTag": "IFRAME",
+    "innerId": "",
+    "innerTag": "A",
+    "innerText": "Footnote one",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "prevPage",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "nextPage",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "closeReader",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "toggleToc",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "fullscreenBtn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "themeBtn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "zoomOut",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "zoomIn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "bookmarkBtn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "citeBook",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "downloadBtn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "toggleNotes",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "pageArea",
+    "outerTag": "DIV",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "epubjs-view-ad320c27-eb8a-46c6-b86e-a9ac7e136b9f",
+    "outerTag": "IFRAME",
+    "innerId": "",
+    "innerTag": "A",
+    "innerText": "Read chapter two",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "epubjs-view-ad320c27-eb8a-46c6-b86e-a9ac7e136b9f",
+    "outerTag": "IFRAME",
+    "innerId": "",
+    "innerTag": "A",
+    "innerText": "Footnote one",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "prevPage",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "nextPage",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "closeReader",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "toggleToc",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "fullscreenBtn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Tab",
+    "outerId": "themeBtn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "nextPage",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "prevPage",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "epubjs-view-ad320c27-eb8a-46c6-b86e-a9ac7e136b9f",
+    "outerTag": "IFRAME",
+    "innerId": "",
+    "innerTag": "A",
+    "innerText": "Footnote one",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "epubjs-view-ad320c27-eb8a-46c6-b86e-a9ac7e136b9f",
+    "outerTag": "IFRAME",
+    "innerId": "",
+    "innerTag": "A",
+    "innerText": "Read chapter two",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "pageArea",
+    "outerTag": "DIV",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "toggleNotes",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "downloadBtn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "citeBook",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "bookmarkBtn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "zoomIn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "zoomOut",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "themeBtn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "fullscreenBtn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "toggleToc",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "closeReader",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "nextPage",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "prevPage",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "epubjs-view-ad320c27-eb8a-46c6-b86e-a9ac7e136b9f",
+    "outerTag": "IFRAME",
+    "innerId": "",
+    "innerTag": "A",
+    "innerText": "Footnote one",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "epubjs-view-ad320c27-eb8a-46c6-b86e-a9ac7e136b9f",
+    "outerTag": "IFRAME",
+    "innerId": "",
+    "innerTag": "A",
+    "innerText": "Read chapter two",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "pageArea",
+    "outerTag": "DIV",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "toggleNotes",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "downloadBtn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "citeBook",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "bookmarkBtn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "zoomIn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "zoomOut",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "themeBtn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "fullscreenBtn",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "toggleToc",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "closeReader",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "nextPage",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "prevPage",
+    "outerTag": "BUTTON",
+    "inReader": true,
+    "inHighlight": false
+  },
+  {
+    "key": "Shift+Tab",
+    "outerId": "epubjs-view-ad320c27-eb8a-46c6-b86e-a9ac7e136b9f",
+    "outerTag": "IFRAME",
+    "innerId": "",
+    "innerTag": "A",
+    "innerText": "Footnote one",
+    "inReader": true,
+    "inHighlight": false
+  }
+]

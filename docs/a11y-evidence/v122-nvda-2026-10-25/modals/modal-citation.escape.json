@@ -1,0 +1,18 @@
+[
+  {
+    "attempt": 1,
+    "hidden": false,
+    "events": []
+  },
+  {
+    "attempt": 2,
+    "hidden": true,
+    "events": [
+      {
+        "target": "citeStyle",
+        "key": "Escape",
+        "at": 48872.199999928474
+      }
+    ]
+  }
+]

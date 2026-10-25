@@ -1,0 +1,130 @@
+[
+  {
+    "id": "editSubtitle",
+    "inside": true
+  },
+  {
+    "id": "editAuthors",
+    "inside": true
+  },
+  {
+    "id": "editAllowCopy",
+    "inside": true
+  },
+  {
+    "id": "editAllowDownload",
+    "inside": true
+  },
+  {
+    "id": "editAllowPrint",
+    "inside": true
+  },
+  {
+    "id": "editWatermark",
+    "inside": true
+  },
+  {
+    "id": "editLanguage",
+    "inside": true
+  },
+  {
+    "id": "editYear",
+    "inside": true
+  },
+  {
+    "id": "editPublisher",
+    "inside": true
+  },
+  {
+    "id": "editSubjects",
+    "inside": true
+  },
+  {
+    "id": "cancelEdit",
+    "inside": true
+  },
+  {
+    "id": "",
+    "inside": true
+  },
+  {
+    "id": "closeEdit",
+    "inside": true
+  },
+  {
+    "id": "editTitle",
+    "inside": true
+  },
+  {
+    "id": "editSubtitle",
+    "inside": true
+  },
+  {
+    "id": "editAuthors",
+    "inside": true
+  },
+  {
+    "id": "editSubtitle",
+    "inside": true
+  },
+  {
+    "id": "editTitle",
+    "inside": true
+  },
+  {
+    "id": "closeEdit",
+    "inside": true
+  },
+  {
+    "id": "",
+    "inside": true
+  },
+  {
+    "id": "cancelEdit",
+    "inside": true
+  },
+  {
+    "id": "editSubjects",
+    "inside": true
+  },
+  {
+    "id": "editPublisher",
+    "inside": true
+  },
+  {
+    "id": "editYear",
+    "inside": true
+  },
+  {
+    "id": "editLanguage",
+    "inside": true
+  },
+  {
+    "id": "editWatermark",
+    "inside": true
+  },
+  {
+    "id": "editAllowPrint",
+    "inside": true
+  },
+  {
+    "id": "editAllowDownload",
+    "inside": true
+  },
+  {
+    "id": "editAllowCopy",
+    "inside": true
+  },
+  {
+    "id": "editAuthors",
+    "inside": true
+  },
+  {
+    "id": "editSubtitle",
+    "inside": true
+  },
+  {
+    "id": "editTitle",
+    "inside": true
+  }
+]

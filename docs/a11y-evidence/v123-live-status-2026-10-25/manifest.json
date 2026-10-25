@@ -1,0 +1,63 @@
+{
+  "recordedDateIstanbul": "2026-10-25",
+  "releaseCandidate": 123,
+  "codeCommit": "e8ddb3d07b6ac07863739de5c0e1ea681666ee97",
+  "deployed": false,
+  "nvdaSpeechPassed": 3,
+  "targetedRegressionPassed": 4,
+  "artifacts": {
+    ".gitattributes": {
+      "bytes": 74,
+      "sha256": "574dca45282c721e228acd15bf9aaeef98616404a08f68a929e460f25f1b6cd1"
+    },
+    "native-keys-helper.ps1": {
+      "bytes": 3120,
+      "sha256": "f7ef282b5058c0893a115e88617fe98773d5e29795d8ca9d93637acd9deaa679"
+    },
+    "regression-helper.mjs": {
+      "bytes": 18400,
+      "sha256": "655b062539bc2fce01656720430c4fa82033d307d2091e0b3f4d2970f7614122"
+    },
+    "regression/reader.axe.json": {
+      "bytes": 10414,
+      "sha256": "4b5a0b1a859d81051fa23f9db173f5923e6f88af5c7aa4f3979198259e1745f9"
+    },
+    "regression/results.json": {
+      "bytes": 3150,
+      "sha256": "72acdcdedf86a3f9595e901190391ae5de217b017286850da1a7a061fbdfa123"
+    },
+    "regression/state-expired.speech.json": {
+      "bytes": 278,
+      "sha256": "659a60c4f6f946145fcdca8d1c6a5db6ebbea0d2124b0fbbf8bc75185b3bae57"
+    },
+    "speech-helper.mjs": {
+      "bytes": 18950,
+      "sha256": "38e36c916dbcf2bb7bd98bae3ceecca7ecab3e5345f4a21ad2e1d0a6c21ff524"
+    },
+    "speech-viewer-helper.ps1": {
+      "bytes": 3075,
+      "sha256": "4f45b2a9438850ceb158eb189750309ff8245a22040e3e2d02d364d762200767"
+    },
+    "speech/results.json": {
+      "bytes": 3243,
+      "sha256": "60612a3e72dd25792d6093fd98a4922e605f9c49de0a899fe59a0dfa3afff9a0"
+    },
+    "speech/state-conflict.speech.json": {
+      "bytes": 222,
+      "sha256": "3089fe823ea10c972605b09bfcd4b4b47df2239c952eb6f87f02a791cecc6578"
+    },
+    "speech/state-expired.speech.json": {
+      "bytes": 278,
+      "sha256": "6e47082684cda66a658133a8971fec127c86bc2be6109fae4bd2643fb7a922e1"
+    },
+    "speech/state-offline.speech.json": {
+      "bytes": 230,
+      "sha256": "5e8e3aad8d276bf1eeb3906f2619f7560fc807f229ca550a5515e41e970a3bc3"
+    },
+    "summary.json": {
+      "bytes": 5925,
+      "sha256": "9731a5184fa6356915278d05bd0419d6db04f94551ef47bcf7f91ffa71028cb4"
+    }
+  },
+  "helperTrailingWhitespaceNormalized": true
+}

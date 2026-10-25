@@ -1,0 +1,8 @@
+{
+  "dateIstanbul": "2026-10-25",
+  "status": "BLOCKED",
+  "reason": "Docker Desktop Linux engine named pipe missing during read-only inspect; no current production health assertion",
+  "noProductionMutationByThisTask": true,
+  "lastDeploymentVersion": 122,
+  "lastDeploymentRecord": "docs/deployments/2026-10-24-v122.md"
+}

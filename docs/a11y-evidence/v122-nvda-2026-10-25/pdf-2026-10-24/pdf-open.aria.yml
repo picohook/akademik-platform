@@ -1,0 +1,76 @@
+- link "İçeriğe atla":
+  - /url: "#mainContent"
+- banner:
+  - link "A Akademik Platform spike":
+    - /url: /
+    - text: A Akademik Platform
+    - emphasis: spike
+  - searchbox "Katalogda ara"
+  - text: / Demo modu Demo Kütüphaneci · librarian
+  - button "Switch to English": EN
+  - button "Çevrimdışı"
+  - button "Erişim"
+  - button "Parola"
+  - button "Çıkış"
+- main:
+  - paragraph: Okuma katmanı · 14 günlük spike
+  - heading "Katalog, okuyucu, not ve arama. Tek çalışan dilim." [level=1]
+  - paragraph:
+    - text: Bu ekran ürün değil; PDF.js,
+    - code: anchor
+    - text: modeli ve Postgres aramasını ölçmek için kurulmuş bir iskelet. Örnek içerik kamu malı test PDF'idir.
+  - button "Tümü"
+  - button "Diş Hekimliği"
+  - button "Implantoloji"
+  - text: 1 başlık
+  - button "+ Kitap ekle"
+  - text: DİŞ HEKİMLİĞİ D Diş Hekimliğinde İmplant Komplikasyonları Demo Akademik Yayıncılık
+  - paragraph: Klinik değerlendirme ve yönetim
+  - paragraph: TR · 2026
+  - text: PDF Diş Hekimliği Implantoloji
+  - button "Diş Hekimliğinde İmplant Komplikasyonları kitabını oku": Oku
+  - button "Çevrimdışı indir": ↓
+  - button "Düzenle"
+- contentinfo:
+  - text: © 2026 Akademik Platform · v122 · Geliştirme
+  - button "Kısayollar"
+- dialog "Okuyucu":
+  - button "Kapat": ✕
+  - strong: Diş Hekimliğinde İmplant Komplikasyonları
+  - text: Demo Akademik Yayıncılık · 2026
+  - button "İçindekiler": ☰
+  - spinbutton "PDF sayfa numarası": "1"
+  - text: / 1
+  - button "↔"
+  - button "⟳"
+  - button "⛶"
+  - button "☀"
+  - button "▥"
+  - button "≣"
+  - button "Uzaklaştır": −
+  - text: 130%
+  - button "Yakınlaştır": +
+  - button "Yer imi": ☆
+  - button "Atıf"
+  - button "İndir"
+  - button "Notlar 0" [expanded]
+  - region "Sayfa alanı":
+    - button "Önceki sayfa": ‹
+    - document "PDF sayfası 1": Dummy PDF file
+    - button "Sonraki sayfa": ›
+  - complementary "Notlar paneli":
+    - strong: Notlar ve vurgular
+    - text: PDF sayfası 1 / 1
+    - button "Notları kapat": ✕
+    - button "MD"
+    - button "JSON"
+    - searchbox "Notlarda ara"
+    - combobox "Not rengi":
+      - option "Tüm renkler" [selected]
+      - option "Sarı"
+      - option "Yeşil"
+      - option "Mavi"
+      - option "Pembe"
+      - option "Yer imi"
+    - region "Not listesi"
+    - text: Metin seçip Vurgula ile başlayın.

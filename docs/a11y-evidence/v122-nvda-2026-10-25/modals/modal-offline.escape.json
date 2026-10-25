@@ -1,0 +1,13 @@
+[
+  {
+    "attempt": 1,
+    "hidden": true,
+    "events": [
+      {
+        "target": "closeOffline",
+        "key": "Escape",
+        "at": 28048.599999904633
+      }
+    ]
+  }
+]

@@ -1,0 +1,80 @@
+{
+  "recordedDateIstanbul": "2026-10-25",
+  "sourceCommit": "8b598a37416aabbe18ce1c846a052a9787b4f0b1",
+  "status": "PARTIAL_ACCEPTANCE",
+  "scopedKeyboardAndFocusCases": {
+    "pdf": 4,
+    "modals": 6,
+    "epub": 6,
+    "total": 16,
+    "passed": 16
+  },
+  "actualNvdaSpeech": [
+    "PDF reader dialog name",
+    "Six modal dialog names",
+    "EPUB frame/dialog name",
+    "EPUB chapter heading, paragraph, TR-span text, table caption and row/column labels, link names and footnote text"
+  ],
+  "notVerified": [
+    "Human pronunciation or automatic voice/language switching",
+    "New chapter title announcement after native link navigation: captured output only says dialog Okuyucu",
+    "Complete publisher-content and full original-frame axe coverage",
+    "Full Notes speech sequence, character shortcut compatibility and browse-mode background isolation",
+    "Native contrast, complete current zoom/reflow and remaining WCAG matrix decisions",
+    "Full offline reload/bookmark and conflict resolution keyboard journey remain partial; v122 reader state announcements fail, v123 candidate targeted fixes pass"
+  ],
+  "sourceMatchesDeployedImageFiles": 14,
+  "productionCodeChanged": false,
+  "productionDataChanged": false,
+  "diagnostics": {
+    "escape": "For four tested input dialogs the first OS Escape generated no DOM keydown; second reached the input and closed the modal. Does not prove an application failure.",
+    "deepLink": "Raw multi-step run reloaded a stale PDF book URL before EPUB; subsequent EPUB cases were invalid setup. Corrected EPUB-only run clears URL and asserts catalog/opener focus.",
+    "link": "After NVDA browse-mode reading, programmatic DOM focus did not prove virtual-cursor alignment. Corrected native Tab route reached the link and verified trusted click and chapter transition.",
+    "foreground": "One diagnostic refused OS keys when owned Edge was not foreground. Final route uses temporary thread-input attachment, detaches immediately and checks foreground plus document focus.",
+    "localTestError": "One diagnostic had a path variable shadowing Node path; retained as a harness error, never assigned to product."
+  },
+  "nvdaSession": {
+    "checkedAt": "2026-10-24T23:27:26.3208034Z",
+    "dateIstanbul": "2026-10-25",
+    "initiallyRunning": false,
+    "startedByThisTest": true,
+    "signature": "Valid",
+    "processes": [
+      {
+        "window": "",
+        "id": 6080
+      },
+      {
+        "window": "",
+        "id": 15620
+      }
+    ],
+    "settingsChanged": false
+  },
+  "cleanup": {
+    "ownedTestBrowsersAndServersStopped": true,
+    "nvdaSettingsNotModified": true,
+    "nvdaLeftRunningForOngoingUserSession": true
+  },
+  "additionalStateUiFunctionalCases": {
+    "passed": 3,
+    "expectedLiveAnnouncementsCaptured": 0,
+    "repeatedWithSixSecondWait": true
+  },
+  "readerStatusFinding": {
+    "id": "F6",
+    "wcag": "4.1.3",
+    "observedFailure": true,
+    "positiveControl": "Inside-reader persistent status announced in same NVDA session",
+    "remediationCandidate": 123,
+    "codeCommit": "e8ddb3d07b6ac07863739de5c0e1ea681666ee97",
+    "evidence": "../v123-live-status-2026-10-25/summary.json"
+  },
+  "productionInspection": {
+    "status": "BLOCKED",
+    "reason": "Docker Desktop Linux engine named pipe missing during read-only inspect; no current production health assertion",
+    "deploymentPerformed": false,
+    "migrationChanged": false,
+    "productionEnvChanged": false
+  }
+}

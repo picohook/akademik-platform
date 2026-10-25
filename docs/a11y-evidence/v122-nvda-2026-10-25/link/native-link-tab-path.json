@@ -1,0 +1,60 @@
+[
+  {
+    "hasDocumentFocus": true,
+    "outer": "toggleToc",
+    "tag": "BUTTON"
+  },
+  {
+    "hasDocumentFocus": true,
+    "outer": "fullscreenBtn",
+    "tag": "BUTTON"
+  },
+  {
+    "hasDocumentFocus": true,
+    "outer": "themeBtn",
+    "tag": "BUTTON"
+  },
+  {
+    "hasDocumentFocus": true,
+    "outer": "zoomOut",
+    "tag": "BUTTON"
+  },
+  {
+    "hasDocumentFocus": true,
+    "outer": "zoomIn",
+    "tag": "BUTTON"
+  },
+  {
+    "hasDocumentFocus": true,
+    "outer": "bookmarkBtn",
+    "tag": "BUTTON"
+  },
+  {
+    "hasDocumentFocus": true,
+    "outer": "citeBook",
+    "tag": "BUTTON"
+  },
+  {
+    "hasDocumentFocus": true,
+    "outer": "downloadBtn",
+    "tag": "BUTTON"
+  },
+  {
+    "hasDocumentFocus": true,
+    "outer": "toggleNotes",
+    "tag": "BUTTON"
+  },
+  {
+    "hasDocumentFocus": true,
+    "outer": "pageArea",
+    "tag": "DIV"
+  },
+  {
+    "hasDocumentFocus": true,
+    "outer": "epubjs-view-c0587189-52f3-4227-9945-fd0427b57866",
+    "tag": "IFRAME",
+    "inner": "A",
+    "href": "two.xhtml",
+    "text": "Read chapter two"
+  }
+]

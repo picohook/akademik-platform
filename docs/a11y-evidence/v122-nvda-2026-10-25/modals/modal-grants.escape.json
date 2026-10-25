@@ -1,0 +1,18 @@
+[
+  {
+    "attempt": 1,
+    "hidden": false,
+    "events": []
+  },
+  {
+    "attempt": 2,
+    "hidden": true,
+    "events": [
+      {
+        "target": "grantSubjectType",
+        "key": "Escape",
+        "at": 21187.399999976158
+      }
+    ]
+  }
+]

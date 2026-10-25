@@ -1,0 +1,71 @@
+{
+  "version": 123,
+  "sourceCommit": null,
+  "baseCommit": "8b598a37416aabbe18ce1c846a052a9787b4f0b1",
+  "candidate": "working-tree v123 reader announcements",
+  "startedAt": "2026-10-25T00:08:33.171Z",
+  "scope": "Pinned v122 local demo modal/EPUB keyboard and real NVDA Speech Viewer checks; no human pronunciation/full WCAG claim.",
+  "status": "passed",
+  "cases": [
+    {
+      "id": "NVDA-offline-note-pending-status",
+      "status": "PASS",
+      "speechStatus": "PASS",
+      "speechFile": "state-offline.speech.json",
+      "speechCharacters": 94,
+      "actualBrowserOffline": true,
+      "localDraftPreserved": true,
+      "onlineSyncVerified": true,
+      "scope": "PDF edit and pending-status announcement; does not cover all S10 reload/bookmark tasks"
+    },
+    {
+      "id": "NVDA-real-CAS-conflict-status",
+      "status": "PASS",
+      "speechStatus": "PASS",
+      "speechFile": "state-conflict.speech.json",
+      "speechCharacters": 82,
+      "realBackendCas": true,
+      "secondWriter": "same-user API request in isolated demo; not a physical second device",
+      "bothVersionsDisplayed": true,
+      "serverChoiceResolved": true
+    },
+    {
+      "id": "NVDA-410-expired-draft-status",
+      "status": "PASS",
+      "speechStatus": "PASS",
+      "speechFile": "state-expired.speech.json",
+      "speechCharacters": 140,
+      "controlledHttp410": true,
+      "liveReceiptsChanged": false,
+      "draftPreserved": true,
+      "expiryExplanationVisible": true,
+      "expiryExplanationSpoken": true,
+      "scope": "UI accessibility under controlled 410; real server retention already covered by separate app-role acceptance"
+    }
+  ],
+  "source": {
+    "server.mjs": "880766f5dff6783ba1b5d25274f70d276f2687c8e03702d52f229cf749785524",
+    "indexer.mjs": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+    "download-tickets.mjs": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+    "annotation-sync.mjs": "553eec49001914c58e9f019caab734e8f0f61da307bde64958a6d2bd15e8e106",
+    "social-watermark.mjs": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+    "public/app.js": "206b26f45ee505132e9a333dc8091cacfec27d7a52e54d85f70e9da913214670",
+    "public/index.html": "4fb7bcf0210cfe5eb11602c468a6cbfc416e157397e38b6dc5c8b348471241c7",
+    "public/offline.mjs": "cba7a4e9a1371bccf35e55d4c67275ddf28946b2e64799452382a73dcd12feea",
+    "public/downloads.mjs": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+    "public/sw.js": "8024b62e71cffc5c5c30c36463b9410bf3f823f8b96fd65321662ecde462776e",
+    "public/epub-engine.mjs": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885",
+    "public/styles.css": "3175a6e882d0f845f1f8c593b3abb0475e92391e90f19a77991afc4a480e6a10",
+    "public/i18n.mjs": "aea682fbae10d305b04cfee250f3d7f4b22cc7f616df3329d2814d9e04cce09b",
+    "public/citations.mjs": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86"
+  },
+  "browserErrors": [],
+  "cleanup": {
+    "browserClosed": true,
+    "ownedServerStopped": true,
+    "existingNvdaNotRestartedOrReconfigured": true
+  },
+  "url": "http://127.0.0.1:60937",
+  "browser": "155.0.4283.45",
+  "completedAt": "2026-10-25T00:09:09.109Z"
+}

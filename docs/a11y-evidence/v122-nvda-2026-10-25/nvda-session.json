@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-10-24T23:27:26.3208034Z",
+  "dateIstanbul": "2026-10-25",
+  "initiallyRunning": false,
+  "startedByThisTest": true,
+  "signature": "Valid",
+  "processes": [
+    {
+      "window": "",
+      "id": 6080
+    },
+    {
+      "window": "",
+      "id": 15620
+    }
+  ],
+  "settingsChanged": false
+}

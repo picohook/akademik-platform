@@ -1,0 +1,135 @@
+{
+  "dateIstanbul": "2026-10-25",
+  "releaseCandidate": 123,
+  "codeCommit": "e8ddb3d07b6ac07863739de5c0e1ea681666ee97",
+  "deployed": false,
+  "baseRelease": 122,
+  "baseCommit": "8b598a37416aabbe18ce1c846a052a9787b4f0b1",
+  "finding": "F6: offline/CAS conflict/expiry status messages not spoken by NVDA in v122",
+  "baseline": {
+    "functionalCases": 3,
+    "expectedAnnouncementsCaptured": 0,
+    "captureWaitMs": [
+      900,
+      6000
+    ],
+    "positivePersistentReaderStatusControl": "PASS"
+  },
+  "candidate": {
+    "strictNvdaSpeechCases": 3,
+    "passed": 3,
+    "explicitExpiryExplanationSpoken": true,
+    "readerRegressionCases": 4,
+    "passedRegressions": 4,
+    "axeReportedViolations": 0
+  },
+  "sourceProof": [
+    {
+      "file": "server.mjs",
+      "testedRawSha256": "880766f5dff6783ba1b5d25274f70d276f2687c8e03702d52f229cf749785524",
+      "committedNormalizedSha256": "880766f5dff6783ba1b5d25274f70d276f2687c8e03702d52f229cf749785524",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "indexer.mjs",
+      "testedRawSha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+      "committedNormalizedSha256": "223dc23112908fa16464f1324ef330b5289ebc95e1a8c08736eadeb4ccbded1f",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "download-tickets.mjs",
+      "testedRawSha256": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+      "committedNormalizedSha256": "2317402e4878d600429150471515231c312dbcb2508b039737a94a6416b9284f",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "annotation-sync.mjs",
+      "testedRawSha256": "553eec49001914c58e9f019caab734e8f0f61da307bde64958a6d2bd15e8e106",
+      "committedNormalizedSha256": "553eec49001914c58e9f019caab734e8f0f61da307bde64958a6d2bd15e8e106",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "social-watermark.mjs",
+      "testedRawSha256": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+      "committedNormalizedSha256": "6f5331172f9458cabaeea3f90f6c2cbc20932479990f339f790326bf55dfd531",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/app.js",
+      "testedRawSha256": "206b26f45ee505132e9a333dc8091cacfec27d7a52e54d85f70e9da913214670",
+      "committedNormalizedSha256": "206b26f45ee505132e9a333dc8091cacfec27d7a52e54d85f70e9da913214670",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/index.html",
+      "testedRawSha256": "4fb7bcf0210cfe5eb11602c468a6cbfc416e157397e38b6dc5c8b348471241c7",
+      "committedNormalizedSha256": "639820a7423bf70bc226d668f11e39de9e7298dfa5385d1e9a2ed6e16f42dd14",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/offline.mjs",
+      "testedRawSha256": "cba7a4e9a1371bccf35e55d4c67275ddf28946b2e64799452382a73dcd12feea",
+      "committedNormalizedSha256": "cba7a4e9a1371bccf35e55d4c67275ddf28946b2e64799452382a73dcd12feea",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/downloads.mjs",
+      "testedRawSha256": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+      "committedNormalizedSha256": "8e964b05d313e8019d5816249324fe0a0d2c1e9e642cee91ae7d2c856a98d7e9",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/sw.js",
+      "testedRawSha256": "8024b62e71cffc5c5c30c36463b9410bf3f823f8b96fd65321662ecde462776e",
+      "committedNormalizedSha256": "18b833f74594c7422140c4dd527aa76f567b87da3e2002aeab14b0e93cf77d54",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/epub-engine.mjs",
+      "testedRawSha256": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885",
+      "committedNormalizedSha256": "f94086b653f5835917f19de7e6fdba4f958a8bd3f7a93cd44ed1a2da66599885",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/styles.css",
+      "testedRawSha256": "3175a6e882d0f845f1f8c593b3abb0475e92391e90f19a77991afc4a480e6a10",
+      "committedNormalizedSha256": "3175a6e882d0f845f1f8c593b3abb0475e92391e90f19a77991afc4a480e6a10",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/i18n.mjs",
+      "testedRawSha256": "aea682fbae10d305b04cfee250f3d7f4b22cc7f616df3329d2814d9e04cce09b",
+      "committedNormalizedSha256": "aea682fbae10d305b04cfee250f3d7f4b22cc7f616df3329d2814d9e04cce09b",
+      "equalAfterLineEndingNormalization": true
+    },
+    {
+      "file": "public/citations.mjs",
+      "testedRawSha256": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+      "committedNormalizedSha256": "640c487e4d61ed247ff45abdca0d9dd446d5baf4c9c54864fede437012304e86",
+      "equalAfterLineEndingNormalization": true
+    }
+  ],
+  "scope": {
+    "data": "Only isolated demo fixture note",
+    "conflict": "Actual memory backend CAS; second writer via same-account API request, not physical second device",
+    "expiry": "Controlled HTTP 410 at page route; real retention enforcement covered separately before v122 deployment",
+    "speech": "Actual NVDA Speech Viewer output; no human pronunciation claim"
+  },
+  "productionInspection": {
+    "status": "BLOCKED",
+    "reason": "Docker Desktop Linux engine named pipe missing during read-only inspect; no current production health assertion",
+    "deploymentPerformed": false,
+    "migrationChanged": false,
+    "productionEnvChanged": false
+  },
+  "remaining": [
+    "New EPUB chapter-name announcement remains UNVERIFIED",
+    "Complete Notes/shortcuts/browse-mode and offline reload/bookmark screen-reader coverage",
+    "Native visual contrast/zoom/current reflow, publisher-content coverage and full iframe axe",
+    "VoiceOver/Safari and human pronunciation/voice switching"
+  ],
+  "cleanup": {
+    "ownedBrowsersAndServersClosed": true,
+    "nvdaSettingsNotEdited": true
+  }
+}

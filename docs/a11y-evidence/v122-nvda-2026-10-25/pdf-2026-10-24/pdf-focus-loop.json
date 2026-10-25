@@ -1,0 +1,548 @@
+{
+  "forward": {
+    "key": "Tab",
+    "count": 18,
+    "states": [
+      {
+        "id": "toggleToc",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "pageInput",
+        "tag": "INPUT",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "fitToggle",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "rotateBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "fullscreenBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "themeBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "spreadBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "scrollBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "zoomOut",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "zoomIn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "bookmarkBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "citeBook",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "downloadBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "toggleNotes",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "pageArea",
+        "tag": "DIV",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "prevPage",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "nextPage",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "closeReader",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "toggleToc",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "pageInput",
+        "tag": "INPUT",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "fitToggle",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "rotateBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "fullscreenBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "themeBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "spreadBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "scrollBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "zoomOut",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "zoomIn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "bookmarkBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "citeBook",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "downloadBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "toggleNotes",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "pageArea",
+        "tag": "DIV",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "prevPage",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "nextPage",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "closeReader",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "toggleToc",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "pageInput",
+        "tag": "INPUT",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      }
+    ],
+    "escaped": []
+  },
+  "reverse": {
+    "key": "Shift+Tab",
+    "count": 18,
+    "states": [
+      {
+        "id": "nextPage",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "prevPage",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "pageArea",
+        "tag": "DIV",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "toggleNotes",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "downloadBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "citeBook",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "bookmarkBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "zoomIn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "zoomOut",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "scrollBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "spreadBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "themeBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "fullscreenBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "rotateBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "fitToggle",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "pageInput",
+        "tag": "INPUT",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "toggleToc",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "closeReader",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "nextPage",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "prevPage",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "pageArea",
+        "tag": "DIV",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "toggleNotes",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "downloadBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "citeBook",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "bookmarkBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "zoomIn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "zoomOut",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "scrollBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "spreadBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "themeBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "fullscreenBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "rotateBtn",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "fitToggle",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "pageInput",
+        "tag": "INPUT",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "toggleToc",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "closeReader",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "nextPage",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      },
+      {
+        "id": "prevPage",
+        "tag": "BUTTON",
+        "inReader": true,
+        "inHighlight": false,
+        "focusVisible": true
+      }
+    ],
+    "escaped": []
+  }
+}

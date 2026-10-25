@@ -2,16 +2,19 @@
 
 **OPEN — NVDA + Edge manual acceptance pending.** Bu rapor tamamlanmış VPAT veya sertifika değildir; tam WCAG 2.2 AA uyumu iddia etmez. Önceki v113 taslağındaki seçili kriterler v122’ye otomatik taşınmadı.
 
-- Ürün/sürüm: Akademik Platform, **v122**, CSS **v45**, SW **v14**.
-- Değerlendirilen kaynak: **8b598a37416aabbe18ce1c846a052a9787b4f0b1**; 2026-10-24.
+- Değerlendirme tabanı: Akademik Platform **v122**, CSS **v45**, SW **v14**.
+- Düzeltme adayı: **v123**, CSS **v46**, SW **v15**, kod **e8ddb3d07b6ac07863739de5c0e1ea681666ee97**; deploy edilmedi.
+- Değerlendirilen kaynak: **8b598a37416aabbe18ce1c846a052a9787b4f0b1**; son kanıt güncellemesi **2026-10-25**.
 - Canlı sürüm: [v122 dağıtımı](deployments/2026-10-24-v122.md). Yeni audit ayrı, yalnız fixture kullanan demo kopyasındadır; prod değişmedi.
 - Hedef: WCAG 2.2 A/AA. Aşağıda **55 kriterin tamamı** bulunur; 4.1.1 WCAG 2.2’den çıkarıldığı için bu matrise dahil değildir.
 - Kapsam: login, katalog, modallar, PDF/EPUB okuyucu, seçim/kopyalama/not/yer imi, offline ve çatışma/410 durumları. Yayın içeriği örnekleri arayüzden ayrı kayıtlanır; tüm yayınların erişilebilir olduğu varsayılmaz.
-- Ortam: Windows 25H2 build 26200.9711, Edge 155.0.4283.45, axe-core 4.13.0. Güncel otomasyon headless Edge kullanır; gerçek NVDA kabulünün yerine geçmez.
+- Ortam: Windows 25H2 build 26200.9711, Edge 155.0.4283.45, axe-core 4.13.0. İlk axe koşusu headless; ek koşular görünür, ayrı Edge penceresi ve gerçek NVDA Speech Viewer kullanır. İnsan telaffuz değerlendirmesi yapılmadı.
 - Seçilen manuel ortam: **NVDA + Edge / Windows** (ürün sahibi). Kullanıcı 2026-10-24 tarihinde **Edge 155.0.4283.45 (Official build), 64-bit** ve **NVDA 2026.2 (2026.2.0.57664)** bildirdi. Windows sürümü, ses/sentezleyici, TR/EN ayarları ve test eden kişi henüz kaydedilmedi. Kullanıcı S01’de “alert” ve tüm hata mesajının okunduğunu doğruladı: **hata duyurusu alt kontrolü PASS**. Alan adları, parola gizliliği ve doğru parolayla başarılı giriş de kullanıcı tarafından doğrulandı. Birebir konuşma dökümü sağlanmadı; S01 başlık duyurusu ve genel kabul açık.
 - VoiceOver + Safari: **NOT RUN**, Windows kapsamında yok; ayrı ortam kabulü gerektirir.
 
 ## Kanıt ve durum kullanımı
+
+**2026-10-25:** PDF 4 + altı modal + EPUB 6 olmak üzere **16 hedefli klavye/odak kontrolü geçti**. Gerçek NVDA çıktısında dialog adları ve EPUB başlık/tablo/bağlantı/dipnot metni doğrulandı. [Yeni kanıt](a11y-evidence/v122-nvda-2026-10-25/summary.json). Yeni bölüme geçiş işlevsel olarak geçti; bölüm adı duyurusu UNVERIFIED. S10–S12, ses/telaffuz ve diğer açık değerlendirmeler kapanmadı.
 
 Güncel sonuç: **10 axe taraması / 0 ihlal**, **1 Notes odak kontrolü geçti**, **2 orijinal EPUB frame taraması BLOCKED**; JS hatası 0. [v122 kanıt özeti](a11y-evidence/v122-2026-10-24/summary.json). Kontrastın manuel inceleme maddeleri ve gerçek NVDA konuşması açıktır.
 
@@ -31,7 +34,7 @@ Kriter açıklamaları kısa Türkçe etiketlerdir; normatif metin için [W3C WC
 | 1.2.3 | A | Sesli betimleme alternatifi | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
 | 1.2.4 | AA | Canlı altyazılar | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
 | 1.2.5 | AA | Sesli betimleme | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
-| 1.3.1 | A | Bilgi ilişkileri | Not Evaluated | Güncel DOM/axe kanıtı mevcut; EPUB tablo/başlık semantiği NVDA ile doğrulanmadı. |
+| 1.3.1 | A | Bilgi ilişkileri | Not Evaluated | Örnek EPUB başlık/tablo ilişkileri gerçek NVDA çıktısında mevcut; tüm yayın içeriği ve kriter geneli değerlendirilmedi. |
 | 1.3.2 | A | Anlamlı okuma sırası | Not Evaluated | DOM veya ekran görüntüsü konuşma/okuma sırası kanıtı değildir. S05/S08. |
 | 1.3.3 | A | Duyusal yönergeler | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
 | 1.3.4 | AA | Ekran yönü | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
@@ -45,7 +48,7 @@ Kriter açıklamaları kısa Türkçe etiketlerdir; normatif metin için [W3C WC
 | 1.4.11 | AA | Arayüz kontrastı | Not Evaluated | Native Windows contrast theme ve manuel oran ölçümü açık. |
 | 1.4.12 | AA | Metin aralıkları | Not Evaluated | Metin aralığı override deneyi yapılmadı. |
 | 1.4.13 | AA | Hover/odak içeriği | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
-| 2.1.1 | A | Klavye kullanımı | Not Evaluated | Notes Escape hedefli DOM testi geçti; tam klavye/iframe akışı S04–S11 açık. |
+| 2.1.1 | A | Klavye kullanımı | Not Evaluated | Notes DOM, PDF/modal/örnek EPUB klavye kanıtı var; seçim/not, kısayol ve S10–S12 akışlarının tümü kapanmadı. |
 | 2.1.2 | A | Klavye tuzağı | Not Evaluated | Hedefli kapatma testi geçti; EPUB içerikten geri çıkış ve yeni dinamik durumlar açık. |
 | 2.1.4 | A | Tek karakter kısayolları | Not Evaluated | NVDA browse/focus modlarıyla uygulama kısayollarının etkileşimi S04/S08. |
 | 2.2.1 | A | Süre ayarları | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
@@ -53,7 +56,7 @@ Kriter açıklamaları kısa Türkçe etiketlerdir; normatif metin için [W3C WC
 | 2.3.1 | A | Yanıp sönme | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
 | 2.4.1 | A | Blokları atlama | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
 | 2.4.2 | A | Sayfa başlığı | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
-| 2.4.3 | A | Odak sırası | Not Evaluated | Odak geçişi ve reader dışı içerik NVDA ile incelenmeli; S04/S07/S08. |
+| 2.4.3 | A | Odak sırası | Not Evaluated | PDF/modal/örnek EPUB odak döngüsü ve dönüşü geçti; browse-mode arka plan izolasyonu ve dinamik akışlar açık. |
 | 2.4.4 | A | Bağlantı amacı | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
 | 2.4.5 | AA | Birden çok yol | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
 | 2.4.6 | AA | Başlık ve etiketler | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
@@ -79,7 +82,11 @@ Kriter açıklamaları kısa Türkçe etiketlerdir; normatif metin için [W3C WC
 | 3.3.7 | A | Tekrarlı girdi | Not Evaluated | Kriterin kapsamı/uygulanabilirliği ve yeterli kanıtı henüz kaydedilmedi; varsayılan PASS/NA yok. |
 | 3.3.8 | AA | Erişilebilir kimlik doğrulama | Not Evaluated | Parola yöneticisi, yapıştırma ve kimlik doğrulama tam kullanıcı akışı test edilmeli. |
 | 4.1.2 | A | Ad/rol/değer | Not Evaluated | Güncel axe ve AX/DOM kanıtı kısmi; iframe/dinamik kontrollerin tamamı kapanmadı. |
-| 4.1.3 | AA | Durum mesajları | Not Evaluated | aria-live/role=status varlığı konuşma kanıtı değildir. S01/S05/S10–S12. |
+| 4.1.3 | AA | Durum mesajları | Partially Supports (v122 test kapsamı) | F6: üç reader durum mesajı NVDA’da okunmadı; kalıcı okuyucu içi pozitif kontrol okundu. v123 adayında hedefli 3/3 düzeltme geçti; genel durum mesajı kapsamı kapanmadı. |
+
+## F6 — yerel düzeltme adayı
+
+v122’de offline bekleme, sürüm çatışması ve 410 açıklaması konuşma çıktısında yoktu; v123 adayı üçünü de açıkça duyurdu (**3/3**), hedefli regresyon **4/4**. [Kanıt](a11y-evidence/v123-live-status-2026-10-25/summary.json). Bu rapor v123’ün tüm kriterlerini yeniden değerlendirmiş sayılmaz. Docker motoruna erişilemedi; deploy/üretim smoke yapılmadı.
 
 ## Açık kapılar
 
