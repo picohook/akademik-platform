@@ -1,6 +1,6 @@
 # VoiceOver + Safari — gerçek Mac kabulü
 
-**NOT RUN.** Bu Windows oturumunda gerçek macOS/VoiceOver/Safari yok. NVDA, Windows WebKit emülasyonu veya axe sonucu VoiceOver kabulü yerine yazılmaz. Prod v126; yerel v127 OCR düzeltmesi ayrı adaydır. Test edilen sürüm/build aşağıda açıkça belirtilir; yerel sürüm kanıtı canlıya aktarılmaz.
+**NOT RUN.** Bu Windows oturumunda gerçek macOS/VoiceOver/Safari yok. NVDA, Windows WebKit emülasyonu veya axe sonucu VoiceOver kabulü yerine yazılmaz. Prod **v127/fbeed6e**; canlı Türkçe NVDA kabulü ayrı kanıttır ve VoiceOver yerine geçmez. Test edilen sürüm/build aşağıda açıkça belirtilir; yerel sürüm kanıtı canlıya aktarılmaz.
 
 Kaydedilecek ortam: tarih, macOS sürümü/build, Safari sürümü/build, VoiceOver, arayüz/konuşma dili, URL, `/api/config` sürüm/build, zoom ve test eden kişi. Parola/cookie, özel kitap metni ve gerçek kullanıcı notu kanıta eklenmez; mevcut sentetik örnekler ve geçici not kullanılır.
 
