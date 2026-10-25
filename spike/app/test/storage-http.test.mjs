@@ -1,0 +1,39 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { once } from 'node:events';
+import { fileURLToPath } from 'node:url';
+import { unlink } from 'node:fs/promises';
+import path from 'node:path';
+import { PDFDocument } from 'pdf-lib';
+
+const appDir = fileURLToPath(new URL('..', import.meta.url));
+test('application regression: login, CSRF, PDF upload/read/range/delete and protected static paths', async t => {
+  const net = await import('node:net');
+  const reservation = net.createServer(); await new Promise(r => reservation.listen(0, '127.0.0.1', r));
+  const port = reservation.address().port; await new Promise(r => reservation.close(r));
+  const server = spawn(process.execPath, ['server.mjs'], { cwd: appDir, env: { ...process.env, DATABASE_URL: '', STORAGE_DRIVER: 'local', PORT: String(port), SESSION_SECRET: 'storage-test-secret-not-production' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  let logs = ''; server.stdout.on('data', c => { logs += c; }); server.stderr.on('data', c => { logs += c; });
+  t.after(async () => { server.kill(); if (server.exitCode === null) await once(server, 'exit'); });
+  const base = `http://127.0.0.1:${port}`;
+  for (let n = 0; n < 100; n++) { try { if ((await fetch(base + '/api/health')).ok) break; } catch {} await new Promise(r => setTimeout(r, 30)); }
+  const unauthorized = await fetch(base + '/api/books/missing/file'); assert.equal(unauthorized.status, 401, logs); await unauthorized.text();
+  const login = await fetch(base + '/api/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'librarian@example.edu.tr', password: 'demo1234' }) });
+  assert.equal(login.status, 200, logs);
+  const cookies = login.headers.getSetCookie().map(c => c.split(';')[0]);
+  const cookie = cookies.join('; '); const csrf = decodeURIComponent(cookies.find(c => c.startsWith('akademik_csrf=')).split('=')[1]);
+  const headers = { cookie, 'x-csrf-token': csrf };
+  const pdf = await PDFDocument.create(); pdf.addPage(); const bytes = await pdf.save();
+  const form = new FormData(); form.set('file', new Blob([bytes], { type: 'application/pdf' }), 'storage-test.pdf'); form.set('title', 'Storage regression');
+  const upload = await fetch(base + '/api/upload', { method: 'POST', headers, body: form }); const book = await upload.json();
+  assert.equal(upload.status, 201, JSON.stringify(book));
+  t.after(() => unlink(path.join(appDir, 'public', book.storage_key)).catch(() => {}));
+  const read = await fetch(base + `/api/books/${book.id}/file`, { headers: { cookie } });
+  assert.equal(read.status, 200); assert.deepEqual(Buffer.from(await read.arrayBuffer()), Buffer.from(bytes));
+  const range = await fetch(base + `/api/books/${book.id}/file`, { headers: { cookie, range: 'bytes=-5' } });
+  assert.equal(range.status, 206); assert.deepEqual(Buffer.from(await range.arrayBuffer()), Buffer.from(bytes).subarray(-5));
+  const staticRead = await fetch(base + '/' + book.storage_key); assert.equal(staticRead.status, 404); await staticRead.text();
+  const denied = await fetch(base + `/api/books/${book.id}`, { method: 'DELETE', headers: { cookie } }); assert.equal(denied.status, 403); await denied.text();
+  const deleted = await fetch(base + `/api/books/${book.id}`, { method: 'DELETE', headers }); assert.equal(deleted.status, 200); await deleted.text();
+  const gone = await fetch(base + `/api/books/${book.id}/file`, { headers: { cookie } }); assert.equal(gone.status, 404); await gone.text();
+});

@@ -1,0 +1,9 @@
+# Use with docker-compose.prod.yml; start only db/web, never caddy.
+services:
+  web:
+    image: ${LIBEDGE_IMAGE:-akademik-platform:libedge-r2}
+    pull_policy: never
+    env_file:
+      - .env.r2
+    ports:
+      - "127.0.0.1:3001:3000"
