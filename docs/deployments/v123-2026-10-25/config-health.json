@@ -1,0 +1,17 @@
+{
+  "config": {
+    "brandName": "Pilot Library",
+    "brandTagline": "akademik e-kitap",
+    "mode": "db",
+    "version": "123",
+    "buildSha": "e8ddb3d",
+    "buildDate": "2026-10-25",
+    "environment": "production",
+    "supportEmail": ""
+  },
+  "health": {
+    "ok": true,
+    "mode": "db",
+    "tenantId": "11111111-1111-1111-1111-111111111111"
+  }
+}
