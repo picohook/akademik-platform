@@ -2,6 +2,8 @@
 
 **NOT RUN.** Bu Windows oturumunda gerçek macOS/VoiceOver/Safari yok. NVDA, Windows WebKit emülasyonu veya axe sonucu VoiceOver kabulü yerine yazılmaz. Prod **v127/fbeed6e**; canlı Türkçe NVDA kabulü ayrı kanıttır ve VoiceOver yerine geçmez. Test edilen sürüm/build aşağıda açıkça belirtilir; yerel sürüm kanıtı canlıya aktarılmaz.
 
+2026-10-25: ürün sahibi **Mac erişimi olmadığını** açıkça doğruladı. Bu satırlar ortam olmadığı için açık kalır; Windows otomasyonu veya kullanıcı tarafından dinlenmemiş ses PASS gerekçesi değildir.
+
 Kaydedilecek ortam: tarih, macOS sürümü/build, Safari sürümü/build, VoiceOver, arayüz/konuşma dili, URL, `/api/config` sürüm/build, zoom ve test eden kişi. Parola/cookie, özel kitap metni ve gerçek kullanıcı notu kanıta eklenmez; mevcut sentetik örnekler ve geçici not kullanılır.
 
 Apple yönergesine göre VO varsayılan olarak Control+Option veya Caps Lock’tur. Rotor menüsü **VO+U**, kategori sağ/sol, öğe yukarı/aşağı, seçmek Return/Space; Escape seçim yapmadan kapatır. Sisteminizdeki klavye/Quick Nav ayarını kaydedin. [Apple’ın resmi rotor yönergesi](https://support.apple.com/en-ie/guide/voiceover/mchlp2719/mac).

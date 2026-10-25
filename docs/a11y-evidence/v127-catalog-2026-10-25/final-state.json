@@ -1,0 +1,32 @@
+{
+  "dateIstanbul": "2026-10-25",
+  "guidedRun": "64050806-796d-44ad-bfcb-a0fa9746c7e5",
+  "checks": [
+    {
+      "id": "original-catalog-asset-set-preserved",
+      "result": true
+    },
+    {
+      "id": "source-file-unchanged",
+      "assetId": "ca9ef7bb-2bdb-4f81-bb65-a922393e21b5",
+      "result": true
+    },
+    {
+      "id": "source-file-unchanged",
+      "assetId": "55555555-5555-5555-5555-555555555555",
+      "result": true
+    },
+    {
+      "id": "guided-fixture-and-sidecar-removed",
+      "result": true
+    }
+  ],
+  "noRuntimeEnvMigrationDeployChanges": true,
+  "config": {
+    "version": "127",
+    "buildSha": "fbeed6e"
+  },
+  "status": "verified",
+  "loggedOut": true,
+  "requestContextDisposed": true
+}

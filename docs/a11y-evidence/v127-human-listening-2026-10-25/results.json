@@ -1,0 +1,109 @@
+{
+  "runId": "64050806-796d-44ad-bfcb-a0fa9746c7e5",
+  "dateIstanbul": "2026-10-25",
+  "startedAt": "2026-10-25T13:29:09.435Z",
+  "base": "https://localhost",
+  "version": 127,
+  "buildSha": "fbeed6e",
+  "status": "passed",
+  "humanListening": "awaiting_user_observation",
+  "scope": "Actual production librarian login, temporary generated Turkish image-only PDF and its genuine Tesseract hOCR, production session/grant OCR route, reader language/paragraphs and real NVDA Turkish reading; only this new fixture and sidecar removed. No deploy/env/migration changes.",
+  "steps": [
+    {
+      "id": "production-build-and-source-match",
+      "status": "PASS"
+    },
+    {
+      "id": "production-librarian-ui-login",
+      "status": "PASS"
+    },
+    {
+      "id": "temporary-image-only-PDF-upload",
+      "status": "PASS"
+    },
+    {
+      "id": "production-session-protected-hOCR-source-match",
+      "status": "PASS"
+    },
+    {
+      "id": "production-OCR-paragraphs-and-Turkish-language",
+      "status": "PASS"
+    },
+    {
+      "id": "real-NVDA-Turkish-OCR-reading",
+      "status": "PASS"
+    },
+    {
+      "id": "production-reader-no-JavaScript-errors",
+      "status": "PASS"
+    }
+  ],
+  "jsErrors": [],
+  "source": {
+    "app.js": {
+      "servedSha256": "3f56d373eabbe929c774bae6d58eb682505666b1f7564ab983691846ffa44a22",
+      "localSha256": "3f56d373eabbe929c774bae6d58eb682505666b1f7564ab983691846ffa44a22",
+      "match": true
+    },
+    "ocr-layer.mjs": {
+      "servedSha256": "5c0838780e2fb03734f7da8da2a376a76bf0fd1aaa817ec1a880c83056883f6e",
+      "localSha256": "5c0838780e2fb03734f7da8da2a376a76bf0fd1aaa817ec1a880c83056883f6e",
+      "match": true
+    }
+  },
+  "cleanup": {
+    "fixtureSidecarAndEmptyDirectoryRemoved": true,
+    "fixtureBookDeleted": true,
+    "loggedOut": true,
+    "ownedBrowserClosed": true,
+    "noNvdaConfigOrStartupSettingEdited": true,
+    "normalAuditAndUsageRecordsRetained": true
+  },
+  "noDeployEnvMigrationChanges": true,
+  "nvda": {
+    "version": "2026.2",
+    "build": "2026.2.0.57664",
+    "executable": "nvda_noUIAccess.exe",
+    "setup": "Same installed NVDA restarted normally without UIAccess. Speech Viewer was opened from the NVDA console using only speechViewer.activate(); no speech was injected. No startup/config setting edited.",
+    "processId": 23592
+  },
+  "edge": "155.0.4283.45",
+  "tls": "Dedicated test browser tolerates local Caddy CA; OS trust unchanged.",
+  "config": {
+    "version": "127",
+    "buildSha": "fbeed6e"
+  },
+  "login": {
+    "role": "librarian",
+    "method": "Actual UI login",
+    "successful": true
+  },
+  "fixture": {
+    "title": "NVDA v127 Turkish OCR acceptance 64050806-796d-44ad-bfcb-a0fa9746c7e5",
+    "sha256": "18edba3cd28f66bd1beaaa8428d7f343032ec002eb8792c199664a41235089b3",
+    "bytes": 25995,
+    "hocrSha256": "3138a5eccfbfb3c4a44e58e723cf2778eb86fd04322ec84006afdce60186f824",
+    "source": "Generated image-only scan and actual local Tesseract tur output from v127 acceptance",
+    "bookId": "593df783-342d-4c44-830c-0b04206385ff",
+    "assetId": "675aa200-cefe-4f6f-aede-7e7f3c8a3d05"
+  },
+  "readerAX": "- document \"PDF sayfası 1\":\n  - paragraph: Türkçe okuma örneği\n  - paragraph: Diş hekimliğinde araştırma Öğrenci notları ve kaynaklar\n  - paragraph: İnsan denetimi gereklidir.",
+  "readerOCR": {
+    "language": "tr",
+    "paragraphs": 3,
+    "words": 13
+  },
+  "speech": {
+    "from": "2026-10-25T13:29:27.1229112Z",
+    "processId": 23592,
+    "text": "button    Kapat\r\nSayfa alanı  region  Önceki sayfa  button  \r\nclickable  Türkçe okuma örneği \r\nDiş hekimliğinde araştırma Öğrenci notları ve kaynaklar \r\nİnsan denetimi gereklidir. \r\nbutton    Sonraki sayfa\r\nout of region  Notlar paneli  complementary landmark    Notlar ve vurgular\r\nPDF sayfası 1 / 1\r\nbutton    Notları kapat\r\nbutton    MD\r\n",
+    "capturedAt": "2026-10-25T13:30:08.5286337Z"
+  },
+  "heardText": [
+    "Türkçe okuma örneği",
+    "Diş hekimliğinde araştırma",
+    "İnsan denetimi gereklidir."
+  ],
+  "jsErrorCount": 0,
+  "completedAt": "2026-10-25T13:30:09.583Z"
+}

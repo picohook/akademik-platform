@@ -1,0 +1,29 @@
+{
+  "dateIstanbul": "2026-10-25",
+  "startedAt": "2026-10-25T13:08:30.221Z",
+  "scope": "Read-only librarian-visible production catalog; not an atomic tenant-wide DB snapshot",
+  "config": {
+    "version": "127",
+    "buildSha": "fbeed6e"
+  },
+  "entries": [
+    {
+      "id": "43c8cab5-6ebb-45bd-be54-607d3db942b5",
+      "assetId": "ca9ef7bb-2bdb-4f81-bb65-a922393e21b5",
+      "title": "Influence of synthesis parameters on the structural formation of",
+      "format": "pdf",
+      "storageKey": "uploads/0c4e82a7-7134-437e-8797-96f1eded7f78.pdf",
+      "language": "en",
+      "pageCount": 17
+    },
+    {
+      "id": "33333333-3333-3333-3333-333333333333",
+      "assetId": "55555555-5555-5555-5555-555555555555",
+      "title": "Diş Hekimliğinde İmplant Komplikasyonları",
+      "format": "pdf",
+      "storageKey": "seed/sample.pdf",
+      "language": "tr",
+      "pageCount": 6
+    }
+  ]
+}

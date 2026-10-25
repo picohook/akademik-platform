@@ -4,6 +4,8 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Sürümler
 
+- **Güncel ACR takibi (2026-10-25):** kontrollü Türkçe insan dinlemesi **HL-TR-01 PASS**, kullanıcı beklemeli gerçek NVDA okuması ardından “dinledim, iyiydi” dedi. Mac erişimi **yok**, VoiceOver NOT RUN. Canlı görünür 2 PDF/18 gerçek sayfa tam kaynak taraması ve 2/2 hash eşleşmesi: makalede 20 Figure alternatif inceleme bayrağı, 4 tabloda 0 TH, gövde başlık rolleri eksik; seed metadata6/tr/klinik başlık fakat dosya1 sayfa İngilizce dummy. Kaynak düzeltmeleri/yayın sahibi incelemesi açık. Kod/yayınlar/env/migration/deploy değiştirilmedi; geçici dinleme örneği temizlendi. docs/a11y-evidence/v127-catalog-2026-10-25/REVIEW.md ve docs/a11y-evidence/v127-human-listening-2026-10-25/ACCEPTANCE.md.
+
 - Web kaynak ve prod: **v127/fbeed6e**, CSS **v49**, SW **v19**; app-only deploy tamam. Yerel hedefli26/26, araç10/10, regresyon74/74, birim65/65, 34 axe/0 ihlal, JS0. Canlı Türkçe OCR/NVDA kabulü **PASS: 7/7, JS0**; 3 paragraf/13 OCR kelimesi ve `tr` dili. Test kitabı/yan dosyası/boş UUID klasörü kaldırıldı. docs/a11y-evidence/v127-production-nvda-2026-10-25/ACCEPTANCE.md.
 - DB migration kaynak ve prod **001–016**. Taze restore kopyasında 016 çift uygulandı; annotation/receipt fingerprint’leri korundu. DB admin 016 → v122 web sırası tamam. 016 rollback’te korunur; v123–v127 migration değiştirmedi.
 - Prod: **v127** (2026-10-25 15:38:04 Europe/Istanbul), kaynak **fbeed6e**, imaj `sha256:62897b6f929251f8d95acdf731ae4558c7e3dd8afb8a76ab01d25cee4036c235`, etiket akademik-platform-prod-web:v127-fbeed6e; healthy/0, smoke **16/16**, config **127/fbeed6e**. v126 rollback (`v126-90c7b72`) korunur. Canlı OCR/NVDA kabulü PASS 7/7; ACR açık. docs/deployments/2026-10-25-v127.md.

@@ -2,6 +2,8 @@
 
 Bu süreç yayın başına uygulanır. Arayüzün NVDA testinin geçmesi, yüklenen PDF/EPUB’un erişilebilir olduğunu göstermez. Araçlar **yerel operatör araçlarıdır**; yükleme API’sinde otomatik kalite kapısı, yeni servis veya OCR kuyruğu kurulmadı. OCR, özgün PDF’ye gömülmez; okuyucu ayrı hOCR katmanını kullanır. İndirilen özgün PDF’nin erişilebilirliği ayrıca değerlendirilir.
 
+2026-10-25’te bu yordam [gerçek canlı katalogda uygulandı](a11y-evidence/v127-catalog-2026-10-25/REVIEW.md): 2 görünür PDF, metadata’daki 23 yerine 18 gerçek sayfa. Makalede kaynak başlık/tablo/görsel alternatifleri için düzeltme listesi, seed/demo kaydında dosya-metadata uyumsuzluğu kaydedildi. Kaynak taramasının tamamlanması, bu açık içerik bulgularının düzelmesi anlamına gelmez.
+
 ## 1. PDF kaynak kontrolü
 
 Repo kökünden, mevcut `spike/app` bağımlılıklarıyla:

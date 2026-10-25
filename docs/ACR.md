@@ -2,12 +2,13 @@
 
 **Windows/NVDA için bu değerlendirme turu tamamlandı; ürün geneli WCAG 2.2 AA iddiası yok.** Bu, bağımsız sertifika veya tamamlanmış çok platformlu VPAT değildir. Doğrulanan PDF sınırlamaları ve yayın içeriği kapsamı aşağıda açıkça korunur.
 
-- Tarih/test eden: **2026-10-25 Europe/Istanbul**, Codex ajanı; gerçek NVDA Speech Viewer + OS klavyesi/zoom + Playwright/axe. İnsan ses/telaffuz değerlendirmesi yapılmadı.
+- Tarih/test eden: **2026-10-25 Europe/Istanbul**, Codex ajanı; gerçek NVDA Speech Viewer + OS klavyesi/zoom + Playwright/axe. Ürün sahibi beklemeli üç Türkçe kontrol cümlesini sesli dinleyip “dinledim, iyiydi” diye teyit etti: [HL-TR-01 PASS](a11y-evidence/v127-human-listening-2026-10-25/ACCEPTANCE.md). Kapsamlı yayın/çok dilli ses-telaffuz incelemesi yapılmadı.
 - Değerlendirilen sürüm: **v127**, CSS **v49**, SW **v19**, kod **fbeed6e6fefcad00f13ddb80b98b91fb9ef67351**; üretime alındı. Yerelde OCR kaynak dil/paragraf ve açık okuma planı için gerçek NVDA dahil 26/26, OCR araçları 10/10, regresyon 74/74, birim 65/65; 34 temiz axe/0 ihlal, JS0.
 - Üretim: **v127/fbeed6e**; [dağıtım](deployments/2026-10-25-v127.md), [gerçek canlı Türkçe OCR/NVDA kabulü](a11y-evidence/v127-production-nvda-2026-10-25/ACCEPTANCE.md): **7/7**, JS **0**. Retestte deploy/env/migration değiştirilmedi; v126 rollback korunur. Geçici kitap ve yalnız ona ait hOCR/boş klasör temizlendi. Yerel sütun/seçim testleri canlı sonuç diye genişletilmedi; açık yayın/VoiceOver sınırları sürer.
 - Ortam: Windows 25H2 build 26200.9711; Edge **155.0.4283.45**; NVDA **2026.2 / 2026.2.0.57664**; axe **4.13.0**.
 - Kapsam: giriş/katalog, Upload/Edit/Grants/Password/Offline ve önceki Citation kanıtı, PDF/EPUB okuyucu kontrolleri, seçim araçları, not/yer imi, offline reload, CAS ve kontrollü 410. Sentetik altı sayfalı PageLabels PDF ve iki bölümlü reflow EPUB kullanıldı.
 - [v127 OCR ve okuma sırası kanıtı](a11y-evidence/v127-2026-10-25/ACCEPTANCE.md), [yayın hazırlama/kontrol yordamı](PUBLICATION-ACCESSIBILITY.md), [gerçek Mac test şablonu](A11Y-VOICEOVER-ACCEPTANCE.md), [genel sonuçlar](A11Y-RESULTS.md), [arşivlenmiş v126 değerlendirmesi](a11y-evidence/v126-2026-10-25/ACR-assessment.md).
+- [Mevcut canlı katalog incelemesi](a11y-evidence/v127-catalog-2026-10-25/REVIEW.md): 2/2 kaynak hash eşleşmesi, 18 gerçek fiziksel sayfanın tamamında kaynak taraması. Makalede 20 Figure alternatif inceleme bayrağı, 4 tabloda 0 TH ve gövde başlık rollerinde eksik var; seed kaydının metadata’sı dosyayla uyuşmuyor. Bu kaynak incelemesi tamamlandı, içerik düzeltmeleri/insan kabulü açık; yayıncı sayfaları/metni repoya eklenmedi.
 
 ## Kararın kapsamı
 
@@ -64,7 +65,7 @@ Offline a11y testinde blob sentetik fixture olarak IndexedDB’ye hazırlandı; 
 | 2.5.7 | AA | Sürükleme alternatifleri | Supports | Zorunlu sürükleme yok; gezinme/sayfa/yer imi için düğme alternatifleri. |
 | 2.5.8 | AA | Hedef boyutu | Supports | Renk, not düzenle/sil, konuma git ve mini düğmeler en az 24 CSS px; ölçümler kanıtta. |
 | 3.1.1 | A | Sayfa dili | Supports | Ana html[lang] TR/EN; gerçek EPUB iframe/root en; içerik sandbox’ı değişmedi. |
-| 3.1.2 | AA | Bölüm dili | Supports | Örnek EPUB’da lang=tr ve lang=ar parçaları korunuyor; RTL direction ve dil metadata’sı doğrulandı. İnsan telaffuz dinlemesi yapılmadı. |
+| 3.1.2 | AA | Bölüm dili | Supports | Örnek EPUB lang=tr/lang=ar ve RTL metadata kanıtı korunur. v127 hOCR paragraf/kelime dili korunur; kontrollü üç Türkçe OCR cümlesi için gerçek kullanıcı dinleme teyidi var. Arapça/İngilizce/karmaşık yayınların kapsamlı insan telaffuz incelemesi yapılmadı. |
 | 3.2.1 | A | Odakta bağlam | Supports | Sıradan odak değişimi kaydetme/bağlam değişimi tetiklemiyor. |
 | 3.2.2 | A | Girdide bağlam | Supports | Form gönderimi açık eylem; filtre değişimi sonuç alanını güncelliyor; dil düğmesi açık yeniden yükleme eylemi. |
 | 3.2.3 | AA | Tutarlı gezinme | Supports | Katalog ve okuyucu kontrolleri aynı sırada; responsive görünüm işlemleri kaldırmıyor. |
@@ -81,12 +82,12 @@ Offline a11y testinde blob sentetik fixture olarak IndexedDB’ye hazırlandı; 
 
 ## Kalan kapsam — genel uygunluk iddiasını sınırlar
 
-1. **VoiceOver/Safari: NOT RUN.** Windows’ta gerçek VoiceOver yok; NVDA kanıtı bunun yerine yazılmadı. [12 maddelik gerçek Mac kabulü](A11Y-VOICEOVER-ACCEPTANCE.md) hazırlanmış, sonuçlar boş/NOT RUN bırakılmıştır.
+1. **VoiceOver/Safari: NOT RUN — ortam yok.** Ürün sahibi 2026-10-25’te Mac erişimi olmadığını doğruladı; NVDA kanıtı bunun yerine yazılmadı. [12 maddelik gerçek Mac kabulü](A11Y-VOICEOVER-ACCEPTANCE.md) hazırlanmış, sonuçlar boş/NOT RUN bırakılmıştır.
 2. **PDF belgesinin semantiği/alternatifleri:** tagged PDF H1/H2 ve Formula kaynak açıklamasının aktarılmaması v126 sürümünde kapandı; gerçek NVDA başlık ve açıklamayı okudu. Kaynaksız matematik yapısı tahmin edilmez, PDF formül açıklaması etkileşimli MathML değildir. Etiketsiz iki sütunlu örnekteki okuma sırası ve metin/OCR alternatifi olmayan tarama sınırları sürer; eksik yayıncı etiketleri/alternatifleri tamamlanmış sayılmaz. 1.1.1/1.3.1/1.3.2 sonuçları bütün yayınlara genişletilmez.
 3. **Native seçim ve UI mesaj süresi hedefli açıkları v125’te kapandı:** gerçek NVDA + Windows tuşlarıyla seçim/kopyalama/vurgulama; zamansız bildirim geçmişi ve form/hesap gizliliği test edildi. Tüm yardımcı teknolojiler/işletim sistemlerine genişletilmez.
 4. **MathML/RTL/fixed-layout örnekleri:** sentetik EPUB tablo/görsel/formül NVDA çıktısı, Arapça dil/direction ve iki pre-paginated sayfa gezinmesi geçti. Her yayının karmaşık formülü, etkileşimli MathCAT gezinmesi, ses/video alternatifi veya tüm sabit düzenlerin AA uyumu doğrulanmadı.
-5. **İnsan dinlemesi:** Speech Viewer üretilen konuşma metnini gösterir; telaffuz ve gerçek dinleme kalitesi ayrıca insan değerlendirmesidir.
+5. **İnsan dinlemesi: hedefli Türkçe kontrol kapandı.** Speech Viewer tek başına insan dinlemesi sayılmadı. Kullanıcı önce eski koşuyu dinlemediğini söyledi; yeni beklemeli gerçek NVDA okuması sonrasında “dinledim, iyiydi” dedi. [HL-TR-01](a11y-evidence/v127-human-listening-2026-10-25/ACCEPTANCE.md) yalnız üç Türkçe OCR cümlesinin anlaşılabilirliğidir; tüm diller/formüller/yayınlar veya farklı voice/aygıt için genellenmez.
 
-Bu sınırlar raporu saklamayı engellemez; **tam AA/“her kitap erişilebilir” satış iddiasını engeller**. v127 canlıdır; gerçek canlı Türkçe OCR/NVDA kabulü 7/7 geçti. Kontrol/OCR hazırlama araçları operatör iş istasyonunda çalışır. [Yayın hazırlama yordamı](PUBLICATION-ACCESSIBILITY.md) belirli bir yayının OCR/sıra kontrolünü mümkün kılar; tüm mevcut yayınlar onaylanmış veya otomatik düzeltilmiş sayılmaz. OCR yan dosyaları özgün PDF’ye gömülmez ve offline kitap blob’unda otomatik paketlenmez. İnsan dinlemesi ve Mac kabulü sürer.
+Bu sınırlar raporu saklamayı engellemez; **tam AA/“her kitap erişilebilir” satış iddiasını engeller**. v127 canlıdır; gerçek canlı Türkçe OCR/NVDA kabulü 7/7 ve ayrı kullanıcı teyitli Türkçe anlaşılabilirlik kontrolü geçti. Kontrol/OCR hazırlama araçları operatör iş istasyonunda çalışır. [Gerçek katalog incelemesi](a11y-evidence/v127-catalog-2026-10-25/REVIEW.md) tamamlandı; içerik düzeltmeleri açıktır. OCR yan dosyaları özgün PDF’ye gömülmez ve offline kitap blob’unda otomatik paketlenmez. Kapsamlı yayın/çok dilli insan incelemesi ve gerçek Mac kabulü sürer.
 
 Normatif çerçeve: [WCAG 2.2](https://www.w3.org/TR/WCAG22/). [Tek karakter kısayolları](https://www.w3.org/WAI/WCAG22/Understanding/character-key-shortcuts.html), [reflow ve iki boyutlu içerik istisnası](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html), [veri hatasını önleme](https://www.w3.org/WAI/WCAG22/Understanding/error-prevention-legal-financial-data.html) birincil kaynaklarla kontrol edildi. Standart kapsamı ile müşteri kabul şartı aynı şey değildir.

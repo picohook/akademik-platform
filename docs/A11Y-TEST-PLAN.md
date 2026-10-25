@@ -1,6 +1,6 @@
 # Accessibility test plan — WCAG 2.2 AA
 
-Current local target: **v127 / fbeed6e**, CSS49/SW19; production **v126/90c7b72**. Windows NVDA/Edge OCR evidence is in [v127 acceptance](a11y-evidence/v127-2026-10-25/ACCEPTANCE.md). [Real Mac/VoiceOver acceptance](A11Y-VOICEOVER-ACCEPTANCE.md) is NOT RUN; [publication review](PUBLICATION-ACCESSIBILITY.md) remains per document. Older version-specific checklists below are historical.
+Current runtime/production: **v127 / fbeed6e**, CSS49/SW19. [Actual catalog findings](a11y-evidence/v127-catalog-2026-10-25/REVIEW.md) and [user-confirmed targeted Turkish listening](a11y-evidence/v127-human-listening-2026-10-25/ACCEPTANCE.md) are current. [Real Mac/VoiceOver acceptance](A11Y-VOICEOVER-ACCEPTANCE.md) is NOT RUN because the user has no Mac access. [Publication review](PUBLICATION-ACCESSIBILITY.md) remains per document. Older version-specific checklists below are historical.
 
 ## 1. axe DevTools (automated)
 

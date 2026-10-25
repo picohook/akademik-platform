@@ -1,0 +1,152 @@
+{
+  "dateIstanbul": "2026-10-25",
+  "startedAt": "2026-10-25T13:11:53.401Z",
+  "scope": "All librarian-visible catalog entries at collection time; full-page PDF source inspection. Not an atomic tenant-wide snapshot, human audit or conformance certificate.",
+  "status": "completed_with_review_findings",
+  "conformance": "not_assessed",
+  "sourceCheckerSha256": "40ffe9339c7bc9a798b5e57dae727bc4304c2becffc6181fa60dd4e23183dc02",
+  "entries": [
+    {
+      "id": "43c8cab5-6ebb-45bd-be54-607d3db942b5",
+      "assetId": "ca9ef7bb-2bdb-4f81-bb65-a922393e21b5",
+      "title": "Influence of synthesis parameters on the structural formation of",
+      "format": "pdf",
+      "language": "en",
+      "metadataPageCount": 17,
+      "findings": [],
+      "sourceSha256": "6ef24df5cc72de3c2bf4ea7d78b9f4c4d907ff9834216d64808f2790ad19babc",
+      "sourceBytes": 4067504,
+      "servedSourceMatches": true,
+      "inspectedPages": 17,
+      "actualPageCount": 17,
+      "textLanguages": [
+        "en"
+      ],
+      "pagesWithoutText": [],
+      "pagesWithoutReadableText": [],
+      "pagesWithoutStructure": [],
+      "pagesWithoutSourceLanguage": [],
+      "ocrExposedPages": [],
+      "ocrPhysicalPages": [],
+      "missingAlternatives": {
+        "Figure": 20,
+        "Formula": 0
+      },
+      "automatedFlags": [
+        {
+          "page": 2,
+          "code": "figure_missing_source_alternative",
+          "action": "review_required"
+        },
+        {
+          "page": 4,
+          "code": "figure_missing_source_alternative",
+          "action": "review_required"
+        },
+        {
+          "page": 5,
+          "code": "figure_missing_source_alternative",
+          "action": "review_required"
+        },
+        {
+          "page": 6,
+          "code": "figure_missing_source_alternative",
+          "action": "review_required"
+        },
+        {
+          "page": 7,
+          "code": "figure_missing_source_alternative",
+          "action": "review_required"
+        },
+        {
+          "page": 8,
+          "code": "figure_missing_source_alternative",
+          "action": "review_required"
+        },
+        {
+          "page": 9,
+          "code": "figure_missing_source_alternative",
+          "action": "review_required"
+        },
+        {
+          "page": 10,
+          "code": "figure_missing_source_alternative",
+          "action": "review_required"
+        },
+        {
+          "page": 11,
+          "code": "figure_missing_source_alternative",
+          "action": "review_required"
+        },
+        {
+          "page": 12,
+          "code": "figure_missing_source_alternative",
+          "action": "review_required"
+        }
+      ],
+      "status": "source_inspected_review_required"
+    },
+    {
+      "id": "33333333-3333-3333-3333-333333333333",
+      "assetId": "55555555-5555-5555-5555-555555555555",
+      "title": "Diş Hekimliğinde İmplant Komplikasyonları",
+      "format": "pdf",
+      "language": "tr",
+      "metadataPageCount": 6,
+      "findings": [
+        "metadata_page_count_mismatch",
+        "source_language_missing_check_reader_fallback"
+      ],
+      "sourceSha256": "3df79d34abbca99308e79cb94461c1893582604d68329a41fd4bec1885e6adb4",
+      "sourceBytes": 13264,
+      "servedSourceMatches": true,
+      "inspectedPages": 1,
+      "actualPageCount": 1,
+      "textLanguages": [
+        null
+      ],
+      "pagesWithoutText": [],
+      "pagesWithoutReadableText": [],
+      "pagesWithoutStructure": [
+        1
+      ],
+      "pagesWithoutSourceLanguage": [
+        1
+      ],
+      "ocrExposedPages": [],
+      "ocrPhysicalPages": [],
+      "missingAlternatives": {
+        "Figure": 0,
+        "Formula": 0
+      },
+      "automatedFlags": [
+        {
+          "page": 1,
+          "code": "no_source_structure",
+          "action": "review_required"
+        }
+      ],
+      "status": "source_inspected_review_required"
+    }
+  ],
+  "cleanup": {
+    "loggedOut": true,
+    "requestContextDisposed": true
+  },
+  "noContentRuntimeEnvMigrationDeployChanges": true,
+  "config": {
+    "version": "127",
+    "buildSha": "fbeed6e"
+  },
+  "catalogRole": "librarian",
+  "catalogAssetSetUnchanged": true,
+  "summary": {
+    "catalogEntries": 2,
+    "PDFsInspected": 2,
+    "pagesInspected": 18,
+    "pagesWithoutReadableText": 0,
+    "pagesWithoutStructure": 1,
+    "pagesWithoutSourceLanguage": 1
+  },
+  "completedAt": "2026-10-25T13:11:55.022Z"
+}

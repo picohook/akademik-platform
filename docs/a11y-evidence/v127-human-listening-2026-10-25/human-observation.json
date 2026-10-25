@@ -1,0 +1,27 @@
+{
+  "testId": "HL-TR-01",
+  "dateIstanbul": "2026-10-25",
+  "result": "PASS",
+  "evidenceType": "User-confirmed real listening after guided NVDA reading",
+  "observer": "Product owner / chat user",
+  "userQuote": "dinledim, iyiydi",
+  "scope": "Intelligibility of three controlled Turkish OCR phrases on the tested Windows/NVDA session",
+  "utterances": [
+    "Türkçe okuma örneği",
+    "Diş hekimliğinde araştırma",
+    "İnsan denetimi gereklidir."
+  ],
+  "config": { "version": "127", "buildSha": "fbeed6e" },
+  "nvda": "2026.2 / 2026.2.0.57664",
+  "edge": "155.0.4283.45",
+  "guidedRunId": "64050806-796d-44ad-bfcb-a0fa9746c7e5",
+  "earlierUnguidedRunWasHeardByUser": false,
+  "notAssessed": [
+    "Mac / VoiceOver / Safari",
+    "Every reader message or publication",
+    "English / Arabic or other-language pronunciation",
+    "Complex mathematics and scientific figure alternatives",
+    "Objective audio quality, a different voice/rate/device"
+  ],
+  "note": "The raw automated report records awaiting_user_observation at collection time; this separate later user confirmation closes only HL-TR-01."
+}
