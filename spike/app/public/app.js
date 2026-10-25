@@ -1,4 +1,5 @@
 import * as pdfjsLib from '/vendor/pdfjs/pdf.mjs';
+import { buildPdfStructure } from '/pdf-structure.mjs';
 import { formatCitation, normalizePdfPageLabels, pdfPageLabel, pdfPageDescription, pdfCitationPage, formatCopiedSelection } from '/citations.mjs';
 import { EpubEngine } from '/epub-engine.mjs';
 import { initializeLanguage, toggleLanguage, t, translateDom, getLang } from '/i18n.mjs';
@@ -2515,7 +2516,12 @@ function stopScrollMode(renderAfter = true) {
 }
 
 async function renderPagePane(pageNumber, pane, scale, rotationOffset, isPrimary) {
-  const page = await state.pdf.getPage(pageNumber);
+  const pdf = state.pdf;
+  const renderToken = Symbol();
+  pane.textLayer.pdfRenderToken = renderToken;
+  const isCurrent = () => state.pdf === pdf && pane.textLayer.pdfRenderToken === renderToken;
+  const page = await pdf.getPage(pageNumber);
+  if (!isCurrent()) return null;
   const viewport = page.getViewport({ scale, rotation: (page.rotate + rotationOffset) % 360 });
   // 2x DPR quadruples canvas pixels; 1.5x keeps text sharp while cutting
   // the first-page raster cost (~45%) on 2000-page / high-DPI screens.
@@ -2546,22 +2552,48 @@ async function renderPagePane(pageNumber, pane, scale, rotationOffset, isPrimary
     throw error;
   }
   const canvasEnd = performance.now();
+  if (!isCurrent()) return null;
 
-  pane.textLayer.replaceChildren();
-  const usedOcr = await renderOcrLayer(viewport, pageNumber, pane.textLayer);
+  // Render off-DOM so an old text/structure request cannot overwrite a new
+  // page or book after the canvas has finished.
+  const textContainer = pane.textLayer.cloneNode(false);
+  textContainer.removeAttribute('id');
+  let structure = null;
+  let textLang = '';
+  const usedOcr = await renderOcrLayer(viewport, pageNumber, textContainer);
+  if (!isCurrent()) return null;
   if (!usedOcr) {
     try {
-      const textContent = await page.getTextContent();
+      const [textContent, tree] = await Promise.all([
+        page.getTextContent({ includeMarkedContent: true }),
+        page.getStructTree().catch(error => {
+          console.warn('PDF structure unavailable', error.message);
+          return null;
+        }),
+      ]);
+      if (!isCurrent()) return null;
+      textLang = typeof textContent.lang === 'string' ? textContent.lang : '';
       const textLayer = new pdfjsLib.TextLayer({
         textContentSource: textContent,
-        container: pane.textLayer,
+        container: textContainer,
         viewport,
       });
       await textLayer.render();
+      if (!isCurrent()) return null;
+      structure = buildPdfStructure(tree, textContainer);
+      if (structure && textLang && !structure.hasAttribute('lang')) structure.lang = textLang;
     } catch (error) {
       console.warn('text layer failed', error);
     }
   }
+  if (!isCurrent()) return null;
+  pane.pageWrap.querySelector('.pdf-structure')?.remove();
+  const textFragment = document.createDocumentFragment();
+  while (textContainer.firstChild) textFragment.append(textContainer.firstChild);
+  pane.textLayer.replaceChildren(textFragment);
+  if (textLang) pane.textLayer.lang = textLang;
+  else pane.textLayer.removeAttribute('lang');
+  if (structure) pane.pageWrap.insertBefore(structure, pane.textLayer);
   applySearchHighlight(pane.textLayer);
   return { page, viewport, canvasEnd, textEnd: performance.now() };
 }
@@ -2593,6 +2625,7 @@ async function renderPage() {
   state.secondPage = state.twoPage && state.page < state.numPages ? state.page + 1 : null;
   pageWrap2.hidden = !state.secondPage;
   if (!state.secondPage) {
+    pageWrap2.querySelector('.pdf-structure')?.remove();
     textLayer2.replaceChildren();
     highlights2.replaceChildren();
   }
@@ -3338,6 +3371,9 @@ async function openBook(book, options = {}) {
   scrollBtn.setAttribute('aria-pressed', 'false');
   spreadBtn.setAttribute('aria-pressed', 'false');
   spreadBtn.classList.remove('active');
+  pageWrap.querySelector('.pdf-structure')?.remove();
+  pageWrap2.querySelector('.pdf-structure')?.remove();
+  textLayerEl.replaceChildren();
   textLayer2.replaceChildren();
   highlights2.replaceChildren();
   updateViewControls();
@@ -3516,6 +3552,8 @@ async function closeReader() {
   clearPending(highlights2);
   textLayerEl.replaceChildren();
   textLayer2.replaceChildren();
+  pageWrap.querySelector('.pdf-structure')?.remove();
+  pageWrap2.querySelector('.pdf-structure')?.remove();
   highlightsEl.replaceChildren();
   highlights2.replaceChildren();
   if (pdf) {

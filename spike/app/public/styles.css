@@ -341,6 +341,9 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
   transform-origin: 0% 0%;
 }
 .textLayer ::selection { background: transparent; }
+.textLayer span.markedContent { top: 0; height: 0; }
+/* Structure nodes own the real text spans; they add no visible text or hit area. */
+.pdf-structure { position: absolute; inset: 0; contain: strict; pointer-events: none; }
 
 .highlights { position: absolute; inset: 0; pointer-events: none; }
 .highlights .hl { position: absolute; border-radius: 2px; background: rgba(255, 199, 0, 0.34); mix-blend-mode: multiply; }
