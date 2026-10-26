@@ -349,9 +349,17 @@ const PATTERNS = [
 const SKIP = 'script, style, code, .book-title, .book-meta, .note-text, .cite-output, [data-no-i18n]';
 
 const HTML_STRINGS = {
+  heroEyebrow: {
+    tr: 'E-Kütüphane · Akademik koleksiyon',
+    en: 'E-Library · Academic collection',
+  },
+  heroTitle: {
+    tr: 'Kataloğu keşfedin.<br />Okuyun, not alın.',
+    en: 'Explore the catalog.<br />Read and take notes.',
+  },
   heroLede: {
-    tr: 'Bu ekran ürün değil; PDF.js, <code>anchor</code> modeli ve Postgres aramasını ölçmek için kurulmuş bir iskelet. Örnek içerik kamu malı test PDF’idir.',
-    en: 'This screen is not a product; it is a skeleton for measuring PDF.js, the <code>anchor</code> model and Postgres search. Sample content is a public-domain test PDF.',
+    tr: 'Kurumunuzun akademik e-kitaplarına tek yerden erişin; PDF ve EPUB okuyun, notlarınızı ve alıntılarınızı birlikte yönetin.',
+    en: 'Access your institution’s academic e-books in one place; read PDF and EPUB, and keep your notes and citations together.',
   },
 };
 
@@ -382,7 +390,7 @@ export function initializeLanguage() {
   lang = saved === 'en' ? 'en' : 'tr';
   document.documentElement.lang = lang;
   translateDom(document.body);
-  document.title = lang === 'en' ? 'Academic Platform — Spike' : 'Akademik Platform — Spike';
+  document.title = lang === 'en' ? 'E-Library' : 'E-Kütüphane';
   for (const button of document.querySelectorAll('[data-lang-toggle]')) {
     button.textContent = lang === 'en' ? 'TR' : 'EN';
     button.setAttribute('aria-label', lang === 'en' ? 'Türkçeye geç' : 'Switch to English');
