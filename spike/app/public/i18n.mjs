@@ -362,8 +362,23 @@ export function getLang() {
 }
 
 export function initializeLanguage() {
-  let saved = 'tr';
-  try { saved = localStorage.getItem('uiLang') || 'tr'; } catch { /* private mode */ }
+  let entryLang = '';
+  try {
+    const url = new URL(window.location.href);
+    const requested = (url.searchParams.get('lang') || '').trim().toLowerCase().split(/[-_]/)[0];
+    if (requested === 'tr' || requested === 'en') entryLang = requested;
+    // Entry domains (ekutuphane) pass ?lang=tr|en. Remove it after reading it,
+    // including invalid values, but keep every other query parameter and hash.
+    if (url.searchParams.has('lang')) {
+      url.searchParams.delete('lang');
+      history.replaceState(null, '', url.pathname + url.search + url.hash);
+    }
+  } catch { /* private mode or unavailable URL API */ }
+  let saved = entryLang || 'tr';
+  try {
+    if (entryLang) localStorage.setItem('uiLang', entryLang);
+    saved = localStorage.getItem('uiLang') || saved;
+  } catch { /* private mode */ }
   lang = saved === 'en' ? 'en' : 'tr';
   document.documentElement.lang = lang;
   translateDom(document.body);
