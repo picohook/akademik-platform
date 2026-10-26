@@ -45,7 +45,9 @@ const DEMO_EMAIL = process.env.DEMO_EMAIL || 'reader@example.edu.tr';
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'demo1234';
 const BRAND_NAME = process.env.BRAND_NAME || 'Akademik Platform';
 const BRAND_TAGLINE = process.env.BRAND_TAGLINE || 'spike';
-const APP_VERSION = process.env.APP_VERSION || '127';
+// No real release number as a fallback: an unset APP_VERSION must look obviously
+// wrong (v0-dev) instead of silently reporting a plausible release (see docs/DEPLOY.md).
+const APP_VERSION = process.env.APP_VERSION || '0-dev';
 const BUILD_SHA = process.env.BUILD_SHA || '';
 const BUILD_DATE = process.env.BUILD_DATE || '';
 const APP_ENV = process.env.APP_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'development');
@@ -1928,6 +1930,10 @@ const server = http.createServer(async (req, res) => {
       json(res, 200, { ok: true, mode: pool ? 'db' : 'demo', tenantId: TENANT_ID });
       return;
     }
+    // Deliberately unauthenticated: the footer needs brand/version/build values
+    // before login. Decision (2026-10-26): keep it public as-is — the build
+    // metadata is low-sensitivity and /api/health already exposes mode/tenantId.
+    // Revisit only if the deployment SHA must stop being enumerable.
     if (pathname === '/api/config' && req.method === 'GET') {
       json(res, 200, {
         brandName: BRAND_NAME,

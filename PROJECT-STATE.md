@@ -1,8 +1,12 @@
-# Project state — 2026-10-25
+# Project state — 2026-10-26
 
 Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konuşma geçmişini tekrar okumayın.
 
 ## Sürümler
+- **Canlı sürüm doğrulaması (2026-10-26):** Prod: **v130**, kaynak **9f755d6** ("feat: replace spike copy with LibEdge library copy", 2026-10-26 14:57 +0300, `origin/codex/lang-entry` — `origin/main`'e merge edilmemiş), buildDate **2026-10-26**. Kanıt `GET https://elibrary.libedge.com/api/config`: `{"version":"130","buildSha":"9f755d6","buildDate":"2026-10-26","environment":"production"}`; `/api/health` → `{"ok":true,"mode":"db"}`; footer `© 2026 LibEdge · v130 · Üretim · 2026-10-26`. İmaj `akademik-platform:libedge-copy` (`sha256:c9730bf3c0af86063b797331859301ee93b7b5924f1b504225a8200a8b025693`) — **revision etiketi yok**, imaj↔commit bağı doğrulanamadı. **v128 ve v129 için deploy dokümanı yok.** docs/deployments/2026-10-26-v130.md, docs/DEPLOY.md.
+- **Deploy prosedürü artık yazılı (2026-10-26):** docs/DEPLOY.md — iki varyant (`docker-compose.prod.yml` ve `+ docker-compose.libedge.yml`), `--env-file` zorunluluğu, `.env.production`/`.env.r2` sunucuda (git dışında), sürüm doğrulama `curl /api/config`.
+- **Build metadata (2026-10-26):** `APP_VERSION` varsayılanı **`0-dev`** (eski: `130`) — env unutulursa sahte sürüm göstermez. `spike/app/Dockerfile` artık `ARG BUILD_SHA/APP_VERSION/BUILD_DATE` + `org.opencontainers.image.*` LABEL taşır (yalnız `docker inspect` görünürlüğü; runtime env'i compose `environment` veriyor).
+- **`/api/config` kimlik doğrulamasız kalacak** (karar 2026-10-26): build metadata düşük hassasiyetli, `/api/health` zaten `mode`/`tenantId` veriyor. Yeniden değerlendirme koşulu docs/DEPLOY.md "Bilinen sınırlar"da.
 
 - **Güncel ACR takibi (2026-10-25):** kontrollü Türkçe insan dinlemesi **HL-TR-01 PASS**, kullanıcı beklemeli gerçek NVDA okuması ardından “dinledim, iyiydi” dedi. Mac erişimi **yok**, VoiceOver NOT RUN. Canlı görünür 2 PDF/18 gerçek sayfa tam kaynak taraması ve 2/2 hash eşleşmesi: makalede 20 Figure alternatif inceleme bayrağı, 4 tabloda 0 TH, gövde başlık rolleri eksik; yayıncı/içerik düzeltmesi açık. Demo metadata düzeltildi: **“Demo PDF — Dummy PDF file” / EN / 1 sayfa**, sahte ISBN/lisans kaldırıldı, arama indeksi ve MARC güncellendi, dosya hash’i değişmedi; audit **133**, commitler `c639285`, `199e8dd`, yedek `backups/demo-metadata-20251025-170615.dump`. Kod/yayınlar/env/migration/deploy değiştirilmedi; prod v127 yeniden başlatılmadı. docs/a11y-evidence/v127-catalog-2026-10-25/REVIEW.md, DEMO-METADATA-FOLLOWUP.md ve docs/a11y-evidence/v127-human-listening-2026-10-25/ACCEPTANCE.md.
 
