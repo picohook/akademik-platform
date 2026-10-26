@@ -8,11 +8,44 @@ tek yerde tutar; sürüm geçmişi `docs/deployments/` altında, özet `PROJECT-
 
 ```bash
 curl -s https://elibrary.libedge.com/api/config
-# {"version":"130","buildSha":"9f755d6","buildDate":"2026-10-26","environment":"production",...}
+# {"version":"131","buildSha":"<deploy edilen SHA>","buildDate":"...","environment":"production",...}
 
 curl -s https://elibrary.libedge.com/api/health
 # {"ok":true,"mode":"db","tenantId":"..."}
 ```
+
+> ### ⚠️ `version` tek başına yeterli DEĞİL — `buildSha`'yı da kontrol et
+>
+> **2026-10-26 olayı:** v131 deploy'unda `/api/config` `"version":"131"` döndü ama
+> `"buildSha":"9f755d6"` — yani **v130 kodu** çalışıyordu. Sebep: `APP_VERSION=131`
+> `.env.r2` içinde **elle** set edilmiş; imaj `1ded27c`'ten değil `9f755d6`'dan
+> build edilmişti. `version` alanı env'den geldiği için doğru göründü.
+>
+> **Doğru kontrol:** `buildSha` = deploy etmeyi *amaçladığın* SHA olmalı.
+> `APP_VERSION` ile `buildSha` çelişiyorsa **kod eskidir**.
+>
+> | Alan | Kaynak | Yanıltıcı olabilir mi |
+> | --- | --- | --- |
+> | `version` | `APP_VERSION` env | ✅ Evet — elle set edilir |
+> | `buildSha` | `BUILD_SHA` env | ⚠️ Evet — elle set edilir, build'i kanıtlamaz |
+> | image LABEL `revision` | `--build-arg` | ❌ Hayır — build anında gömülür |
+>
+> **Tek güvenilir kanıt** `docker inspect` LABEL'ıdır (aşağıya bak).
+
+### Build kimliğini kesinleştirme
+
+```bash
+# Hangi SHA gerçekten derlendi?
+docker inspect <imaj> --format '{{json .Config.Labels}}' | grep revision
+
+# Env ile çelişiyor mu?
+docker inspect $(docker ps -q --filter name=web) \
+  --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -E '^(APP_VERSION|BUILD_SHA|BUILD_DATE)='
+```
+
+`revision` LABEL'ı `unknown` ise imaj `--build-arg` **verilmeden** derlenmiştir
+(v130 Dockerfile'ında `ARG` yoktu — LABEL hiç üretilmez). Bu durumda hangi kodun
+çalıştığı yalnızca elle doğrulanabilir; **deploy doğrulanmamış sayılır**.
 
 `/api/config` içindeki üç alan (`version`, `buildSha`, `buildDate`) build zamanı
 metadata'sının tek kaynağıdır. Footer bunları gösterir (`app.js` → `applyFooter`).
@@ -97,8 +130,92 @@ docker inspect $(docker ps -q --filter name=web) \
 
 Çıktı bu belgeye işlenene kadar Varyant 2 bir **varsayımdır**.
 
+### Canlı gerçek (2026-10-26, ürün sahibi teyidi)
+
+| | |
+| --- | --- |
+| İmaj | `libedge-v131` (önceki: `akademik-platform:libedge-copy`) |
+| Port | `127.0.0.1:3001` → container `3000` |
+| Env | `.env.r2` — `DEMO_TENANT_ID=5799f2a5-3d90-41b1-90de-9da07d776052`, `STORAGE_DRIVER=r2`, `APP_VERSION=131` |
+| DB | PostgreSQL, container `akademik-platform-prod-db-1`, süper kullanıcı `akademik` |
+
+> ### 🔴 Ağ bağlantısı kalıcı değil — her restart'ta tekrar bağlanmalı
+>
+> Web container **`akademik-platform-prod_default`** network'üne **elle** bağlanıyor.
+> Compose bu bağlantıyı yönetmediği için `docker compose up` / restart / host reboot
+> sonrası **kopar** ve web DB'ye ulaşamaz.
+>
+> **Deploy/restart sonrası ZORUNLU adım:**
+>
+> ```bash
+> docker network connect akademik-platform-prod_default <web-container>
+> curl -s https://elibrary.libedge.com/api/health   # "ok":true, "mode":"db" olmalı
+> ```
+>
+> `mode:"demo"` dönerse ağ **bağlı değil** — DB'ye ulaşamıyor, sessizce demo'ya
+> düşmüş demektir. **Kalıcı çözüm:** `docker-compose.libedge.yml` içine
+> `networks: [default]` + external network tanımı eklemek (henüz yapılmadı).
+
+### Tenant durumu
+
+`DEMO_TENANT_ID=5799f2a5-...` → **LibEdge**. `/api/health` bu değeri döndürüyor.
+
+> **Dikkat:** Eski "Demo Üniversitesi" tenant'ı (`11111111-1111-...` varsayılanı)
+> boş kaldı ama eski kullanıcılar (`librarian@example.edu.tr` vb.) hâlâ **orada**.
+> Bu kullanıcılar LibEdge tenant'ına taşınmadı — giriş yaparlarsa boş bir kütüphane
+> görürler. Karar bekliyor: taşı (UPDATE `users`/`memberships`) veya sil.
+
+### `STORAGE_DRIVER=r2` — canlıda doğrulandı (2026-10-26)
+
+Canlıda `STORAGE_DRIVER=r2` **set edilmiş** (ürün sahibi teyidi). Bu, v131 deploy'unda
+şu davranışı zorunlu kılar:
+
+`storage.mjs` `createStorage()` açılışta şunları ister (hepsi **test edilmiş** davranış):
+
+| Env / koşul | Yoksa veya geçersizse |
+| --- | --- |
+| `R2_ENDPOINT` | `missing R2_ENDPOINT` |
+| `R2_BUCKET` | `missing R2_BUCKET` |
+| `R2_ACCESS_KEY_ID` | `missing R2_ACCESS_KEY_ID` |
+| `R2_SECRET_ACCESS_KEY` | `missing R2_SECRET_ACCESS_KEY` |
+| `R2_ENDPOINT` biçimi | `invalid R2 endpoint` |
+| `R2_BUCKET` biçimi | `invalid R2 bucket` |
+| `DATABASE_URL` | `R2 requires database mode` (`server.mjs`, `createStorage` değil) |
+
+**`R2_ENDPOINT` kuralı** (`storage.mjs:31`): `https://<hesap>.r2.cloudflarestorage.com`
+— şema `https`, path tam `/`, host `.r2.cloudflarestorage.com` ile bitmeli. username /
+password / port / query / hash **reddedilir**.
+
+**`R2_BUCKET` kuralı** (`storage.mjs`, S3 adlandırma): `^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$`
+— 3–63 karakter, **sadece küçük harf**, rakam ve tire. `libedge_books` (alt çizgi),
+`LibEdge` (büyük harf), `b` (çok kısa) **reddedilir**. Cloudflare bucket adını
+`LibEdge_Books` gibi yazdıysan deploy **açılmaz** — önce küçük harfe çevir.
+
+> **Deploy riski:** bu değerlerden biri eksikse container **açılmaz** — sessizce
+> local'a düşmez (`storage.mjs` fail-loud). `--env-file .env.production --env-file .env.r2`
+> ikisinin de verildiğinden emin ol; `.env.r2` **git dışında**, sunucuda durur.
+>
+> **Deploy öncesi ÖN KOŞUL** (container'ı düşürmeden doğrula):
+>
+> ```bash
+> cd spike/app && node scripts/check-r2.mjs
+> ```
+>
+> `R2 PASS: put/read/range/delete; temporary object removed.` görmelisin. Bu script
+> kendi rastgele objesini yazıp siler; mevcut veriye dokunmaz.
+
+**Rollback notu:** v131'de `buildSha=1ded27c` ve `version=131` beklenir. R2 env'i
+bozuksa önceki imaja (`akademik-platform:libedge-copy`) dönülür. **Dikkat:** v131'te
+yüklenen dosyaların `storage_key` değeri `r2://<prefix>/...` biçimindedir
+(`storage.mjs:10,141`). v130 kodu bu anahtarları **okuyamaz** — `storage.mjs:45`
+`R2 asset requires R2 configuration` fırlatır. Yani rollback, v131'te yüklenmiş
+yeni dosyaları erişilemez bırakır (R2 objeleri silinmez, sadece okunamaz).
+Rollback'ten sonra yüklenen dosyalar listelenmeli ve gerekirse yeniden yüklenmelidir.
+
 ## Deploy sonrası kontrol listesi
 
+- [ ] **Deploy ÖNCESİ:** `cd spike/app && node scripts/check-r2.mjs` → `R2 PASS`
+  (`STORAGE_DRIVER=r2` canlıda set; env bozuksa container açılmaz)
 - [ ] `/api/config` → `version` beklenen değer, `buildSha` = `git rev-parse --short HEAD`
   Env unutulduysa `version` **`0-dev`** döner (eski davranış: sessizce `127`/`130`).
 - [ ] `docker inspect <imaj> --format '{{json .Config.Labels}}'` → `org.opencontainers.image.revision`
