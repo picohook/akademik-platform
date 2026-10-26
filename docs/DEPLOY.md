@@ -97,8 +97,57 @@ docker inspect $(docker ps -q --filter name=web) \
 
 Çıktı bu belgeye işlenene kadar Varyant 2 bir **varsayımdır**.
 
+### `STORAGE_DRIVER=r2` — canlıda doğrulandı (2026-10-26)
+
+Canlıda `STORAGE_DRIVER=r2` **set edilmiş** (ürün sahibi teyidi). Bu, v131 deploy'unda
+şu davranışı zorunlu kılar:
+
+`storage.mjs` `createStorage()` açılışta şunları ister (hepsi **test edilmiş** davranış):
+
+| Env / koşul | Yoksa veya geçersizse |
+| --- | --- |
+| `R2_ENDPOINT` | `missing R2_ENDPOINT` |
+| `R2_BUCKET` | `missing R2_BUCKET` |
+| `R2_ACCESS_KEY_ID` | `missing R2_ACCESS_KEY_ID` |
+| `R2_SECRET_ACCESS_KEY` | `missing R2_SECRET_ACCESS_KEY` |
+| `R2_ENDPOINT` biçimi | `invalid R2 endpoint` |
+| `R2_BUCKET` biçimi | `invalid R2 bucket` |
+| `DATABASE_URL` | `R2 requires database mode` (`server.mjs`, `createStorage` değil) |
+
+**`R2_ENDPOINT` kuralı** (`storage.mjs:31`): `https://<hesap>.r2.cloudflarestorage.com`
+— şema `https`, path tam `/`, host `.r2.cloudflarestorage.com` ile bitmeli. username /
+password / port / query / hash **reddedilir**.
+
+**`R2_BUCKET` kuralı** (`storage.mjs`, S3 adlandırma): `^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$`
+— 3–63 karakter, **sadece küçük harf**, rakam ve tire. `libedge_books` (alt çizgi),
+`LibEdge` (büyük harf), `b` (çok kısa) **reddedilir**. Cloudflare bucket adını
+`LibEdge_Books` gibi yazdıysan deploy **açılmaz** — önce küçük harfe çevir.
+
+> **Deploy riski:** bu değerlerden biri eksikse container **açılmaz** — sessizce
+> local'a düşmez (`storage.mjs` fail-loud). `--env-file .env.production --env-file .env.r2`
+> ikisinin de verildiğinden emin ol; `.env.r2` **git dışında**, sunucuda durur.
+>
+> **Deploy öncesi ÖN KOŞUL** (container'ı düşürmeden doğrula):
+>
+> ```bash
+> cd spike/app && node scripts/check-r2.mjs
+> ```
+>
+> `R2 PASS: put/read/range/delete; temporary object removed.` görmelisin. Bu script
+> kendi rastgele objesini yazıp siler; mevcut veriye dokunmaz.
+
+**Rollback notu:** v131'de `buildSha=1ded27c` ve `version=131` beklenir. R2 env'i
+bozuksa önceki imaja (`akademik-platform:libedge-copy`) dönülür. **Dikkat:** v131'te
+yüklenen dosyaların `storage_key` değeri `r2://<prefix>/...` biçimindedir
+(`storage.mjs:10,141`). v130 kodu bu anahtarları **okuyamaz** — `storage.mjs:45`
+`R2 asset requires R2 configuration` fırlatır. Yani rollback, v131'te yüklenmiş
+yeni dosyaları erişilemez bırakır (R2 objeleri silinmez, sadece okunamaz).
+Rollback'ten sonra yüklenen dosyalar listelenmeli ve gerekirse yeniden yüklenmelidir.
+
 ## Deploy sonrası kontrol listesi
 
+- [ ] **Deploy ÖNCESİ:** `cd spike/app && node scripts/check-r2.mjs` → `R2 PASS`
+  (`STORAGE_DRIVER=r2` canlıda set; env bozuksa container açılmaz)
 - [ ] `/api/config` → `version` beklenen değer, `buildSha` = `git rev-parse --short HEAD`
   Env unutulduysa `version` **`0-dev`** döner (eski davranış: sessizce `127`/`130`).
 - [ ] `docker inspect <imaj> --format '{{json .Config.Labels}}'` → `org.opencontainers.image.revision`
