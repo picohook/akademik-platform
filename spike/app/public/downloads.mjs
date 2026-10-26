@@ -1,3 +1,4 @@
+import { bookRequestId } from './book-variants.mjs';
 import { saveOfflineBook as persistOfflineBook, storageEstimate as estimateStorage } from './offline.mjs';
 
 export const MAX_OFFLINE_BYTES = 300 * 1024 * 1024;
@@ -55,7 +56,7 @@ export async function fetchDownloadBlob(book, { fetch: request = globalThis.fetc
   if (!book?.id || book.allow_download === false) {
     throw failure('DOWNLOAD_DISABLED', 'download disabled for this title');
   }
-  const endpoint = `/api/books/${encodeURIComponent(book.id)}`;
+  const endpoint = `/api/books/${encodeURIComponent(bookRequestId(book))}`;
   const options = { method: 'POST', headers: { 'content-type': 'application/json' }, cache: 'no-store', referrerPolicy: 'no-referrer' };
   const issued = await request(`${endpoint}/download-ticket`, { ...options, body: '{}' });
   await requireSuccess(issued);

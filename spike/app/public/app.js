@@ -1,3 +1,4 @@
+import { normalizeBookVariant, bookRequestId, offlineBookKey, groupBookVariants, variantLabel, locationMatchesBook, bookFromLocation, findOfflineVariant } from '/book-variants.mjs';
 import * as pdfjsLib from '/vendor/pdfjs/pdf.mjs';
 import { buildPdfStructure } from '/pdf-structure.mjs';
 import { renderHocrText } from '/ocr-layer.mjs';
@@ -176,6 +177,8 @@ const scrollPages = $('scrollPages');
 const pageLabel = $('pageLabel');
 const readerTitle = $('readerTitle');
 const readerMeta = $('readerMeta');
+const readerVariants = $('readerVariants');
+const variantSelections = new Map();
 const zoomLabel = $('zoomLabel');
 const noteCount = $('noteCount');
 const notesList = $('notesList');
@@ -377,17 +380,81 @@ function hue(text) {
 
 async function openCardBook(book) {
   if (state.offlineMode || state.offlineLibrary) {
-    const stored = await getOfflineBook(book.id);
+    const stored = await findOfflineVariant(book, getOfflineBook);
     if (stored) {
       if (stored.book.format === 'epub') await openEpubBook(stored.book, { offlineBlob: stored.blob });
       else await openBook(stored.book, { offlineBlob: stored.blob });
       return;
     }
+    toast(t('Bu sürüm çevrimdışı kaydedilmemiş'));
+    return;
   }
   await openBook(book);
 }
 
-function makeCard(book) {
+function makeVariantPicker(variants, selected, onChange, loading = false) {
+  const label = document.createElement('label');
+  label.className = 'variant-picker';
+  const caption = document.createElement('span');
+  caption.textContent = t('Dil / Biçim / Baskı');
+  const select = document.createElement('select');
+  select.className = 'variant-select';
+  select.setAttribute('aria-label', t('Dil / Biçim / Baskı'));
+  select.disabled = loading;
+  for (const book of variants) {
+    const option = document.createElement('option');
+    option.value = bookRequestId(book);
+    option.textContent = variantLabel(book, getLang());
+    option.selected = option.value === bookRequestId(selected);
+    select.appendChild(option);
+  }
+  label.append(caption, select);
+  label.addEventListener('click', event => event.stopPropagation());
+  select.addEventListener('change', async () => {
+    const next = variants.find(book => bookRequestId(book) === select.value);
+    if (!next || select.value === bookRequestId(selected)) return;
+    select.disabled = true;
+    try { await onChange(next); }
+    catch (error) { console.error(error); toast(t('Sürüm açılamadı')); }
+    finally { select.value = bookRequestId(selected); select.disabled = false; }
+  });
+  return label;
+}
+
+function renderReaderVariants(book, loading = false) {
+  const variants = state.books.filter(item => item.id === book.id);
+  if (!variants.some(item => bookRequestId(item) === bookRequestId(book))) variants.push(book);
+  readerVariants.replaceChildren();
+  readerVariants.hidden = variants.length < 2;
+  if (variants.length < 2) return;
+  readerVariants.appendChild(makeVariantPicker(variants, book, async next => {
+    const offline = state.offlineMode;
+    const stored = offline ? await findOfflineVariant(next, getOfflineBook) : null;
+    if (offline && !stored) { toast(t('Bu sürüm çevrimdışı kaydedilmemiş')); return; }
+    await saveProgress();
+    await closeReader();
+    variantSelections.set(next.id, bookRequestId(next));
+    const url = new URL(window.location.href);
+    url.searchParams.set('book', next.id);
+    url.searchParams.set('asset', bookRequestId(next));
+    url.searchParams.delete('page');
+    url.searchParams.delete('cfi');
+    history.replaceState(null, '', url);
+    await openBook(next, stored ? { offlineBlob: stored.blob } : {});
+    renderBooks();
+  }, loading));
+}
+
+async function loadOfflineProgress(book) {
+  let saved = localStorage.getItem(`offlineProgress:${offlineBookKey(book)}`);
+  if (saved === null) {
+    const legacy = await getOfflineBook(book.id);
+    if (legacy?.book?.asset_id === book.asset_id) saved = localStorage.getItem(`offlineProgress:${book.id}`);
+  }
+  return JSON.parse(saved || 'null');
+}
+
+function makeCard(book, variants = [book]) {
   const card = document.createElement('div');
   card.className = 'card';
   card.addEventListener('click', () => { openCardBook(book).catch((error) => console.error(error)); });
@@ -446,6 +513,15 @@ function makeCard(book) {
   });
   meta.appendChild(badges);
 
+  if (variants.length > 1) {
+    meta.appendChild(makeVariantPicker(variants, book, async (selected) => {
+      variantSelections.set(book.id, bookRequestId(selected));
+      const replacement = makeCard(selected, variants);
+      card.replaceWith(replacement);
+      replacement.querySelector('.variant-select')?.focus();
+    }));
+  }
+
   const open = document.createElement('button');
   open.type = 'button';
   open.className = 'open-btn';
@@ -502,9 +578,10 @@ function renderBooks() {
     if (state.filter === 'all') return true;
     return (book.subjects || []).includes(state.filter);
   });
-  visible.forEach((book) => grid.appendChild(makeCard(book)));
-  count.textContent = `${visible.length} başlık`;
-  empty.hidden = visible.length !== 0;
+  const groups = groupBookVariants(visible, getLang(), variantSelections);
+  groups.forEach(({ book, variants }) => grid.appendChild(makeCard(book, variants)));
+  count.textContent = `${groups.length} başlık`;
+  empty.hidden = groups.length !== 0;
   translateDom(grid);
   translateDom(count);
 }
@@ -1046,10 +1123,13 @@ async function saveEdit(event) {
       throw new Error(payload.error || 'Kaydedilemedi');
     }
     const updated = await response.json();
-    state.books = state.books.map((book) => (book.id === updated.id ? updated : book));
+    await loadBooks(state.query);
     if (state.book?.id === updated.id) {
-      readerTitle.textContent = updated.title;
-      readerMeta.textContent = `${updated.publisher || ''}${updated.publication_year ? ` · ${updated.publication_year}` : ''}`;
+      const selected = state.books.find(book => book.asset_id === state.book.asset_id);
+      if (selected) state.book = selected;
+      readerTitle.textContent = state.book.title;
+      readerMeta.textContent = `${state.book.publisher || ''}${state.book.publication_year ? ` · ${state.book.publication_year}` : ''}`;
+      renderReaderVariants(state.book);
     }
     renderFilters();
     renderBooks();
@@ -1216,7 +1296,7 @@ async function showOfflineLibrary(entries) {
   mode.textContent = t('Çevrimdışı');
   state.offlineMode = true;
   state.offlineLibrary = true;
-  state.books = entries.map((entry) => entry.book);
+  state.books = entries.map((entry) => normalizeBookVariant(entry.book));
   renderFilters();
   renderBooks();
 }
@@ -1235,7 +1315,7 @@ async function bootData() {
   await loadBooks();
   const bookId = new URLSearchParams(window.location.search).get('book');
   if (bookId) {
-    const book = state.books.find((item) => item.id === bookId || item.asset_id === bookId);
+    const book = bookFromLocation(state.books, new URLSearchParams(window.location.search));
     if (book) await openBook(book);
   }
 }
@@ -1346,7 +1426,7 @@ async function loadBooks(query = '') {
     throw new Error('Oturum gerekli');
   }
   if (!response.ok) throw new Error('Katalog yüklenemedi');
-  state.books = await response.json();
+  state.books = (await response.json()).map(normalizeBookVariant);
   renderFilters();
   renderBooks();
 }
@@ -1675,6 +1755,7 @@ function updateUrl() {
   if (!state.book) return;
   const url = new URL(window.location.href);
   url.searchParams.set('book', state.book.id);
+  url.searchParams.set('asset', bookRequestId(state.book));
   if (state.epubMode) {
     url.searchParams.delete('page');
     if (state.epubEngine?.getCurrentCfi()) url.searchParams.set('cfi', state.epubEngine.getCurrentCfi());
@@ -2080,7 +2161,7 @@ async function runSearch(rawQuery) {
     if (searchFuzzy.checked) params.set('fuzzy', '1');
     let results = [];
     try {
-      const response = await fetch(`/api/books/${encodeURIComponent(state.book.id)}/search?${params}`);
+      const response = await fetch(`/api/books/${encodeURIComponent(bookRequestId(state.book))}/search?${params}`);
       const payload = response.ok ? await response.json() : {};
       if (state.searchRun !== run) return;
       if (payload.indexed) {
@@ -2118,7 +2199,7 @@ async function runSearch(rawQuery) {
     const params = new URLSearchParams({ q: query });
     if (searchWhole.checked) params.set('whole', '1');
     if (searchFuzzy.checked) params.set('fuzzy', '1');
-    const response = await fetch(`/api/books/${encodeURIComponent(state.book.id)}/search?${params}`);
+    const response = await fetch(`/api/books/${encodeURIComponent(bookRequestId(state.book))}/search?${params}`);
     if (state.searchRun !== run) return;
     if (response.ok) {
       const data = await response.json();
@@ -2311,7 +2392,7 @@ function readerPerf() {
     pdfLoadMs: state.perf?.pdfLoadMs ?? null,
     beforePdfMs: state.perf?.beforePdfMs ?? null,
     labelsMs: state.perf?.labelsMs ?? null,
-    fileRequests: readerFileTimings(state.book?.id, state.perf?.openedAt),
+    fileRequests: readerFileTimings(state.book ? bookRequestId(state.book) : null, state.perf?.openedAt),
     firstPageMs: state.perf?.firstPageMs ?? null,
     renders: renders.length,
     averageRenderMs: average === null ? null : Math.round(average),
@@ -3102,7 +3183,7 @@ async function saveProgress() {
           return progress?.cfi ? { type: 'epub', cfi: progress.cfi, href: progress.href, percent: progress.percent } : null;
         })()
         : { type: 'pdf', page: state.page };
-      if (anchor) localStorage.setItem(`offlineProgress:${state.book.id}`, JSON.stringify(anchor));
+      if (anchor) localStorage.setItem(`offlineProgress:${offlineBookKey(state.book)}`, JSON.stringify(anchor));
     } catch { /* quota/private mode */ }
     return;
   }
@@ -3174,7 +3255,9 @@ function labelEpubFrames() {
 }
 
 async function openEpubBook(book, options = {}) {
+  book = normalizeBookVariant(book);
   const offlineBlob = options.offlineBlob || null;
+  renderReaderVariants(book, true);
   state.offlineMode = Boolean(offlineBlob) || !navigator.onLine;
   state.offlineBlob = offlineBlob;
   if (state.epubEngine) {
@@ -3229,7 +3312,7 @@ async function openEpubBook(book, options = {}) {
     let progress = null;
     if (offlineBlob) {
       try {
-        const saved = JSON.parse(localStorage.getItem(`offlineProgress:${book.id}`) || 'null');
+        const saved = await loadOfflineProgress(book);
         progress = saved ? { anchor: saved } : null;
       } catch { /* noop */ }
       state.annotations = await listLocalAnnotations(book.asset_id, annotationOwnerId()).catch(() => []);
@@ -3239,7 +3322,7 @@ async function openEpubBook(book, options = {}) {
       state.annotations = await loadAnnotationsFor(book.asset_id, false);
     }
     const params = new URLSearchParams(window.location.search);
-    const initialCfi = params.get('book') === book.id ? params.get('cfi') : progress?.anchor?.cfi;
+    const initialCfi = (locationMatchesBook(params, book) ? params.get('cfi') : null) || progress?.anchor?.cfi;
     const engine = new EpubEngine(epubView, {
       canCopy: () => state.book?.allow_copy !== false,
       onCopyBlocked: () => toast('Bu kitapta kopyalama kapalı'),
@@ -3273,7 +3356,7 @@ async function openEpubBook(book, options = {}) {
       onSwipe: (delta) => changePage(delta),
     });
     state.epubEngine = engine;
-    const source = offlineBlob ? await offlineBlob.arrayBuffer() : `/api/books/${encodeURIComponent(book.id)}/book.epub`;
+    const source = offlineBlob ? await offlineBlob.arrayBuffer() : `/api/books/${encodeURIComponent(bookRequestId(book))}/book.epub`;
     await engine.open(source, initialCfi || undefined);
     const frame = epubView.querySelector('iframe');
     const frameRect = frame?.getBoundingClientRect();
@@ -3309,6 +3392,7 @@ async function openEpubBook(book, options = {}) {
     renderToc();
     renderNotes();
     updateUrl();
+    renderReaderVariants(book);
     $('closeReader').focus();
   } catch (error) {
     console.error(error);
@@ -3318,11 +3402,13 @@ async function openEpubBook(book, options = {}) {
 }
 
 async function openBook(book, options = {}) {
+  book = normalizeBookVariant(book);
   if (book.format === 'epub') {
     await openEpubBook(book, options);
     return;
   }
   const offlineBlob = options.offlineBlob || null;
+  renderReaderVariants(book, true);
   state.offlineMode = Boolean(offlineBlob) || !navigator.onLine;
   state.offlineBlob = offlineBlob;
   resetReaderStatus();
@@ -3408,7 +3494,7 @@ async function openBook(book, options = {}) {
     let progress = null;
     if (offlineBlob) {
       try {
-        const saved = JSON.parse(localStorage.getItem(`offlineProgress:${book.id}`) || 'null');
+        const saved = await loadOfflineProgress(book);
         progress = saved ? { anchor: saved } : null;
       } catch { /* noop */ }
       state.annotations = await listLocalAnnotations(book.asset_id, annotationOwnerId()).catch(() => []);
@@ -3426,7 +3512,7 @@ async function openBook(book, options = {}) {
       standardFontDataUrl: '/vendor/pdfjs/standard_fonts/',
       isEvalSupported: false,
     } : {
-      url: `/api/books/${encodeURIComponent(book.id)}/file`,
+      url: `/api/books/${encodeURIComponent(bookRequestId(book))}/file`,
       cMapUrl: '/vendor/pdfjs/cmaps/',
       cMapPacked: true,
       standardFontDataUrl: '/vendor/pdfjs/standard_fonts/',
@@ -3452,7 +3538,7 @@ async function openBook(book, options = {}) {
     state.pdfPageLabels = labels;
 
     const params = new URLSearchParams(window.location.search);
-    const rawPage = params.get('book') === book.id ? params.get('page') : null;
+    const rawPage = locationMatchesBook(params, book) ? params.get('page') : null;
     if (rawPage !== null) {
       const requested = Number(rawPage);
       if (!Number.isInteger(requested) || requested < 1) {
@@ -3475,6 +3561,7 @@ async function openBook(book, options = {}) {
     updatePageUi();
     await renderPage();
     if (state.pdf !== loadedPdf) return;
+    renderReaderVariants(book);
     $('closeReader').focus();
     scheduleOutline(loadedPdf);
   } catch (error) {
@@ -3485,6 +3572,8 @@ async function openBook(book, options = {}) {
 }
 
 async function closeReader() {
+  readerVariants.hidden = true;
+  readerVariants.replaceChildren();
   resetReaderStatus();
   if (state.epubFrameObserver) {
     state.epubFrameObserver.disconnect();

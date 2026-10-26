@@ -2,6 +2,9 @@
 // Static DOM is translated on load; dynamic renderers call translateDom()/t().
 
 const DICT = {
+  'Dil / Biçim / Baskı': 'Language / Format / Edition',
+  'Sürüm açılamadı': 'Could not open this version',
+  'Bu sürüm çevrimdışı kaydedilmemiş': 'This version has not been saved offline',
   'NVDA: NVDA+Shift+F10 ile yerel seçimi açın; Shift+ok ile metni seçin, Alt+Shift+H ile seçim araçlarını açın.': 'NVDA: press NVDA+Shift+F10 to enable native selection; select text with Shift+arrows, then press Alt+Shift+H to open selection tools.',
   'Bildirimler': 'Notifications',
   'Bildirim listesi': 'Notification list',

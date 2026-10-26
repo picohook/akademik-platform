@@ -30,6 +30,11 @@ test('application regression: login, CSRF, PDF upload/read/range/delete and prot
   t.after(() => unlink(path.join(appDir, 'public', book.storage_key)).catch(() => {}));
   const read = await fetch(base + `/api/books/${book.id}/file`, { headers: { cookie } });
   assert.equal(read.status, 200); assert.deepEqual(Buffer.from(await read.arrayBuffer()), Buffer.from(bytes));
+  const unauthorizedAsset = await fetch(base + `/api/books/${book.asset_id}/file`);
+  assert.equal(unauthorizedAsset.status, 401); await unauthorizedAsset.text();
+  const selectedAsset = await fetch(base + `/api/books/${book.asset_id}/file`, { headers: { cookie, range: 'bytes=0-9' } });
+  assert.equal(selectedAsset.status, 206);
+  assert.deepEqual(Buffer.from(await selectedAsset.arrayBuffer()), Buffer.from(bytes).subarray(0, 10));
   const range = await fetch(base + `/api/books/${book.id}/file`, { headers: { cookie, range: 'bytes=-5' } });
   assert.equal(range.status, 206); assert.deepEqual(Buffer.from(await range.arrayBuffer()), Buffer.from(bytes).subarray(-5));
   const staticRead = await fetch(base + '/' + book.storage_key); assert.equal(staticRead.status, 404); await staticRead.text();

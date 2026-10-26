@@ -1,4 +1,5 @@
 import { createStorage, serveStoredAsset } from './storage.mjs';
+import { normalizeBookVariant } from './public/book-variants.mjs';
 import { mutateAnnotation, memoryAnnotationMutations, purgeAnnotationReceipts } from './annotation-sync.mjs';
 import http from 'node:http';
 import path from 'node:path';
@@ -1219,12 +1220,12 @@ async function opdsFeed(auth, req) {
 async function listBooks(auth) {
   if (!pool) {
     const grants = await activeGrants(auth);
-    return demoBooks.filter((book) => grantAllows(book, grants));
+    return demoBooks.filter((book) => grantAllows(book, grants)).map(normalizeBookVariant);
   }
   const books = await withTenant(async (client) => {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
-              e.publisher, e.publication_year,
+              e.id as edition_id, e.edition, e.publisher, e.publication_year,
               (select array_agg(ci.collection_id::text)
                  from collection_items ci
                 where ci.work_id = w.id) as collection_ids,
@@ -1240,15 +1241,15 @@ async function listBooks(auth) {
     return rows;
   });
   const grants = await activeGrants(auth);
-  return books.filter((book) => grantAllows(book, grants));
+  return books.filter((book) => grantAllows(book, grants)).map(normalizeBookVariant);
 }
 
 async function getBook(id, dbClient = null) {
-  if (!pool) return findBook(id) || null;
+  if (!pool) { const book = findBook(id); return book ? normalizeBookVariant(book) : null; }
   const load = async (client) => {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
-              e.publisher, e.publication_year,
+              e.id as edition_id, e.edition, e.publisher, e.publication_year,
               (select array_agg(ci.collection_id::text)
                  from collection_items ci
                 where ci.work_id = w.id) as collection_ids,
@@ -1262,7 +1263,7 @@ async function getBook(id, dbClient = null) {
         limit 1`,
       [id, TENANT_ID],
     );
-    return rows[0] || null;
+    return rows[0] ? normalizeBookVariant(rows[0]) : null;
   };
   return dbClient ? load(dbClient) : withTenant(load);
 }
@@ -1409,7 +1410,7 @@ async function searchBooks(query, auth) {
     // diacritics for substring and trigram matching, and rank stem hits first.
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
-              e.publisher, e.publication_year,
+              e.id as edition_id, e.edition, e.publisher, e.publication_year,
               (select array_agg(ci.collection_id::text)
                  from collection_items ci
                 where ci.work_id = w.id) as collection_ids,
@@ -1456,7 +1457,7 @@ async function searchBooks(query, auth) {
     return rows;
   });
   const grants = await activeGrants(auth);
-  return books.filter((book) => grantAllows(book, grants));
+  return books.filter((book) => grantAllows(book, grants)).map(normalizeBookVariant);
 }
 
 async function listAnnotations(assetId, userId) {
@@ -2618,4 +2619,3 @@ server.once('close', () => {
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`[web] http://localhost:${PORT} (${pool ? 'db' : 'demo'} mode)`);
 });
-

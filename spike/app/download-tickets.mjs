@@ -183,16 +183,17 @@ export function createDownloadService({ withTenant, getBook, activeGrants, grant
         if (auth.tenantId !== tenantId) return deny(client, auth, null, 'tenant_mismatch');
         if (!validBody(body, ['ticket'])) return deny(client, auth, null, 'unsupported_consume_fields', true);
         if (typeof body.ticket !== 'string' || !/^[0-9a-f]{64}$/.test(body.ticket)) return deny(client, auth, null, 'invalid_ticket');
+        const book = await getBook(bookId, client);
+        if (!book) return deny(client, auth, null, 'book_unavailable');
         const { rows: [ticket] } = await client.query(
           `select *, expires_at > clock_timestamp() as unexpired
              from download_tickets
             where token_hash = $1 and tenant_id = $2 and user_id = $3 and work_id = $4
             for update`,
-          [digest(body.ticket), tenantId, auth.userId, bookId],
+          [digest(body.ticket), tenantId, auth.userId, book.id],
         );
         if (!ticket || ticket.consumed_at || !ticket.unexpired) return deny(client, auth, null, 'invalid_ticket');
-        const book = await getBook(bookId, client);
-        if (!book || book.asset_id !== ticket.asset_id || book.allow_download === false) return deny(client, auth, book, 'asset_or_download_revoked');
+        if (book.asset_id !== ticket.asset_id || book.allow_download === false) return deny(client, auth, book, 'asset_or_download_revoked');
         const grantIds = await allowedGrantIds(client, book, auth);
         if (grantIds === null || (ticket.grant_ids.length && !ticket.grant_ids.some(id => grantIds.includes(id)))) {
           return deny(client, auth, book, 'grant_revoked');
