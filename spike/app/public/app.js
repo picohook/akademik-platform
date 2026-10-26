@@ -5,7 +5,7 @@ import { buildPdfStructure } from '/pdf-structure.mjs';
 import { renderHocrText } from '/ocr-layer.mjs';
 import { formatCitation, normalizePdfPageLabels, pdfPageLabel, pdfPageDescription, pdfCitationPage, formatCopiedSelection } from '/citations.mjs';
 import { EpubEngine } from '/epub-engine.mjs';
-import { initializeLanguage, toggleLanguage, t, translateDom, getLang } from '/i18n.mjs';
+import { initializeLanguage, toggleLanguage, t, translateDom, getLang } from '/i18n.mjs?v=23';
 import { fetchDownloadBlob, saveOfflineDownload } from '/downloads.mjs';
 import {
   listOfflineBooks,
