@@ -1,4 +1,5 @@
 import { normalizeBookVariant, bookRequestId, offlineBookKey, groupBookVariants, variantLabel, locationMatchesBook, bookFromLocation, findOfflineVariant } from '/book-variants.mjs';
+import { renderPdfLinks, destinationPage } from '/book-links.mjs';
 import * as pdfjsLib from '/vendor/pdfjs/pdf.mjs';
 import { buildPdfStructure } from '/pdf-structure.mjs';
 import { renderHocrText } from '/ocr-layer.mjs';
@@ -1503,14 +1504,7 @@ function applyTheme(theme) {
 }
 
 async function resolveDest(dest, pdf) {
-  try {
-    const explicit = typeof dest === 'string' ? await pdf.getDestination(dest) : dest;
-    if (!explicit || !explicit[0]) return null;
-    const index = await pdf.getPageIndex(explicit[0]);
-    return index + 1;
-  } catch {
-    return null;
-  }
+  return destinationPage(pdf, dest);
 }
 
 async function loadOutline(pdf = state.pdf) {
@@ -2594,6 +2588,7 @@ async function renderPagePane(pageNumber, pane, scale, rotationOffset, isPrimary
   const renderToken = Symbol();
   pane.textLayer.pdfRenderToken = renderToken;
   const isCurrent = () => state.pdf === pdf && pane.textLayer.pdfRenderToken === renderToken;
+  pane.pageWrap.querySelector('.pdf-link-layer')?.remove();
   const page = await pdf.getPage(pageNumber);
   if (!isCurrent()) return null;
   const viewport = page.getViewport({ scale, rotation: (page.rotate + rotationOffset) % 360 });
@@ -2671,6 +2666,11 @@ async function renderPagePane(pageNumber, pane, scale, rotationOffset, isPrimary
   else pane.textLayer.removeAttribute('lang');
   if (structure) pane.pageWrap.insertBefore(structure, pane.textLayer);
   applySearchHighlight(pane.textLayer);
+  // Links are optional metadata; they must not delay first-page display.
+  void renderPdfLinks({ page, pdf, viewport, container: pane.pageWrap, isCurrent,
+    onNavigate: goToPage,
+    labels: { group: t('Sayfa bağlantıları'), external: t('Bağlantıyı yeni sekmede aç'), internal: t('Kitap içi bağlantıyı aç') },
+  }).catch(error => console.warn('PDF links unavailable:', error.message));
   return { page, viewport, canvasEnd, textEnd: performance.now() };
 }
 
@@ -2702,6 +2702,7 @@ async function renderPage() {
   pageWrap2.hidden = !state.secondPage;
   if (!state.secondPage) {
     pageWrap2.querySelector('.pdf-structure')?.remove();
+    pageWrap2.querySelector('.pdf-link-layer')?.remove();
     textLayer2.replaceChildren();
     highlights2.replaceChildren();
   }
@@ -3453,7 +3454,9 @@ async function openBook(book, options = {}) {
   spreadBtn.setAttribute('aria-pressed', 'false');
   spreadBtn.classList.remove('active');
   pageWrap.querySelector('.pdf-structure')?.remove();
+  pageWrap.querySelector('.pdf-link-layer')?.remove();
   pageWrap2.querySelector('.pdf-structure')?.remove();
+  pageWrap2.querySelector('.pdf-link-layer')?.remove();
   textLayerEl.replaceChildren();
   textLayer2.replaceChildren();
   highlights2.replaceChildren();
@@ -3643,7 +3646,9 @@ async function closeReader() {
   textLayerEl.replaceChildren();
   textLayer2.replaceChildren();
   pageWrap.querySelector('.pdf-structure')?.remove();
+  pageWrap.querySelector('.pdf-link-layer')?.remove();
   pageWrap2.querySelector('.pdf-structure')?.remove();
+  pageWrap2.querySelector('.pdf-link-layer')?.remove();
   highlightsEl.replaceChildren();
   highlights2.replaceChildren();
   if (pdf) {

@@ -2,6 +2,9 @@
 // Static DOM is translated on load; dynamic renderers call translateDom()/t().
 
 const DICT = {
+  'Sayfa bağlantıları': 'Page links',
+  'Bağlantıyı yeni sekmede aç': 'Open link in a new tab',
+  'Kitap içi bağlantıyı aç': 'Open internal book link',
   'Dil / Biçim / Baskı': 'Language / Format / Edition',
   'Sürüm açılamadı': 'Could not open this version',
   'Bu sürüm çevrimdışı kaydedilmemiş': 'This version has not been saved offline',
