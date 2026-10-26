@@ -1,3 +1,5 @@
+import { createStorage, serveStoredAsset } from './storage.mjs';
+import { normalizeBookVariant } from './public/book-variants.mjs';
 import { mutateAnnotation, memoryAnnotationMutations, purgeAnnotationReceipts } from './annotation-sync.mjs';
 import http from 'node:http';
 import path from 'node:path';
@@ -29,6 +31,8 @@ function chapterNumberFromHref(href) {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const UPLOAD_DIR = path.join(PUBLIC_DIR, 'uploads');
+const assetStorage = createStorage({ publicDir: PUBLIC_DIR });
+if (assetStorage.driver === 'r2' && !process.env.DATABASE_URL) throw new Error('R2 requires database mode');
 const OCR_DIR = path.join(PUBLIC_DIR, 'ocr');
 const PORT = Number(process.env.PORT || 3000);
 const TENANT_ID = process.env.DEMO_TENANT_ID || '11111111-1111-1111-1111-111111111111';
@@ -45,7 +49,7 @@ const DEMO_EMAIL = process.env.DEMO_EMAIL || 'reader@example.edu.tr';
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'demo1234';
 const BRAND_NAME = process.env.BRAND_NAME || 'Akademik Platform';
 const BRAND_TAGLINE = process.env.BRAND_TAGLINE || 'spike';
-const APP_VERSION = process.env.APP_VERSION || '127';
+const APP_VERSION = process.env.APP_VERSION || '130';
 const BUILD_SHA = process.env.BUILD_SHA || '';
 const BUILD_DATE = process.env.BUILD_DATE || '';
 const APP_ENV = process.env.APP_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'development');
@@ -1216,12 +1220,12 @@ async function opdsFeed(auth, req) {
 async function listBooks(auth) {
   if (!pool) {
     const grants = await activeGrants(auth);
-    return demoBooks.filter((book) => grantAllows(book, grants));
+    return demoBooks.filter((book) => grantAllows(book, grants)).map(normalizeBookVariant);
   }
   const books = await withTenant(async (client) => {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
-              e.publisher, e.publication_year,
+              e.id as edition_id, e.edition, e.publisher, e.publication_year,
               (select array_agg(ci.collection_id::text)
                  from collection_items ci
                 where ci.work_id = w.id) as collection_ids,
@@ -1237,15 +1241,15 @@ async function listBooks(auth) {
     return rows;
   });
   const grants = await activeGrants(auth);
-  return books.filter((book) => grantAllows(book, grants));
+  return books.filter((book) => grantAllows(book, grants)).map(normalizeBookVariant);
 }
 
 async function getBook(id, dbClient = null) {
-  if (!pool) return findBook(id) || null;
+  if (!pool) { const book = findBook(id); return book ? normalizeBookVariant(book) : null; }
   const load = async (client) => {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
-              e.publisher, e.publication_year,
+              e.id as edition_id, e.edition, e.publisher, e.publication_year,
               (select array_agg(ci.collection_id::text)
                  from collection_items ci
                 where ci.work_id = w.id) as collection_ids,
@@ -1259,7 +1263,7 @@ async function getBook(id, dbClient = null) {
         limit 1`,
       [id, TENANT_ID],
     );
-    return rows[0] || null;
+    return rows[0] ? normalizeBookVariant(rows[0]) : null;
   };
   return dbClient ? load(dbClient) : withTenant(load);
 }
@@ -1406,7 +1410,7 @@ async function searchBooks(query, auth) {
     // diacritics for substring and trigram matching, and rank stem hits first.
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
-              e.publisher, e.publication_year,
+              e.id as edition_id, e.edition, e.publisher, e.publication_year,
               (select array_agg(ci.collection_id::text)
                  from collection_items ci
                 where ci.work_id = w.id) as collection_ids,
@@ -1453,7 +1457,7 @@ async function searchBooks(query, auth) {
     return rows;
   });
   const grants = await activeGrants(auth);
-  return books.filter((book) => grantAllows(book, grants));
+  return books.filter((book) => grantAllows(book, grants)).map(normalizeBookVariant);
 }
 
 async function listAnnotations(assetId, userId) {
@@ -1717,6 +1721,8 @@ async function handleUpload(req, auth) {
     return book;
   }
 
+  let committed = false;
+  let remoteKey = null;
   try {
     const book = await withTenant(async (client) => {
       const duplicate = await client.query(
@@ -1724,6 +1730,11 @@ async function handleUpload(req, auth) {
         [fileMeta.sha256],
       );
       if (duplicate.rowCount > 0) throw new Error('already uploaded');
+      if (assetStorage.driver === 'r2') {
+        remoteKey = await assetStorage.put(fileMeta.storageKey, await readFile(fileMeta.destination),
+          format === 'epub' ? 'application/epub+zip' : 'application/pdf');
+        fileMeta.storageKey = remoteKey;
+      }
 
       await client.query('begin');
       try {
@@ -1755,6 +1766,7 @@ async function handleUpload(req, auth) {
           [TENANT_ID, edition.rows[0].id, format, fileMeta.storageKey, pageCount, fileMeta.sha256],
         );
         await client.query('commit');
+        committed = true;
         return { workId: work.rows[0].id, assetId: asset.rows[0].id };
       } catch (error) {
         await client.query('rollback').catch(() => {});
@@ -1775,59 +1787,18 @@ async function handleUpload(req, auth) {
     }
     return saved;
   } catch (error) {
-    await unlink(fileMeta.destination).catch(() => {});
+    if (!committed) {
+      await unlink(fileMeta.destination).catch(() => {});
+      if (remoteKey) await assetStorage.remove(remoteKey).catch(() => console.warn('[storage] failed upload orphan requires cleanup'));
+    }
     throw error;
+  } finally {
+    if (assetStorage.driver === 'r2') await unlink(fileMeta.destination).catch(() => {});
   }
 }
 
 async function servePdf(req, res, storageKey) {
-  const safePath = path.resolve(PUBLIC_DIR, storageKey);
-  if (!safePath.startsWith(PUBLIC_DIR + path.sep)) {
-    json(res, 403, { error: 'forbidden' });
-    return;
-  }
-  const contentType = path.extname(storageKey).toLowerCase() === '.epub'
-    ? 'application/epub+zip'
-    : 'application/pdf';
-  let info;
-  try {
-    info = await stat(safePath);
-  } catch {
-    json(res, 404, { error: 'file not found' });
-    return;
-  }
-  const range = req.headers.range;
-  if (range) {
-    const match = /^bytes=(\d*)-(\d*)$/.exec(range);
-    if (!match) {
-      res.writeHead(416, { 'content-range': `bytes */${info.size}` });
-      res.end();
-      return;
-    }
-    const start = match[1] ? Number(match[1]) : 0;
-    const end = match[2] ? Math.min(Number(match[2]), info.size - 1) : info.size - 1;
-    if (start > end || start >= info.size) {
-      res.writeHead(416, { 'content-range': `bytes */${info.size}` });
-      res.end();
-      return;
-    }
-    res.writeHead(206, {
-      'content-type': contentType,
-      'content-length': end - start + 1,
-      'content-range': `bytes ${start}-${end}/${info.size}`,
-      'accept-ranges': 'bytes',
-      'cache-control': 'private, max-age=0',
-    });
-    createReadStream(safePath, { start, end }).pipe(res);
-    return;
-  }
-  res.writeHead(200, {
-    'content-type': contentType,
-    'content-length': info.size,
-    'accept-ranges': 'bytes',
-    'cache-control': 'private, max-age=0',
-  });
-  createReadStream(safePath).pipe(res);
+  return serveStoredAsset(assetStorage, req, res, storageKey);
 }
 
 async function serveStatic(req, res, pathname) {
@@ -1841,6 +1812,7 @@ async function serveStatic(req, res, pathname) {
   // escape an allowed prefix into uploads/ or ocr/.
   const relative = '/' + path.relative(PUBLIC_DIR, filePath).split(path.sep).join('/');
   const allowedFiles = new Set([
+    '/book-variants.mjs', '/book-links.mjs',
     '/index.html', '/app.js', '/styles.css', '/i18n.mjs', '/citations.mjs', '/pdf-structure.mjs',
     '/search.mjs', '/epub-engine.mjs', '/offline.mjs', '/downloads.mjs', '/ocr-layer.mjs', '/sw.js', '/manifest.webmanifest',
   ]);
@@ -1873,6 +1845,7 @@ async function serveStatic(req, res, pathname) {
 await mkdir(UPLOAD_DIR, { recursive: true });
 
 const server = http.createServer(async (req, res) => {
+  const requestStarted = performance.now();
   let url;
   let pathname;
   try {
@@ -2412,8 +2385,9 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       const book = result.book;
-      const safePath = path.resolve(PUBLIC_DIR, book.storage_key || '');
-      if (!book.storage_key || !safePath.startsWith(PUBLIC_DIR + path.sep)) {
+      let validStorageKey = true;
+      try { assetStorage.validate(book.storage_key); } catch { validStorageKey = false; }
+      if (!validStorageKey) {
         await downloadService.auditDenied(auth, 'invalid_storage_key');
         json(res, 409, { error: 'download unavailable' });
         return;
@@ -2421,7 +2395,7 @@ const server = http.createServer(async (req, res) => {
       const format = book.format === 'epub' ? 'epub' : 'pdf';
       let payload;
       try {
-        const source = await readFile(safePath);
+        const source = await assetStorage.read(book.storage_key);
         payload = result.watermark ? await watermarkDownload(source, format, auth) : source;
       } catch {
         // No fallback to unwatermarked bytes after a stamp/parse/read failure.
@@ -2484,8 +2458,7 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       for (const key of result.keys) {
-        const safePath = path.resolve(PUBLIC_DIR, key);
-        if (safePath.startsWith(PUBLIC_DIR + path.sep)) await unlink(safePath).catch(() => {});
+        await assetStorage.remove(key).catch(() => console.warn('[storage] deleted title has an orphaned file; cleanup required')); 
       }
       json(res, 200, { ok: true });
       return;
@@ -2562,6 +2535,7 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       if (!req.headers.range) await logUsage('book.view', book, auth);
+      res.setHeader('server-timing', `app;dur=${(performance.now() - requestStarted).toFixed(1)}`);
       await servePdf(req, res, storageKey);
       return;
     }

@@ -2,6 +2,12 @@
 // Static DOM is translated on load; dynamic renderers call translateDom()/t().
 
 const DICT = {
+  'Sayfa bağlantıları': 'Page links',
+  'Bağlantıyı yeni sekmede aç': 'Open link in a new tab',
+  'Kitap içi bağlantıyı aç': 'Open internal book link',
+  'Dil / Biçim / Baskı': 'Language / Format / Edition',
+  'Sürüm açılamadı': 'Could not open this version',
+  'Bu sürüm çevrimdışı kaydedilmemiş': 'This version has not been saved offline',
   'NVDA: NVDA+Shift+F10 ile yerel seçimi açın; Shift+ok ile metni seçin, Alt+Shift+H ile seçim araçlarını açın.': 'NVDA: press NVDA+Shift+F10 to enable native selection; select text with Shift+arrows, then press Alt+Shift+H to open selection tools.',
   'Bildirimler': 'Notifications',
   'Bildirim listesi': 'Notification list',
@@ -343,9 +349,17 @@ const PATTERNS = [
 const SKIP = 'script, style, code, .book-title, .book-meta, .note-text, .cite-output, [data-no-i18n]';
 
 const HTML_STRINGS = {
+  heroEyebrow: {
+    tr: 'E-Kütüphane · Akademik koleksiyon',
+    en: 'E-Library · Academic collection',
+  },
+  heroTitle: {
+    tr: 'Kataloğu keşfedin.<br />Okuyun, not alın.',
+    en: 'Explore the catalog.<br />Read and take notes.',
+  },
   heroLede: {
-    tr: 'Bu ekran ürün değil; PDF.js, <code>anchor</code> modeli ve Postgres aramasını ölçmek için kurulmuş bir iskelet. Örnek içerik kamu malı test PDF’idir.',
-    en: 'This screen is not a product; it is a skeleton for measuring PDF.js, the <code>anchor</code> model and Postgres search. Sample content is a public-domain test PDF.',
+    tr: 'Kurumunuzun akademik e-kitaplarına tek yerden erişin; PDF ve EPUB okuyun, notlarınızı ve alıntılarınızı birlikte yönetin.',
+    en: 'Access your institution’s academic e-books in one place; read PDF and EPUB, and keep your notes and citations together.',
   },
 };
 
@@ -356,12 +370,27 @@ export function getLang() {
 }
 
 export function initializeLanguage() {
-  let saved = 'tr';
-  try { saved = localStorage.getItem('uiLang') || 'tr'; } catch { /* private mode */ }
+  let entryLang = '';
+  try {
+    const url = new URL(window.location.href);
+    const requested = (url.searchParams.get('lang') || '').trim().toLowerCase().split(/[-_]/)[0];
+    if (requested === 'tr' || requested === 'en') entryLang = requested;
+    // Entry domains (ekutuphane) pass ?lang=tr|en. Remove it after reading it,
+    // including invalid values, but keep every other query parameter and hash.
+    if (url.searchParams.has('lang')) {
+      url.searchParams.delete('lang');
+      history.replaceState(null, '', url.pathname + url.search + url.hash);
+    }
+  } catch { /* private mode or unavailable URL API */ }
+  let saved = entryLang || 'tr';
+  try {
+    if (entryLang) localStorage.setItem('uiLang', entryLang);
+    saved = localStorage.getItem('uiLang') || saved;
+  } catch { /* private mode */ }
   lang = saved === 'en' ? 'en' : 'tr';
   document.documentElement.lang = lang;
   translateDom(document.body);
-  document.title = lang === 'en' ? 'Academic Platform — Spike' : 'Akademik Platform — Spike';
+  document.title = lang === 'en' ? 'E-Library' : 'E-Kütüphane';
   for (const button of document.querySelectorAll('[data-lang-toggle]')) {
     button.textContent = lang === 'en' ? 'TR' : 'EN';
     button.setAttribute('aria-label', lang === 'en' ? 'Türkçeye geç' : 'Switch to English');

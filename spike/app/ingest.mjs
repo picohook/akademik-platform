@@ -16,8 +16,9 @@
  *
  * Requires DATABASE_URL unless --dry-run is used.
  */
-import { readFile, readdir, mkdir, writeFile, stat } from 'node:fs/promises';
+import { readFile, readdir, mkdir, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { createStorage } from './storage.mjs';
 import { createHash, randomUUID } from 'node:crypto';
 import { PDFDocument } from 'pdf-lib';
 
@@ -111,6 +112,7 @@ async function main() {
     await mkdir(UPLOAD_DIR, { recursive: true });
   }
 
+  const storage = options.dryRun ? null : createStorage({ publicDir: PUBLIC_DIR });
   for (const file of files) {
     const { buffer, sha256, pageCount, size } = await inspect(file);
     const title = options.title && files.length === 1 ? options.title : titleFromFile(file);
@@ -120,8 +122,9 @@ async function main() {
     if (options.dryRun) continue;
 
     const id = randomUUID();
-    const storageKey = `uploads/${id}.pdf`;
-    const destination = path.join(PUBLIC_DIR, storageKey);
+    let storageKey = `uploads/${id}.pdf`;
+    let storedKey = null;
+    let committed = false;
 
     const client = await pool.connect();
     try {
@@ -138,6 +141,8 @@ async function main() {
         continue;
       }
 
+      storedKey = await storage.put(storageKey, buffer, 'application/pdf');
+      storageKey = storedKey;
       const work = await client.query(
         `insert into works (tenant_id, content_type, title, language, abstract, subjects, metadata)
          values ($1, 'monograph', $2, $3, $4, $5, $6::jsonb)
@@ -166,11 +171,12 @@ async function main() {
         [options.tenant, edition.rows[0].id, storageKey, pageCount, sha256],
       );
 
-      await writeFile(destination, buffer);
       await client.query('commit');
+      committed = true;
       console.log(`[ok] ${title} -> work ${work.rows[0].id}, asset ${asset.rows[0].id}`);
     } catch (error) {
       await client.query('rollback').catch(() => {});
+      if (!committed && storedKey) await storage.remove(storedKey).catch(() => console.warn('[storage] failed ingest orphan requires cleanup'));
       console.error(`[fail] ${file}: ${error.message}`);
       process.exitCode = 1;
     } finally {
@@ -185,3 +191,4 @@ main().catch((error) => {
   console.error(error);
   process.exit(1);
 });
+

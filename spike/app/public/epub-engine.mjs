@@ -3,6 +3,7 @@
 // iframe/DOM details. Keep annotations and search in our own shapes.
 
 import { findFuzzyWord, foldChars } from './search.mjs?v=1';
+import { bindEpubLinks } from './book-links.mjs';
 
 const THEMES = {
   light: { body: { background: '#ffffff', color: '#222222' } },
@@ -129,6 +130,9 @@ export class EpubEngine {
     this.rendition.hooks.content.register((contents) => {
       let start = null;
       const doc = contents.document;
+      const disposeLinks = bindEpubLinks(doc, href => {
+        if (!this.disposed) window.open(href, '_blank', 'noopener,noreferrer');
+      });
       const handleSelectionTools = event => {
         if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey
             && (event.code === 'KeyH' || event.key?.toLowerCase() === 'h')) {
@@ -154,6 +158,7 @@ export class EpubEngine {
         onCopyBlocked: (event) => this.onCopyBlocked(event),
         onDeselected: (event) => this.onDeselected(event),
         onDispose: () => {
+          disposeLinks();
           viewportObserver.disconnect();
           doc.removeEventListener('keydown', handleSelectionTools);
           this.copyPolicyDisposers.delete(dispose);

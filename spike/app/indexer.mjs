@@ -1,3 +1,4 @@
+import { createStorage } from './storage.mjs';
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
@@ -65,8 +66,7 @@ export async function indexAsset({ pool, tenantId, assetId, storageKey, publicDi
   if (!String(storageKey).toLowerCase().endsWith('.pdf')) {
     throw new Error('page index skipped: not a PDF');
   }
-  const filePath = path.join(publicDir, storageKey);
-  const buffer = await readFile(filePath);
+  const buffer = await createStorage({ publicDir }).read(storageKey);
   if (buffer.length > MAX_INDEX_BYTES) {
     throw new Error(`page index skipped: ${buffer.length} bytes exceeds ${MAX_INDEX_BYTES}`);
   }
@@ -128,8 +128,7 @@ export async function indexAsset({ pool, tenantId, assetId, storageKey, publicDi
 }
 
 export async function indexEpubAsset({ pool, tenantId, assetId, storageKey, publicDir }) {
-  const filePath = path.join(publicDir, storageKey);
-  const buffer = await readFile(filePath);
+  const buffer = await createStorage({ publicDir }).read(storageKey);
   if (buffer.length > MAX_INDEX_BYTES) {
     throw new Error(`EPUB index skipped: ${buffer.length} bytes exceeds ${MAX_INDEX_BYTES}`);
   }
@@ -235,3 +234,4 @@ export async function indexAll({ pool, tenantId, publicDir, force = false }) {
   }
   return rows.length;
 }
+

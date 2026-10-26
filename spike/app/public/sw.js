@@ -1,4 +1,4 @@
-const CACHE = 'akademik-shell-v19';
+const CACHE = 'akademik-shell-v24';
 const SHELL = [
   '/',
   '/styles.css',
@@ -11,6 +11,8 @@ const SHELL = [
   '/epub-engine.mjs',
   '/offline.mjs',
   '/downloads.mjs',
+  '/book-variants.mjs',
+  '/book-links.mjs',
   '/vendor/pdfjs/pdf.mjs',
   '/vendor/pdfjs/pdf.worker.mjs',
   '/vendor/epubjs/jszip.min.js',
@@ -57,6 +59,20 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith((async () => {
+    // Bump CACHE whenever the PDF.js distribution changes so API and worker stay aligned.
+    // Only public PDF.js assets use cache-first; authenticated content bypasses this handler.
+    if (url.pathname.startsWith('/vendor/pdfjs/')) {
+      const cache = await caches.open(CACHE);
+      const cached = await cache.match(request);
+      if (cached) return cached;
+      try {
+        const response = await fetch(request);
+        if (response.ok) await cache.put(request, response.clone());
+        return response;
+      } catch {
+        return new Response('', { status: 504 });
+      }
+    }
     const networkFirst = /\.(?:js|mjs|css|html)$/.test(url.pathname);
     if (networkFirst) {
       try {

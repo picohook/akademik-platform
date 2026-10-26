@@ -1,9 +1,11 @@
+import { normalizeBookVariant, bookRequestId, offlineBookKey, groupBookVariants, variantLabel, locationMatchesBook, bookFromLocation, findOfflineVariant } from '/book-variants.mjs';
+import { renderPdfLinks, destinationPage } from '/book-links.mjs';
 import * as pdfjsLib from '/vendor/pdfjs/pdf.mjs';
 import { buildPdfStructure } from '/pdf-structure.mjs';
 import { renderHocrText } from '/ocr-layer.mjs';
 import { formatCitation, normalizePdfPageLabels, pdfPageLabel, pdfPageDescription, pdfCitationPage, formatCopiedSelection } from '/citations.mjs';
 import { EpubEngine } from '/epub-engine.mjs';
-import { initializeLanguage, toggleLanguage, t, translateDom, getLang } from '/i18n.mjs';
+import { initializeLanguage, toggleLanguage, t, translateDom, getLang } from '/i18n.mjs?v=23';
 import { fetchDownloadBlob, saveOfflineDownload } from '/downloads.mjs';
 import {
   listOfflineBooks,
@@ -176,6 +178,8 @@ const scrollPages = $('scrollPages');
 const pageLabel = $('pageLabel');
 const readerTitle = $('readerTitle');
 const readerMeta = $('readerMeta');
+const readerVariants = $('readerVariants');
+const variantSelections = new Map();
 const zoomLabel = $('zoomLabel');
 const noteCount = $('noteCount');
 const notesList = $('notesList');
@@ -377,17 +381,81 @@ function hue(text) {
 
 async function openCardBook(book) {
   if (state.offlineMode || state.offlineLibrary) {
-    const stored = await getOfflineBook(book.id);
+    const stored = await findOfflineVariant(book, getOfflineBook);
     if (stored) {
       if (stored.book.format === 'epub') await openEpubBook(stored.book, { offlineBlob: stored.blob });
       else await openBook(stored.book, { offlineBlob: stored.blob });
       return;
     }
+    toast(t('Bu sürüm çevrimdışı kaydedilmemiş'));
+    return;
   }
   await openBook(book);
 }
 
-function makeCard(book) {
+function makeVariantPicker(variants, selected, onChange, loading = false) {
+  const label = document.createElement('label');
+  label.className = 'variant-picker';
+  const caption = document.createElement('span');
+  caption.textContent = t('Dil / Biçim / Baskı');
+  const select = document.createElement('select');
+  select.className = 'variant-select';
+  select.setAttribute('aria-label', t('Dil / Biçim / Baskı'));
+  select.disabled = loading;
+  for (const book of variants) {
+    const option = document.createElement('option');
+    option.value = bookRequestId(book);
+    option.textContent = variantLabel(book, getLang());
+    option.selected = option.value === bookRequestId(selected);
+    select.appendChild(option);
+  }
+  label.append(caption, select);
+  label.addEventListener('click', event => event.stopPropagation());
+  select.addEventListener('change', async () => {
+    const next = variants.find(book => bookRequestId(book) === select.value);
+    if (!next || select.value === bookRequestId(selected)) return;
+    select.disabled = true;
+    try { await onChange(next); }
+    catch (error) { console.error(error); toast(t('Sürüm açılamadı')); }
+    finally { select.value = bookRequestId(selected); select.disabled = false; }
+  });
+  return label;
+}
+
+function renderReaderVariants(book, loading = false) {
+  const variants = state.books.filter(item => item.id === book.id);
+  if (!variants.some(item => bookRequestId(item) === bookRequestId(book))) variants.push(book);
+  readerVariants.replaceChildren();
+  readerVariants.hidden = variants.length < 2;
+  if (variants.length < 2) return;
+  readerVariants.appendChild(makeVariantPicker(variants, book, async next => {
+    const offline = state.offlineMode;
+    const stored = offline ? await findOfflineVariant(next, getOfflineBook) : null;
+    if (offline && !stored) { toast(t('Bu sürüm çevrimdışı kaydedilmemiş')); return; }
+    await saveProgress();
+    await closeReader();
+    variantSelections.set(next.id, bookRequestId(next));
+    const url = new URL(window.location.href);
+    url.searchParams.set('book', next.id);
+    url.searchParams.set('asset', bookRequestId(next));
+    url.searchParams.delete('page');
+    url.searchParams.delete('cfi');
+    history.replaceState(null, '', url);
+    await openBook(next, stored ? { offlineBlob: stored.blob } : {});
+    renderBooks();
+  }, loading));
+}
+
+async function loadOfflineProgress(book) {
+  let saved = localStorage.getItem(`offlineProgress:${offlineBookKey(book)}`);
+  if (saved === null) {
+    const legacy = await getOfflineBook(book.id);
+    if (legacy?.book?.asset_id === book.asset_id) saved = localStorage.getItem(`offlineProgress:${book.id}`);
+  }
+  return JSON.parse(saved || 'null');
+}
+
+function makeCard(book, variants = [book]) {
   const card = document.createElement('div');
   card.className = 'card';
   card.addEventListener('click', () => { openCardBook(book).catch((error) => console.error(error)); });
@@ -446,6 +514,15 @@ function makeCard(book) {
   });
   meta.appendChild(badges);
 
+  if (variants.length > 1) {
+    meta.appendChild(makeVariantPicker(variants, book, async (selected) => {
+      variantSelections.set(book.id, bookRequestId(selected));
+      const replacement = makeCard(selected, variants);
+      card.replaceWith(replacement);
+      replacement.querySelector('.variant-select')?.focus();
+    }));
+  }
+
   const open = document.createElement('button');
   open.type = 'button';
   open.className = 'open-btn';
@@ -502,9 +579,10 @@ function renderBooks() {
     if (state.filter === 'all') return true;
     return (book.subjects || []).includes(state.filter);
   });
-  visible.forEach((book) => grid.appendChild(makeCard(book)));
-  count.textContent = `${visible.length} başlık`;
-  empty.hidden = visible.length !== 0;
+  const groups = groupBookVariants(visible, getLang(), variantSelections);
+  groups.forEach(({ book, variants }) => grid.appendChild(makeCard(book, variants)));
+  count.textContent = `${groups.length} başlık`;
+  empty.hidden = groups.length !== 0;
   translateDom(grid);
   translateDom(count);
 }
@@ -967,11 +1045,19 @@ async function writeClipboard(text) {
     area.readOnly = true;
     area.style.cssText = 'position:fixed;left:-10000px;top:0';
     document.body.appendChild(area);
+    const copyExactText = (event) => {
+      if (!event.clipboardData) return;
+      event.clipboardData.setData('text/plain', text);
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    };
+    document.addEventListener('copy', copyExactText, true);
     try {
       area.focus();
       area.select();
       if (!document.execCommand('copy')) throw new Error('copy failed');
     } finally {
+      document.removeEventListener('copy', copyExactText, true);
       area.remove();
       active?.focus({ preventScroll: true });
     }
@@ -1009,9 +1095,21 @@ async function copySelectedText(withCitation = false) {
   const text = withCitation ? formatCopiedSelection(state.book, selected.text, locator) : selected.text;
   try {
     await writeClipboard(text);
-    toast(withCitation ? 'Atıfla kopyalandı' : 'Metin kopyalandı');
+    toast(withCitation ? 'Metin ve atıf panoya kopyalandı. Ctrl+V ile yapıştırabilirsiniz.' : 'Metin panoya kopyalandı. Ctrl+V ile yapıştırabilirsiniz.');
   } catch {
-    toast('Kopyalanamadı; metni seçip kopyalayın.');
+    const dialog = document.createElement('dialog');
+    dialog.className = 'manual-copy-dialog';
+    const label = document.createElement('p');
+    label.textContent = 'Otomatik kopyalanamadı. Aşağıdaki metni Ctrl+C ile kopyalayın.';
+    const field = document.createElement('textarea');
+    field.value = text; field.readOnly = true;
+    field.setAttribute('aria-label', 'Kopyalanacak metin ve atıf');
+    const close = document.createElement('button');
+    close.type = 'button'; close.textContent = 'Kapat';
+    close.addEventListener('click', () => dialog.close());
+    dialog.addEventListener('close', () => { dialog.remove(); hlCopyCite.focus(); });
+    dialog.append(label, field, close); reader.appendChild(dialog);
+    dialog.showModal(); field.focus(); field.select();
   }
 }
 
@@ -1046,10 +1144,13 @@ async function saveEdit(event) {
       throw new Error(payload.error || 'Kaydedilemedi');
     }
     const updated = await response.json();
-    state.books = state.books.map((book) => (book.id === updated.id ? updated : book));
+    await loadBooks(state.query);
     if (state.book?.id === updated.id) {
-      readerTitle.textContent = updated.title;
-      readerMeta.textContent = `${updated.publisher || ''}${updated.publication_year ? ` · ${updated.publication_year}` : ''}`;
+      const selected = state.books.find(book => book.asset_id === state.book.asset_id);
+      if (selected) state.book = selected;
+      readerTitle.textContent = state.book.title;
+      readerMeta.textContent = `${state.book.publisher || ''}${state.book.publication_year ? ` · ${state.book.publication_year}` : ''}`;
+      renderReaderVariants(state.book);
     }
     renderFilters();
     renderBooks();
@@ -1216,7 +1317,7 @@ async function showOfflineLibrary(entries) {
   mode.textContent = t('Çevrimdışı');
   state.offlineMode = true;
   state.offlineLibrary = true;
-  state.books = entries.map((entry) => entry.book);
+  state.books = entries.map((entry) => normalizeBookVariant(entry.book));
   renderFilters();
   renderBooks();
 }
@@ -1235,7 +1336,7 @@ async function bootData() {
   await loadBooks();
   const bookId = new URLSearchParams(window.location.search).get('book');
   if (bookId) {
-    const book = state.books.find((item) => item.id === bookId || item.asset_id === bookId);
+    const book = bookFromLocation(state.books, new URLSearchParams(window.location.search));
     if (book) await openBook(book);
   }
 }
@@ -1346,7 +1447,7 @@ async function loadBooks(query = '') {
     throw new Error('Oturum gerekli');
   }
   if (!response.ok) throw new Error('Katalog yüklenemedi');
-  state.books = await response.json();
+  state.books = (await response.json()).map(normalizeBookVariant);
   renderFilters();
   renderBooks();
 }
@@ -1409,47 +1510,63 @@ function storedTheme() {
 }
 
 function applyTheme(theme) {
-  const next = ['light', 'sepia', 'dark'].includes(theme) ? theme : 'light';
+  const preference = ['light', 'sepia', 'dark', 'system'].includes(theme) ? theme : 'light';
+  const next = preference === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference;
   state.theme = next;
   reader.dataset.theme = next;
-  themeBtn.textContent = next === 'dark' ? '☾' : next === 'sepia' ? '◐' : '☀';
+  try {
+    const workspace = localStorage.getItem(`readerWorkspace:${storageUserKey()}`) || 'auto';
+    reader.dataset.workspace = ['auto','gray','cream','slate'].includes(workspace) ? workspace : 'auto';
+    document.getElementById('readerWorkspace').value = reader.dataset.workspace;
+  } catch {}
+  themeBtn.textContent = 'Görünüm';
+  const picker = document.getElementById('readerTheme');
+  if (picker) picker.value = preference;
   themeBtn.title = t(next === 'dark' ? 'Koyu tema' : next === 'sepia' ? 'Sepia tema' : 'Açık tema');
   themeBtn.setAttribute('aria-label', themeBtn.title);
   try {
-    localStorage.setItem(themeStorageKey(), next);
+    localStorage.setItem(themeStorageKey(), preference);
   } catch {
     // Private mode may block storage.
   }
 }
 
-async function resolveDest(dest) {
-  try {
-    const explicit = typeof dest === 'string' ? await state.pdf.getDestination(dest) : dest;
-    if (!explicit || !explicit[0]) return null;
-    const index = await state.pdf.getPageIndex(explicit[0]);
-    return index + 1;
-  } catch {
-    return null;
-  }
+async function resolveDest(dest, pdf) {
+  return destinationPage(pdf, dest);
 }
 
-async function loadOutline() {
-  state.outline = [];
-  if (!state.pdf) return;
+async function loadOutline(pdf = state.pdf) {
+  if (!pdf || state.pdf !== pdf) return false;
+  const entries = [];
   try {
-    const outline = await state.pdf.getOutline();
-    if (!outline || !outline.length) return;
+    const outline = await pdf.getOutline();
+    if (state.pdf !== pdf) return false;
     const walk = async (nodes, depth) => {
       for (const node of nodes) {
-        const page = await resolveDest(node.dest);
-        if (page) state.outline.push({ title: node.title || 'Başlıksız', page, depth });
+        if (state.pdf !== pdf) return;
+        const page = await resolveDest(node.dest, pdf);
+        if (state.pdf !== pdf) return;
+        if (page) entries.push({ title: node.title || 'Başlıksız', page, depth });
         if (node.items && node.items.length) await walk(node.items, depth + 1);
       }
     };
-    await walk(outline, 0);
+    if (outline?.length) await walk(outline, 0);
   } catch (error) {
     console.warn('outline failed', error);
   }
+  if (state.pdf !== pdf) return false;
+  state.outline = entries;
+  return true;
+}
+
+function scheduleOutline(pdf) {
+  // Yield to the browser after the first page; never block opening on TOC destinations.
+  setTimeout(() => {
+    if (state.pdf !== pdf) return;
+    void loadOutline(pdf).then((current) => {
+      if (current && state.pdf === pdf) renderToc();
+    }).catch((error) => console.warn('outline refresh failed', error));
+  }, 0);
 }
 
 function renderEpubToc(query) {
@@ -1660,6 +1777,7 @@ function updateUrl() {
   if (!state.book) return;
   const url = new URL(window.location.href);
   url.searchParams.set('book', state.book.id);
+  url.searchParams.set('asset', bookRequestId(state.book));
   if (state.epubMode) {
     url.searchParams.delete('page');
     if (state.epubEngine?.getCurrentCfi()) url.searchParams.set('cfi', state.epubEngine.getCurrentCfi());
@@ -2065,7 +2183,7 @@ async function runSearch(rawQuery) {
     if (searchFuzzy.checked) params.set('fuzzy', '1');
     let results = [];
     try {
-      const response = await fetch(`/api/books/${encodeURIComponent(state.book.id)}/search?${params}`);
+      const response = await fetch(`/api/books/${encodeURIComponent(bookRequestId(state.book))}/search?${params}`);
       const payload = response.ok ? await response.json() : {};
       if (state.searchRun !== run) return;
       if (payload.indexed) {
@@ -2103,7 +2221,7 @@ async function runSearch(rawQuery) {
     const params = new URLSearchParams({ q: query });
     if (searchWhole.checked) params.set('whole', '1');
     if (searchFuzzy.checked) params.set('fuzzy', '1');
-    const response = await fetch(`/api/books/${encodeURIComponent(state.book.id)}/search?${params}`);
+    const response = await fetch(`/api/books/${encodeURIComponent(bookRequestId(state.book))}/search?${params}`);
     if (state.searchRun !== run) return;
     if (response.ok) {
       const data = await response.json();
@@ -2263,6 +2381,26 @@ async function renderOcrLayer(viewport, pageNumber = state.page, container = tex
   return renderHocrText(hocr, viewport, container);
 }
 
+function readerFileTimings(bookId, openedAt) {
+  if (!bookId || !Number.isFinite(openedAt) || !performance.getEntriesByType) return [];
+  const fileUrl = new URL(`/api/books/${encodeURIComponent(bookId)}/file`, window.location.origin).href;
+  return performance.getEntriesByType('resource')
+    .filter((entry) => entry.name === fileUrl && entry.startTime >= openedAt)
+    .slice(-20)
+    .map((entry) => ({
+      startMs: Math.round(entry.startTime - openedAt),
+      totalMs: Math.round(entry.duration),
+      ttfbMs: entry.requestStart > 0 && entry.responseStart > 0
+        ? Math.round(entry.responseStart - entry.requestStart) : null,
+      downloadMs: entry.responseStart > 0 && entry.responseEnd >= entry.responseStart
+        ? Math.round(entry.responseEnd - entry.responseStart) : null,
+      bytes: entry.encodedBodySize || 0,
+      serverMs: Object.fromEntries((entry.serverTiming || [])
+        .filter((metric) => ['app', 'storage'].includes(metric.name))
+        .map((metric) => [metric.name, Math.round(metric.duration)])),
+    }));
+}
+
 function readerPerf() {
   const renders = state.perf?.renders || [];
   const lastPhase = state.perf?.phases?.at(-1) || null;
@@ -2274,6 +2412,9 @@ function readerPerf() {
     pages: state.numPages,
     page: state.page,
     pdfLoadMs: state.perf?.pdfLoadMs ?? null,
+    beforePdfMs: state.perf?.beforePdfMs ?? null,
+    labelsMs: state.perf?.labelsMs ?? null,
+    fileRequests: readerFileTimings(state.book ? bookRequestId(state.book) : null, state.perf?.openedAt),
     firstPageMs: state.perf?.firstPageMs ?? null,
     renders: renders.length,
     averageRenderMs: average === null ? null : Math.round(average),
@@ -2475,6 +2616,7 @@ async function renderPagePane(pageNumber, pane, scale, rotationOffset, isPrimary
   const renderToken = Symbol();
   pane.textLayer.pdfRenderToken = renderToken;
   const isCurrent = () => state.pdf === pdf && pane.textLayer.pdfRenderToken === renderToken;
+  pane.pageWrap.querySelector('.pdf-link-layer')?.remove();
   const page = await pdf.getPage(pageNumber);
   if (!isCurrent()) return null;
   const viewport = page.getViewport({ scale, rotation: (page.rotate + rotationOffset) % 360 });
@@ -2552,6 +2694,11 @@ async function renderPagePane(pageNumber, pane, scale, rotationOffset, isPrimary
   else pane.textLayer.removeAttribute('lang');
   if (structure) pane.pageWrap.insertBefore(structure, pane.textLayer);
   applySearchHighlight(pane.textLayer);
+  // Links are optional metadata; they must not delay first-page display.
+  void renderPdfLinks({ page, pdf, viewport, container: pane.pageWrap, isCurrent,
+    onNavigate: goToPage,
+    labels: { group: t('Sayfa bağlantıları'), external: t('Bağlantıyı yeni sekmede aç'), internal: t('Kitap içi bağlantıyı aç') },
+  }).catch(error => console.warn('PDF links unavailable:', error.message));
   return { page, viewport, canvasEnd, textEnd: performance.now() };
 }
 
@@ -2583,6 +2730,7 @@ async function renderPage() {
   pageWrap2.hidden = !state.secondPage;
   if (!state.secondPage) {
     pageWrap2.querySelector('.pdf-structure')?.remove();
+    pageWrap2.querySelector('.pdf-link-layer')?.remove();
     textLayer2.replaceChildren();
     highlights2.replaceChildren();
   }
@@ -3064,7 +3212,7 @@ async function saveProgress() {
           return progress?.cfi ? { type: 'epub', cfi: progress.cfi, href: progress.href, percent: progress.percent } : null;
         })()
         : { type: 'pdf', page: state.page };
-      if (anchor) localStorage.setItem(`offlineProgress:${state.book.id}`, JSON.stringify(anchor));
+      if (anchor) localStorage.setItem(`offlineProgress:${offlineBookKey(state.book)}`, JSON.stringify(anchor));
     } catch { /* quota/private mode */ }
     return;
   }
@@ -3136,7 +3284,9 @@ function labelEpubFrames() {
 }
 
 async function openEpubBook(book, options = {}) {
+  book = normalizeBookVariant(book);
   const offlineBlob = options.offlineBlob || null;
+  renderReaderVariants(book, true);
   state.offlineMode = Boolean(offlineBlob) || !navigator.onLine;
   state.offlineBlob = offlineBlob;
   if (state.epubEngine) {
@@ -3191,7 +3341,7 @@ async function openEpubBook(book, options = {}) {
     let progress = null;
     if (offlineBlob) {
       try {
-        const saved = JSON.parse(localStorage.getItem(`offlineProgress:${book.id}`) || 'null');
+        const saved = await loadOfflineProgress(book);
         progress = saved ? { anchor: saved } : null;
       } catch { /* noop */ }
       state.annotations = await listLocalAnnotations(book.asset_id, annotationOwnerId()).catch(() => []);
@@ -3201,7 +3351,7 @@ async function openEpubBook(book, options = {}) {
       state.annotations = await loadAnnotationsFor(book.asset_id, false);
     }
     const params = new URLSearchParams(window.location.search);
-    const initialCfi = params.get('book') === book.id ? params.get('cfi') : progress?.anchor?.cfi;
+    const initialCfi = (locationMatchesBook(params, book) ? params.get('cfi') : null) || progress?.anchor?.cfi;
     const engine = new EpubEngine(epubView, {
       canCopy: () => state.book?.allow_copy !== false,
       onCopyBlocked: () => toast('Bu kitapta kopyalama kapalı'),
@@ -3235,7 +3385,7 @@ async function openEpubBook(book, options = {}) {
       onSwipe: (delta) => changePage(delta),
     });
     state.epubEngine = engine;
-    const source = offlineBlob ? await offlineBlob.arrayBuffer() : `/api/books/${encodeURIComponent(book.id)}/book.epub`;
+    const source = offlineBlob ? await offlineBlob.arrayBuffer() : `/api/books/${encodeURIComponent(bookRequestId(book))}/book.epub`;
     await engine.open(source, initialCfi || undefined);
     const frame = epubView.querySelector('iframe');
     const frameRect = frame?.getBoundingClientRect();
@@ -3259,7 +3409,7 @@ async function openEpubBook(book, options = {}) {
     readerMeta.textContent = t(`${metaPrefix ? `${metaPrefix} · ` : ''}EPUB · ${engine.getSpineCount()} bölüm`);
     const savedTheme = storedTheme();
     applyTheme(savedTheme);
-    engine.setTheme(savedTheme);
+    engine.setTheme(state.theme);
     applyEpubFontSize(storedEpubFontSize(book.id), false, book.id);
     state.annotations
       .filter((annotation) => annotation.anchor?.type === 'epub' && annotation.anchor?.cfi)
@@ -3271,6 +3421,7 @@ async function openEpubBook(book, options = {}) {
     renderToc();
     renderNotes();
     updateUrl();
+    renderReaderVariants(book);
     $('closeReader').focus();
   } catch (error) {
     console.error(error);
@@ -3280,11 +3431,13 @@ async function openEpubBook(book, options = {}) {
 }
 
 async function openBook(book, options = {}) {
+  book = normalizeBookVariant(book);
   if (book.format === 'epub') {
     await openEpubBook(book, options);
     return;
   }
   const offlineBlob = options.offlineBlob || null;
+  renderReaderVariants(book, true);
   state.offlineMode = Boolean(offlineBlob) || !navigator.onLine;
   state.offlineBlob = offlineBlob;
   resetReaderStatus();
@@ -3329,7 +3482,9 @@ async function openBook(book, options = {}) {
   spreadBtn.setAttribute('aria-pressed', 'false');
   spreadBtn.classList.remove('active');
   pageWrap.querySelector('.pdf-structure')?.remove();
+  pageWrap.querySelector('.pdf-link-layer')?.remove();
   pageWrap2.querySelector('.pdf-structure')?.remove();
+  pageWrap2.querySelector('.pdf-link-layer')?.remove();
   textLayerEl.replaceChildren();
   textLayer2.replaceChildren();
   highlights2.replaceChildren();
@@ -3370,7 +3525,7 @@ async function openBook(book, options = {}) {
     let progress = null;
     if (offlineBlob) {
       try {
-        const saved = JSON.parse(localStorage.getItem(`offlineProgress:${book.id}`) || 'null');
+        const saved = await loadOfflineProgress(book);
         progress = saved ? { anchor: saved } : null;
       } catch { /* noop */ }
       state.annotations = await listLocalAnnotations(book.asset_id, annotationOwnerId()).catch(() => []);
@@ -3380,6 +3535,7 @@ async function openBook(book, options = {}) {
       state.annotations = await loadAnnotationsFor(book.asset_id, false);
     }
 
+    state.perf.beforePdfMs = Math.round(performance.now() - state.perf.openedAt);
     const task = pdfjsLib.getDocument(offlineBlob ? {
       data: new Uint8Array(await offlineBlob.arrayBuffer()),
       cMapUrl: '/vendor/pdfjs/cmaps/',
@@ -3387,17 +3543,21 @@ async function openBook(book, options = {}) {
       standardFontDataUrl: '/vendor/pdfjs/standard_fonts/',
       isEvalSupported: false,
     } : {
-      url: `/api/books/${encodeURIComponent(book.id)}/file`,
+      url: `/api/books/${encodeURIComponent(bookRequestId(book))}/file`,
       cMapUrl: '/vendor/pdfjs/cmaps/',
       cMapPacked: true,
       standardFontDataUrl: '/vendor/pdfjs/standard_fonts/',
       isEvalSupported: false,
+      // Both options are required to stop the full-file stream competing with ranges.
+      disableStream: true,
       disableAutoFetch: true,
+      rangeChunkSize: 256 * 1024,
     });
     state.pdf = await task.promise;
     state.perf.pdfLoadMs = performance.now() - state.perf.openedAt;
     state.numPages = state.pdf.numPages;
     const loadedPdf = state.pdf;
+    const labelsStarted = performance.now();
     let labels = null;
     try {
       labels = normalizePdfPageLabels(await loadedPdf.getPageLabels());
@@ -3405,10 +3565,11 @@ async function openBook(book, options = {}) {
       console.warn('PDF page labels unavailable:', error.message);
     }
     if (state.pdf !== loadedPdf) return;
+    state.perf.labelsMs = Math.round(performance.now() - labelsStarted);
     state.pdfPageLabels = labels;
 
     const params = new URLSearchParams(window.location.search);
-    const rawPage = params.get('book') === book.id ? params.get('page') : null;
+    const rawPage = locationMatchesBook(params, book) ? params.get('page') : null;
     if (rawPage !== null) {
       const requested = Number(rawPage);
       if (!Number.isInteger(requested) || requested < 1) {
@@ -3427,12 +3588,13 @@ async function openBook(book, options = {}) {
         : 1;
     }
 
-    await loadOutline();
-    renderToc();
     renderNotes();
     updatePageUi();
     await renderPage();
+    if (state.pdf !== loadedPdf) return;
+    renderReaderVariants(book);
     $('closeReader').focus();
+    scheduleOutline(loadedPdf);
   } catch (error) {
     console.error(error);
     toast('PDF yüklenemedi. Sunucu ve dosya yolunu kontrol edin.');
@@ -3441,6 +3603,8 @@ async function openBook(book, options = {}) {
 }
 
 async function closeReader() {
+  readerVariants.hidden = true;
+  readerVariants.replaceChildren();
   resetReaderStatus();
   if (state.epubFrameObserver) {
     state.epubFrameObserver.disconnect();
@@ -3510,7 +3674,9 @@ async function closeReader() {
   textLayerEl.replaceChildren();
   textLayer2.replaceChildren();
   pageWrap.querySelector('.pdf-structure')?.remove();
+  pageWrap.querySelector('.pdf-link-layer')?.remove();
   pageWrap2.querySelector('.pdf-structure')?.remove();
+  pageWrap2.querySelector('.pdf-link-layer')?.remove();
   highlightsEl.replaceChildren();
   highlights2.replaceChildren();
   if (pdf) {
@@ -4207,11 +4373,39 @@ $('fullscreenBtn').addEventListener('click', async () => {
     toast('Tam ekran başlatılamadı');
   }
 });
-themeBtn.addEventListener('click', () => {
-  const order = ['light', 'sepia', 'dark'];
-  const next = order[(order.indexOf(state.theme) + 1) % order.length];
-  applyTheme(next);
-  if (state.epubMode) state.epubEngine?.setTheme(next);
+document.getElementById('readerTheme').addEventListener('change', (event) => {
+  applyTheme(event.target.value);
+  if (state.epubMode) state.epubEngine?.setTheme(state.theme);
+});
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if (storedTheme() === 'system') {
+    applyTheme('system');
+    if (state.epubMode) state.epubEngine?.setTheme(state.theme);
+  }
+});
+const workspacePicker = document.getElementById('readerWorkspace');
+workspacePicker.addEventListener('change', () => {
+  reader.dataset.workspace = workspacePicker.value;
+  try { localStorage.setItem(`readerWorkspace:${storageUserKey()}`, workspacePicker.value); } catch {}
+});
+document.getElementById('readerFocus').addEventListener('change', (event) => {
+  reader.classList.toggle('reading-focus', event.target.checked);
+});
+document.getElementById('leaveFocus').addEventListener('click', () => {
+  reader.classList.remove('reading-focus');
+  document.getElementById('readerFocus').checked = false;
+});
+document.querySelectorAll('.reader-menu').forEach(menu => {
+  menu.addEventListener('toggle', () => {
+    if (menu.open) document.querySelectorAll('.reader-menu').forEach(other => { if (other !== menu) other.open = false; });
+  });
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') {
+    document.querySelectorAll('.reader-menu').forEach(menu => { menu.open = false; });
+    reader.classList.remove('reading-focus');
+    document.getElementById('readerFocus').checked = false;
+  }
 });
 spreadBtn.addEventListener('click', () => {
   if (state.scrollMode) stopScrollMode(false);

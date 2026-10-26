@@ -1,3 +1,4 @@
+import { offlineBookKey } from './book-variants.mjs';
 // IndexedDB storage for downloaded books and offline annotations.
 const DB_NAME = 'akademik-offline';
 const DB_VERSION = 2;
@@ -58,13 +59,14 @@ async function readAll(storeName, indexName = null, key = null) {
 
 export async function saveOfflineBook(book, blob, { downloadProvenance } = {}) {
   const entry = {
-    id: book.id,
+    id: offlineBookKey(book),
     book: {
       id: book.id,
       title: book.title,
       subtitle: book.subtitle || null,
       publisher: book.publisher || null,
       publication_year: book.publication_year || null,
+      edition: book.edition || null,
       language: book.language || 'tr',
       format: book.format || 'pdf',
       asset_id: book.asset_id,

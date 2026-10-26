@@ -8,23 +8,19 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/icons/icon-180.png" />
-  <title>Akademik Platform — Spike</title>
-  <link rel="stylesheet" href="/styles.css?v=49" />
+  <title>E-Kütüphane</title>
+  <link rel="stylesheet" href="/styles.css?v=50-reader-ui" />
   <link rel="prefetch" href="/vendor/pdfjs/pdf.worker.mjs" as="script" />
 </head>
 <body>
   <a class="skip-link" href="#mainContent">İçeriğe atla</a>
   <div class="login-screen" id="loginScreen" hidden>
     <form class="login-card" id="loginForm">
-      <span class="brand-mark">A</span>
-      <h2 id="loginBrand">Akademik Platform</h2>
+      <span class="brand-mark">L</span>
+      <h2 id="loginBrand">LibEdge</h2>
       <button class="lang-link" data-lang-toggle type="button">EN</button>
-      <p class="login-hint">
-        Okuyucu: <code>reader@example.edu.tr</code> · Kütüphaneci: <code>librarian@example.edu.tr</code><br />
-        Parola: <code>demo1234</code>
-      </p>
-      <label>E-posta<input id="loginEmail" type="email" autocomplete="username" value="librarian@example.edu.tr" required /></label>
-      <label>Parola<input id="loginPassword" type="password" autocomplete="current-password" required /></label>
+      <label>E-posta<input id="loginEmail" type="email" autocomplete="username" placeholder="E-posta" required /></label>
+      <label>Parola<input id="loginPassword" type="password" autocomplete="current-password" placeholder="Parola" required /></label>
       <div class="login-error" id="loginError" role="alert" hidden></div>
       <button class="primary" type="submit">Giriş yap</button>
       <button class="footer-link" type="button" data-open-messages aria-haspopup="dialog" aria-controls="messagesModal">Bildirimler</button>
@@ -33,8 +29,8 @@
 
   <header class="topbar">
     <a class="brand" href="/">
-      <span class="brand-mark">A</span>
-      <span class="brand-text"><span id="brandName">Akademik Platform</span> <em id="brandTag">spike</em></span>
+      <span class="brand-mark">L</span>
+      <span class="brand-text"><span id="brandName">LibEdge</span> <em id="brandTag">E-Kütüphane</em></span>
     </a>
     <div class="search">
       <input id="search" type="search" placeholder="Başlık, konu veya tam metin ara…" aria-label="Katalogda ara" autocomplete="off" />
@@ -51,11 +47,11 @@
 
   <main id="mainContent">
     <section class="hero">
-      <p class="eyebrow">Okuma katmanı · 14 günlük spike</p>
-      <h1>Katalog, okuyucu, not ve arama.<br />Tek çalışan dilim.</h1>
+      <p class="eyebrow" data-i18n="heroEyebrow">E-Kütüphane · Akademik koleksiyon</p>
+      <h1 data-i18n="heroTitle">Kataloğu keşfedin.<br />Okuyun, not alın.</h1>
       <p class="lede" data-i18n="heroLede">
-        Bu ekran ürün değil; PDF.js, <code>anchor</code> modeli ve Postgres aramasını
-        ölçmek için kurulmuş bir iskelet. Örnek içerik kamu malı test PDF'idir.
+        Kurumunuzun akademik e-kitaplarına tek yerden erişin; PDF ve EPUB okuyun,
+        notlarınızı ve alıntılarınızı birlikte yönetin.
       </p>
     </section>
 
@@ -70,7 +66,7 @@
   </main>
 
   <footer class="site-footer" id="siteFooter">
-    <span>© <span id="footerYear"></span> <span id="footerBrand">Akademik Platform</span> · <span id="footerVersion"></span> · <span id="footerEnvironment"></span><span id="footerBuildDate"></span></span>
+    <span>© <span id="footerYear"></span> <span id="footerBrand">LibEdge</span> · <span id="footerVersion"></span> · <span id="footerEnvironment"></span><span id="footerBuildDate"></span></span>
     <span class="footer-links">
       <label class="shortcut-setting"><input type="checkbox" data-single-key-shortcuts checked /><span>Tek tuş kısayolları</span></label>
       <button class="footer-link" id="footerShortcuts" type="button">Kısayollar</button>
@@ -281,31 +277,26 @@
       <div class="reader-title">
         <strong id="readerTitle"></strong>
         <span id="readerMeta"></span>
+        <div id="readerVariants" hidden></div>
       </div>
       <div class="reader-actions">
-        <label class="shortcut-setting"><input type="checkbox" data-single-key-shortcuts checked /><span>Tek tuş kısayolları</span></label>
-        <button class="ghost-btn" id="toggleToc" type="button" title="İçindekiler" aria-label="İçindekiler" aria-controls="tocPanel" aria-expanded="false">☰</button>
-        <div class="page-jump">
+        <div class="reader-control-group" aria-label="Gezinme"><button class="ghost-btn" id="toggleToc" type="button" title="İçindekiler" aria-label="İçindekiler" aria-controls="tocPanel" aria-expanded="false">☰</button><div class="page-jump">
           <input id="pageInput" type="number" min="1" value="1" aria-label="PDF sayfa numarası" title="PDF dosyasındaki sıra numarası" />
           <span id="pageTotal">/ 1</span>
-        </div>
-        <button class="ghost-btn" id="fitToggle" type="button" aria-label="Genişliğe sığdır" title="Genişliğe sığdır" aria-pressed="false">↔</button>
-        <button class="ghost-btn" id="rotateBtn" type="button" aria-label="Döndür" title="Döndür">⟳</button>
-        <button class="ghost-btn" id="fullscreenBtn" type="button" aria-label="Tam ekran" title="Tam ekran">⛶</button>
-        <button class="ghost-btn" id="themeBtn" type="button" aria-label="Tema" title="Tema">☀</button>
-        <button class="ghost-btn" id="spreadBtn" type="button" aria-label="Çift sayfa" title="Çift sayfa" aria-pressed="false">▥</button>
-        <button class="ghost-btn" id="scrollBtn" type="button" aria-label="Sürekli kaydırma" title="Sürekli kaydırma" aria-pressed="false">≣</button>
-        <button class="icon-btn" id="zoomOut" aria-label="Uzaklaştır">−</button>
-        <span class="zoom" id="zoomLabel">100%</span>
-        <button class="icon-btn" id="zoomIn" aria-label="Yakınlaştır">+</button>
-        <button class="ghost-btn" id="bookmarkBtn" type="button" title="Yer imi" aria-label="Yer imi" aria-pressed="false">☆</button>
-        <button class="ghost-btn" id="selectionTools" type="button" title="Seçim araçları (Alt+Shift+H)" aria-keyshortcuts="Alt+Shift+H">Seçim</button>
-        <button class="ghost-btn" type="button" data-open-messages aria-haspopup="dialog" aria-controls="messagesModal">Bildirimler</button>
-        <button class="ghost-btn" id="citeBook" type="button" title="Atıf">Atıf</button>
-        <button class="ghost-btn" id="downloadBtn" type="button" title="PDF indir" hidden>İndir</button>
-        <button class="ghost-btn" id="toggleNotes" aria-controls="notesPanel" aria-expanded="false">Notlar <span id="noteCount">0</span></button>
+        </div></div>
+        <div class="reader-control-group" aria-label="Yakınlaştırma"><button class="icon-btn" id="zoomOut" aria-label="Uzaklaştır">−</button><span class="zoom" id="zoomLabel">100%</span><button class="icon-btn" id="zoomIn" aria-label="Yakınlaştır">+</button><button class="ghost-btn" id="fitToggle" type="button" aria-label="Genişliğe sığdır" title="Genişliğe sığdır" aria-pressed="false">↔</button></div>
+        <details class="reader-menu"><summary id="themeBtn">Görünüm</summary><div class="reader-menu-panel">
+          <label>Tema<select id="readerTheme"><option value="light">Standart</option><option value="sepia">Kâğıt</option><option value="dark">Gece</option><option value="system">Sistemi izle</option></select></label>
+          <label>Çevre zemini<select id="readerWorkspace"><option value="auto">Temaya uygun</option><option value="gray">Açık gri</option><option value="cream">Sıcak krem</option><option value="slate">Koyu gri</option></select></label>
+          <label><input type="checkbox" id="readerFocus"> Odak modu</label>
+          <button class="ghost-btn" id="rotateBtn" type="button" aria-label="Döndür" title="Döndür">⟳</button><button class="ghost-btn" id="fullscreenBtn" type="button" aria-label="Tam ekran" title="Tam ekran">⛶</button><button class="ghost-btn" id="spreadBtn" type="button" aria-label="Çift sayfa" title="Çift sayfa" aria-pressed="false">▥</button><button class="ghost-btn" id="scrollBtn" type="button" aria-label="Sürekli kaydırma" title="Sürekli kaydırma" aria-pressed="false">≣</button>
+        </div></details>
+        <div class="reader-control-group" aria-label="Araçlar"><button class="ghost-btn" id="bookmarkBtn" type="button" title="Yer imi" aria-label="Yer imi" aria-pressed="false">☆</button><button class="ghost-btn" id="toggleNotes" aria-controls="notesPanel" aria-expanded="false">Notlar <span id="noteCount">0</span></button></div>
+        <details class="reader-menu"><summary>Araçlar</summary><div class="reader-menu-panel"><button class="ghost-btn" id="selectionTools" type="button" title="Seçim araçları (Alt+Shift+H)" aria-keyshortcuts="Alt+Shift+H">Seçim</button><label class="shortcut-setting"><input type="checkbox" data-single-key-shortcuts checked /><span>Tek tuş kısayolları</span></label></div></details>
+        <details class="reader-menu"><summary>Dışa aktar</summary><div class="reader-menu-panel"><button class="ghost-btn" id="citeBook" type="button" title="Atıf">Atıf</button><button class="ghost-btn" id="downloadBtn" type="button" title="PDF indir" hidden>İndir</button></div></details>
       </div>
     </div>
+    <button id="leaveFocus" class="ghost-btn" type="button">Odak modundan çık</button>
     <div class="reader-body">
       <aside class="toc" id="tocPanel" aria-label="Gezinme paneli" tabindex="0" hidden>
         <div class="toc-head">
@@ -439,6 +430,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=127"></script>
+  <script type="module" src="/app.js?v=130-ui-copy"></script>
 </body>
 </html>
