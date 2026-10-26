@@ -8,11 +8,44 @@ tek yerde tutar; sürüm geçmişi `docs/deployments/` altında, özet `PROJECT-
 
 ```bash
 curl -s https://elibrary.libedge.com/api/config
-# {"version":"130","buildSha":"9f755d6","buildDate":"2026-10-26","environment":"production",...}
+# {"version":"131","buildSha":"<deploy edilen SHA>","buildDate":"...","environment":"production",...}
 
 curl -s https://elibrary.libedge.com/api/health
 # {"ok":true,"mode":"db","tenantId":"..."}
 ```
+
+> ### ⚠️ `version` tek başına yeterli DEĞİL — `buildSha`'yı da kontrol et
+>
+> **2026-10-26 olayı:** v131 deploy'unda `/api/config` `"version":"131"` döndü ama
+> `"buildSha":"9f755d6"` — yani **v130 kodu** çalışıyordu. Sebep: `APP_VERSION=131`
+> `.env.r2` içinde **elle** set edilmiş; imaj `1ded27c`'ten değil `9f755d6`'dan
+> build edilmişti. `version` alanı env'den geldiği için doğru göründü.
+>
+> **Doğru kontrol:** `buildSha` = deploy etmeyi *amaçladığın* SHA olmalı.
+> `APP_VERSION` ile `buildSha` çelişiyorsa **kod eskidir**.
+>
+> | Alan | Kaynak | Yanıltıcı olabilir mi |
+> | --- | --- | --- |
+> | `version` | `APP_VERSION` env | ✅ Evet — elle set edilir |
+> | `buildSha` | `BUILD_SHA` env | ⚠️ Evet — elle set edilir, build'i kanıtlamaz |
+> | image LABEL `revision` | `--build-arg` | ❌ Hayır — build anında gömülür |
+>
+> **Tek güvenilir kanıt** `docker inspect` LABEL'ıdır (aşağıya bak).
+
+### Build kimliğini kesinleştirme
+
+```bash
+# Hangi SHA gerçekten derlendi?
+docker inspect <imaj> --format '{{json .Config.Labels}}' | grep revision
+
+# Env ile çelişiyor mu?
+docker inspect $(docker ps -q --filter name=web) \
+  --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -E '^(APP_VERSION|BUILD_SHA|BUILD_DATE)='
+```
+
+`revision` LABEL'ı `unknown` ise imaj `--build-arg` **verilmeden** derlenmiştir
+(v130 Dockerfile'ında `ARG` yoktu — LABEL hiç üretilmez). Bu durumda hangi kodun
+çalıştığı yalnızca elle doğrulanabilir; **deploy doğrulanmamış sayılır**.
 
 `/api/config` içindeki üç alan (`version`, `buildSha`, `buildDate`) build zamanı
 metadata'sının tek kaynağıdır. Footer bunları gösterir (`app.js` → `applyFooter`).
@@ -96,6 +129,41 @@ docker inspect $(docker ps -q --filter name=web) \
 ```
 
 Çıktı bu belgeye işlenene kadar Varyant 2 bir **varsayımdır**.
+
+### Canlı gerçek (2026-10-26, ürün sahibi teyidi)
+
+| | |
+| --- | --- |
+| İmaj | `libedge-v131` (önceki: `akademik-platform:libedge-copy`) |
+| Port | `127.0.0.1:3001` → container `3000` |
+| Env | `.env.r2` — `DEMO_TENANT_ID=5799f2a5-3d90-41b1-90de-9da07d776052`, `STORAGE_DRIVER=r2`, `APP_VERSION=131` |
+| DB | PostgreSQL, container `akademik-platform-prod-db-1`, süper kullanıcı `akademik` |
+
+> ### 🔴 Ağ bağlantısı kalıcı değil — her restart'ta tekrar bağlanmalı
+>
+> Web container **`akademik-platform-prod_default`** network'üne **elle** bağlanıyor.
+> Compose bu bağlantıyı yönetmediği için `docker compose up` / restart / host reboot
+> sonrası **kopar** ve web DB'ye ulaşamaz.
+>
+> **Deploy/restart sonrası ZORUNLU adım:**
+>
+> ```bash
+> docker network connect akademik-platform-prod_default <web-container>
+> curl -s https://elibrary.libedge.com/api/health   # "ok":true, "mode":"db" olmalı
+> ```
+>
+> `mode:"demo"` dönerse ağ **bağlı değil** — DB'ye ulaşamıyor, sessizce demo'ya
+> düşmüş demektir. **Kalıcı çözüm:** `docker-compose.libedge.yml` içine
+> `networks: [default]` + external network tanımı eklemek (henüz yapılmadı).
+
+### Tenant durumu
+
+`DEMO_TENANT_ID=5799f2a5-...` → **LibEdge**. `/api/health` bu değeri döndürüyor.
+
+> **Dikkat:** Eski "Demo Üniversitesi" tenant'ı (`11111111-1111-...` varsayılanı)
+> boş kaldı ama eski kullanıcılar (`librarian@example.edu.tr` vb.) hâlâ **orada**.
+> Bu kullanıcılar LibEdge tenant'ına taşınmadı — giriş yaparlarsa boş bir kütüphane
+> görürler. Karar bekliyor: taşı (UPDATE `users`/`memberships`) veya sil.
 
 ### `STORAGE_DRIVER=r2` — canlıda doğrulandı (2026-10-26)
 
