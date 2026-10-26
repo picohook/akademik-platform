@@ -1045,11 +1045,19 @@ async function writeClipboard(text) {
     area.readOnly = true;
     area.style.cssText = 'position:fixed;left:-10000px;top:0';
     document.body.appendChild(area);
+    const copyExactText = (event) => {
+      if (!event.clipboardData) return;
+      event.clipboardData.setData('text/plain', text);
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    };
+    document.addEventListener('copy', copyExactText, true);
     try {
       area.focus();
       area.select();
       if (!document.execCommand('copy')) throw new Error('copy failed');
     } finally {
+      document.removeEventListener('copy', copyExactText, true);
       area.remove();
       active?.focus({ preventScroll: true });
     }
@@ -1087,9 +1095,21 @@ async function copySelectedText(withCitation = false) {
   const text = withCitation ? formatCopiedSelection(state.book, selected.text, locator) : selected.text;
   try {
     await writeClipboard(text);
-    toast(withCitation ? 'Atıfla kopyalandı' : 'Metin kopyalandı');
+    toast(withCitation ? 'Metin ve atıf panoya kopyalandı. Ctrl+V ile yapıştırabilirsiniz.' : 'Metin panoya kopyalandı. Ctrl+V ile yapıştırabilirsiniz.');
   } catch {
-    toast('Kopyalanamadı; metni seçip kopyalayın.');
+    const dialog = document.createElement('dialog');
+    dialog.className = 'manual-copy-dialog';
+    const label = document.createElement('p');
+    label.textContent = 'Otomatik kopyalanamadı. Aşağıdaki metni Ctrl+C ile kopyalayın.';
+    const field = document.createElement('textarea');
+    field.value = text; field.readOnly = true;
+    field.setAttribute('aria-label', 'Kopyalanacak metin ve atıf');
+    const close = document.createElement('button');
+    close.type = 'button'; close.textContent = 'Kapat';
+    close.addEventListener('click', () => dialog.close());
+    dialog.addEventListener('close', () => { dialog.remove(); hlCopyCite.focus(); });
+    dialog.append(label, field, close); reader.appendChild(dialog);
+    dialog.showModal(); field.focus(); field.select();
   }
 }
 
@@ -1490,14 +1510,22 @@ function storedTheme() {
 }
 
 function applyTheme(theme) {
-  const next = ['light', 'sepia', 'dark'].includes(theme) ? theme : 'light';
+  const preference = ['light', 'sepia', 'dark', 'system'].includes(theme) ? theme : 'light';
+  const next = preference === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference;
   state.theme = next;
   reader.dataset.theme = next;
-  themeBtn.textContent = next === 'dark' ? '☾' : next === 'sepia' ? '◐' : '☀';
+  try {
+    const workspace = localStorage.getItem(`readerWorkspace:${storageUserKey()}`) || 'auto';
+    reader.dataset.workspace = ['auto','gray','cream','slate'].includes(workspace) ? workspace : 'auto';
+    document.getElementById('readerWorkspace').value = reader.dataset.workspace;
+  } catch {}
+  themeBtn.textContent = 'Görünüm';
+  const picker = document.getElementById('readerTheme');
+  if (picker) picker.value = preference;
   themeBtn.title = t(next === 'dark' ? 'Koyu tema' : next === 'sepia' ? 'Sepia tema' : 'Açık tema');
   themeBtn.setAttribute('aria-label', themeBtn.title);
   try {
-    localStorage.setItem(themeStorageKey(), next);
+    localStorage.setItem(themeStorageKey(), preference);
   } catch {
     // Private mode may block storage.
   }
@@ -3381,7 +3409,7 @@ async function openEpubBook(book, options = {}) {
     readerMeta.textContent = t(`${metaPrefix ? `${metaPrefix} · ` : ''}EPUB · ${engine.getSpineCount()} bölüm`);
     const savedTheme = storedTheme();
     applyTheme(savedTheme);
-    engine.setTheme(savedTheme);
+    engine.setTheme(state.theme);
     applyEpubFontSize(storedEpubFontSize(book.id), false, book.id);
     state.annotations
       .filter((annotation) => annotation.anchor?.type === 'epub' && annotation.anchor?.cfi)
@@ -4345,11 +4373,39 @@ $('fullscreenBtn').addEventListener('click', async () => {
     toast('Tam ekran başlatılamadı');
   }
 });
-themeBtn.addEventListener('click', () => {
-  const order = ['light', 'sepia', 'dark'];
-  const next = order[(order.indexOf(state.theme) + 1) % order.length];
-  applyTheme(next);
-  if (state.epubMode) state.epubEngine?.setTheme(next);
+document.getElementById('readerTheme').addEventListener('change', (event) => {
+  applyTheme(event.target.value);
+  if (state.epubMode) state.epubEngine?.setTheme(state.theme);
+});
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if (storedTheme() === 'system') {
+    applyTheme('system');
+    if (state.epubMode) state.epubEngine?.setTheme(state.theme);
+  }
+});
+const workspacePicker = document.getElementById('readerWorkspace');
+workspacePicker.addEventListener('change', () => {
+  reader.dataset.workspace = workspacePicker.value;
+  try { localStorage.setItem(`readerWorkspace:${storageUserKey()}`, workspacePicker.value); } catch {}
+});
+document.getElementById('readerFocus').addEventListener('change', (event) => {
+  reader.classList.toggle('reading-focus', event.target.checked);
+});
+document.getElementById('leaveFocus').addEventListener('click', () => {
+  reader.classList.remove('reading-focus');
+  document.getElementById('readerFocus').checked = false;
+});
+document.querySelectorAll('.reader-menu').forEach(menu => {
+  menu.addEventListener('toggle', () => {
+    if (menu.open) document.querySelectorAll('.reader-menu').forEach(other => { if (other !== menu) other.open = false; });
+  });
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') {
+    document.querySelectorAll('.reader-menu').forEach(menu => { menu.open = false; });
+    reader.classList.remove('reading-focus');
+    document.getElementById('readerFocus').checked = false;
+  }
 });
 spreadBtn.addEventListener('click', () => {
   if (state.scrollMode) stopScrollMode(false);
