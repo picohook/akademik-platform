@@ -100,6 +100,9 @@ docker inspect $(docker ps -q --filter name=web) \
 ## Deploy sonrası kontrol listesi
 
 - [ ] `/api/config` → `version` beklenen değer, `buildSha` = `git rev-parse --short HEAD`
+  Env unutulduysa `version` **`0-dev`** döner (eski davranış: sessizce `127`/`130`).
+- [ ] `docker inspect <imaj> --format '{{json .Config.Labels}}'` → `org.opencontainers.image.revision`
+  gerçek SHA'yı gösteriyor (`unknown` değil). `unknown` ise build `--build-arg`'sız yapılmıştır.
 - [ ] `/api/health` → `ok: true`, `mode: db`
 - [ ] Container `healthy`, restart `0`
 - [ ] `docs/deployments/<tarih>-v<NNN>.md` oluşturuldu (v127.md tablosunu izle)
