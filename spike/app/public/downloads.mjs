@@ -55,7 +55,7 @@ export async function fetchDownloadBlob(book, { fetch: request = globalThis.fetc
   if (!book?.id || book.allow_download === false) {
     throw failure('DOWNLOAD_DISABLED', 'download disabled for this title');
   }
-  const endpoint = `/api/books/${encodeURIComponent(book.id)}`;
+  const endpoint = `/api/books/${encodeURIComponent(book.asset_id || book.id)}`;
   const options = { method: 'POST', headers: { 'content-type': 'application/json' }, cache: 'no-store', referrerPolicy: 'no-referrer' };
   const issued = await request(`${endpoint}/download-ticket`, { ...options, body: '{}' });
   await requireSuccess(issued);

@@ -1,6 +1,6 @@
 // IndexedDB storage for downloaded books and offline annotations.
 const DB_NAME = 'akademik-offline';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const BOOKS = 'books';
 const ANNOTATIONS = 'annotations';
 const QUEUE = 'annotation-ops';
@@ -8,9 +8,28 @@ const QUEUE = 'annotation-ops';
 function openDb() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = () => {
+    request.onupgradeneeded = event => {
       const db = request.result;
       if (!db.objectStoreNames.contains(BOOKS)) db.createObjectStore(BOOKS, { keyPath: 'id' });
+      // Legacy offline entries carry their asset ID; rekey without touching
+      // blobs, annotations, or the annotation operation queue.
+      if (event.oldVersion > 0 && event.oldVersion < 3) {
+        const books = request.transaction.objectStore(BOOKS);
+        const cursorRequest = books.openCursor();
+        cursorRequest.onsuccess = () => {
+          const cursor = cursorRequest.result;
+          if (!cursor) return;
+          const entry = cursor.value;
+          const assetId = entry.book?.asset_id;
+          if (assetId && entry.id !== assetId) {
+            const existing = books.get(assetId);
+            existing.onsuccess = () => {
+              if (!existing.result) books.put({ ...entry, id: assetId });
+              cursor.delete(); cursor.continue();
+            };
+          } else cursor.continue();
+        };
+      }
       if (!db.objectStoreNames.contains(ANNOTATIONS)) {
         const store = db.createObjectStore(ANNOTATIONS, { keyPath: 'id' });
         store.createIndex('asset_id', 'asset_id');
@@ -58,7 +77,7 @@ async function readAll(storeName, indexName = null, key = null) {
 
 export async function saveOfflineBook(book, blob, { downloadProvenance } = {}) {
   const entry = {
-    id: book.id,
+    id: book.asset_id || book.id,
     book: {
       id: book.id,
       title: book.title,

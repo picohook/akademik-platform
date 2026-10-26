@@ -377,7 +377,7 @@ function hue(text) {
 
 async function openCardBook(book) {
   if (state.offlineMode || state.offlineLibrary) {
-    const stored = await getOfflineBook(book.id);
+    const stored = await getOfflineBook(book.asset_id || book.id);
     if (stored) {
       if (stored.book.format === 'epub') await openEpubBook(stored.book, { offlineBlob: stored.blob });
       else await openBook(stored.book, { offlineBlob: stored.blob });
@@ -394,6 +394,13 @@ function makeCard(book) {
 
   const cover = document.createElement('div');
   cover.className = 'cover';
+  if (book.metadata?.cover_url && /^https:\/\//i.test(book.metadata.cover_url)) {
+    const image = document.createElement('img');
+    image.src = book.metadata.cover_url; image.alt = ''; image.loading = 'lazy';
+    image.referrerPolicy = 'no-referrer'; image.addEventListener('error', () => image.remove(), { once: true });
+    image.style.cssText = 'width:100%;height:100%;object-fit:cover;position:absolute;inset:0';
+    cover.style.position = 'relative'; cover.appendChild(image);
+  }
   const h = hue(book.title || 'x');
   cover.style.background = `linear-gradient(145deg, hsl(${h} 36% 26%), hsl(${(h + 38) % 360} 42% 16%))`;
 
@@ -1659,7 +1666,7 @@ function updatePageUi() {
 function updateUrl() {
   if (!state.book) return;
   const url = new URL(window.location.href);
-  url.searchParams.set('book', state.book.id);
+  url.searchParams.set('book', state.book.asset_id || state.book.id);
   if (state.epubMode) {
     url.searchParams.delete('page');
     if (state.epubEngine?.getCurrentCfi()) url.searchParams.set('cfi', state.epubEngine.getCurrentCfi());
@@ -2065,7 +2072,7 @@ async function runSearch(rawQuery) {
     if (searchFuzzy.checked) params.set('fuzzy', '1');
     let results = [];
     try {
-      const response = await fetch(`/api/books/${encodeURIComponent(state.book.id)}/search?${params}`);
+      const response = await fetch(`/api/books/${encodeURIComponent(state.book.asset_id || state.book.id)}/search?${params}`);
       const payload = response.ok ? await response.json() : {};
       if (state.searchRun !== run) return;
       if (payload.indexed) {
@@ -2103,7 +2110,7 @@ async function runSearch(rawQuery) {
     const params = new URLSearchParams({ q: query });
     if (searchWhole.checked) params.set('whole', '1');
     if (searchFuzzy.checked) params.set('fuzzy', '1');
-    const response = await fetch(`/api/books/${encodeURIComponent(state.book.id)}/search?${params}`);
+    const response = await fetch(`/api/books/${encodeURIComponent(state.book.asset_id || state.book.id)}/search?${params}`);
     if (state.searchRun !== run) return;
     if (response.ok) {
       const data = await response.json();
@@ -3064,7 +3071,7 @@ async function saveProgress() {
           return progress?.cfi ? { type: 'epub', cfi: progress.cfi, href: progress.href, percent: progress.percent } : null;
         })()
         : { type: 'pdf', page: state.page };
-      if (anchor) localStorage.setItem(`offlineProgress:${state.book.id}`, JSON.stringify(anchor));
+      if (anchor) localStorage.setItem(`offlineProgress:${state.book.asset_id || state.book.id}`, JSON.stringify(anchor));
     } catch { /* quota/private mode */ }
     return;
   }
@@ -3191,7 +3198,7 @@ async function openEpubBook(book, options = {}) {
     let progress = null;
     if (offlineBlob) {
       try {
-        const saved = JSON.parse(localStorage.getItem(`offlineProgress:${book.id}`) || 'null');
+        const saved = JSON.parse(localStorage.getItem(`offlineProgress:${book.asset_id || book.id}`) || 'null');
         progress = saved ? { anchor: saved } : null;
       } catch { /* noop */ }
       state.annotations = await listLocalAnnotations(book.asset_id, annotationOwnerId()).catch(() => []);
@@ -3201,7 +3208,7 @@ async function openEpubBook(book, options = {}) {
       state.annotations = await loadAnnotationsFor(book.asset_id, false);
     }
     const params = new URLSearchParams(window.location.search);
-    const initialCfi = params.get('book') === book.id ? params.get('cfi') : progress?.anchor?.cfi;
+    const initialCfi = (params.get('book') === book.asset_id || params.get('book') === book.id) ? params.get('cfi') : progress?.anchor?.cfi;
     const engine = new EpubEngine(epubView, {
       canCopy: () => state.book?.allow_copy !== false,
       onCopyBlocked: () => toast('Bu kitapta kopyalama kapalı'),
@@ -3235,7 +3242,7 @@ async function openEpubBook(book, options = {}) {
       onSwipe: (delta) => changePage(delta),
     });
     state.epubEngine = engine;
-    const source = offlineBlob ? await offlineBlob.arrayBuffer() : `/api/books/${encodeURIComponent(book.id)}/book.epub`;
+    const source = offlineBlob ? await offlineBlob.arrayBuffer() : `/api/books/${encodeURIComponent(book.asset_id || book.id)}/book.epub`;
     await engine.open(source, initialCfi || undefined);
     const frame = epubView.querySelector('iframe');
     const frameRect = frame?.getBoundingClientRect();
@@ -3370,7 +3377,7 @@ async function openBook(book, options = {}) {
     let progress = null;
     if (offlineBlob) {
       try {
-        const saved = JSON.parse(localStorage.getItem(`offlineProgress:${book.id}`) || 'null');
+        const saved = JSON.parse(localStorage.getItem(`offlineProgress:${book.asset_id || book.id}`) || 'null');
         progress = saved ? { anchor: saved } : null;
       } catch { /* noop */ }
       state.annotations = await listLocalAnnotations(book.asset_id, annotationOwnerId()).catch(() => []);
@@ -3387,7 +3394,7 @@ async function openBook(book, options = {}) {
       standardFontDataUrl: '/vendor/pdfjs/standard_fonts/',
       isEvalSupported: false,
     } : {
-      url: `/api/books/${encodeURIComponent(book.id)}/file`,
+      url: `/api/books/${encodeURIComponent(book.asset_id || book.id)}/file`,
       cMapUrl: '/vendor/pdfjs/cmaps/',
       cMapPacked: true,
       standardFontDataUrl: '/vendor/pdfjs/standard_fonts/',
@@ -3408,7 +3415,7 @@ async function openBook(book, options = {}) {
     state.pdfPageLabels = labels;
 
     const params = new URLSearchParams(window.location.search);
-    const rawPage = params.get('book') === book.id ? params.get('page') : null;
+    const rawPage = (params.get('book') === book.asset_id || params.get('book') === book.id) ? params.get('page') : null;
     if (rawPage !== null) {
       const requested = Number(rawPage);
       if (!Number.isInteger(requested) || requested < 1) {

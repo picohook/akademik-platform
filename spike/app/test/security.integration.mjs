@@ -26,6 +26,7 @@ const password = randomBytes(24).toString('hex');
 const appPassword = randomBytes(24).toString('hex');
 const userPassword = randomBytes(18).toString('hex');
 const sessionSecret = randomBytes(32).toString('hex');
+const bridgeToken = randomBytes(32).toString('hex');
 const children = [];
 let containerCreated = false;
 let tempDir;
@@ -67,6 +68,7 @@ async function startApp(databaseUrl) {
       PORT: String(port),
       DEMO_TENANT_ID: tenantId,
       SESSION_SECRET: sessionSecret,
+      LIBEDGE_ADMIN_TOKEN: bridgeToken,
     },
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true,
@@ -148,7 +150,7 @@ async function setup() {
   const sandboxApp = path.join(tempDir, 'app');
   await mkdir(path.join(sandboxApp, 'public', 'seed'), { recursive: true });
   await mkdir(path.join(sandboxApp, 'public', 'ocr', seedAsset), { recursive: true });
-  for (const file of ['server.mjs', 'download-tickets.mjs', 'annotation-sync.mjs', 'social-watermark.mjs', 'indexer.mjs', 'public/search.mjs']) {
+  for (const file of ['server.mjs', 'libedge-admin.mjs', 'grant-policy.mjs', 'download-tickets.mjs', 'annotation-sync.mjs', 'social-watermark.mjs', 'indexer.mjs', 'public/search.mjs']) {
     await copyFile(path.join(appDir, file), path.join(sandboxApp, file));
   }
   await writeFile(path.join(sandboxApp, 'public', 'seed', 'security.pdf'), await pdfBytes('Security seed'));
@@ -299,6 +301,98 @@ async function grantFailureTest({ base }, hidden) {
   console.log('PASS grants: real SQL permission error blocks catalog/search/files/download/OCR/OPDS; auth stays valid; access recovers.');
 }
 
+
+async function bridgeTest({ base }) {
+  const collection = '66666666-6666-6666-6666-666666666666';
+  const edition = '44444444-4444-4444-4444-444444444444';
+  const secondTenant = randomUUID();
+  const bridge = async (route, { method = 'GET', body, tenant = tenantId, token = bridgeToken, actor = '42' } = {}) => {
+    const response = await fetch(base + '/api/libedge/v1' + route, {
+      method, headers: { authorization: `Bearer ${token}`, 'x-libedge-tenant': tenant,
+        'x-libedge-actor': actor, 'content-type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const data = await response.json();
+    return { status: response.status, data, text: JSON.stringify(data) };
+  };
+  status(await bridge('/health', { token: 'wrong' }), 401, 'bridge rejects bad credential');
+  status(await bridge('/catalog', { actor: '' }), 403, 'bridge requires external admin actor');
+  status(await request(base, '/api/books', null), 401, 'bridge credential grants no reader session');
+  const health = status(await bridge('/health'), 200, 'bridge checks real database');
+  assert.equal(health.data.mode, 'db');
+  assert.equal(health.data.bridge_version, 1);
+  await admin.query('insert into tenants (id, name, slug) values ($1, $2, $3)', [secondTenant, 'Isolated tenant', 'isolated-' + secondTenant]);
+  const isolated = status(await bridge('/catalog', { tenant: secondTenant }), 200, 'bridge RLS isolates second tenant');
+  assert.equal(isolated.data.works.some(work => work.variants.some(v => v.id === seedWork)), false);
+  status(await bridge(`/works/${seedWork}`, { method: 'PATCH', tenant: secondTenant, body: { title: 'cross tenant' } }), 404, 'bridge denies cross-tenant metadata update');
+  status(await bridge('/grants', { method: 'POST', tenant: secondTenant, body: {
+    collection_id: collection, valid_from: new Date().toISOString(), valid_to: null, status: 'active',
+  } }), 404, 'bridge denies foreign collection grant');
+  const secondEdition = randomUUID(), secondAsset = randomUUID();
+  await admin.query('insert into editions (id, tenant_id, work_id, publisher, edition) values ($1, $2, $3, $4, $5)',
+    [secondEdition, tenantId, seedWork, 'Second publisher', '2']);
+  await admin.query("insert into assets (id, tenant_id, edition_id, format, storage_key) values ($1, $2, $3, 'epub', 'seed/second.epub')", [secondAsset, tenantId, secondEdition]);
+  await admin.query(`insert into reading_progress (tenant_id, user_id, asset_id, anchor, percent) values
+    ($1, $2, $3, '{"page":1}', 20), ($1, $2, $4, '{"cfi":"other"}', 75)`, [tenantId, '22222222-2222-2222-2222-222222222222', seedAsset, secondAsset]);
+  const noteA = randomUUID(), noteB = randomUUID();
+  await admin.query(`insert into annotations (id, tenant_id, user_id, asset_id, anchor, note) values
+    ($1, $3, $4, $5, '{"page":1}', 'PDF note'), ($2, $3, $4, $6, '{"cfi":"other"}', 'EPUB note')`,
+    [noteA, noteB, tenantId, '22222222-2222-2222-2222-222222222222', seedAsset, secondAsset]);
+  const patch = { edition_id: edition, publisher: 'Bridge publisher', publication_year: 2026,
+    cover_url: 'https://covers.example.test/one.jpg', variant_group: 'shared-work-test' };
+  status(await bridge(`/works/${seedWork}`, { method: 'PATCH', body: patch }), 200, 'bridge updates one edition and existing work metadata');
+  assert.equal((await admin.query('select publisher from editions where id = $1', [secondEdition])).rows[0].publisher, 'Second publisher');
+  const progress = (await admin.query('select asset_id, percent from reading_progress order by percent')).rows;
+  assert.equal(progress.length, 2); assert.equal(String(progress[0].percent), '20.00'); assert.equal(String(progress[1].percent), '75.00');
+  const notes = (await admin.query('select asset_id, note from annotations where id = any($1::uuid[]) order by note', [[noteA, noteB]])).rows;
+  assert.deepEqual(notes, [{ asset_id: secondAsset, note: 'EPUB note' }, { asset_id: seedAsset, note: 'PDF note' }]);
+  const catalog = status(await bridge('/catalog'), 200, 'bridge groups existing editions/assets');
+  const grouped = catalog.data.works.find(w => w.id === 'shared-work-test');
+  assert.ok(grouped); assert.equal(grouped.variants[0].editions.length, 2);
+  assert.deepEqual(new Set(grouped.variants[0].editions.flatMap(e => e.assets.map(a => a.id))), new Set([seedAsset, secondAsset]));
+  await admin.query('revoke insert on audit_events from akademik_app');
+  try {
+    status(await bridge(`/works/${seedWork}`, { method: 'PATCH', body: { title: 'Must roll back' } }), 503, 'metadata audit failure rejects mutation');
+    assert.notEqual((await admin.query('select title from works where id = $1', [seedWork])).rows[0].title, 'Must roll back');
+  } finally { await admin.query('grant insert on audit_events to akademik_app'); }
+  await admin.query("update grants set status = 'revoked' where tenant_id = $1", [tenantId]);
+  const grantBody = { collection_id: collection, valid_from: new Date(Date.now() - 60_000).toISOString(), valid_to: null, status: 'active' };
+  const created = status(await bridge('/grants', { method: 'POST', body: grantBody }), 201, 'bridge creates existing tenant collection grant');
+  const id = created.data.grant.id;
+  const reader = await login(base, 'reader@example.edu.tr');
+  const active = status(await request(base, '/api/books', reader), 200, 'reader sees collection grant');
+  assert.ok(active.data.some(book => book.id === seedWork));
+  const ticket = status(await request(base, `/api/books/${seedAsset}/download-ticket`, reader, { method: 'POST', body: {} }), 201, 'issue ticket before revocation').data.ticket;
+  await admin.query('revoke insert on grant_audit from akademik_app');
+  try {
+    status(await bridge(`/grants/${id}`, { method: 'PATCH', body: { ...grantBody, status: 'revoked' } }), 503, 'grant audit failure rejects mutation');
+    assert.equal((await admin.query('select status from grants where id = $1', [id])).rows[0].status, 'active');
+  } finally { await admin.query('grant insert on grant_audit to akademik_app'); }
+  for (const body of [
+    { ...grantBody, valid_to: new Date(Date.now() - 1000).toISOString() },
+    { ...grantBody, valid_from: new Date(Date.now() + 3600_000).toISOString() },
+    { ...grantBody, status: 'revoked' },
+  ]) {
+    status(await bridge(`/grants/${id}`, { method: 'PATCH', body }), 200, 'update dates or revoke access');
+    assert.deepEqual(status(await request(base, '/api/books', reader), 200, 'expired/future/revoked catalog').data, []);
+    for (const route of [`/api/books/${seedAsset}/file`, `/api/books/${secondAsset}/book.epub`, `/api/books/${seedAsset}/search?q=security`, `/ocr/${seedAsset}/page-001.hocr`]) {
+      status(await request(base, route, reader), route.endsWith('/file') || route.endsWith('/book.epub') ? 404 : 403, 'expired/future/revoked content denied');
+    }
+    status(await request(base, `/api/books/${seedAsset}/download-ticket`, reader, { method: 'POST', body: {} }), 403, 'expired/future/revoked ticket denied');
+  }
+  status(await request(base, `/api/books/${seedAsset}/download`, reader, { method: 'POST', body: { ticket } }), 403, 'issued ticket denied after revocation');
+  const audit = status(await bridge('/grant-audit'), 200, 'bridge audit readable');
+  assert.ok(audit.data.audit.some(row => row.grant_id === id && row.detail.libedge_actor_id === '42' && row.action === 'revoke'));
+  status(await bridge(`/grants/${id}`, { method: 'PATCH', tenant: secondTenant, body: grantBody }), 404, 'foreign tenant cannot alter grant');
+  status(await bridge('/grants', { method: 'POST', body: { ...grantBody, valid_to: 'not-a-date' } }), 400, 'invalid grant dates rejected');
+  await request(base, '/api/logout', reader, { method: 'POST' });
+  await admin.query('delete from annotations where id = any($1::uuid[])', [[noteA, noteB]]);
+  await admin.query('delete from reading_progress');
+  await admin.query('delete from editions where id = $1', [secondEdition]);
+  await admin.query("update grants set status = 'active', valid_from = now() - interval '1 minute', valid_to = null where id = $1", [seedGrant]);
+  console.log('PASS LibEdge bridge: real PostgreSQL RLS, credentials, edition/asset identity, atomic audit rollback, expiry/future/revocation on catalog/PDF/EPUB/search/OCR/downloads.');
+}
+
 async function concurrencyTest({ base, peer, adminUrl, users }) {
   const racers = users.slice(2);
   await admin.query("update grants set scope_type = 'all', scope_id = null, seat_limit = 2 where id = $1", [seedGrant]);
@@ -392,8 +486,9 @@ try {
   const context = await setup();
   const hidden = await publisherTest(context);
   await grantFailureTest(context, hidden);
+  await bridgeTest(context);
   await concurrencyTest(context);
-  console.log(`\n3 security integration scenarios passed (${checks} HTTP/DB checks).`);
+  console.log(`\n4 security integration scenarios passed (${checks} HTTP/DB checks).`);
 } catch (error) {
   console.error(error);
   for (const { log } of children) {

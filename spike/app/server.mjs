@@ -1,3 +1,5 @@
+import { createLibedgeBridge } from './libedge-admin.mjs';
+import { grantAllows } from './grant-policy.mjs';
 import { mutateAnnotation, memoryAnnotationMutations, purgeAnnotationReceipts } from './annotation-sync.mjs';
 import http from 'node:http';
 import path from 'node:path';
@@ -95,6 +97,7 @@ const demoBooks = [
 const demoAnnotations = [];
 const mutateDemoAnnotation = memoryAnnotationMutations(demoAnnotations);
 const demoGrants = [];
+let demoAccessConfigured = false;
 const demoGrantAudit = [];
 const demoGroups = [];
 const demoGroupMembers = [];
@@ -578,36 +581,24 @@ async function deleteUploadedBook(id) {
   });
 }
 
-function grantAllows(book, grants) {
-  if (!grants.length) return true;
-  const publisher = String(book.publisher || '').toLocaleLowerCase('tr');
-  const subjects = (book.subjects || []).map((value) => String(value).toLocaleLowerCase('tr'));
-  return grants.some((grant) => {
-    if (grant.scope_type === 'all') return true;
-    if (grant.scope_type === 'title') return String(grant.scope_id || '') === String(book.id);
-    if (grant.scope_type === 'publisher') return String(grant.scope_key || '').toLocaleLowerCase('tr') === publisher;
-    if (grant.scope_type === 'subject') return subjects.includes(String(grant.scope_key || '').toLocaleLowerCase('tr'));
-    if (grant.scope_type === 'collection') {
-      return (book.collection_ids || []).map(String).includes(String(grant.scope_id || ''));
-    }
-    return false;
-  });
-}
-
 async function activeGrants(auth, dbClient = null) {
   if (!auth) return [];
   if (!pool) {
-    return demoGrants.filter((grant) => grant.status === 'active'
+    const grants = demoGrants.filter((grant) => grant.status === 'active'
       && grant.tenant_id === TENANT_ID
       && ((grant.subject_type === 'tenant' && grant.subject_id === TENANT_ID)
         || (grant.subject_type === 'user' && grant.subject_id === auth.userId)
         || (grant.subject_type === 'group'
-          && demoGroupMembers.some((member) => member.group_id === grant.subject_id && member.user_id === auth.userId))));
+          && demoGroupMembers.some((member) => member.group_id === grant.subject_id && member.user_id === auth.userId))))
+      .filter(grant => (!grant.valid_from || Date.parse(grant.valid_from) <= Date.now()) && (!grant.valid_to || Date.parse(grant.valid_to) > Date.now()));
+    grants.accessRequired = demoAccessConfigured;
+    return grants;
   }
   try {
     const tenantId = auth.tenantId || TENANT_ID;
     const grantClock = dbClient ? 'clock_timestamp()' : 'now()';
     const load = async (client) => {
+      const { rows: tenants } = await client.query('select download_grants_required from tenants where id = $1', [tenantId]);
       const { rows } = await client.query(
         `select id, subject_type, subject_id, scope_type, scope_id, scope_key, seat_limit
            from grants
@@ -622,6 +613,7 @@ async function activeGrants(auth, dbClient = null) {
               )))`,
         [tenantId, auth.userId || null],
       );
+      rows.accessRequired = !tenants[0] || tenants[0].download_grants_required;
       return rows;
     };
     return dbClient ? await load(dbClient) : await withTenant(load);
@@ -835,6 +827,7 @@ async function createGrant(body, auth) {
     created_at: new Date().toISOString(),
   };
   if (!pool) {
+    demoAccessConfigured = true;
     demoGrants.unshift(grant);
     await logGrantAudit(null, auth, grant.id, 'create', {
       subjectType, scopeType, scopeKey, scopeId,
@@ -1872,6 +1865,9 @@ async function serveStatic(req, res, pathname) {
 
 await mkdir(UPLOAD_DIR, { recursive: true });
 
+const libedgeBridge = createLibedgeBridge({ pool, token: process.env.LIBEDGE_ADMIN_TOKEN, tenantId: TENANT_ID,
+  version: APP_VERSION, buildSha: BUILD_SHA, readJson, json });
+
 const server = http.createServer(async (req, res) => {
   let url;
   let pathname;
@@ -1896,12 +1892,13 @@ const server = http.createServer(async (req, res) => {
   res.setHeader(
     'content-security-policy',
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
-    + "img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; "
+    + "img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; "
     + "frame-src 'self' blob: data:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; "
     + "form-action 'self'; frame-ancestors 'none'",
   );
 
   try {
+    if (await libedgeBridge(req, res, url)) return;
     if (pathname === '/sushi' && req.method === 'GET') {
       const apiKey = process.env.SUSHI_API_KEY;
       if (apiKey && url.searchParams.get('api_key') !== apiKey) {
