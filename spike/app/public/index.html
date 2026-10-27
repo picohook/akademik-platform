@@ -12,7 +12,11 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/icons/icon-180.png" />
   <title>E-Kütüphane</title>
-  <link rel="stylesheet" href="/styles.css?v=50-reader-ui" />
+  <!-- ?v= is a placeholder: server.mjs rewrites it to the running build's
+       identity (BUILD_SHA, falling back to APP_VERSION) when serving this file.
+       Do not hand-edit it; a stale literal is what served a new app.js behind an
+       unchanged URL from v130 to v134. -->
+  <link rel="stylesheet" href="/styles.css?v=0-dev" />
   <link rel="prefetch" href="/vendor/pdfjs/pdf.worker.mjs" as="script" />
 </head>
 <body>
@@ -433,6 +437,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="/app.js?v=130-ui-copy"></script>
+  <script type="module" src="/app.js?v=0-dev"></script>
 </body>
 </html>

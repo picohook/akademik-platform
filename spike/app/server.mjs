@@ -1,5 +1,6 @@
 import { createStorage, serveStoredAsset } from './storage.mjs';
 import { APP_CSP } from './security-headers.mjs';
+import { assetVersionToken, versionShellAssets } from './asset-version.mjs';
 import { normalizeBookVariant } from './public/book-variants.mjs';
 import { mutateAnnotation, memoryAnnotationMutations, purgeAnnotationReceipts } from './annotation-sync.mjs';
 import { currentTenant, runWithTenant } from './tenant-context.mjs';
@@ -66,6 +67,7 @@ const BRAND_TAGLINE = process.env.BRAND_TAGLINE || 'spike';
 const APP_VERSION = process.env.APP_VERSION || '0-dev';
 const BUILD_SHA = process.env.BUILD_SHA || '';
 const BUILD_DATE = process.env.BUILD_DATE || '';
+const ASSET_VERSION = assetVersionToken(BUILD_SHA, APP_VERSION);
 const APP_ENV = process.env.APP_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'development');
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || '';
 function integerEnv(name, fallback, min, max) {
@@ -1964,6 +1966,25 @@ async function serveStatic(req, res, pathname) {
   }
   const ext = path.extname(filePath).toLowerCase();
   const noCache = ['.html', '.js', '.mjs', '.css', '.hocr'].includes(ext);
+  // index.html is the one file served with a mutable body: the asset version
+  // token is stamped in at response time so it always matches the running build.
+  if (ext === '.html' && ASSET_VERSION) {
+    let html;
+    try {
+      html = await readFile(filePath, 'utf8');
+    } catch {
+      json(res, 404, { error: 'not found' });
+      return;
+    }
+    const body = Buffer.from(versionShellAssets(html, ASSET_VERSION), 'utf8');
+    res.writeHead(200, {
+      'content-type': MIME[ext],
+      'content-length': body.length,
+      'cache-control': 'no-cache',
+    });
+    res.end(body);
+    return;
+  }
   res.writeHead(200, {
     'content-type': MIME[ext] || 'application/octet-stream',
     'content-length': info.size,
@@ -2529,7 +2550,7 @@ async function handleRequest(req, res) {
         // record why, so the operator does not have to guess from a bare 409.
         console.warn('[download] invalid storage key:', storageKeyError);
         await downloadService.auditDenied(auth, 'invalid_storage_key', false, 403,
-          { error: deliveryErrorDetail(storageKeyError) });
+          { error: deliveryErrorDetail(storageKeyError) }, book);
         json(res, 409, { error: 'download unavailable' });
         return;
       }
@@ -2545,7 +2566,7 @@ async function handleRequest(req, res) {
         // is exactly how a permanently undownloadable title stayed invisible.
         console.warn(`[download] ${format} delivery failed:`, error.message);
         await downloadService.auditDenied(auth, 'delivery_failed', false, 403,
-          { format, error: deliveryErrorDetail(error.message) });
+          { format, error: deliveryErrorDetail(error.message) }, book);
         json(res, 409, { error: 'download unavailable' });
         return;
       }

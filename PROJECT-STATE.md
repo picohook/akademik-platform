@@ -3,6 +3,7 @@
 Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konuşma geçmişini tekrar okumayın.
 
 ## Sürümler
+- **v135 (hazırlandı, henüz deploy edilmedi):** `fix/v135-audit-book-id-and-asset-version` — (1) `auditDenied()` artık `book` geçiriyor, 409 audit satırı kitabı adlandırıyor; (2) `?v=` etiketi `BUILD_SHA`'dan türetiliyor (`asset-version.mjs` + `server.mjs` enjeksiyonu), SW cache `v25`→`v26`. **Migration yok.** Deploy edilene kadar canlıda etkisi yok.
 - **Canlı sürüm doğrulaması (2026-10-28 01:43 TRT):** Prod: **v134**, kaynak **b6aa81a** (`main`), buildDate **2026-10-27** (sunucu UTC). Kanıt `GET https://elibrary.libedge.com/api/config`: `134` / `b6aa81a` / `2026-10-27`; `/api/health` → `ok:true, mode:db`, tenant `5799f2a5-…`; R2 **PASS**. İmaj `libedge-v134` (ID `00bf4340bca2`, LABEL `b6aa81a`/`134`), adı **`.env.r2` içindeki `LIBEDGE_IMAGE=libedge-v134`** ile veriliyor. Build öncesi `docker rmi libedge-v132` (disk %85, 1023 MB boş). **DB migration yok** (001–020). Rollback: **`libedge-v133`** + **`.env.r2.bak-v133`**. docs/deployments/2026-10-28-v134.md, docs/DEPLOY.md.
 - **v134 ne yaptı:** EPUB indirmede **409 artık nedeniyle birlikte** kaydediliyor (`delivery_failed` / `invalid_storage_key` audit'e `error`+`format` ile), okuyucuya **anlaşılır mesaj** gösteriliyor, **bozuk EPUB yüklemede reddediliyor** (`inspectWatermarkable`), `--dry-run` inceleme mümkün. Ayrıştırıcı **değişmedi** — doğru davranıyordu, bozuk olan veri. Tarayıcıda (Altan) doğrulandı: anlaşılır mesaj, konsolda yalnız 409, yakalanmamış hata yok.
 - **v133 (2026-10-27):** CSP `style-src`'ye `blob:` (EPUB yayıncı stili + tema + yazı boyutu), `/favicon.ico` 200, `mobile-web-app-capable`, SW cache `v24`→`v25`. docs/deployments/2026-10-27-v133.md.
@@ -85,8 +86,8 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - Grants: `010`–`012` uygulanmalı. **~~Grant yoksa katalog eskisi gibi açık~~ — 2026-10-27'den beri YANLIŞ.** Erişim fail-closed: eşleşen grant yoksa katalog **kapalı** (0 kitap). Kural: kullanıcının tenant'ında ya da üzerinde `active` + süresi geçmemiş bir grant olmalı. Canlıda LibEdge tenant'ı için all kapsamlı süresiz grant (`20202020-…`) var; `77777777-…` collection grant'i 2027-01-23'te sona erer. Seat limit `users.max_sessions` ile birlikte çalışır. **Grup subject + üye ekle/çıkar**, kullanıcı/grup grant’leri, koleksiyon/başlık seçicileri, audit log ve kullanım sayacı var.
 - `download-tickets` ve `/opds` hâlâ **env tenant'ı** ile kurulu (`tenantId: TENANT_ID`). İkinci tenant'ta bu yollar reddeder (`tenant_mismatch` / 401); **sızdırmaz** ama kırılır. Ayrı PR.
 - `2026-10-28` itibarıyla bilinen açıklar (v134): **bozuk EPUB dosyası hâlâ bozuk** — indirme 409 veriyor ama artık **nedeni audit'te ve okuyucuda görünüyor**; **katalogda kaç kitabın aynı durumda olduğu bilinmiyor** (tarama yapılmadı). Onarım: `docs/runbooks/epub-repair-2026-10-27.md`.
-- **Download deny audit'inde `book_id` null:** `auditDenied()` her zaman `book = null` geçiyor (`download-tickets.mjs:144`); `server.mjs`'te 409 anında `book` elimizde olmasına rağmen verilmiyor. Sonuç: "hangi kitap indirilemiyor" sorusu audit'ten cevaplanamıyor. Ayrı küçük PR.
-- **`app.js?v=130-ui-copy` sabit:** `public/index.html:436` cache-busting etiketi v130'dan beri değişmedi. Yeni `app.js` (v134 hata mesajı dahil) eski etiketle servis ediliyor; tarayıcı cache'ine bağlı kalıyor. Build SHA'dan türetilmeli ya da her sürümde güncellenmeli.
+- **Download deny audit'inde `book_id` (v135'te çözüldü):** `auditDenied()` artık opsiyonel `book` alıyor; `server.mjs`'te 409 üreten iki çağrı `book`'u geçiriyor, böylece "hangi kitap indirilemiyor" sorusu audit'ten cevaplanabiliyor. Kitap çözülmeden düşen yollar (`csrf_invalid`) doğru şekilde `null` kalıyor.
+- **`app.js?v=` etiketi (v135'te çözüldü):** v130'dan beri sabit `?v=130-ui-copy` idi; artık `asset-version.mjs` token'ı `BUILD_SHA`'dan türetiyor ve `server.mjs` `index.html`'i servis ederken enjekte ediyor.
 
 ## Komutlar
 
@@ -165,6 +166,18 @@ Verified live: image `libedge-v133` (ID `541b98daa159`, LABEL `5225149`/`133`), 
 
 **Open:** an offline-launch EPUB was not exercised this round, so it is unproven that `v25` is actually served instead of a leftover `v24` shell (see `docs/TODO.md`). Still open from earlier: `download-tickets` and `/opds` bound to the env tenant; SSO. docs/deployments/2026-10-27-v133.md.
 
+## v135 audit attribution and real cache-busting — 2026-10-28
+
+Branch `fix/v135-audit-book-id-and-asset-version`. No deploy yet, no migration. Both items are the follow-ups found while verifying v134, and they ship together because each is a few lines with one test file.
+
+**1. A deny row now names the book.** `auditDenied()` hard-coded `book = null`, so every `download.ticket.deny` row carried `payload.book_id: null` and `object_id: null` — the v134 evidence chain could say *what* failed (`delivery_failed`, with the parser message) but not *which title*. `server.mjs` held the `book` at the 409 site and simply did not pass it. The signature gained an optional trailing `book`; `invalid_storage_key` and `delivery_failed` now pass it. Paths that deny before the book is resolved (`csrf_invalid`, `post_required`) keep passing nothing — `null` is the truthful value there, and the fix does not fabricate an id. This had to land **before** the catalog scan: the scan answers "how many titles are in this state?" by reading audit. Test `test/download-audit.test.mjs` drives the service with a fake client and asserts `object_id`/`payload.book_id`; reverting the one-word change makes it fail with `null !== 'asset-1'`.
+
+**2. `?v=` is now derived from the build, not typed by hand.** `public/index.html` carried `?v=130-ui-copy` from v130 onward, so v131–v134 each served a new `app.js` behind an unchanged URL. The v134 reader messages only appeared if the browser happened to revalidate; `Cache-Control: no-cache` and the service worker's network-first rule made that likely but never guaranteed, and nothing in the build tied the URL to the code. The token now comes from `assetVersionToken(BUILD_SHA, APP_VERSION)` in the new side-effect-free `asset-version.mjs` (`BUILD_SHA`, else `APP_VERSION`, else no token — an unknown build gets no invented version), and `serveStatic` stamps it into `index.html` at response time, recomputing `content-length`. Rewriting is anchored to an allowlist of the twelve shell modules plus `styles.css`, so a token cannot land in arbitrary HTML and API URLs keep their own query. `sw.js` cache bumped **v25 → v26** per the rule v133 established: the cached `/` body changed.
+
+Verified by starting the real server: `BUILD_SHA=b6aa81a APP_VERSION=134 node server.mjs` → `/` returns `200`, `content-length` 26859 **matching the actual body**, `cache-control: no-cache`, unchanged CSP, and `/styles.css?v=b6aa81a` / `/app.js?v=b6aa81a` in the body. Tests: full unit suite **135/135** across 20 files; the two new files are 7/7 and 2/2.
+
+**Not done:** nothing is deployed as v135 yet, so the live site still serves the literal `?v=` until this merges and ships. The catalog scan is independent and can run whenever; the `book_id` fix simply makes its results readable.
+
 ## v134 EPUB download 409 made visible — 2026-10-28
 
 Code **b6aa81a** on `main` (PR #29). Live and verified 2026-10-28 01:43 TRT.
@@ -179,4 +192,4 @@ Verified live: image `libedge-v134` (ID `00bf4340bca2`, LABEL `b6aa81a`/`134`), 
 
 **The book itself is still broken.** v134 only built the correct failure path; the reader still cannot download it. Repair and catalog scan are the next work, in that order: `docs/runbooks/epub-repair-2026-10-27.md`.
 
-**Open:** `book_id` is `null` in the deny audit (found during this deploy) because `auditDenied()` always passes `book = null` (`download-tickets.mjs:144`) even though `server.mjs` holds the book at the 409 site — so "which title is undownloadable" cannot be answered from audit yet; `app.js?v=130-ui-copy` in `public/index.html:436` has not changed since v130, so cache-busting is not actually busting. Still open from earlier: `download-tickets` and `/opds` bound to the env tenant; SSO; offline-launch EPUB never exercised. docs/deployments/2026-10-28-v134.md.
+**Open:** `download-tickets` and `/opds` bound to the env tenant; SSO; offline-launch EPUB never exercised. Both follow-ups found during this deploy were closed in v135. docs/deployments/2026-10-28-v134.md.
