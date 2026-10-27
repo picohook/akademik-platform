@@ -4,30 +4,117 @@
 - `seed.sql` — one demo tenant, user, work, asset, collection, and grant.
 - `migrations/` — incremental migrations for an existing volume (not re-run on init).
 
-## Applying a migration to an existing volume
+## Applying a migration
 
-Docker only runs `schema.sql`/`seed.sql` when the volume is first created. For an existing database, apply migrations explicitly:
+Migrations are applied by `db/migrate.mjs`, which records what ran in
+`schema_migrations`. Do not paste `psql -f` commands by hand: before this
+runner existed there was no record of which files had been applied, and the
+only way to answer that was to inspect the data a migration changed.
 
 ```bash
-docker compose exec db psql -U akademik -d akademik -f /migrations/001-asset-pages.sql
-docker compose exec db psql -U akademik -d akademik -f /migrations/002-users-password.sql
-docker compose exec db psql -U akademik -d akademik -f /migrations/003-librarian-user.sql
-docker compose exec db psql -U akademik -d akademik -f /migrations/004-session-version.sql
-docker compose exec db psql -U akademik -d akademik -f /migrations/005-annotation-tags.sql
-docker compose exec db psql -U akademik -d akademik -f /migrations/006-access-policies.sql
-docker compose exec db psql -U akademik -d akademik -f /migrations/007-user-sessions.sql
-docker compose exec db psql -U akademik -d akademik -f /migrations/008-page-search.sql
-docker compose exec db psql -U akademik -d akademik -f /migrations/009-epub-pages.sql
-docker compose exec db psql -U akademik -d akademik -f /migrations/010-grant-scope-key.sql
-docker compose exec db psql -U akademik -d akademik -f /migrations/011-grant-audit.sql
-docker compose exec db psql -U akademik -d akademik -f /migrations/012-groups.sql
-docker compose exec db psql -U akademik -d akademik -f /migrations/013-download-tickets.sql
-docker compose exec db psql -U akademik -d akademik -f /migrations/014-download-ticket-limits.sql
-docker compose exec db psql -U akademik -d akademik -f /migrations/015-annotation-sync.sql
-docker compose exec db psql -U akademik -d akademik -f /migrations/016-annotation-receipt-retention.sql
+# what is applied, pending, or edited after being applied
+DATABASE_ADMIN_URL=postgres://owner:...@host/db node db/migrate.mjs --status
+
+# apply everything pending, in filename order, one transaction per file
+DATABASE_ADMIN_URL=... node db/migrate.mjs
+
+# show what would run, change nothing
+DATABASE_ADMIN_URL=... node db/migrate.mjs --dry-run
 ```
 
+`DATABASE_ADMIN_URL` must be a role that can run DDL. The app role
+(`akademik_app`) deliberately cannot, and the runner needs the table owner to
+create the registry on first use.
+
+Each file runs inside one transaction together with its `schema_migrations`
+row, so a failing migration leaves neither partial SQL nor a false record. An
+applied file whose content later changed is reported as `MODIFIED` and stops
+the run; `--allow-modified` overrides that deliberately.
+
+### Rules a migration file must follow
+
+The runner refuses a file rather than run it in a way that would desynchronise
+the registry from the database. A refused file leaves nothing behind.
+
+- **No transaction control of its own.** No `begin`, `commit`, `rollback`,
+  `end`, `start transaction`, `savepoint`, `release savepoint`, and no psql
+  `\begin`/`\commit`/`\rollback`. The file's `commit` would end the runner's
+  transaction, so the registry row would land outside it: the changes committed
+  and unrecorded, or recorded and rolled back. Let the runner open and close the
+  transaction.
+- **No psql meta-commands.** No `\set`, `\i`, `\echo` and so on: the runner
+  sends the file to the server, and Postgres cannot parse a backslash command.
+  Write the values out literally instead of parameterising them with `\set`.
+- **Idempotent or guarded.** `--baseline` marks a file applied without running
+  it, so a file that is later run by mistake, or run twice out of order, must
+  not duplicate data. `create ... if not exists`, `on conflict do nothing`, and
+  a `where` that matches only the broken shape all count.
+
+013-017 break the first two rules and are therefore never executed by the
+runner: they are baselined, and `--status` reports them as `cannot run`.
+
+### Baseline
+
+Migrations 001-017 were applied by hand before the runner existed, so no
+registry rows exist for them. On a database that already has data, mark them
+once:
+
+```bash
+DATABASE_ADMIN_URL=... node db/migrate.mjs --baseline
+```
+
+This writes rows only; it runs no SQL, so it asserts the files *should* be
+applied without proving it. Verify against the database before trusting it -
+for 017, that means `select count(*) from users where tenant_id = '11111111-...'`
+returning 0. After the baseline, `--status` is the authoritative answer.
+
+The runner refuses to apply anything when the registry is empty **and** a
+`users` table exists. In that state every file looks pending, and applying them
+is not re-running history: 003 would insert the `demo1234` librarian account
+into a live database. An empty registry on a database with a schema means "not
+baselined yet", never "fresh database"; a genuinely fresh database has no
+`users` table and is unaffected.
+
+### Running it on the EC2 host
+
+The host has no `node` and no `spike/app/node_modules`, and the disk is tight,
+so do not `npm install` on the host. Run the runner in a throwaway container
+attached to the compose network, mounting the repo read-only and the app's
+`node_modules` as an anonymous volume so `npm ci` never writes into the repo:
+
+```bash
+cd /home/ubuntu/akademik-platform      # the checkout that docker compose runs from
+REPO=$PWD
+NET=akademik-platform-prod_default
+
+docker run --rm --network "$NET" \
+  -v "$REPO":/repo:ro \
+  -v /repo/spike/app/node_modules \
+  -w /repo/spike/app \
+  -e DATABASE_ADMIN_URL='postgres://akademik:PASSWORD@db:5432/akademik' \
+  -e NODE_PATH=/repo/spike/app/node_modules \
+  node:22-alpine \
+  sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status'
+```
+
+Drop `:ro` and add `--user "$(id -u):$(id -g)"` if you would rather mount the
+repo writable; the only thing that needs to be writable is the anonymous
+`node_modules` volume. `db/` is not mounted into the app image, which is why the
+runner has to run from the host checkout and not from `docker compose exec web`.
+
+`DATABASE_ADMIN_URL` must use the table owner (`POSTGRES_USER` from `.env`),
+never `DATABASE_URL`: the app role cannot create the registry and the runner
+refuses to start as it.
+
+018 and later are applied by the runner only. There is no 018 file that creates
+`schema_migrations`: a migration that creates the table which records
+migrations cannot itself be recorded.
+
 Demo login: `reader@example.edu.tr` (reader) or `librarian@example.edu.tr` (upload/edit) / `demo1234`.
+
+> Note: as of migration 017 the two demo users are removed from the Demo
+> tenant. `db/seed.sql` still creates them for a fresh local volume, so this
+> line applies to a newly seeded database only.
 
 Then build the per-page text index used by in-book search:
 
