@@ -19,10 +19,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 // helpers/ -> test/ -> app/  (tests pass their own appDir, which is also app/)
 const APP_DIR = new URL('../../', import.meta.url);
 
-// server.mjs entry point plus the extra app files that must be present at
-// runtime but are not reachable through import statements: the public assets
-// are copied wholesale by some tests, but import-graph consumers that do not
-// copy public/ still need these two (server.mjs imports both).
+// The entry point of the import walk. Everything else is discovered from it.
 export const SERVER_ENTRY = 'server.mjs';
 
 // Modules the sample/public tests additionally ship. Kept separate so tests that
