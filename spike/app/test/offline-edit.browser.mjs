@@ -6,6 +6,7 @@ import { cp, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/p
 import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { serverFiles } from './helpers/server-files.mjs';
 import { PDFDocument } from 'pdf-lib';
 import JSZip from 'jszip';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
@@ -45,7 +46,8 @@ async function loginAs(email){
 async function epub(){const z=new JSZip();z.file('mimetype','application/epub+zip',{compression:'STORE'});z.file('META-INF/container.xml','<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0"><rootfiles><rootfile full-path="OEBPS/book.opf" media-type="application/epub+zip"/></rootfiles></container>');z.file('OEBPS/book.opf',`<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="id"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="id">${runId}</dc:identifier><dc:title>Offline edit EPUB</dc:title><dc:language>en</dc:language></metadata><manifest><item id="chapter" href="chapter.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="chapter"/></spine></package>`);z.file('OEBPS/chapter.xhtml','<html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><title>Chapter</title></head><body><h1>Offline editing fixture</h1><p>Selections and personal notes survive reload.</p></body></html>');return z.generateAsync({type:'nodebuffer'});}
 async function setup(){
  await mkdir(out,{recursive:true});await mkdir(tempRoot,{recursive:true});temp=await mkdtemp(path.join(tempRoot,'offline-edit-'));const dir=path.join(temp,'app');await mkdir(dir);
- for(const name of ['server.mjs','tenant-context.mjs','storage.mjs','indexer.mjs','download-tickets.mjs','annotation-sync.mjs','social-watermark.mjs'])await copyFile(path.join(appDir,name),path.join(dir,name));
+ // public/ is copied wholesale below, so only the root-level modules go here.
+ for(const name of (await serverFiles()).filter(f=>!f.startsWith('public/')))await copyFile(path.join(appDir,name),path.join(dir,name));
  await cp(path.join(appDir,'public'),path.join(dir,'public'),{recursive:true,filter:f=>!['uploads','ocr'].some(n=>f===path.join(appDir,'public',n)||f.startsWith(path.join(appDir,'public',n)+path.sep))});
  for(const file of ['server.mjs','public/app.js','public/offline.mjs','public/index.html','public/sw.js','public/i18n.mjs'])report.sources[file]=sha(await readFile(path.join(dir,file)));
  const socket=net.createServer();socket.listen(0,'127.0.0.1');await once(socket,'listening');const port=socket.address().port;await new Promise(r=>socket.close(r));base='http://127.0.0.1:'+port;

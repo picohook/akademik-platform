@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 import { execFile, spawn } from 'node:child_process';
 import { randomBytes, randomUUID, scryptSync } from 'node:crypto';
 import { once } from 'node:events';
-import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { copyServerFiles } from './helpers/server-files.mjs';
 import { promisify } from 'node:util';
 import pg from 'pg';
 
@@ -160,11 +161,7 @@ async function setup() {
   tempDir = await mkdtemp(path.join(tempParent, 'tenant-'));
   const sandboxApp = path.join(tempDir, 'app');
   await mkdir(path.join(sandboxApp, 'public', 'seed'), { recursive: true });
-  for (const file of ['server.mjs', 'tenant-context.mjs', 'storage.mjs', 'download-tickets.mjs',
-    'annotation-sync.mjs', 'social-watermark.mjs', 'indexer.mjs',
-    'public/search.mjs', 'public/book-variants.mjs']) {
-    await copyFile(path.join(appDir, file), path.join(sandboxApp, file));
-  }
+  await copyServerFiles(appDir, sandboxApp);
   // The demo books point at seed/sample.pdf; create it so a demo read reaches
   // storage instead of failing on a missing file and masking an access denial.
   await writeFile(path.join(sandboxApp, 'public', 'seed', 'tenant.pdf'), 'placeholder');

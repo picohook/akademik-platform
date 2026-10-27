@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 import { execFile, spawn } from 'node:child_process';
 import { createHash, randomBytes, randomUUID, scryptSync } from 'node:crypto';
 import { once } from 'node:events';
-import { copyFile, cp, mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { copyServerFiles } from './helpers/server-files.mjs';
 import { promisify } from 'node:util';
 import pg from 'pg';
 import JSZip from 'jszip';
@@ -58,7 +59,7 @@ async function setup() {
   await mkdir(output, { recursive: true }); await mkdir(tempParent, { recursive: true });
   temporary = await mkdtemp(path.join(tempParent, 'offline-browser-'));
   const isolated = path.join(temporary, 'app'); await mkdir(isolated);
-  for (const name of ['server.mjs', 'tenant-context.mjs', 'storage.mjs', 'indexer.mjs', 'download-tickets.mjs', 'annotation-sync.mjs', 'social-watermark.mjs']) await copyFile(path.join(appDir, name), path.join(isolated, name));
+  await copyServerFiles(appDir, isolated);
   await cp(path.join(appDir, 'public'), path.join(isolated, 'public'), { recursive: true, filter: file => !['uploads', 'ocr'].some(name => file === path.join(appDir, 'public', name) || file.startsWith(path.join(appDir, 'public', name) + path.sep)) });
   const sourceFiles = ['server.mjs', 'tenant-context.mjs', 'storage.mjs', 'indexer.mjs', 'download-tickets.mjs', 'annotation-sync.mjs', 'social-watermark.mjs', 'public/app.js', 'public/index.html', 'public/offline.mjs', 'public/downloads.mjs', 'public/sw.js', 'public/epub-engine.mjs', 'public/styles.css', 'public/i18n.mjs', 'public/citations.mjs', 'public/book-variants.mjs'];
   for (const file of sourceFiles) { const bytes = await readFile(path.join(isolated, file)); assert.equal(sha(bytes), sha(await readFile(path.join(appDir, file)))); report.source[file] = sha(bytes); }
