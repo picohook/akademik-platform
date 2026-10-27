@@ -148,7 +148,7 @@ async function setup() {
   const sandboxApp = path.join(tempDir, 'app');
   await mkdir(path.join(sandboxApp, 'public', 'seed'), { recursive: true });
   await mkdir(path.join(sandboxApp, 'public', 'ocr', seedAsset), { recursive: true });
-  for (const file of ['server.mjs', 'download-tickets.mjs', 'annotation-sync.mjs', 'social-watermark.mjs', 'indexer.mjs', 'public/search.mjs']) {
+  for (const file of ['server.mjs', 'tenant-context.mjs', 'storage.mjs', 'download-tickets.mjs', 'annotation-sync.mjs', 'social-watermark.mjs', 'indexer.mjs', 'public/search.mjs', 'public/book-variants.mjs']) {
     await copyFile(path.join(appDir, file), path.join(sandboxApp, file));
   }
   await writeFile(path.join(sandboxApp, 'public', 'seed', 'security.pdf'), await pdfBytes('Security seed'));
@@ -183,6 +183,10 @@ async function setup() {
   assert.equal(role.rolbypassrls, false);
   const salt = randomBytes(16).toString('hex');
   const hash = `scrypt$${salt}$${scryptSync(userPassword, salt, 64).toString('hex')}`;
+  // Login resolves an email to its tenant before any tenant is bound, and
+  // `users` is under RLS, so the app role needs this helper. Run the real
+  // migration rather than a copy: a copy can drift from what ships.
+  await admin.query(await readFile(path.join(repoDir, 'db/migrations/018-tenant-for-login.sql'), 'utf8'));
   await admin.query('update users set password_hash = $1', [hash]);
   const users = [];
   for (const [email, roleName] of [

@@ -10,6 +10,7 @@
     "test:citations": "node test/citations.test.mjs",
     "test:search": "node test/search.test.mjs",
     "test:security": "node test/security.integration.mjs",
+    "test:tenant-access": "node test/tenant-access.integration.mjs",
     "test:watermarks": "node test/social-watermark.test.mjs",
     "test:social-drm": "node test/social-drm.integration.mjs"
   },

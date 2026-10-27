@@ -58,9 +58,9 @@ async function setup() {
   await mkdir(output, { recursive: true }); await mkdir(tempParent, { recursive: true });
   temporary = await mkdtemp(path.join(tempParent, 'offline-browser-'));
   const isolated = path.join(temporary, 'app'); await mkdir(isolated);
-  for (const name of ['server.mjs', 'indexer.mjs', 'download-tickets.mjs', 'annotation-sync.mjs', 'social-watermark.mjs']) await copyFile(path.join(appDir, name), path.join(isolated, name));
+  for (const name of ['server.mjs', 'tenant-context.mjs', 'storage.mjs', 'indexer.mjs', 'download-tickets.mjs', 'annotation-sync.mjs', 'social-watermark.mjs']) await copyFile(path.join(appDir, name), path.join(isolated, name));
   await cp(path.join(appDir, 'public'), path.join(isolated, 'public'), { recursive: true, filter: file => !['uploads', 'ocr'].some(name => file === path.join(appDir, 'public', name) || file.startsWith(path.join(appDir, 'public', name) + path.sep)) });
-  const sourceFiles = ['server.mjs', 'indexer.mjs', 'download-tickets.mjs', 'annotation-sync.mjs', 'social-watermark.mjs', 'public/app.js', 'public/index.html', 'public/offline.mjs', 'public/downloads.mjs', 'public/sw.js', 'public/epub-engine.mjs', 'public/styles.css', 'public/i18n.mjs', 'public/citations.mjs'];
+  const sourceFiles = ['server.mjs', 'tenant-context.mjs', 'storage.mjs', 'indexer.mjs', 'download-tickets.mjs', 'annotation-sync.mjs', 'social-watermark.mjs', 'public/app.js', 'public/index.html', 'public/offline.mjs', 'public/downloads.mjs', 'public/sw.js', 'public/epub-engine.mjs', 'public/styles.css', 'public/i18n.mjs', 'public/citations.mjs', 'public/book-variants.mjs'];
   for (const file of sourceFiles) { const bytes = await readFile(path.join(isolated, file)); assert.equal(sha(bytes), sha(await readFile(path.join(appDir, file)))); report.source[file] = sha(bytes); }
   await mkdir(path.join(isolated, 'public/seed'), { recursive: true });
   for (const fixture of fixtures) await writeFile(path.join(isolated, 'public/seed', fixture.filename), fixture.format === 'epub' ? await epub() : await pdf(fixture.original));
