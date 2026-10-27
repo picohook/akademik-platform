@@ -19,7 +19,7 @@ Son güncelleme: 2026-10-27. Canlı: elibrary.libedge.com **v132** (`8df115f`), 
 
 ## 2. v133 — küçük PR'lar
 
-- **CSP:** `style-src`'ye `blob:` — EPUB'ların yayıncı stilleri şu an engelleniyor.
+- ~~**CSP:** `style-src`'ye `blob:`~~ — **v133'te yapıldı** (`spike/app/security-headers.mjs`), bkz. `docs/deployments/2026-10-27-v133.md`.
 - `favicon.ico` (404) ve `<meta name="mobile-web-app-capable" content="yes">`.
 
 ## 3. İlk kurum / dış kullanıcıdan önce (zorunlu)

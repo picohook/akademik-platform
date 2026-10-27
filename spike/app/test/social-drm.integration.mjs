@@ -6,6 +6,7 @@ import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promi
 import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { serverFiles } from './helpers/server-files.mjs';
 import { promisify } from 'node:util';
 import pg from 'pg';
 import JSZip from 'jszip';
@@ -161,7 +162,7 @@ async function setup() {
   temporary = await mkdtemp(path.join(tempParent, 'social-drm-'));
   const sandbox = path.join(temporary, 'app');
   await mkdir(path.join(sandbox, 'public/seed'), { recursive: true });
-  for (const file of ['server.mjs', 'tenant-context.mjs', 'storage.mjs', 'indexer.mjs', 'download-tickets.mjs', 'annotation-sync.mjs', 'social-watermark.mjs', 'public/search.mjs', 'public/book-variants.mjs', 'public/downloads.mjs', 'public/offline.mjs']) {
+  for (const file of await serverFiles(appDir)) {
     await copyFile(path.join(appDir, file), path.join(sandbox, file));
     report.source[file] = sha(await readFile(path.join(sandbox, file)));
   }

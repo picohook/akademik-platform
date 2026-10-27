@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 import { execFile, spawn } from 'node:child_process';
 import { randomBytes, randomUUID, scryptSync } from 'node:crypto';
 import { once } from 'node:events';
-import { copyFile, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { copyServerFiles } from './helpers/server-files.mjs';
 import { promisify } from 'node:util';
 import pg from 'pg';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
@@ -148,9 +149,7 @@ async function setup() {
   const sandboxApp = path.join(tempDir, 'app');
   await mkdir(path.join(sandboxApp, 'public', 'seed'), { recursive: true });
   await mkdir(path.join(sandboxApp, 'public', 'ocr', seedAsset), { recursive: true });
-  for (const file of ['server.mjs', 'tenant-context.mjs', 'storage.mjs', 'download-tickets.mjs', 'annotation-sync.mjs', 'social-watermark.mjs', 'indexer.mjs', 'public/search.mjs', 'public/book-variants.mjs']) {
-    await copyFile(path.join(appDir, file), path.join(sandboxApp, file));
-  }
+  await copyServerFiles(appDir, sandboxApp);
   await writeFile(path.join(sandboxApp, 'public', 'seed', 'security.pdf'), await pdfBytes('Security seed'));
   await writeFile(path.join(sandboxApp, 'public', 'ocr', seedAsset, 'page-001.hocr'), '<html>security OCR</html>');
 
