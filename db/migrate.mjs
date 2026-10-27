@@ -16,6 +16,13 @@
 //   tables, because a half-applied migration is worse than none.
 // - Each file runs in one transaction together with its registry row: a file
 //   either lands and is recorded, or neither happens.
+// - A file that contains its own top-level begin/commit is refused rather than
+//   run. Its commit would end the runner's transaction early, so the registry
+//   row would land outside it - the migration's changes committed, the record
+//   of them not, or vice versa. 013-017 predate this rule and break it; they
+//   are only ever baselined, never executed.
+// - Runs take a session-level advisory lock, so two deploys racing each other
+//   queue up instead of both deciding the same file is pending.
 // - A file whose checksum changed after it was applied is reported and, unless
 //   --allow-modified is passed, stops the run. Silently re-running edited
 //   migrations is how environments drift apart.
@@ -59,6 +66,22 @@ const REGISTRY_DDL = `
     'One row per applied file in db/migrations. Managed by db/migrate.mjs; do not edit by hand.';
 `;
 
+// A fixed key, so every runner process on this database queues behind the same
+// lock. Session-level, held for the whole run, released by disconnect.
+const ADVISORY_LOCK_KEY = 8_026_071_001;
+
+// Top-level transaction control in a migration file. Matched at the start of a
+// line, with any statement keywords before it skipped, so a `commit;` inside a
+// DO block body (indented, and not a statement boundary of its own) is not
+// caught but a real one is. Also catches savepoints and psql's \begin, both of
+// which move transaction state out from under the runner.
+const TRANSACTION_CONTROL = /^\s*(?:--[^\n]*\n\s*)*(?:\\begin|\\commit|\\rollback|begin\s*(?:transaction|work)?\s*;|start\s+transaction\b|commit\s*(?:work|transaction)?\s*;|rollback\s*(?:work|transaction)?\s*;|end\s*(?:work|transaction)?\s*;|savepoint\b|release\s+savepoint\b|rollback\s+to\s+savepoint\b)/im;
+
+// psql meta-commands cannot be sent to the server at all: pg parses them as
+// syntax errors. 017 uses \set, which is why it can never be executed by this
+// runner - only baselined.
+const PSQL_METACOMMAND = /^\s*\\(?!begin|commit|rollback)\w+/im;
+
 const sha = (text) => createHash('sha256').update(text, 'utf8').digest('hex');
 const prefix = (filename) => filename.split('-')[0];
 
@@ -67,9 +90,28 @@ async function loadFiles() {
   const files = [];
   for (const name of names) {
     const sql = await readFile(path.join(migrationsDir, name), 'utf8');
-    files.push({ name, sql, checksum: sha(sql) });
+    files.push({ name, sql, checksum: sha(sql), runnable: expectRunnable(sql) });
   }
   return files;
+}
+
+// Whether a file may be *executed* by the runner. Baselining only writes a
+// registry row, so a file that cannot run can still be marked applied - that is
+// the whole reason 013-017 are baselined rather than applied.
+//
+// Returns null when the file is runnable, or the reason it is not. Callers print
+// the reason instead of failing, because "cannot be run" is a permanent
+// property of a historical file, not an error in this run.
+function expectRunnable(sql) {
+  const control = sql.match(TRANSACTION_CONTROL);
+  if (control) {
+    return `manages its own transaction (${control[0].trim().split('\n').pop().trim()}) - the runner needs one transaction per file so the registry row commits with it`;
+  }
+  const meta = sql.match(PSQL_METACOMMAND);
+  if (meta) {
+    return `contains the psql meta-command ${meta[0].trim()}, which the server cannot parse`;
+  }
+  return null;
 }
 
 function parseArgs(argv) {
@@ -116,9 +158,34 @@ async function connect() {
   const client = new pg.Client({ connectionString: url });
   await client.connect();
   const { rows: [who] } = await client.query(
-    'select current_user as role, (select rolsuper from pg_roles where rolname = current_user) as super',
+    `select current_user as role,
+            (select rolsuper from pg_roles where rolname = current_user) as super,
+            has_schema_privilege(current_user, 'public', 'CREATE') as can_create_table`,
   );
   console.log(`  connected as ${who.role}${who.super ? ' (superuser)' : ''}`);
+
+  // The role has to be able to create the registry and run the DDL inside the
+  // migrations. Saying so now beats failing halfway through a file, and it is
+  // the check that catches someone pointing this at the app role.
+  if (!who.can_create_table) {
+    throw new Error(
+      `role ${who.role} cannot create tables in schema public, so it cannot run migrations. ` +
+      'Use the table owner (DATABASE_ADMIN_URL), not the app role akademik_app.',
+    );
+  }
+
+  // Session-level: held until this connection closes. A second runner reports
+  // what it is waiting for rather than guessing, and one that cannot get the
+  // lock in time fails without touching anything.
+  const waiting = setTimeout(
+    () => console.log('  waiting for another migration run to finish (advisory lock) ...'),
+    1000,
+  );
+  try {
+    await client.query('select pg_advisory_lock($1)', [ADVISORY_LOCK_KEY]);
+  } finally {
+    clearTimeout(waiting);
+  }
   return client;
 }
 
@@ -184,6 +251,33 @@ async function baseline(client, files, applied, { dryRun }) {
   return targets.length;
 }
 
+// Guards the case --baseline exists for, in the direction that can lose data.
+//
+// On a database that already has a schema but no registry, every file looks
+// pending. Applying them is not "re-applying history": 003 would insert the
+// demo1234 librarian account into a live database, and 001-012 create objects
+// that already exist. The registry being empty on a database with a users table
+// means "not baselined yet", never "fresh database". A truly fresh database has
+// no users table, so it is unaffected by this rule.
+async function refuseUnbaselined(client, pending) {
+  const { rows: [state] } = await client.query(
+    `select to_regclass('public.users') is not null as has_users,
+            (select count(*) from schema_migrations)::int as recorded`,
+  );
+  if (!state.has_users || state.recorded > 0) return null;
+
+  const historical = pending.filter((file) => Number(prefix(file.name)) <= Number(BASELINE_THROUGH));
+  if (!historical.length) return null;
+
+  return [
+    `the database has a users table but no registry rows, and ${historical.length} file(s) it would run predate this runner:`,
+    ...historical.map((file) => `    ${file.name}${file.runnable ? '' : `  (not runnable: ${file.runnable})`}`),
+    '',
+    `  ${historical.some((file) => file.runnable) ? 'Some of these would run against a live database - 003 re-inserts the demo1234 account.' : ''}`,
+    '  This database has not been baselined. Run --baseline first, then --status to confirm, then apply.',
+  ].join('\n');
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) {
@@ -208,7 +302,10 @@ async function main() {
       for (const file of files) {
         const row = applied.get(file.name);
         const state = row ? (row.checksum === file.checksum ? 'applied' : 'MODIFIED') : 'pending';
-        console.log(`    ${state.padEnd(8)} ${file.name}`);
+        // A pending file that cannot run is not going to run; say so here rather
+        // than discovering it when the deploy is already half done.
+        const note = !row && file.runnable ? `  (cannot run: ${file.runnable})` : '';
+        console.log(`    ${state.padEnd(8)} ${file.name}${note}`);
       }
       if (modified.length) {
         console.log(`\n  ${modified.length} applied file(s) changed since they ran: ${modified.join(', ')}`);
@@ -233,29 +330,58 @@ async function main() {
       return 0;
     }
 
+    const unbaselined = await refuseUnbaselined(client, pending);
+    if (unbaselined && !options.dryRun) {
+      console.error(`\n  refusing to apply: ${unbaselined}`);
+      return 1;
+    }
+    if (unbaselined) {
+      console.log(`\n  warning: applying now would be refused - ${unbaselined.split('\n')[0]}`);
+    }
+
+    // Baselined files that could actually run are fine to execute; files that
+    // cannot run are a permanent property of history, not this run's problem.
+    const runnable = pending.filter((file) => !file.runnable);
+    if (runnable.length !== pending.length) {
+      for (const file of pending) {
+        if (file.runnable) console.log(`  skipping ${file.name}: ${file.runnable}`);
+      }
+      if (!runnable.length) {
+        console.error('\n  nothing applicable: none of the pending files can be run.');
+        console.error('  Run --status to see which, and --baseline to mark the historical ones as applied.');
+        return 1;
+      }
+    }
+
     if (options.dryRun) {
-      console.log(`\n  would apply: ${pending.map((file) => file.name).join(', ')}`);
+      console.log(`\n  would apply: ${runnable.map((file) => file.name).join(', ')}`);
       return 0;
     }
 
     console.log();
-    for (const file of pending) {
+    for (const file of runnable) {
       process.stdout.write(`  applying ${file.name} ... `);
       const duration = await applyOne(client, file);
       console.log(`${duration} ms`);
     }
-    console.log(`\n  ${pending.length} migration(s) applied`);
+    console.log(`\n  ${runnable.length} migration(s) applied`);
     return 0;
   } finally {
     await client.end().catch(() => {});
   }
 }
 
-main().then(
-  (code) => { process.exitCode = code; },
-  (error) => {
-    console.error(`\n  failed: ${error.message}`);
-    if (error.code) console.error(`  postgres code: ${error.code}`);
-    process.exitCode = 1;
-  },
-);
+// Exported for db/migrate.test.mjs. Importing this file must not connect to
+// anything, so main() only runs when it is the entry point.
+export { expectRunnable, loadFiles, refuseUnbaselined, TRANSACTION_CONTROL, PSQL_METACOMMAND };
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().then(
+    (code) => { process.exitCode = code; },
+    (error) => {
+      console.error(`\n  failed: ${error.message}`);
+      if (error.code) console.error(`  postgres code: ${error.code}`);
+      process.exitCode = 1;
+    },
+  );
+}
