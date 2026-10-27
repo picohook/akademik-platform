@@ -57,6 +57,16 @@ services:
 
   caddy:
     image: caddy:2-alpine
+    # Off by default. Production traffic reaches web through the host's nginx
+    # (nginx :80 -> 127.0.0.1:3001), so caddy must not run alongside it: it
+    # would fight nginx for 80/443. Profiles keep it out of a plain
+    # `up -d`, so `-f docker-compose.libedge.yml up -d` cannot start it by
+    # accident. Enable deliberately with `--profile proxy`.
+    #
+    # Opt back in explicitly when caddy IS the front door (the Varyant 1
+    # `docker-compose.prod.yml` path): `--profile proxy up -d --build`.
+    profiles:
+      - proxy
     environment:
       DOMAIN: ${DOMAIN:?set DOMAIN}
     ports:

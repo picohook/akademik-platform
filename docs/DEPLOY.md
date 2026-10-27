@@ -92,7 +92,13 @@ deploy komutunda `--env-file` opsiyonel değildir.
 #    BUILD_DATE=2026-10-27
 
 # 2) Build + up
+#    caddy bu dosyada `profiles: [proxy]` ile kapalı. Canlı trafik host nginx'ten
+#    geçiyorsa caddy'yi AÇMA (80/443 için nginx'le çakışır):
 docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+
+#    Yalnızca caddy ÖN YÜZ ise (nginx yoksa) profili aç:
+# docker compose -f docker-compose.prod.yml --env-file .env.production \
+#   --profile proxy up -d --build
 
 # 3) Doğrula
 curl -s https://elibrary.libedge.com/api/config
@@ -125,6 +131,12 @@ web:
 
 ### Doğru deploy akışı (canlıda çalışan)
 
+> ⚠️ **`--env-file` iki tane.** `.env.production` `DOMAIN`, `POSTGRES_*`,
+> `DATABASE_URL`, `SESSION_SECRET` sağlar; `.env.r2` uygulama/R2 ayarlarını.
+> Sadece `.env.r2` verirsen compose
+> `required variable DOMAIN is missing a value: set DOMAIN` ile **durur**
+> (2026-10-27'de tam bu yaşandı). İkisi de zorunlu, sıra önemli değil.
+
 ```bash
 cd /var/www/akademik-platform
 git fetch origin && git checkout main && git pull --ff-only origin main
@@ -147,11 +159,27 @@ sudo sed -i "s/^BUILD_SHA=.*/BUILD_SHA=$SHA/" .env.r2
 
 cd /var/www/akademik-platform
 sudo docker compose -f docker-compose.prod.yml -f docker-compose.libedge.yml \
-  --env-file .env.r2 up -d --force-recreate
-
-# Ağ artık compose tarafından yönetiliyor (aşağıdaki nota bakın).
-# Eski sürümlerde gereken elle `docker network connect` artık GEREKMEZ.
+  --env-file .env.production --env-file .env.r2 up -d --no-deps web
 ```
+
+**`--no-deps web` neden:** servis adı + `--no-deps` olmadan compose db'ye ve
+caddy'ye de dokunur. caddy artık `profiles: [proxy]` ile kapalı, ama db'yi
+gereksiz yere yeniden yaratmamak için `web`'i hedefle.
+
+**`down` KULLANMA.** `down` db'yi de kaldırır; tekrar `up` yaptığında db yeni
+bir IP alır ve eski web container'ı `getaddrinfo EAI_AGAIN db` ile kopar.
+Yeniden başlatmak için:
+
+```bash
+sudo docker compose -f docker-compose.prod.yml -f docker-compose.libedge.yml \
+  --env-file .env.production --env-file .env.r2 stop web
+sudo docker rm akademik-platform-prod-web-1
+sudo docker compose -f docker-compose.prod.yml -f docker-compose.libedge.yml \
+  --env-file .env.production --env-file .env.r2 up -d --no-deps web
+```
+
+`port is already allocated` alırsan sebebi budur: eski container hâlâ 3001'i
+tutuyor. `rm` ile önce kaldır, sonra `up`.
 
 ### Canlı gerçek (2026-10-27 doğrulandı)
 
@@ -159,45 +187,41 @@ sudo docker compose -f docker-compose.prod.yml -f docker-compose.libedge.yml \
 | --- | --- |
 | İmaj | `libedge-v131` (rollback: `libedge-v131-9f755d6`) |
 | Port | `127.0.0.1:3001` → container `3000` |
-| Trafik | nginx `:80` → `127.0.0.1:3001` → `akademik-platform-web-1` |
-| Env | `.env.r2` — `DEMO_TENANT_ID=5799f2a5-...`, `STORAGE_DRIVER=r2`, `APP_VERSION=131`, `BUILD_SHA=a2bc13f` |
+| Trafik | nginx `:80` → `127.0.0.1:3001` → `akademik-platform-prod-web-1` |
+| Env | `.env.production` + `.env.r2` — `DEMO_TENANT_ID=5799f2a5-...`, `STORAGE_DRIVER=r2`, `APP_VERSION=131`, `BUILD_SHA=a2bc13f` |
 | DB | PostgreSQL, container `akademik-platform-prod-db-1`, süper kullanıcı `akademik` |
+| Container adları | **`prod` öneki var**: `akademik-platform-prod-web-1`, `-db-1` |
 
-> ### ✅ Ağ bağlantısı artık compose'da (v131 sonrası düzeltme)
+> ### ✅ Ağ: ayrı bir network tanımı GEREKMEZ (2026-10-27 doğrulandı)
 >
-> **2026-10-26'ya kadar** web container `akademik-platform-prod_default`
-> network'üne **elle** bağlanıyordu. Compose bu bağlantıyı yönetmediği için
-> restart / host reboot sonrası **kopuyor** ve web DB'ye ulaşamıyordu
-> (`mode:"demo"`).
+> `docker-compose.prod.yml` başında `name: akademik-platform-prod` var. Compose
+> bu yüzden proje için **`akademik-platform-prod_default`** ağını oluşturuyor ve
+> **db ile web ikisi de zaten onun içinde**:
 >
-> **Artık** `docker-compose.libedge.yml` şunu tanımlıyor:
->
-> ```yaml
-> services:
->   web:
->     networks:
->       - default
->       - prod_default
-> networks:
->   prod_default:
->     external: true
->     name: akademik-platform-prod_default
+> ```
+> prod.yml tek başına:
+>   db  networks = default
+>   web networks = default
+>   default.name = akademik-platform-prod_default   ← aynı ağ
 > ```
 >
-> Böylece `up -d` web'i her seferinde doğru ağa bağlar; elle `docker network
-> connect` **gerekmez**. Yine de doğrula:
+> Yani 2026-10-26'da elle çalıştırılan
+> `docker network connect akademik-platform-prod_default ...` **gereksizdi**;
+> zaten bağlıydı. O gün görülen `EAI_AGAIN db` bir **ağ eksikliği değil**,
+> eski web container'ının `down` sonrası yeniden yaratılan db'nin yeni IP'sine
+> ulaşamamasıydı.
+>
+> `docker-compose.libedge.yml` içine `networks:` bloğu **eklemeyin** — hiçbir şey
+> kazandırmaz, web'i gereksiz ikinci bir ağa bağlar.
+>
+> `mode:"demo"` dönerse önce container'ın **imaj adını ve yaşını** kontrol et:
 >
 > ```bash
-> curl -s https://elibrary.libedge.com/api/health   # "ok":true, "mode":"db" olmalı
+> sudo docker inspect $(sudo docker ps -q -f name=akademik-platform-prod-web-1) \
+>   --format '{{.Config.Image}} {{.State.StartedAt}}'
 > ```
 >
-> `mode:"demo"` dönerse ağ hâlâ kopuk — compose dosyasının güncel sürümünün
-> sunucuda olduğunu kontrol et (`git rev-parse --short HEAD`).
->
-> **Not:** `name: akademik-platform-prod_default` bilerek açık yazıldı.
-> `docker-compose.prod.yml` içindeki `name: akademik-platform-prod` ile
-> türetilen ad bugün aynı; prod dosyasındaki `name:` ileride değişirse web
-> sessizce ağdan kopsun istemiyoruz.
+> Eski imaj adı veya saatler öncesi bir `StartedAt` → container hiç yenilenmemiş.
 
 ### Tenant durumu
 
@@ -247,7 +271,8 @@ password / port / query / hash **reddedilir**.
 > `R2 PASS: put/read/range/delete; temporary object removed.` görmelisin. Bu script
 > kendi rastgele objesini yazıp siler; mevcut veriye dokunmaz.
 
-**Rollback notu:** v131'de `buildSha=1ded27c` ve `version=131` beklenir. R2 env'i
+**Rollback:** `libedge-v131-9f755d6` etiketi duruyor. Compose dosyasını geri almak
+için `git checkout <önceki-commit> -- docker-compose.libedge.yml`. R2 env'i
 bozuksa önceki imaja (`akademik-platform:libedge-copy`) dönülür. **Dikkat:** v131'te
 yüklenen dosyaların `storage_key` değeri `r2://<prefix>/...` biçimindedir
 (`storage.mjs:10,141`). v130 kodu bu anahtarları **okuyamaz** — `storage.mjs:45`
