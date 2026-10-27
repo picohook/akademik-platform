@@ -6,7 +6,7 @@ import { cp, mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from 'no
 import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { copyServerFiles } from './helpers/server-files.mjs';
+import { copyServerFiles, ensureShell, shellCacheName } from './helpers/server-files.mjs';
 import { promisify } from 'node:util';
 import pg from 'pg';
 import JSZip from 'jszip';
@@ -113,8 +113,8 @@ async function captureBook(fixture) {
 }
 async function shellReady() {
   await page.evaluate(async () => { await navigator.serviceWorker.ready; if (!navigator.serviceWorker.controller) await new Promise(resolve => navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true })); });
-  await until('SW13 complete required shell', () => page.evaluate(async () => { const cache = await caches.open('akademik-shell-v13'); const required = ['/', '/app.js', '/downloads.mjs', '/offline.mjs', '/vendor/pdfjs/pdf.mjs', '/vendor/pdfjs/pdf.worker.mjs', '/vendor/epubjs/jszip.min.js', '/vendor/epubjs/epub.min.js', '/epub-engine.mjs']; return (await Promise.all(required.map(file => cache.match(file, { ignoreSearch: true })))).every(Boolean); }));
-  return { cache: 'akademik-shell-v13', controller: await page.evaluate(() => Boolean(navigator.serviceWorker.controller)) };
+  await ensureShell(page, appDir, ['/', '/app.js', '/downloads.mjs', '/offline.mjs', '/vendor/pdfjs/pdf.mjs', '/vendor/pdfjs/pdf.worker.mjs', '/vendor/epubjs/jszip.min.js', '/vendor/epubjs/epub.min.js', '/epub-engine.mjs'], (name, label, check) => until(label, check));
+  return { cache: await shellCacheName(appDir), controller: await page.evaluate(() => Boolean(navigator.serviceWorker.controller)) };
 }
 async function cleanup() {
   await context?.setOffline(false).catch(() => {}); await browser?.close().catch(() => {}); report.cleanup.browser = !browser || !browser.isConnected();
@@ -135,7 +135,7 @@ async function reloadOffline(){await page.evaluate(()=>history.replaceState(null
 async function loginAs(address){await page.locator('#loginScreen').waitFor({state:'visible'});await page.evaluate(()=>history.replaceState(null,'','/'));await page.locator('#loginEmail').fill(address);await page.locator('#loginPassword').fill(password);await page.locator('#loginPassword').press('Enter');await page.locator('#loginScreen').waitFor({state:'hidden'});await page.locator('#grid .card').first().waitFor();}
 async function logout(){await close();await Promise.all([page.waitForEvent('domcontentloaded'),page.locator('#logoutBtn').click()]);await page.locator('#loginScreen').waitFor({state:'visible'});assert.equal(await page.evaluate(()=>localStorage.getItem('offlineAnnotationUser')),null);}
 try {
- await setup();await stage('pdf-native-ticketed-offline-copy',()=>captureBook(fixtures[0]));await stage('epub-native-ticketed-offline-copy',()=>captureBook(fixtures[1]));await stage('serviceworker-v13-complete-shell',shellReady);
+ await setup();await stage('pdf-native-ticketed-offline-copy',()=>captureBook(fixtures[0]));await stage('epub-native-ticketed-offline-copy',()=>captureBook(fixtures[1]));await stage('serviceworker-complete-shell',shellReady);
  for(const f of fixtures.slice(0,2)){
   await context.setOffline(true);await open(f);
   await stage(f.format+'-unsent-bookmark-toggle-cancels-create',async()=>{await toggle(true);let x=await local(f);assert.equal(x.ops.length,1);assert.equal(x.ops[0].type,'create');assert.equal(x.ops[0].ownerId,userId);assert.equal(x.notes[0].color,'bookmark');await toggle(false);x=await local(f);assert.equal(x.ops.length,0);assert.equal(x.notes.length,0);assert.equal((await dbMarks(f)).length,0);return{nativeAtomicQueue:true,noServerWrite:true};});

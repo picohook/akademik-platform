@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath } from 'node:url';
-import { unlink } from 'node:fs/promises';
+import { readFile, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 
@@ -38,6 +38,46 @@ test('application regression: login, CSRF, PDF upload/read/range/delete and prot
   const range = await fetch(base + `/api/books/${book.id}/file`, { headers: { cookie, range: 'bytes=-5' } });
   assert.equal(range.status, 206); assert.deepEqual(Buffer.from(await range.arrayBuffer()), Buffer.from(bytes).subarray(-5));
   const staticRead = await fetch(base + '/' + book.storage_key); assert.equal(staticRead.status, 404); await staticRead.text();
+
+  // Browsers request /favicon.ico unprompted when a page declares no icon, so a
+  // 404 here is a request made on every first visit, not an edge case. It was
+  // served as a JSON 404 before; the file and its allowlist entry are the fix.
+  const favicon = await fetch(base + '/favicon.ico');
+  assert.equal(favicon.status, 200, 'favicon.ico must not 404');
+  assert.equal(favicon.headers.get('content-type'), 'image/x-icon');
+  const faviconBytes = Buffer.from(await favicon.arrayBuffer());
+  assert.equal(faviconBytes.readUInt16LE(0), 0, 'ICO reserved field');
+  assert.equal(faviconBytes.readUInt16LE(2), 1, 'ICO type must be 1 (icon)');
+  const imageCount = faviconBytes.readUInt16LE(4);
+  assert.ok(imageCount >= 2, `expected multiple icon sizes, got ${imageCount}`);
+  for (let index = 0; index < imageCount; index++) {
+    const at = 6 + index * 16;
+    const size = faviconBytes.readUInt32LE(at + 8);
+    const offset = faviconBytes.readUInt32LE(at + 12);
+    assert.ok(offset + size <= faviconBytes.length, `icon ${index} payload is out of bounds`);
+    // PNG signature: every entry must be a real PNG, not a truncated slice.
+    assert.equal(faviconBytes.subarray(offset, offset + 8).toString('hex'), '89504e470d0a1a0a', `icon ${index} is not a PNG`);
+  }
+
+  const home = await fetch(base + '/');
+  assert.equal(home.status, 200);
+  const html = await home.text();
+  // Without an explicit icon link the 404 above is guaranteed to repeat.
+  assert.match(html, /<link rel="icon" href="\/favicon\.ico"/, 'index.html must declare favicon.ico');
+  assert.match(html, /<link rel="icon" href="\/icons\/icon-192\.png"[^>]*type="image\/png"/, 'index.html must declare a PNG icon');
+  // mobile-web-app-capable is the standard spelling; apple-mobile-web-app-capable
+  // alone is ignored by Chrome/Samsung Internet and deprecated.
+  assert.match(html, /<meta name="mobile-web-app-capable" content="yes"/, 'index.html must declare mobile-web-app-capable');
+  assert.match(html, /<meta name="apple-mobile-web-app-capable" content="yes"/, 'index.html must keep the Apple variant');
+  assert.match(html, /<link rel="manifest" href="\/manifest\.webmanifest"/, 'manifest must stay linked');
+
+  // The declared icons must actually resolve, or the fix only moves the 404.
+  for (const icon of ['/favicon.ico', '/icons/icon-192.png']) {
+    const response = await fetch(base + icon);
+    assert.equal(response.status, 200, `${icon} declared in <head> must be served`);
+    await response.text();
+  }
+
   const denied = await fetch(base + `/api/books/${book.id}`, { method: 'DELETE', headers: { cookie } }); assert.equal(denied.status, 403); await denied.text();
   const deleted = await fetch(base + `/api/books/${book.id}`, { method: 'DELETE', headers }); assert.equal(deleted.status, 200); await deleted.text();
   const gone = await fetch(base + `/api/books/${book.id}/file`, { headers: { cookie } }); assert.equal(gone.status, 404); await gone.text();
