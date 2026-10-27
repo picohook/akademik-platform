@@ -1,15 +1,16 @@
 # E-Kütüphane — yapılacaklar
 
-Son güncelleme: 2026-10-27. Canlı: elibrary.libedge.com **v132** (`8df115f`), mode `db`, tenant LibEdge `5799f2a5-…`.
+Son güncelleme: 2026-10-27. Canlı: elibrary.libedge.com **v133** (`5225149`), mode `db`, tenant LibEdge `5799f2a5-…`.
 Önce `docs/HANDOFF-2026-10-27.md` ve `docs/DEPLOY.md` okunmalı. Bir madde bitince buradan silinir veya "tamamlandı" altına taşınır.
 
 ## Tamamlandı (2026-10-27)
 
+- **v133 canlı ve doğrulandı** (`5225149`, imaj `libedge-v133`): CSP `style-src`'ye `blob:` (#25) — EPUB yayıncı stili + tema + yazı boyutu artık çalışıyor; `/favicon.ico` 200 (#26) — kök neden hem eksik `<link rel="icon">` hem de `serveStatic` allowlist'i; `mobile-web-app-capable` standart meta; SW cache `v24` → `v25` — çevrimiçi navigasyon network-first olduğu için eski CSP'li kabuk çevrimdışı açılışta kalıyordu. Bkz. `docs/deployments/2026-10-27-v133.md`.
 - v131 → v132: fail-closed yetki (#21) — her istek oturumdaki tenant'a bağlı, `grantAllows` boş listede `false`.
 - Migration runner (#19): `db/migrate.mjs` + `schema_migrations`; 001–017 baseline, 018/019/020 runner ile uygulandı.
 - 020 (#22): LibEdge tenant'ına `all` kapsamlı, süresiz grant (collection grant 12 kitap kapsıyordu; upload'lar koleksiyona eklenmiyor).
 - Demo hesaplar silindi (017, #17). README canlı duruma göre yeniden yazıldı (#18).
-- Yedek: `backups/pre-v132-20261027-1540.dump`. Geri dönüş: image `libedge-v131` + `.env.r2.bak-v131`.
+- Yedek: `backups/pre-v132-20261027-1540.dump`; v133 için `.env.r2.bak-v132` alındı. **Güncel geri dönüş: `libedge-v132` + `.env.r2.bak-v132`** (`libedge-v131` silindi).
 - 26 Ekim kesintisinin kök nedeni: `LIBEDGE_IMAGE=... sudo docker compose` — sudo değişkeni siliyordu. Image adı artık `.env.r2` içinde `LIBEDGE_IMAGE`.
 
 ## 1. Hemen — dokümanlar
@@ -17,10 +18,12 @@ Son güncelleme: 2026-10-27. Canlı: elibrary.libedge.com **v132** (`8df115f`), 
 - PROJECT-STATE, HANDOFF, DEPLOY güncellemesi; `docs/deployments/2026-10-27-v132.md`.
 - DEPLOY.md kuralları: image adı `.env.r2` `LIBEDGE_IMAGE` ile; sunucuda bir önceki sürüm dışında image tutulmaz (8 GB disk).
 
-## 2. v133 — küçük PR'lar
+## 2. v133 — kapatıldı (canlı ve doğrulandı)
 
-- ~~**CSP:** `style-src`'ye `blob:`~~ — **v133'te yapıldı** (`spike/app/security-headers.mjs`), bkz. `docs/deployments/2026-10-27-v133.md`.
-- ~~`favicon.ico` (404) ve `<meta name="mobile-web-app-capable" content="yes">`~~ — **v133'te yapıldı**: `public/favicon.ico` (`scripts/build-favicon.mjs` ile üretilir) + `server.mjs` allowlist/MIME, `index.html`'de `rel="icon"` ve standart meta. Bkz. aynı doküman.
+- ~~**CSP:** `style-src`'ye `blob:`~~ — **v133'te yapıldı ve canlıda doğrulandı** (`spike/app/security-headers.mjs`), bkz. `docs/deployments/2026-10-27-v133.md`.
+- ~~`favicon.ico` (404) ve `<meta name="mobile-web-app-capable" content="yes">`~~ — **v133'te yapıldı ve canlıda doğrulandı**: `/favicon.ico` → 200; `public/favicon.ico` (`scripts/build-favicon.mjs` ile üretilir) + `server.mjs` allowlist/MIME, `index.html`'de `rel="icon"` ve standart meta.
+- ~~SW cache `v24` → `v25`~~ — **v133'te yapıldı**: yeni CSP'nin çevrimdışı açılışa ulaşması için cache adı artırıldı (çevrimdışı davranışın kendisi aşağıdaki kalemde doğrulanacak).
+- **Açık kalan tek kalem — çevrimdışı doğrulama:** v133 **çevrimiçi** doğrulandı, SW `v25` kaydı görüldü; ama tarayıcı **çevrimdışıyken** açılış ve çevrimdışı bir EPUB denenmedi. Kapatma adımı: devtools → Network → Offline, uygulamayı aç; `caches.keys()` yalnız `akademik-shell-v25` dönmeli; çevrimdışı bir EPUB tema ile açılmalı.
 
 ## 3. İlk kurum / dış kullanıcıdan önce (zorunlu)
 
@@ -30,6 +33,7 @@ Son güncelleme: 2026-10-27. Canlı: elibrary.libedge.com **v132** (`8df115f`), 
 
 ## 4. SSO — LibEdge ile tek giriş
 
+- **Kaynak branch:** `origin/feat/elibrary-admin` (`17ef5eb`) — LibEdge library admin bridge ve asset erişim zorlaması; SSO aşamasında başlangıç noktası. Branch **remote'ta korunuyor**, yerel kopyası silindi.
 - `/auth/libedge`: libedge.com'dan kısa ömürlü (~60 sn), tek kullanımlık, Ed25519 imzalı token ile handoff; `.libedge.com` ortak cookie değil.
 - Kimlik LibEdge kullanıcı id'sine dayanmalı (018 aynı e-posta iki tenant'ta varsa en eskisini seçiyor).
 - LibEdge kurumu → tenant, abonelikler → grant eşlemesi. Ön koşul: madde 3.
