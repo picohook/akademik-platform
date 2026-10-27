@@ -1,6 +1,7 @@
 import { createStorage, serveStoredAsset } from './storage.mjs';
 import { normalizeBookVariant } from './public/book-variants.mjs';
 import { mutateAnnotation, memoryAnnotationMutations, purgeAnnotationReceipts } from './annotation-sync.mjs';
+import { currentTenant, runWithTenant } from './tenant-context.mjs';
 import http from 'node:http';
 import path from 'node:path';
 import { createReadStream, createWriteStream } from 'node:fs';
@@ -36,6 +37,16 @@ if (assetStorage.driver === 'r2' && !process.env.DATABASE_URL) throw new Error('
 const OCR_DIR = path.join(PUBLIC_DIR, 'ocr');
 const PORT = Number(process.env.PORT || 3000);
 const TENANT_ID = process.env.DEMO_TENANT_ID || '11111111-1111-1111-1111-111111111111';
+
+// The env tenant exists only to give session-less work a starting point
+// (login, health, maintenance). It is NOT a fallback inside withTenant.
+function requestTenant() {
+  const tenantId = currentTenant();
+  if (!tenantId) {
+    throw new Error('no tenant bound to this request: wrap session-bound work in runWithTenant()');
+  }
+  return tenantId;
+}
 const USER_ID = process.env.DEMO_USER_ID || '22222222-2222-2222-2222-222222222222';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-only-session-secret-change-me';
 const SESSION_COOKIE = 'akademik_session';
@@ -100,7 +111,23 @@ const demoBooks = [
 
 const demoAnnotations = [];
 const mutateDemoAnnotation = memoryAnnotationMutations(demoAnnotations);
-const demoGrants = [];
+// Demo mode holds its fixtures in memory, so it must carry the same grant
+// db/seed.sql gives the demo tenant. It used to be an empty array, and that
+// went unnoticed only because grantAllows() returned true on an empty list -
+// in demo mode every book was readable by everyone. With the decision
+// fail-closed, an empty list means "no access", so the fixture has to exist.
+// Any demo user inherits it through subject_type 'tenant'.
+const demoGrants = [{
+  id: '77777777-7777-7777-7777-777777777777',
+  tenant_id: TENANT_ID,
+  subject_type: 'tenant',
+  subject_id: TENANT_ID,
+  scope_type: 'all',
+  scope_id: null,
+  scope_key: null,
+  source: 'trial',
+  status: 'active',
+}];
 const demoGrantAudit = [];
 const demoGroups = [];
 const demoGroupMembers = [];
@@ -122,9 +149,10 @@ if (process.env.DATABASE_URL) {
 }
 
 async function withTenant(fn) {
+  const tenantId = requestTenant();
   const client = await pool.connect();
   try {
-    await client.query("select set_config('app.tenant_id', $1, false)", [TENANT_ID]);
+    await client.query("select set_config('app.tenant_id', $1, false)", [tenantId]);
     return await fn(client);
   } finally {
     client.release();
@@ -133,9 +161,10 @@ async function withTenant(fn) {
 
 // Search needs a transaction so pg_trgm's word-similarity threshold stays local.
 async function withTenantSearch(fn) {
+  const tenantId = requestTenant();
   const client = await pool.connect();
   try {
-    await client.query("select set_config('app.tenant_id', $1, false)", [TENANT_ID]);
+    await client.query("select set_config('app.tenant_id', $1, false)", [tenantId]);
     await client.query('begin');
     await client.query("select set_config('pg_trgm.word_similarity_threshold', '0.35', true)");
     const result = await fn(client);
@@ -338,7 +367,8 @@ async function createSession(user, req) {
     demoSessions.set(user.id, sessions);
     return id;
   }
-  return withTenant(async (client) => {
+  // A session belongs to the tenant the user was found in, not the env tenant.
+  return runWithTenant(user.tenant_id || TENANT_ID, () => withTenant(async (client) => {
     await client.query('begin');
     try {
       // Serialize login seat checks for the whole tenant, then for the user.
@@ -393,7 +423,7 @@ async function createSession(user, req) {
       await client.query('rollback').catch(() => {});
       throw error;
     }
-  });
+  }));
 }
 
 async function deleteSession(sessionId, userId) {
@@ -447,6 +477,30 @@ async function sessionIsValid(auth) {
   }
 }
 
+// Resolves a login email to its tenant without exposing other tenants' rows to
+// the app role. SECURITY DEFINER runs with the rights of the owner (a
+// superuser in the dev container, the table owner on EC2), so it can see across
+// RLS - which is why it takes one email and returns one uuid, nothing else.
+// It is the narrowest thing that lets login work before a tenant is known.
+async function tenantForLogin(email) {
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query('select app.tenant_for_login($1) as tenant_id', [email]);
+    return rows[0]?.tenant_id || null;
+  } catch (error) {
+    // Before 018 is applied the function does not exist. Falling back to the
+    // env tenant keeps single-tenant deployments working and is no worse than
+    // the previous behaviour.
+    if (error.code === '42883') {
+      console.warn('[auth] app.tenant_for_login missing; falling back to DEMO_TENANT_ID');
+      return TENANT_ID;
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function loginUser(emailValue, passwordValue) {
   const email = String(emailValue || '').trim().toLocaleLowerCase('tr');
   const password = String(passwordValue || '');
@@ -469,16 +523,30 @@ async function loginUser(emailValue, passwordValue) {
   }
 
   // Password derivation must not occupy a scarce database connection.
-  const row = await withTenant(async (client) => {
+  // Login is the one place the tenant cannot come from a session. `users` is
+  // under RLS, so an app-role query cannot see another tenant's rows - but
+  // guessing tenants in a loop would be worse. The email is resolved to its
+  // tenant by a function that runs with elevated rights and returns one row,
+  // then the ordinary RLS-scoped read runs inside that tenant. A miss and a
+  // bad password stay indistinguishable to the caller.
+  const tenantId = await tenantForLogin(email);
+  if (!tenantId) {
+    // Still hash something, so a missing account does not answer faster than a
+    // wrong password for an existing one. Same 64-byte length as a real
+    // scrypt hash, otherwise the timings differ by an order of magnitude.
+    await verifyPassword(password, `scrypt$${randomBytes(16).toString('hex')}$${'0'.repeat(128)}`);
+    return null;
+  }
+  const row = await runWithTenant(tenantId, () => withTenant(async (client) => {
     const { rows } = await client.query(
       `select id, tenant_id, email, display_name, role, password_hash, session_version, max_sessions
          from users
         where tenant_id = $1 and lower(email) = lower($2)
         limit 1`,
-      [TENANT_ID, email],
+      [tenantId, email],
     );
     return rows[0] || null;
-  });
+  }));
   if (!row || !await verifyPassword(password, row.password_hash)) return null;
   return {
     id: row.id,
@@ -584,8 +652,15 @@ async function deleteUploadedBook(id) {
   });
 }
 
+// Fail-closed: no grant, no access.
+//
+// This returned true for an empty grant list, so any user whose grants failed
+// to match saw the whole catalogue. It hid a real defect in production - the
+// single grants row names subject_id 11111111-... while the catalogue is under
+// 5799f2a5-..., so it matches nobody, and the admin saw 13 works only because
+// this returned true. Access that cannot be decided must be denied.
 function grantAllows(book, grants) {
-  if (!grants.length) return true;
+  if (!Array.isArray(grants) || !grants.length) return false;
   const publisher = String(book.publisher || '').toLocaleLowerCase('tr');
   const subjects = (book.subjects || []).map((value) => String(value).toLocaleLowerCase('tr'));
   return grants.some((grant) => {
@@ -602,16 +677,18 @@ function grantAllows(book, grants) {
 
 async function activeGrants(auth, dbClient = null) {
   if (!auth) return [];
+  // The tenant a user's grants belong to is the tenant they signed in to, not
+  // the one this process was started with.
+  const tenantId = auth.tenantId || requestTenant();
   if (!pool) {
     return demoGrants.filter((grant) => grant.status === 'active'
-      && grant.tenant_id === TENANT_ID
-      && ((grant.subject_type === 'tenant' && grant.subject_id === TENANT_ID)
+      && grant.tenant_id === tenantId
+      && ((grant.subject_type === 'tenant' && grant.subject_id === tenantId)
         || (grant.subject_type === 'user' && grant.subject_id === auth.userId)
         || (grant.subject_type === 'group'
           && demoGroupMembers.some((member) => member.group_id === grant.subject_id && member.user_id === auth.userId))));
   }
   try {
-    const tenantId = auth.tenantId || TENANT_ID;
     const grantClock = dbClient ? 'clock_timestamp()' : 'now()';
     const load = async (client) => {
       const { rows } = await client.query(
@@ -649,7 +726,7 @@ async function listGrants() {
          left join user_groups ug on g.subject_type = 'group' and ug.id = g.subject_id
         where g.tenant_id = $1
         order by g.created_at desc`,
-      [TENANT_ID],
+      [requestTenant()],
     );
     return rows;
   });
@@ -672,7 +749,7 @@ async function logUsage(action, book, auth) {
       await client.query(
         `insert into audit_events (tenant_id, actor_id, action, object_type, object_id, payload)
          values ($1, $2, $3, 'asset', $4, $5::jsonb)`,
-        [TENANT_ID, auth?.userId || null, action, book.asset_id, JSON.stringify({ book_id: book.id })],
+        [requestTenant(), auth?.userId || null, action, book.asset_id, JSON.stringify({ book_id: book.id })],
       );
     });
   } catch (error) {
@@ -691,7 +768,7 @@ async function logGrantAudit(client, auth, grantId, action, detail) {
   await client.query(
     `insert into grant_audit (tenant_id, grant_id, action, actor_user_id, detail)
      values ($1, $2, $3, $4, $5::jsonb)`,
-    [TENANT_ID, grantId, action, auth?.userId || null, JSON.stringify(detail || {})],
+    [requestTenant(), grantId, action, auth?.userId || null, JSON.stringify(detail || {})],
   );
 }
 
@@ -705,7 +782,7 @@ async function listCollections() {
         where c.tenant_id = $1
         group by c.id, c.title
         order by c.title`,
-      [TENANT_ID],
+      [requestTenant()],
     );
     return rows;
   });
@@ -726,7 +803,7 @@ async function listGroups() {
         where g.tenant_id = $1
         group by g.id, g.name, g.created_at
         order by g.name`,
-      [TENANT_ID],
+      [requestTenant()],
     );
     return rows;
   });
@@ -745,7 +822,7 @@ async function createGroup(name) {
     const { rows } = await client.query(
       `insert into user_groups (tenant_id, name) values ($1, $2)
        returning id, name, created_at`,
-      [TENANT_ID, value],
+      [requestTenant(), value],
     );
     return rows[0];
   });
@@ -855,7 +932,7 @@ async function createGrant(body, auth) {
        values ($1, $2, $3, $4, $5, $6, $7, $8, 'active', $9)
        returning id, subject_type, subject_id, scope_type, scope_id, scope_key,
                  seat_limit, source, status, valid_from, valid_to, created_at`,
-      [TENANT_ID, subjectType, subjectId, scopeType, scopeId, scopeKey, grant.seat_limit, grant.source, grant.valid_to],
+      [requestTenant(), subjectType, subjectId, scopeType, scopeId, scopeKey, grant.seat_limit, grant.source, grant.valid_to],
     );
     await logGrantAudit(client, auth, rows[0].id, 'create', {
       subjectType, scopeType, scopeKey, scopeId,
@@ -875,7 +952,7 @@ async function deleteGrant(id, auth) {
   return withTenant(async (client) => {
     const { rows, rowCount } = await client.query(
       'delete from grants where id = $1 and tenant_id = $2 returning scope_type, scope_key, scope_id, subject_type, subject_id',
-      [id, TENANT_ID],
+      [id, requestTenant()],
     );
     if (rowCount > 0) await logGrantAudit(client, auth, id, 'revoke', rows[0] || {});
     return rowCount > 0;
@@ -893,7 +970,7 @@ async function grantAuditLog(limit = 50) {
         where a.tenant_id = $1
         order by a.created_at desc
         limit $2`,
-      [TENANT_ID, limit],
+      [requestTenant(), limit],
     );
     return rows;
   });
@@ -909,13 +986,13 @@ async function grantUsage() {
     const { rows: sessionRows } = await client.query(
       `select count(*)::int as count from user_sessions
         where tenant_id = $1 and last_seen_at >= now() - interval '2 hours'`,
-      [TENANT_ID],
+      [requestTenant()],
     );
     const { rows: grantRows } = await client.query(
       `select seat_limit from grants
         where tenant_id = $1 and status = 'active'
           and valid_from <= now() and (valid_to is null or valid_to > now())`,
-      [TENANT_ID],
+      [requestTenant()],
     );
     return { activeSessions: sessionRows[0].count, seatLimit: tenantSeatLimit(grantRows) };
   });
@@ -949,7 +1026,7 @@ async function usageCsv() {
         where (w.tenant_id is null or w.tenant_id = $1)
         group by w.id, w.title, e.id, e.publisher, w.language
         order by readers desc, w.title`,
-      [TENANT_ID],
+      [requestTenant()],
     );
     const escape = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
     return [
@@ -1012,7 +1089,7 @@ async function sushiResponse(url) {
             and ev.created_at < ($3::date + interval '1 day')
           group by w.title, ev.object_id
           order by requests desc`,
-        [TENANT_ID, begin, end],
+        [requestTenant(), begin, end],
       );
       return result;
     });
@@ -1073,7 +1150,7 @@ async function oaiRecords() {
          left join assets a on a.edition_id = e.id
         where w.tenant_id is null or w.tenant_id = $1
         order by w.id, a.format`,
-      [TENANT_ID],
+      [requestTenant()],
     );
     return rows.filter((row) => row.access_status !== 'restricted');
   });
@@ -1238,7 +1315,7 @@ async function listBooks(auth) {
          join assets a on a.edition_id = e.id
         where (w.tenant_id is null or w.tenant_id = $1)
         order by w.created_at desc`,
-      [TENANT_ID],
+      [requestTenant()],
     );
     return rows;
   });
@@ -1263,7 +1340,7 @@ async function getBook(id, dbClient = null) {
         where (w.id = $1 or a.id = $1)
           and (w.tenant_id is null or w.tenant_id = $2)
         limit 1`,
-      [id, TENANT_ID],
+      [id, requestTenant()],
     );
     return rows[0] ? normalizeBookVariant(rows[0]) : null;
   };
@@ -1273,6 +1350,17 @@ async function getBook(id, dbClient = null) {
 const downloadService = createDownloadService({
   withTenant, getBook, activeGrants, grantAllows, tenantId: TENANT_ID, b2b: B2B_DOWNLOADS,
 });
+
+// `maintenance()` sweeps one tenant's tickets. It is called from a timer, not a
+// request, so it must name the tenant itself: withTenant throws when nothing is
+// bound, and the previous behaviour - silently reading the env tenant - is what
+// the fail-closed change exists to stop.
+//
+// This still names a single tenant. When a second tenant exists the sweeper has
+// to iterate `tenants` instead; until then it must not pretend to serve them.
+const downloadMaintenanceService = {
+  maintenance: () => runWithTenant(TENANT_ID, () => downloadService.maintenance()),
+};
 
 async function updateBook(id, body) {
   if (!pool) {
@@ -1390,7 +1478,7 @@ async function updateBook(id, body) {
         where (w.id = $1 or a.id = $1)
           and (w.tenant_id is null or w.tenant_id = $2)
         limit 1`,
-      [id, TENANT_ID],
+      [id, requestTenant()],
     );
     return rows[0] || null;
   });
@@ -1454,7 +1542,7 @@ async function searchBooks(query, auth) {
                           word_similarity(q.folded, folded.folded_title)) desc,
                  w.created_at desc
         limit 50`,
-      [TENANT_ID, q],
+      [requestTenant(), q],
     );
     return rows;
   });
@@ -1526,7 +1614,7 @@ async function saveProgress(body, userId) {
        on conflict (user_id, asset_id)
        do update set anchor = excluded.anchor, percent = excluded.percent, updated_at = now()
        returning asset_id, anchor, percent, updated_at`,
-      [TENANT_ID, userId, body.assetId, JSON.stringify(body.anchor), Number(body.percent || 0)],
+      [requestTenant(), userId, body.assetId, JSON.stringify(body.anchor), Number(body.percent || 0)],
     );
     return rows[0];
   });
@@ -1547,7 +1635,7 @@ async function resolveStorageKey(id) {
         where (w.id = $1 or a.id = $1)
           and (w.tenant_id is null or w.tenant_id = $2)
         limit 1`,
-      [id, TENANT_ID],
+      [id, requestTenant()],
     );
     return rows[0]?.storage_key || null;
   });
@@ -1744,14 +1832,14 @@ async function handleUpload(req, auth) {
           `insert into works (tenant_id, content_type, title, subtitle, language, abstract, subjects, metadata)
            values ($1, 'monograph', $2, $3, $4, null, $5, $6::jsonb)
            returning id`,
-          [TENANT_ID, title, subtitle, language, subjects, JSON.stringify({ uploaded: true, authors, uploaded_by: auth?.userId || null })],
+          [requestTenant(), title, subtitle, language, subjects, JSON.stringify({ uploaded: true, authors, uploaded_by: auth?.userId || null })],
         );
         const edition = await client.query(
           `insert into editions (tenant_id, work_id, publisher, publication_year, license_note, rights_note)
            values ($1, $2, $3, $4, $5, $6)
            returning id`,
           [
-            TENANT_ID,
+            requestTenant(),
             work.rows[0].id,
             publisher,
             Number.isFinite(year) ? year : null,
@@ -1765,7 +1853,7 @@ async function handleUpload(req, auth) {
               source_system, source_id, source_checksum, harvested_at, access_status)
            values ($1, $2, $3, $4, $5, null, 'upload', $6, $6, now(), 'open')
            returning id`,
-          [TENANT_ID, edition.rows[0].id, format, fileMeta.storageKey, pageCount, fileMeta.sha256],
+          [requestTenant(), edition.rows[0].id, format, fileMeta.storageKey, pageCount, fileMeta.sha256],
         );
         await client.query('commit');
         committed = true;
@@ -1846,7 +1934,15 @@ async function serveStatic(req, res, pathname) {
 
 await mkdir(UPLOAD_DIR, { recursive: true });
 
+// The very first statement in the request handler binds the tenant, so every
+// withTenant call anywhere below it - through download-tickets, annotation
+// sync, uploads - reads the signed-in user's tenant without being changed.
 const server = http.createServer(async (req, res) => {
+  const boundTenant = readSession(req)?.tenantId || TENANT_ID;
+  return runWithTenant(boundTenant, () => handleRequest(req, res));
+});
+
+async function handleRequest(req, res) {
   const requestStarted = performance.now();
   let url;
   let pathname;
@@ -2579,16 +2675,18 @@ const server = http.createServer(async (req, res) => {
           : 500;
     json(res, status, { error: error.message || 'internal error' });
   }
-});
+}
 
-const stopDownloadMaintenance = pool ? startDownloadMaintenance(downloadService) : () => {};
+const stopDownloadMaintenance = pool ? startDownloadMaintenance(downloadMaintenanceService) : () => {};
 server.once('close', stopDownloadMaintenance);
 
 let annotationMaintenanceTimer;
 let annotationMaintenanceStart;
 async function runAnnotationMaintenance() {
   if (!pool) return;
-  const result = await withTenant(async (client) => {
+  // No request, no session: this timer sweeps one tenant named by env. When a
+  // second tenant exists this must iterate tenants instead of assuming one.
+  const result = await runWithTenant(TENANT_ID, () => withTenant(async (client) => {
     await client.query('begin');
     await client.query("select set_config('app.maintenance', 'on', true)");
     try {
@@ -2603,7 +2701,7 @@ async function runAnnotationMaintenance() {
       await client.query('rollback').catch(() => {});
       throw error;
     }
-  });
+  }));
   if (result.receiptsDeleted || result.tombstonesDeleted) {
     console.log(`[annotations] retention: ${result.receiptsDeleted} receipts, ${result.tombstonesDeleted} tombstones`);
   }

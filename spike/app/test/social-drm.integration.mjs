@@ -161,7 +161,7 @@ async function setup() {
   temporary = await mkdtemp(path.join(tempParent, 'social-drm-'));
   const sandbox = path.join(temporary, 'app');
   await mkdir(path.join(sandbox, 'public/seed'), { recursive: true });
-  for (const file of ['server.mjs', 'indexer.mjs', 'download-tickets.mjs', 'annotation-sync.mjs', 'social-watermark.mjs', 'public/search.mjs', 'public/downloads.mjs', 'public/offline.mjs']) {
+  for (const file of ['server.mjs', 'tenant-context.mjs', 'storage.mjs', 'indexer.mjs', 'download-tickets.mjs', 'annotation-sync.mjs', 'social-watermark.mjs', 'public/search.mjs', 'public/book-variants.mjs', 'public/downloads.mjs', 'public/offline.mjs']) {
     await copyFile(path.join(appDir, file), path.join(sandbox, file));
     report.source[file] = sha(await readFile(path.join(sandbox, file)));
   }
@@ -210,6 +210,10 @@ async function setup() {
   equal((await admin.query("select to_regclass('download_ticket_limits')::text as name")).rows[0].name, 'download_ticket_limits', '014 upgrade and repeat application create shared limiter');
   checks += 2;
   await admin.query(`alter role akademik_app password '${appPassword}'`);
+  // Login resolves an email to its tenant before any tenant is bound, and
+  // `users` is under RLS, so the app role needs this helper. Run the real
+  // migration rather than a copy: a copy can drift from what ships.
+  await admin.query(await readFile(path.join(repoDir, 'db/migrations/018-tenant-for-login.sql'), 'utf8'));
   const { rows: [role] } = await admin.query("select rolsuper, rolbypassrls from pg_roles where rolname='akademik_app'");
   equal(role.rolsuper, false, 'app role is not superuser');
   equal(role.rolbypassrls, false, 'app role cannot bypass RLS');
