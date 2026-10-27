@@ -1,9 +1,11 @@
-# Project state — 2026-10-27
+# Project state — 2026-10-28
 
 Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konuşma geçmişini tekrar okumayın.
 
 ## Sürümler
-- **Canlı sürüm doğrulaması (2026-10-27):** Prod: **v133**, kaynak **5225149** (`main`), buildDate **2026-10-27**. Kanıt `GET https://elibrary.libedge.com/api/config`: `133` / `5225149` / `2026-10-27`; `/api/health` → `ok:true, mode:db`, tenant `5799f2a5-…`. `/favicon.ico` → `200 OK`. Tarayıcıda doğrulandı: favicon, SW **v25**, EPUB yayıncı stili + tema + yazı boyutu. İmaj `libedge-v133` (ID `541b98daa159`), adı **`.env.r2` içindeki `LIBEDGE_IMAGE=libedge-v133`** ile veriliyor. **DB migration kaydı 001–020** (v133'te migration yok). Rollback: **`libedge-v132`** (`libedge-v131` silindi); env yedeği `.env.r2.bak-v132`. docs/deployments/2026-10-27-v133.md, docs/DEPLOY.md.
+- **Canlı sürüm doğrulaması (2026-10-28 01:43 TRT):** Prod: **v134**, kaynak **b6aa81a** (`main`), buildDate **2026-10-27** (sunucu UTC). Kanıt `GET https://elibrary.libedge.com/api/config`: `134` / `b6aa81a` / `2026-10-27`; `/api/health` → `ok:true, mode:db`, tenant `5799f2a5-…`; R2 **PASS**. İmaj `libedge-v134` (ID `00bf4340bca2`, LABEL `b6aa81a`/`134`), adı **`.env.r2` içindeki `LIBEDGE_IMAGE=libedge-v134`** ile veriliyor. Build öncesi `docker rmi libedge-v132` (disk %85, 1023 MB boş). **DB migration yok** (001–020). Rollback: **`libedge-v133`** + **`.env.r2.bak-v133`**. docs/deployments/2026-10-28-v134.md, docs/DEPLOY.md.
+- **v134 ne yaptı:** EPUB indirmede **409 artık nedeniyle birlikte** kaydediliyor (`delivery_failed` / `invalid_storage_key` audit'e `error`+`format` ile), okuyucuya **anlaşılır mesaj** gösteriliyor, **bozuk EPUB yüklemede reddediliyor** (`inspectWatermarkable`), `--dry-run` inceleme mümkün. Ayrıştırıcı **değişmedi** — doğru davranıyordu, bozuk olan veri. Tarayıcıda (Altan) doğrulandı: anlaşılır mesaj, konsolda yalnız 409, yakalanmamış hata yok.
+- **v133 (2026-10-27):** CSP `style-src`'ye `blob:` (EPUB yayıncı stili + tema + yazı boyutu), `/favicon.ico` 200, `mobile-web-app-capable`, SW cache `v24`→`v25`. docs/deployments/2026-10-27-v133.md.
 - **Migration runner (2026-10-27):** `db/migrate.mjs` + `schema_migrations` (filename, checksum, applied_at, duration_ms). Her dosya kendi registry satırıyla aynı transaction'da. `--status`, `--dry-run`, `--baseline`. Sunucuda node yok; runner throwaway `node:22-alpine` container'ında, repo `:ro` mount + anonim `node_modules` volume ile çalışır (`db/README.md`).
 - **Erişim fail-closed (2026-10-27):** `grantAllows` boş grant listesinde artık `false`; `withTenant` env yerine request'in tenant'ını (`AsyncLocalStorage`, `spike/app/tenant-context.mjs`) kullanıyor; bağlam yoksa **patlar**. `019` bozuk seed grant'ı düzeltti, `020` LibEdge tenant'ına **all** kapsamlı grant ekledi.
 - **Grant'ler (canlı):** `77777777-…` collection kapsamlı, **`valid_to = 2027-01-23`** — o tarihte koleksiyon grant'i düşer. `20202020-…` all kapsamlı, **süresiz** (`valid_to = null`). Koleksiyon grant'i süresi dolduğunda erişim all grant'ı üzerinden devam eder; yeni upload'lar hiçbir koleksiyona eklenmediği için collection kapsamı tek başına yetmez.
@@ -58,6 +60,7 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 
 ## Açık işler (sırayla)
 
+0. **EPUB onarımı + katalog taraması (v134 sonrası, sıradaki iş):** bozuk dosya *Scientific Writing for Health Research* (`4773fe55-…`, `EPUB/text/ch003.xhtml` → `<p></li>`). v134 hatayı görünür kıldı ama dosyayı onarmadı. Adım adım: `docs/runbooks/epub-repair-2026-10-27.md` (§1–§8 onarım, §9 katalog taraması, §10 geri dönüş). Yeni key `…-r1.epub` (aynı key'e yazılamıyor: `IfNoneMatch: '*'`).
 1. **WCAG 2.2 AA / ACR:** v122 güncel kanıtı ve 55 kriter taslağı hazır; NVDA + Edge S01–S12 konuşma gözlemleri, sandbox iframe tam taraması, native kontrast ve güncel dinamik reflow açık. docs/ACR.md.
 2. **Sosyal filigran / erişim kontrolü:** P0 v118 dar sözleşme kapsamında canlı; 013–014 ve deploy tamam, 16 smoke + 6 canlı senaryo geçti. Sonraki iş AES at-rest P1; chunked range/LCP yalnız gerçek yayıncı şartıyla. `docs/deployments/2026-10-23-v118.md`, `docs/SOCIAL-DRM.md`.
 3. **Görsel ağırlıklı >300 MB:** kapsam dışı; yalnızca gerçek yayıncı talebi olursa önizleme/derivative pipeline.
@@ -81,7 +84,9 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - i18n kısmi: statik UI ve yaygın dinamik etiketler EN; bazı toast/doğrulama/yardım metinleri ve kitap metadata’sı çevrilmiyor.
 - Grants: `010`–`012` uygulanmalı. **~~Grant yoksa katalog eskisi gibi açık~~ — 2026-10-27'den beri YANLIŞ.** Erişim fail-closed: eşleşen grant yoksa katalog **kapalı** (0 kitap). Kural: kullanıcının tenant'ında ya da üzerinde `active` + süresi geçmemiş bir grant olmalı. Canlıda LibEdge tenant'ı için all kapsamlı süresiz grant (`20202020-…`) var; `77777777-…` collection grant'i 2027-01-23'te sona erer. Seat limit `users.max_sessions` ile birlikte çalışır. **Grup subject + üye ekle/çıkar**, kullanıcı/grup grant’leri, koleksiyon/başlık seçicileri, audit log ve kullanım sayacı var.
 - `download-tickets` ve `/opds` hâlâ **env tenant'ı** ile kurulu (`tenantId: TENANT_ID`). İkinci tenant'ta bu yollar reddeder (`tenant_mismatch` / 401); **sızdırmaz** ama kırılır. Ayrı PR.
-- `2026-10-27` itibarıyla bilinen kozmetik/açık işler v133: EPUB yayıncı CSS'i `style-src` tarafından engelleniyor (blob: URL), `favicon.ico` 404, `<meta name="mobile-web-app-capable">` eksik.
+- `2026-10-28` itibarıyla bilinen açıklar (v134): **bozuk EPUB dosyası hâlâ bozuk** — indirme 409 veriyor ama artık **nedeni audit'te ve okuyucuda görünüyor**; **katalogda kaç kitabın aynı durumda olduğu bilinmiyor** (tarama yapılmadı). Onarım: `docs/runbooks/epub-repair-2026-10-27.md`.
+- **Download deny audit'inde `book_id` null:** `auditDenied()` her zaman `book = null` geçiyor (`download-tickets.mjs:144`); `server.mjs`'te 409 anında `book` elimizde olmasına rağmen verilmiyor. Sonuç: "hangi kitap indirilemiyor" sorusu audit'ten cevaplanamıyor. Ayrı küçük PR.
+- **`app.js?v=130-ui-copy` sabit:** `public/index.html:436` cache-busting etiketi v130'dan beri değişmedi. Yeni `app.js` (v134 hata mesajı dahil) eski etiketle servis ediliyor; tarayıcı cache'ine bağlı kalıyor. Build SHA'dan türetilmeli ya da her sürümde güncellenmeli.
 
 ## Komutlar
 
@@ -159,3 +164,19 @@ Verified live: image `libedge-v133` (ID `541b98daa159`, LABEL `5225149`/`133`), 
 **Rollback is now `libedge-v132`** — `libedge-v131` was removed with `docker rmi`; `.env.r2.bak-v132` kept.
 
 **Open:** an offline-launch EPUB was not exercised this round, so it is unproven that `v25` is actually served instead of a leftover `v24` shell (see `docs/TODO.md`). Still open from earlier: `download-tickets` and `/opds` bound to the env tenant; SSO. docs/deployments/2026-10-27-v133.md.
+
+## v134 EPUB download 409 made visible — 2026-10-28
+
+Code **b6aa81a** on `main` (PR #29). Live and verified 2026-10-28 01:43 TRT.
+
+The reader got a bare **409** on EPUB download with **nothing shown to the user** — the reason existed only in console output, so a permanently undownloadable title stayed invisible for weeks. Root cause was data, not code: `EPUB/text/ch003.xhtml` in *Scientific Writing for Health Research* contains `<p></li>` (unclosed `<p>`, Pandoc output), so the file is **not well-formed**. Reading worked because the reader hands XHTML to the browser as-is; watermarking parses it as XML and failed. **The parser was correct (fail-closed) and was not changed.**
+
+Three changes: the 409 reason is written to audit (`delivery_failed` / `invalid_storage_key` with `error` + `format`), the reader is shown a human-readable message on all three 409 paths, and ingest now refuses an EPUB that cannot be stamped (`inspectWatermarkable`, 422) so no new title can enter the catalog undownloadable. `watermarkEpub` takes `{ inspectOnly }` so dry-run and the real stamp use the same candidate list. No unwatermarked fallback was added — returning the bytes would silently break the watermark contract in `docs/SOCIAL-DRM.md`.
+
+Verified live: image `libedge-v134` (ID `00bf4340bca2`, LABEL `b6aa81a`/`134`), `/api/config` → `134/b6aa81a/2026-10-27` (server is UTC; the TRT deploy time is 2026-10-28 01:43), `/api/health` → `ok/db/5799f2a5`, R2 PASS. Browser (Altan): clear on-screen message, only the 409 request in the console, no uncaught error. Server side, all three layers agree: log `[download] epub delivery failed: Invalid EPUB package: mismatched XML closing tag`, audit `{"error":"Invalid EPUB package: mismatched XML closing tag","format":"epub","reason":"delivery_failed","book_id":null}`. Tests on the merged tree: unit **126/126**, `social-watermark` **17/17**, `social-drm` 295, `security-headers` 3/3, `tenant-access` 4 scenarios/12 checks. Negative control: stashing the fix drops the suite with `does not provide an export named 'inspectWatermarkable'`.
+
+**Rollback is now `libedge-v133`** — `libedge-v132` was removed with `docker rmi` before the build (disk at 85%, 1023 MB freed); `.env.r2.bak-v133` kept. No migration.
+
+**The book itself is still broken.** v134 only built the correct failure path; the reader still cannot download it. Repair and catalog scan are the next work, in that order: `docs/runbooks/epub-repair-2026-10-27.md`.
+
+**Open:** `book_id` is `null` in the deny audit (found during this deploy) because `auditDenied()` always passes `book = null` (`download-tickets.mjs:144`) even though `server.mjs` holds the book at the 409 site — so "which title is undownloadable" cannot be answered from audit yet; `app.js?v=130-ui-copy` in `public/index.html:436` has not changed since v130, so cache-busting is not actually busting. Still open from earlier: `download-tickets` and `/opds` bound to the env tenant; SSO; offline-launch EPUB never exercised. docs/deployments/2026-10-28-v134.md.
