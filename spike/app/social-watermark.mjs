@@ -291,7 +291,7 @@ async function spineDocuments(zip) {
   return { spinePaths, documents };
 }
 
-async function watermarkEpub(buffer, lines) {
+async function watermarkEpub(buffer, lines, { inspectOnly = false } = {}) {
   const source = await JSZip.loadAsync(buffer, { checkCRC32: true });
   if (Object.keys(source.files).some(name => /^META-INF\/encryption\.xml$/i.test(name))) {
     throw new Error('Encrypted EPUB cannot be watermarked');
@@ -300,6 +300,24 @@ async function watermarkEpub(buffer, lines) {
     throw new Error('Invalid EPUB mimetype');
   }
   const { spinePaths, documents } = await spineDocuments(source);
+  const candidates = Object.keys(source.files).filter(name =>
+    name !== 'mimetype' && !source.files[name].dir && (documents.has(name) || /\.(?:xhtml|html|htm)$/i.test(name)));
+  // Dry run: parse every document exactly as the real stamp would, to surface the
+  // first malformed file by name, then stop without rewriting the archive.
+  if (inspectOnly) {
+    const checked = [];
+    for (const name of candidates) {
+      try {
+        bodyOpeningEnd(await source.file(name).async('string'), documents.get(name) || 'text/html');
+      } catch (error) {
+        // Name the offending entry: the operator needs the file, not just the offset.
+        throw new Error(`${name}: ${error.message}`);
+      }
+      checked.push(name);
+    }
+    if (!spinePaths.size) throw new Error('EPUB has no complete stampable spine');
+    return { format: 'epub', documents: checked };
+  }
   const result = new JSZip();
   // EPUB requires the mimetype entry first and uncompressed, regardless of the
   // ordering/compression used by the uploaded ZIP.
@@ -310,7 +328,7 @@ async function watermarkEpub(buffer, lines) {
   for (const [name, entry] of Object.entries(source.files)) {
     if (name === 'mimetype') continue;
     let data = await entry.async('nodebuffer');
-    if (!entry.dir && (documents.has(name) || /\.(?:xhtml|html|htm)$/i.test(name))) {
+    if (!entry.dir && candidates.includes(name)) {
       const content = data.toString('utf8');
       const insertAt = bodyOpeningEnd(content, documents.get(name) || 'text/html');
       data = Buffer.from(content.slice(0, insertAt) + markup + content.slice(insertAt), 'utf8');
@@ -332,4 +350,19 @@ export async function watermarkDownload(buffer, format, auth) {
   if (format === 'pdf') return watermarkPdf(buffer, lines);
   if (format === 'epub') return watermarkEpub(buffer, lines);
   throw new Error('Unsupported download format');
+}
+
+// Dry run for ingest: prove the file can be stamped *before* it is published,
+// using the same parse/validate path as a real download. A file that only fails
+// here (an XHTML subset that is not well-formed XML, for example) can be read
+// online but is undownloadable forever once stored, and the only signal today is
+// a 409 at download time. No identity is needed and nothing is written.
+export async function inspectWatermarkable(buffer, format) {
+  if (format !== 'epub' && format !== 'pdf') throw new Error('Unsupported download format');
+  const lines = stampLines({ userId: 'dry-run', tenantId: 'dry-run', email: 'dry-run@invalid' });
+  if (format === 'pdf') {
+    await watermarkPdf(buffer, lines);
+    return { format, documents: null };
+  }
+  return watermarkEpub(buffer, lines, { inspectOnly: true });
 }

@@ -14,7 +14,7 @@ import JSZip from 'jszip';
 import { PDFDocument } from 'pdf-lib';
 import { indexAsset } from './indexer.mjs';
 import { createDownloadService, startDownloadMaintenance } from './download-tickets.mjs';
-import { watermarkDownload } from './social-watermark.mjs';
+import { watermarkDownload, inspectWatermarkable } from './social-watermark.mjs';
 import {
   buildSnippet,
   catalogMatches,
@@ -1677,6 +1677,23 @@ async function detectUploadFormat(destination) {
   return null;
 }
 
+// Admin-facing message for an EPUB that cannot be stamped. The client shows this
+// verbatim on a 422, so it names the real consequence instead of the parser error.
+const UPLOAD_EPUB_UNSTAMPABLE = 'EPUB indirilemiyor: dosya filigran eklenemeyecek şekilde biçimlendirilmiş';
+
+// Audit payloads are readable by tenant admins, so a raw error string must not
+// carry identity (the stamping lines contain user id/email) or file contents.
+// Watermark failures are short and structural; anything else is clamped.
+function deliveryErrorDetail(message) {
+  const text = typeof message === 'string' ? message : '';
+  const scrubbed = text
+    .replace(/[^\x20-\x7e]/g, '?')
+    .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, '<id>')
+    .replace(/[\w.+-]+@[\w.-]+/g, '<email>')
+    .trim();
+  return scrubbed.slice(0, 200) || 'unknown delivery error';
+}
+
 async function handleUpload(req, auth) {
   const MAX_BYTES = 300 * 1024 * 1024;
   const fields = {};
@@ -1771,6 +1788,23 @@ async function handleUpload(req, auth) {
     } catch (error) {
       console.warn('[upload] page count failed:', error.message);
     }
+  }
+
+  // An EPUB that cannot be stamped is readable online but never downloadable, and
+  // the only symptom is a 409 much later. Reject it at ingest instead: the same
+  // parse/validate path as a real download, run against the stored bytes.
+  if (format === 'epub') {
+    let stampable = null;
+    try {
+      stampable = await inspectWatermarkable(await readFile(fileMeta.destination), 'epub');
+    } catch (error) {
+      await unlink(fileMeta.destination).catch(() => {});
+      console.warn('[upload] EPUB rejected, cannot be watermarked:', error.message);
+      throw Object.assign(new Error(`${UPLOAD_EPUB_UNSTAMPABLE}: ${error.message}`), {
+        statusCode: 422, code: 'EPUB_UNSTAMPABLE',
+      });
+    }
+    if (!stampable.documents?.length) console.warn('[upload] EPUB stamped no documents');
   }
 
   const title = String(fields.title || path.basename(fileMeta.filename, path.extname(fileMeta.filename))).trim() || 'Adsız';
@@ -2488,9 +2522,14 @@ async function handleRequest(req, res) {
       }
       const book = result.book;
       let validStorageKey = true;
-      try { assetStorage.validate(book.storage_key); } catch { validStorageKey = false; }
+      let storageKeyError = '';
+      try { assetStorage.validate(book.storage_key); } catch (error) { validStorageKey = false; storageKeyError = error.message; }
       if (!validStorageKey) {
-        await downloadService.auditDenied(auth, 'invalid_storage_key');
+        // A stored key the reader cannot serve is a data defect, not a user action:
+        // record why, so the operator does not have to guess from a bare 409.
+        console.warn('[download] invalid storage key:', storageKeyError);
+        await downloadService.auditDenied(auth, 'invalid_storage_key', false, 403,
+          { error: deliveryErrorDetail(storageKeyError) });
         json(res, 409, { error: 'download unavailable' });
         return;
       }
@@ -2499,9 +2538,14 @@ async function handleRequest(req, res) {
       try {
         const source = await assetStorage.read(book.storage_key);
         payload = result.watermark ? await watermarkDownload(source, format, auth) : source;
-      } catch {
+      } catch (error) {
         // No fallback to unwatermarked bytes after a stamp/parse/read failure.
-        await downloadService.auditDenied(auth, 'delivery_failed');
+        // The reason must survive: a malformed source file (e.g. XHTML that is not
+        // well-formed) is otherwise indistinguishable from a storage outage, which
+        // is exactly how a permanently undownloadable title stayed invisible.
+        console.warn(`[download] ${format} delivery failed:`, error.message);
+        await downloadService.auditDenied(auth, 'delivery_failed', false, 403,
+          { format, error: deliveryErrorDetail(error.message) });
         json(res, 409, { error: 'download unavailable' });
         return;
       }
@@ -2669,10 +2713,11 @@ async function handleRequest(req, res) {
     await serveStatic(req, res, pathname);
   } catch (error) {
     console.error('[request]', error);
-    const status = error.message === 'already uploaded' ? 409
-      : error.message === 'file too large' ? 413
-        : /PDF|empty|required/.test(error.message || '') ? 400
-          : 500;
+    const status = Number.isInteger(error.statusCode) ? error.statusCode
+      : error.message === 'already uploaded' ? 409
+        : error.message === 'file too large' ? 413
+          : /PDF|empty|required/.test(error.message || '') ? 400
+            : 500;
     json(res, status, { error: error.message || 'internal error' });
   }
 }

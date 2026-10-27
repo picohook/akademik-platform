@@ -50,8 +50,8 @@ export function createDownloadService({ withTenant, getBook, activeGrants, grant
     });
   }
 
-  async function deny(client, auth, book, reason, bypass = false, status = 403, error = 'download ticket rejected') {
-    await audit(client, auth, 'download.ticket.deny', book, { reason });
+  async function deny(client, auth, book, reason, bypass = false, status = 403, error = 'download ticket rejected', details = {}) {
+    await audit(client, auth, 'download.ticket.deny', book, { reason, ...details });
     if (bypass) await audit(client, auth, 'download.watermark.bypass_attempt', book, { reason });
     return { status, body: { error } };
   }
@@ -140,8 +140,8 @@ export function createDownloadService({ withTenant, getBook, activeGrants, grant
       });
     },
 
-    auditDenied(auth, reason, bypass = false, status = 403) {
-      return transaction(client => deny(client, auth, null, reason, bypass, status));
+    auditDenied(auth, reason, bypass = false, status = 403, details = {}) {
+      return transaction(client => deny(client, auth, null, reason, bypass, status, 'download ticket rejected', details));
     },
 
     issue(bookId, auth, body) {
