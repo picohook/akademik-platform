@@ -12,10 +12,40 @@ Kalan iş: **mevcut bozuk dosyayı onarmak** ve **katalogda başka kaç tane old
 ## 0. Hazırlık
 
 ```bash
-cd /opt/libedge            # compose dosyasının olduğu dizin
-set -a; . ./.env.r2; set +a
-docker compose -f docker-compose.libedge.yml ps
-echo "IMAGE=$LIBEDGE_IMAGE"
+cd /var/www/akademik-platform      # compose dosyasının olduğu dizin (DEPLOY.md ile aynı)
+```
+
+Aşağıdaki komutlarda `dc` kısaltması kullanılır. **İki `--env-file` zorunlu**
+(`DEPLOY.md` ile aynı): `.env.production` `POSTGRES_*`, `DOMAIN`, `DATABASE_URL` sağlar;
+`.env.r2` uygulama/R2 ayarlarını. Biri eksikse compose `required variable ... is missing`
+ile **durur** — 2026-10-27'de tam bu yaşandı.
+
+```bash
+dc() {
+  docker compose -f /var/www/akademik-platform/docker-compose.libedge.yml \
+    --env-file /var/www/akademik-platform/.env.production \
+    --env-file /var/www/akademik-platform/.env.r2 "$@"
+}
+```
+
+DB bağlantı değişkenleri (yoksa `.env.production`'dan gelir; boşsa elle ver):
+
+```bash
+export POSTGRES_USER="${POSTGRES_USER:-$(grep -m1 '^POSTGRES_USER=' /var/www/akademik-platform/.env.production | cut -d= -f2-)}"
+export POSTGRES_DB="${POSTGRES_DB:-$(grep -m1 '^POSTGRES_DB=' /var/www/akademik-platform/.env.production | cut -d= -f2-)}"
+echo "user=$POSTGRES_USER db=$POSTGRES_DB"
+[ -n "$POSTGRES_USER" ] && [ -n "$POSTGRES_DB" ] || { echo "DUR: POSTGRES_USER/POSTGRES_DB boş"; }
+```
+
+> `sudo` kullanacaksan `sudo -E` ya da `sudo --preserve-env` — 26 Ekim kesintisinin nedeni
+> `sudo`'nun ortamı silmesiydi. `dc` fonksiyonu env dosyalarını açıkça verdiği için
+> `sudo` altında da çalışır; ama `POSTGRES_*` export'ları gitmez.
+
+Servis adının **`web`** olduğunu doğrula:
+
+```bash
+dc ps
+grep -m1 '^LIBEDGE_IMAGE=' /var/www/akademik-platform/.env.r2   # deploy edilen imaj
 ```
 
 Çalışma dizini:
@@ -24,12 +54,6 @@ echo "IMAGE=$LIBEDGE_IMAGE"
 WORK=/tmp/epub-repair; mkdir -p "$WORK"; cd "$WORK"
 ```
 
-Servis adı **`web`** (`docker-compose.libedge.yml`). Aşağıdaki komutlarda
-`dc` kısaltması kullanılır:
-
-```bash
-dc() { docker compose -f /opt/libedge/docker-compose.libedge.yml "$@"; }
-```
 
 ---
 
@@ -38,22 +62,27 @@ dc() { docker compose -f /opt/libedge/docker-compose.libedge.yml "$@"; }
 | Alan | Değer |
 | --- | --- |
 | Kitap | Scientific Writing for Health Research |
-| Asset | `4773fe55-…` (tam UUID'yi §1.1 verir) |
-| R2 key | `libedge/uploads/7ef29929-dbbd-415d-a008-c18f99362c98.epub` |
+| Asset ID | `4773fe55-2f2d-51d5-b7cb-740d477e75fa` |
+| R2 key (eski) | `libedge/uploads/7ef29929-dbbd-415d-a008-c18f99362c98.epub` |
+| R2 key (yeni) | `libedge/uploads/7ef29929-dbbd-415d-a008-c18f99362c98-r1.epub` |
 
 ### 1.1 Önce DB'de doğrula (tahmin etme)
+
+Asset **id** ile sorgula (`like` ile değil — desen başka satırı da yakalayabilir):
 
 ```bash
 dc exec -T db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "
   select a.id as asset_id, a.format, a.storage_key, a.source_checksum,
-         e.work_id, w.title
+         a.source_id, e.work_id, w.title
     from assets a
     join editions e on e.id = a.edition_id
     join works w on w.id = e.work_id
-   where a.storage_key like '%7ef29929-dbbd-415d-a008-c18f99362c98%';"
+   where a.id = '4773fe55-2f2d-51d5-b7cb-740d477e75fa';"
 ```
 
-`storage_key` (`r2://` dahil) ve `source_checksum`'ı **not al** — §5 ve §9'da lazım.
+> **Eski `storage_key` ve `source_checksum` değerlerini bir yere yaz** (ekran görüntüsü ya da
+> `tee`). §10 geri dönüş bunları aynen geri yazacak.
+
 
 ### 1.2 İndir
 
@@ -122,7 +151,29 @@ dur ve incele.
 
 > **İçeriği uydurma.** Yalnızca kapanış sırasını düzelt. Metin kaybı olmamalı.
 
+> ⚠️ **Highlight/not CFI'ları kayabilir.** `ch003`'teki DOM yapısı değişiyor
+> (`<p></li>` → `<p></p></li>`), yani o belgeye düşen CFI'lar artık **farklı bir düğüme**
+> işaret eder. Etkilenen bölümdeki okuyucu highlight'ları/notları ya **kayar** ya da
+> **çözülemez** hale gelir.
+>
+> Onarımdan **önce** bu asset'e bağlı notları say (`anchor` jsonb içinde CFI tutuyor;
+> `cfi` diye bir kolon yok):
+>
+> ```bash
+> dc exec -T db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "
+>   select status, count(*) as adet
+>     from annotations
+>    where asset_id = '4773fe55-2f2d-51d5-b7cb-740d477e75fa'
+>    group by status;"
+> ```
+>
+> **0 satır** ise kimse etkilenmiyor, devam. **Dolu** ise §8'de tekrar say ve `orphaned`
+> sayısı arttıysa Altan'a haber ver — etkilenen kullanıcılara bilgi vermek gerekebilir.
+> (`status` alanı `active`/`orphaned`; çözülemeyen bağlantılar `orphaned`'a düşer.)
+
+
 ### 3.1 Yedek
+
 
 ```bash
 cd /tmp/epub-repair
@@ -217,13 +268,15 @@ unzip -p fixed.epub EPUB/text/ch003.xhtml | head -40
 
 ---
 
-## 6. Yükle — **aynı key**
+## 6. Yeni key'e yükle
 
 > ⚠️ **`storage.put()` `IfNoneMatch: '*'` kullanıyor** (`storage.mjs:140`) — aynı key'e
-> `put()` ile **üzerine yazılamaz**. Bu yüzden önce `remove()`, sonra `put()`.
+> üzerine **yazılamaz**. Bu yüzden onarım **yeni bir key**'e yazılır; **eski objeye hiç
+> dokunulmaz** (geri dönüş için yerinde kalır, §10'da bir hafta sonra silinir).
 
 ```bash
-KEY="uploads/7ef29929-dbbd-415d-a008-c18f99362c98.epub"
+KEY_OLD="uploads/7ef29929-dbbd-415d-a008-c18f99362c98.epub"
+KEY_NEW="uploads/7ef29929-dbbd-415d-a008-c18f99362c98-r1.epub"
 dc cp ./fixed.epub "$(dc ps -q web):/tmp/fixed.epub"
 
 dc exec -T web node -e "
@@ -231,36 +284,67 @@ dc exec -T web node -e "
     const fs = await import('node:fs');
     const s = createStorage({ publicDir: process.cwd() + '/public' });
     const bytes = fs.readFileSync('/tmp/fixed.epub');
-    await s.remove('r2://' + process.env.R2_PREFIX + '/$KEY');
-    const stored = await s.put('$KEY', bytes, 'application/epub+zip');
-    console.log('yazıldı:', stored, bytes.length, 'bayt');
+    const stored = await s.put('$KEY_NEW', bytes, 'application/epub+zip');
+    fs.writeFileSync('/tmp/new-key.txt', stored);
+    console.log('NEW_KEY=' + stored);
+    console.log('yazıldı:', bytes.length, 'bayt');
     const back = await s.read(stored);
     console.log('geri okundu:', back.length, 'bayt, eşit:', back.equals(bytes));
   });
 "
 ```
 
-**`eşit: true` görmeden §7'ye geçme.**
+**`eşit: true` görmeden §7'ye geçme.** Dönen `r2://…` değerini **kopyala** — §7 onu
+`storage_key` olarak yazacak:
+
+```bash
+dc cp "$(dc ps -q web):/tmp/new-key.txt" ./new-key.txt
+NEW_KEY=$(cat new-key.txt)        # ör. r2://libedge/uploads/7ef29929-…-r1.epub
+echo "yeni storage_key: $NEW_KEY"
+```
+
+> :warning: `new-key.txt` içinde `r2://` **dahil** olmalı (`storage.mjs:44` böyle okuyor).
+> Eksikse §7'ye geçme.
+
+Eski objenin yerinde durduğunu doğrula:
+
+```bash
+dc exec -T web node -e "
+  import('./storage.mjs').then(async ({ createStorage }) => {
+    const s = createStorage({ publicDir: process.cwd() + '/public' });
+    const i = await s.info('r2://' + process.env.R2_PREFIX + '/$KEY_OLD');
+    console.log('eski obje duruyor, bayt:', i.size);
+  });
+"
+```
 
 ---
 
-## 7. DB'yi güncelle — `source_checksum`
+## 7. DB'yi güncelle — `storage_key` + `source_checksum` (tek update)
 
-`storage_key` **değişmiyor** (aynı key), yalnız checksum:
+`storage_key` artık yeni key; checksum yeni dosyanın sha256'sı. **`id` ile**, `like` ile değil.
 
 ```bash
 HASH=$(sha256sum /tmp/epub-repair/fixed.epub | cut -d' ' -f1)
 echo "yeni sha256: $HASH"
+echo "yeni key  : $NEW_KEY"
+[ -n "$NEW_KEY" ] && [ -n "$HASH" ] || { echo "DUR: NEW_KEY veya HASH boş"; }
 
 dc exec -T db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "
   update assets
-     set source_checksum = '$HASH'
-   where storage_key like '%7ef29929-dbbd-415d-a008-c18f99362c98%'
-  returning id, format, source_checksum;"
+     set storage_key     = '$NEW_KEY',
+         source_checksum = '$HASH'
+   where id = '4773fe55-2f2d-51d5-b7cb-740d477e75fa'
+  returning id, format, storage_key, source_checksum;"
 ```
+
+**`returning` satırı bir satır döndürmeli** ve `storage_key` `…-r1.epub` ile bitmeli.
+`UPDATE 0` görürsen dur — yanlış asset id'sin. Birden fazla satır görürsen dur — `id` tekil
+olduğu için bu bir şema sorunudur.
 
 > **`source_id`'ye dokunma.** Upload akışında `source_id` = `source_checksum` = sha256,
 > ama bu satır `import-catalog` kaynaklıysa `source_id` dış sistemin kimliğidir.
+
 
 ---
 
@@ -279,6 +363,19 @@ dc logs --since 10m web | grep -i 'delivery failed' || echo "temiz"
 
 > PR #29 sonrası 409 artık audit'e `delivery_failed` + `error` olarak düşer.
 > Onarım çalıştıysa bu satır **hiç çıkmaz**.
+
+5. **CFI kontrolü** (§3 notu — DOM değişti):
+
+```bash
+dc exec -T db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "
+  select status, count(*) as adet
+    from annotations
+   where asset_id = '4773fe55-2f2d-51d5-b7cb-740d477e75fa'
+   group by status;"
+```
+
+`orphaned` sayısı §3'teki ilk sayımdan **fazlaysa** notlar kaymış demektir — Altan'a bildir.
+
 
 ---
 
@@ -300,7 +397,7 @@ wc -l /tmp/epub-repair/catalog.txt
 ### 9.2 Tara
 
 ```bash
-dc cp ./catalog.txt "$(dc ps -q web):/tmp/catalog.txt"
+dc cp /tmp/epub-repair/catalog.txt "$(dc ps -q web):/tmp/catalog.txt"
 
 dc exec -T web node -e "
   const fs = await import('node:fs');
@@ -315,15 +412,20 @@ dc exec -T web node -e "
       await inspectWatermarkable(await s.read(key), 'epub');
       ok++;
     } catch (e) {
-      bad.push({ id, key, title, error: e.message });
-      console.log('INDIRILEMEZ | ' + title + ' | ' + key + ' | ' + e.message);
+      // okuma hatası da (ENOENT vb.) indirilemez demektir — sessizce yutma
+      bad.push({ id, key, title, error: e.message || String(e) });
+      console.log('INDIRILEMEZ | ' + title + ' | ' + id + ' | ' + key + ' | ' + (e.message || e));
     }
   }
   console.log('---');
   console.log('TOPLAM ' + rows.length + ' | OK ' + ok + ' | INDIRILEMEZ ' + bad.length);
   fs.writeFileSync('/tmp/scan.json', JSON.stringify(bad, null, 2));
-"
+" 2>&1 | tee /tmp/epub-repair/scan.log
 ```
+
+> `2>&1 | tee` sayesinde çıktı hem ekrana hem `scan.log`'a yazılır — katalog uzun olabilir.
+> `scan.log`'u bir hafta sakla.
+
 
 Sonucu al:
 
@@ -338,30 +440,61 @@ cat scan.json
 
 ## 10. Geri dönüş
 
-Yükleme sonrası kitap açılmıyorsa:
+Yükleme sonrası kitap açılmıyorsa **R2'ye hiçbir şey yazma** — eski obje yerinde duruyor.
+Yalnız DB'yi §1.1'de not aldığın **eski değerlere** döndür:
 
 ```bash
-# 1) R2'ye orijinali geri yaz (source.epub elinde) — §6'daki komutun aynısı,
-#    yalnız /tmp/fixed.epub yerine /tmp/source.epub
-# 2) DB'de source_checksum'u §1.1'de not aldığın ESKİ değere döndür
+KEY_OLD_SAVED='r2://libedge/uploads/7ef29929-dbbd-415d-a008-c18f99362c98.epub'   # §1.1'den
+HASH_OLD_SAVED='<§1.1 kaydettiğin source_checksum>'                                # §1.1'den
+
+dc exec -T db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "
+  update assets
+     set storage_key     = '$KEY_OLD_SAVED',
+         source_checksum = '$HASH_OLD_SAVED'
+   where id = '4773fe55-2f2d-51d5-b7cb-740d477e75fa'
+  returning id, storage_key, source_checksum;"
 ```
+
+Tek update, tek transaction. `returning` eski key'i göstermeli. Uygulama dosyayı bir sonraki
+istekte yeni key'den okumaz, eski key'den okur — **restart gerekmez** (`storage_key` her
+istekte DB'den okunuyor).
+
+**Yeni objeyi hemen silme.** §8 doğrulaması bir hafta boyunca sorun çıkarmazsa:
+
+```bash
+# Yalnız geri dönüş YAPILMADIYSA (yani canlı yeni key'i kullanıyorsa) çalıştır:
+KEY_OLD="uploads/7ef29929-dbbd-415d-a008-c18f99362c98.epub"
+dc exec -T web node -e "
+  import('./storage.mjs').then(async ({ createStorage }) => {
+    const s = createStorage({ publicDir: process.cwd() + '/public' });
+    await s.remove('r2://' + process.env.R2_PREFIX + '/$KEY_OLD');
+    console.log('eski obje silindi');
+  });
+"
+```
+
+> Bu komutu **ancak** bir hafta sonra ve **DB hâlâ `-r1.epub` key'ini gösteriyorsa** çalıştır.
+> Geri dönüş yaptıysan eski obje canlıdır — silme.
 
 Kod geri dönüşü **gerekmiyor**: PR #29 veri bozmaz, yalnız 409'u açıklamalı hale getirir
 ve bozuk dosyanın yeni yüklenmesini engeller.
 
-`source.epub` ve `unpack.bak/` silinmesin.
+`source.epub`, `fixed.epub` ve `unpack.bak/` bir hafta saklanır, sonra silinir.
 
 ---
 
 ## Kontrol listesi
 
+- [ ] §0 `dc` iki `--env-file` ile tanımlı; `POSTGRES_USER`/`POSTGRES_DB` dolu
+- [ ] §1.1 **eski `storage_key` + `source_checksum` not alındı** (§10 için şart)
 - [ ] §1 `sha256sum source.epub` = DB `source_checksum`
 - [ ] §2.2 `broken-list.txt` — bozuk dosyaların **tam** listesi
 - [ ] §3.1 `unpack.bak/` yedeği alındı
 - [ ] §3.3 `xmllint` **tüm** dosyalarda temiz (hiçbir satır çıkmıyor)
 - [ ] §4 `mimetype` ilk ve **STORE**
 - [ ] §5 `dry-run OK` + `watermark OK` + `kimlik yazılan belge > 0`
-- [ ] §6 aynı key'e yazıldı, **`eşit: true`**
-- [ ] §7 `source_checksum` güncellendi, `source_id`'ye dokunulmadı
+- [ ] §6 **yeni** key'e (`-r1.epub`) yazıldı, **`eşit: true`**, eski obje duruyor
+- [ ] §7 tek update: `storage_key` + `source_checksum`, `id` ile, `returning` 1 satır
 - [ ] §8 tarayıcıda indirme + çevrimdışı kaydet çalışıyor
 - [ ] §9 `scan.json` üretildi, `docs/TODO.md` §2b'ye eklendi
+- [ ] Bir hafta sonra: §10 eski objeyi sil (yalnız geri dönüş yapılmadıysa)
