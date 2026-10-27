@@ -519,9 +519,8 @@ ve bozuk dosyanın yeni yüklenmesini engeller.
 ## Kontrol listesi
 
 - [ ] §0 `dc` **iki `-f`** (prod + libedge) ve **iki `--env-file`** ile tanımlı; `sudo` içeride
-- [ ] §0 `dc config --services` çıktısında **`db`** görünüyor (prod.yml eksikse görünmez)
+- [ ] §0 `dc config --services` çıktısında **`db`** görünüyor; yoksa `DUR` bloğu uyardı
 - [ ] §0 `POSTGRES_USER`/`POSTGRES_DB` dolu; boşsa `DUR, devam etme` çıktı, **oturum düşmedi**
-- [ ] §0 `dc config --services` listesinde **`db`** var (yoksa `DUR` bloğu uyarıyor)
 - [ ] §1.1 **eski `storage_key` + `source_checksum` not alındı** (§10 için şart)
 - [ ] §1 `sha256sum source.epub` = DB `source_checksum`
 - [ ] §2.2 `broken-list.txt` — bozuk dosyaların **tam** listesi
