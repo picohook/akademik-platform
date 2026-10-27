@@ -140,8 +140,12 @@ export function createDownloadService({ withTenant, getBook, activeGrants, grant
       });
     },
 
-    auditDenied(auth, reason, bypass = false, status = 403, details = {}) {
-      return transaction(client => deny(client, auth, null, reason, bypass, status, 'download ticket rejected', details));
+    auditDenied(auth, reason, bypass = false, status = 403, details = {}, book = null) {
+      // `book` reaches audit_events.object_id and payload.book_id. Callers that
+      // hold the book must pass it: without it a deny row is a bare reason with
+      // no way back to the title, which is exactly how "which book cannot be
+      // downloaded?" had to be answered by hand from a log line.
+      return transaction(client => deny(client, auth, book, reason, bypass, status, 'download ticket rejected', details));
     },
 
     issue(bookId, auth, body) {
