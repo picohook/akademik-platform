@@ -20,7 +20,7 @@ Son güncelleme: 2026-10-27. Canlı: elibrary.libedge.com **v132** (`8df115f`), 
 ## 2. v133 — küçük PR'lar
 
 - ~~**CSP:** `style-src`'ye `blob:`~~ — **v133'te yapıldı** (`spike/app/security-headers.mjs`), bkz. `docs/deployments/2026-10-27-v133.md`.
-- `favicon.ico` (404) ve `<meta name="mobile-web-app-capable" content="yes">`.
+- ~~`favicon.ico` (404) ve `<meta name="mobile-web-app-capable" content="yes">`~~ — **v133'te yapıldı**: `public/favicon.ico` (`scripts/build-favicon.mjs` ile üretilir) + `server.mjs` allowlist/MIME, `index.html`'de `rel="icon"` ve standart meta. Bkz. aynı doküman.
 
 ## 3. İlk kurum / dış kullanıcıdan önce (zorunlu)
 

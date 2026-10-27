@@ -88,6 +88,7 @@ const MIME = {
   '.epub': 'application/epub+zip',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
   '.ttf': 'font/ttf',
   '.map': 'application/json; charset=utf-8',
@@ -1906,6 +1907,10 @@ async function serveStatic(req, res, pathname) {
     '/book-variants.mjs', '/book-links.mjs',
     '/index.html', '/app.js', '/styles.css', '/i18n.mjs', '/citations.mjs', '/pdf-structure.mjs',
     '/search.mjs', '/epub-engine.mjs', '/offline.mjs', '/downloads.mjs', '/ocr-layer.mjs', '/sw.js', '/manifest.webmanifest',
+    // Browsers request /favicon.ico on their own when a page declares no icon,
+    // and Safari still prefers it over <link rel="icon">. It is the only file at
+    // the root that is not a module, so it is listed explicitly.
+    '/favicon.ico',
   ]);
   const allowedPrefixes = ['/icons/', '/vendor/'];
   if (relative.includes('..') || (!allowedFiles.has(relative) && !allowedPrefixes.some((prefix) => relative.startsWith(prefix)))) {
