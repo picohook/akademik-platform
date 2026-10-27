@@ -8,7 +8,7 @@ tek yerde tutar; sürüm geçmişi `docs/deployments/` altında, özet `PROJECT-
 
 ```bash
 curl -s https://elibrary.libedge.com/api/config
-# {"version":"131","buildSha":"<deploy edilen SHA>","buildDate":"...","environment":"production",...}
+# {"version":"132","buildSha":"<deploy edilen SHA>","buildDate":"...","environment":"production",...}
 
 curl -s https://elibrary.libedge.com/api/health
 # {"ok":true,"mode":"db","tenantId":"..."}
@@ -78,7 +78,11 @@ docker compose -f docker-compose.prod.yml --env-file .env.production build \
 | Dosya | İçerik | Zorunlu mu |
 | --- | --- | --- |
 | `.env.production` | `POSTGRES_*`, `DATABASE_URL`, `SESSION_SECRET`, `DOMAIN`, `APP_VERSION`, `BUILD_SHA`, `BUILD_DATE` | Evet — `docker-compose.prod.yml` `${VAR:?}` ile zorunlu tutuyor |
-| `.env.r2` | `LIBEDGE_IMAGE`, R2 ayarları | Yalnız `docker-compose.libedge.yml` kullanıldığında |
+| `.env.r2` | `LIBEDGE_IMAGE` (**zorunlu** — verilmezse compose `libedge-v131` yedeğine düşer), `APP_VERSION`, `BUILD_SHA`, `BUILD_DATE`, R2 ayarları | Yalnız `docker-compose.libedge.yml` kullanıldığında |
+
+> **`LIBEDGE_IMAGE=... sudo docker compose` YAZMA.** `sudo` ortamı temizler
+> (`env_reset`); değişken compose'a ulaşmaz ve compose yedeğe düşer. Ya `.env.r2`
+> içine yaz ya da `sudo LIBEDGE_IMAGE=... docker compose` biçimini kullan.
 
 `--env-file` verilmezse compose `set POSTGRES_DB` benzeri hatalarla **durur**;
 deploy komutunda `--env-file` opsiyonel değildir.
@@ -87,7 +91,7 @@ deploy komutunda `--env-file` opsiyonel değildir.
 
 ```bash
 # 1) .env.production içindeki üç public alanı güncelle:
-#    APP_VERSION=131
+#    APP_VERSION=132
 #    BUILD_SHA=<git rev-parse --short HEAD>
 #    BUILD_DATE=2026-10-27
 
@@ -109,25 +113,67 @@ Kanıt: `docs/deployments/2026-10-25-v127.md` (aynı akış, `APP_VERSION=127`).
 ## Varyant 2 — `docker-compose.libedge.yml` (canlı, 2026-10-27'den beri)
 
 Bu dosya `image:` + `pull_policy: never` tanımlar. **`--build` yeni imaj üretir ama
-devreye girmez** — compose `image:` satırındaki adı kullanır. Canlıda bu satır
-**sabit** olarak `libedge-v131` yazıyor:
+devreye girmez** — compose `image:` satırındaki adı kullanır. Satır bir değişken
+okur ve varsayılanı **yalnızca yedek**tir:
 
 ```yaml
 web:
-  image: libedge-v131          # ← sabit; LIBEDGE_IMAGE değişkeni kullanılmıyor
+  image: ${LIBEDGE_IMAGE:-libedge-v131}   # yedek; canlıda .env.r2'den geliyor
   pull_policy: never
   ports: ["127.0.0.1:3001:3000"]
 ```
 
-> ### 🔴 2026-10-26 kesintisinin kök nedeni
+**Gerçek imaj adı `.env.r2` içinde verilir:**
+
+```bash
+LIBEDGE_IMAGE=libedge-v132
+```
+
+v132 bu şekilde deploy edildi. Compose `env_file: [.env.r2]` ile bu değeri okur;
+`--env-file .env.r2` de aynı değeri verir. İki yol da `LIBEDGE_IMAGE`'ı görür.
+
+> ### 🔴 2026-10-26 kesintisinin kök nedeni — düzeltilmiş anlatım
 >
-> O gün satır `image: ${LIBEDGE_IMAGE:-akademik-platform:libedge-r2}` idi.
-> `LIBEDGE_IMAGE` verilmediği için compose varsayılana, yani **eski `libedge-r2`**
-> imajına düştü. Yeni build edilen `libedge-v131` hiç devreye girmedi ve
-> `--force-recreate` bunu **çözmedi** (recreate container'ı yeniler, imajı değiştirmez).
+> **Eski (yanlış) anlatım:** "satır sabit `libedge-v131` yazıyordu, `LIBEDGE_IMAGE`
+> kullanılmıyordu."
 >
-> **Sürüm atlarken ilk kontrol:** `docker-compose.libedge.yml` içindeki `image:`
-> satırı, build ettiğin imaj adıyla **aynı mı?**
+> **Doğrusu:** satır **zaten** `${LIBEDGE_IMAGE:-akademik-platform:libedge-r2}`
+> biçimindeydi, yani değişken **kullanılıyordu** — sadece **hiç verilmiyordu**.
+> Verilmeyen değişken varsayılana, yani **eski `libedge-r2` imajına** düşüyordu;
+> yeni build edilen `libedge-v131` hiç devreye girmiyordu.
+>
+> **Ve `sudo` bu değişkeni siler.** Şu biçim çalışmaz:
+>
+> ```bash
+> LIBEDGE_IMAGE=libedge-v132 sudo docker compose ... up -d --no-deps web   # ❌
+> ```
+>
+> `sudo` varsayılan olarak ortamı temizler (`env_reset`). Değişken `sudo`'nun
+> çocuk süreci olan `docker compose`'a **ulaşmaz**; compose varsayılana düşer.
+> Bu, "değişkeni verdim ama etkisi olmadı" şeklinde görünür ve tam olarak
+> 26 Ekim'de olan budur.
+>
+> **Doğrusu — şu iki yoldan biri:**
+>
+> ```bash
+> # 1) .env.r2 içinde tut (canlıda kullanılan yol, önerilen)
+> #    LIBEDGE_IMAGE=libedge-v132  satırını .env.r2'ye yaz.
+>
+> # 2) Değişkeni sudo'ya açıkça geçir
+> sudo LIBEDGE_IMAGE=libedge-v132 docker compose ...
+> #    veya: sudo --preserve-env=LIBEDGE_IMAGE docker compose ...
+> ```
+>
+> **Sürüm atlarken ilk kontrol:** `docker compose config` ile compose'un imaj
+> adını **gerçekten** ne gördüğünü yazdır. Tahmin etme:
+>
+> ```bash
+> sudo docker compose -f docker-compose.prod.yml -f docker-compose.libedge.yml \
+>   --env-file .env.production --env-file .env.r2 config | grep image:
+> ```
+>
+> Çıktı yeni imajı göstermiyorsa deploy **başlamamalı**.
+
 
 ### Doğru deploy akışı (canlıda çalışan)
 
@@ -142,25 +188,95 @@ cd /var/www/akademik-platform
 git fetch origin && git checkout main && git pull --ff-only origin main
 SHA=$(git rev-parse --short HEAD)
 
-cd spike/app && npm ci
+# 0) Disk temizliği — 2026-10-27'de disk %95 doluydu, deploy bundan önce durdu.
+sudo docker image ls --format '{{.Repository}}:{{.Tag}}\t{{.Size}}'
+sudo docker image prune -a -f
+#    ÇALIŞAN imaj (bu deploy'un rollback'i) otomatik korunur — prune yalnız
+#    hiçbir container'ın kullanmadığı imajlara dokunur. Önceki sürümün ARTIK
+#    imajları ve node:22-alpine silinir; node:22-alpine build sırasında
+#    yeniden çekilir, bu normaldir.
+#    NOT: çalışan container'a bağlı olmayan etiketli bir rollback imajı
+#    (ör. libedge-v131-9f755d6) prune tarafından SİLİNİR. Rollback için
+#    çalışan imajı kullan; farklı bir imajı elde tutmak istiyorsan
+#    `docker tag <imaj> <ad>:rollback` ile sabitle veya prune -a KULLANMA.
 
+# Build context = spike/app. Dockerfile `npm ci --omit=dev`'i zaten KENDİSİ
+# yapar (Dockerfile:17); host'ta node YOK, `npm ci` host'ta ÇALIŞTIRILMAZ
+# (bkz. db/README.md → "Running it on the EC2 host").
+cd spike/app
 sudo docker build \
   --build-arg BUILD_SHA=$SHA \
-  --build-arg APP_VERSION=131 \
+  --build-arg APP_VERSION=132 \
   --build-arg BUILD_DATE=$(date -I) \
-  -t libedge-v131 .
+  -t libedge-v132 .
 
 # Build kimliği gerçekten gömüldü mü?
-sudo docker inspect libedge-v131 --format '{{json .Config.Labels}}'
-# {"...revision":"<SHA>","...version":"131"} — "unknown" ise --build-arg unutulmuş
+sudo docker inspect libedge-v132 --format '{{json .Config.Labels}}'
+# {"...revision":"<SHA>","...version":"132"} — "unknown" ise --build-arg unutulmuş
 
-# Container env'i de aynı SHA'yı göstermeli
-sudo sed -i "s/^BUILD_SHA=.*/BUILD_SHA=$SHA/" .env.r2
-
+# Container env'i de aynı SHA'yı göstermeli — VE imaj adı .env.r2'de olmalı.
+# .env.r2 repo KÖKÜNDE, o yüzden önce geri dön.
 cd /var/www/akademik-platform
+sudo sed -i "s/^BUILD_SHA=.*/BUILD_SHA=$SHA/" .env.r2
+sudo sed -i "s/^APP_VERSION=.*/APP_VERSION=132/" .env.r2
+sudo sed -i "s/^LIBEDGE_IMAGE=.*/LIBEDGE_IMAGE=libedge-v132/" .env.r2
+grep -E '^(APP_VERSION|BUILD_SHA|LIBEDGE_IMAGE)=' .env.r2
+
+# 1) Compose gerçekten yeni imajı görüyor mu? GÖRMÜYORSA DURDUR.
+sudo docker compose -f docker-compose.prod.yml -f docker-compose.libedge.yml \
+  --env-file .env.production --env-file .env.r2 config | grep image:
+# beklenen: image: libedge-v132
+
+# 2) Başlat
 sudo docker compose -f docker-compose.prod.yml -f docker-compose.libedge.yml \
   --env-file .env.production --env-file .env.r2 up -d --no-deps web
 ```
+
+### Migration'lar — imajdan ÖNCE
+
+Yeni imaj fail-closed çalışır: **grant yoksa katalog boş görünür.** Bu yüzden
+migration'lar imaj başlatılmadan önce uygulanır. Sunucuda node yok; runner
+throwaway bir `node:22-alpine` container'ında koşar (`db/README.md`).
+
+```bash
+cd /home/ubuntu/akademik-platform
+
+# 0) Yedek — her şeyden önce
+sudo docker exec akademik-platform-prod-db-1 \
+  pg_dump -U akademik -Fc akademik > ~/backup-$(date +%Y%m%d-%H%M).dump
+ls -l ~/backup-*.dump     # 0 byte değil, MB mertebesinde olmalı
+
+# 1) Durum
+sudo docker run --rm --network akademik-platform-prod_default \
+  -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app \
+  -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" \
+  node:22-alpine \
+  sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status'
+
+# 2) Registry boşsa YALNIZCA ilk seferde baseline
+#    (001–017 uygulanmış kabul edilir, SQL çalışmaz)
+#    ... node /repo/db/migrate.mjs --baseline
+
+# 3) Uygula
+#    ... node /repo/db/migrate.mjs
+```
+
+Registry boşken `users` tablosu varsa runner **baseline'sız apply'ı reddeder** —
+bu hata değil, korumadır: yoksa `003` demo hesabını prod'a geri eklerdi.
+
+**Beklenen çıktılar (v132'de ölçüldü):**
+
+| Komut | Çıktı |
+| --- | --- |
+| `--status` | `19 files, 0 applied, 19 pending` — 018/019 **ve** henüz merge edilmemiş olanlar. `013–017 cannot run: manages its own transaction (begin;)` satırı **normaldir**: o dosyalar kendi `begin;`'ini yönetir, runner onları çalıştırmaz, baseline ile "uygulanmış" sayar |
+| `--baseline` | 001–017 işaretlenir, SQL çalışmaz |
+| `--status` (baseline sonrası) | `20 files, 17 applied, 3 pending` (018, 019, 020) |
+| apply | 018/019/020 uygulanır; `--status` → hepsi applied |
+
+> Sayılar **o gün repoda kaç migration olduğuna** bağlıdır. Kontrol ölçütü sayı
+> değil: baseline sonrası **pending = yeni dosya sayısı**, apply sonrası
+> **pending = 0**.
+
 
 **`--no-deps web` neden:** servis adı + `--no-deps` olmadan compose db'ye ve
 caddy'ye de dokunur. caddy artık `profiles: [proxy]` ile kapalı, ama db'yi
@@ -185,12 +301,14 @@ tutuyor. `rm` ile önce kaldır, sonra `up`.
 
 | | |
 | --- | --- |
-| İmaj | `libedge-v131` (rollback: `libedge-v131-9f755d6`) |
+| İmaj | `libedge-v132` (**`.env.r2` → `LIBEDGE_IMAGE=libedge-v132`**; rollback: `libedge-v131`) |
 | Port | `127.0.0.1:3001` → container `3000` |
 | Trafik | nginx `:80` → `127.0.0.1:3001` → `akademik-platform-prod-web-1` |
-| Env | `.env.production` + `.env.r2` — `DEMO_TENANT_ID=5799f2a5-...`, `STORAGE_DRIVER=r2`, `APP_VERSION=131`, `BUILD_SHA=a2bc13f` |
+| Env | `.env.production` + `.env.r2` — `DEMO_TENANT_ID=5799f2a5-...`, `STORAGE_DRIVER=r2`, `APP_VERSION=132`, `BUILD_SHA=8df115f`, `LIBEDGE_IMAGE=libedge-v132` |
 | DB | PostgreSQL, container `akademik-platform-prod-db-1`, süper kullanıcı `akademik` |
+| Migration | 001–020. 001–017 **baseline** (SQL çalıştırılmadan işaretlendi); 018/019/020 runner ile uygulandı |
 | Container adları | **`prod` öneki var**: `akademik-platform-prod-web-1`, `-db-1` |
+
 
 > ### ✅ Ağ: ayrı bir network tanımı GEREKMEZ (2026-10-27 doğrulandı)
 >
@@ -271,19 +389,42 @@ password / port / query / hash **reddedilir**.
 > `R2 PASS: put/read/range/delete; temporary object removed.` görmelisin. Bu script
 > kendi rastgele objesini yazıp siler; mevcut veriye dokunmaz.
 
-**Rollback:** `libedge-v131-9f755d6` etiketi duruyor. Compose dosyasını geri almak
-için `git checkout <önceki-commit> -- docker-compose.libedge.yml`. R2 env'i
-bozuksa önceki imaja (`akademik-platform:libedge-copy`) dönülür. **Dikkat:** v131'te
-yüklenen dosyaların `storage_key` değeri `r2://<prefix>/...` biçimindedir
+**Rollback (v132 → v131):** yalnızca `.env.r2` içindeki imaj adını değiştir — compose
+dosyasına dokunma:
+
+```bash
+sudo sed -i 's/^LIBEDGE_IMAGE=.*/LIBEDGE_IMAGE=libedge-v131/' .env.r2
+sudo sed -i 's/^APP_VERSION=.*/APP_VERSION=131/' .env.r2
+sudo docker compose -f docker-compose.prod.yml -f docker-compose.libedge.yml \
+  --env-file .env.production --env-file .env.r2 up -d --no-deps web
+```
+
+**Rollback imajı nasıl korunur:** `docker image prune -a` yalnız **hiçbir
+container'ın kullanmadığı** imajları siler. Yani rollback hedefi, **o an çalışan
+container'ın imajıdır** ve prune'a takılmaz — v132'den v133'e geçerken korunan şey
+`libedge-v132`'dir, çünkü v133 deploy'u başlarken hâlâ o çalışıyor.
+
+Etiketli ama **çalışmayan** bir "artık" imaj (ör. v131 kesintisinden kalan
+`libedge-v131-9f755d6`) prune tarafından **silinir**. Böyle bir imajı bilinçli
+olarak elde tutmak istiyorsan önce `docker tag` ile bir ada bağla ve
+`prune -a` kullanma. Kural: **çalışan imaj dışında bir şey saklama.**
+
+**Dikkat:** v131'ten itibaren yüklenen
+dosyaların `storage_key` değeri `r2://<prefix>/...` biçimindedir
 (`storage.mjs:10,141`). v130 kodu bu anahtarları **okuyamaz** — `storage.mjs:45`
-`R2 asset requires R2 configuration` fırlatır. Yani rollback, v131'te yüklenmiş
-yeni dosyaları erişilemez bırakır (R2 objeleri silinmez, sadece okunamaz).
-Rollback'ten sonra yüklenen dosyalar listelenmeli ve gerekirse yeniden yüklenmelidir.
+`R2 asset requires R2 configuration` fırlatır. Yani v130'a kadar geri inmek,
+o sürümden sonra yüklenmiş yeni dosyaları erişilemez bırakır (R2 objeleri
+silinmez, sadece okunamaz). Rollback'ten sonra yüklenen dosyalar listelenmeli ve
+gerekirse yeniden yüklenmelidir.
+
+
 
 ## Deploy sonrası kontrol listesi
 
-- [ ] **Deploy ÖNCESİ:** `cd spike/app && node scripts/check-r2.mjs` → `R2 PASS`
-  (`STORAGE_DRIVER=r2` canlıda set; env bozuksa container açılmaz)
+- [ ] **Deploy SONRASI:** `sudo docker exec akademik-platform-prod-web-1 node scripts/check-r2.mjs`
+  → `R2 PASS: put/read/range/delete; temporary object removed`
+  (host'ta `node` yok; betik **container içinde** koşar — `db/README.md` ile aynı kural).
+  `STORAGE_DRIVER=r2` canlıda set; env bozuksa container açılmaz.
 - [ ] `/api/config` → `version` beklenen değer, `buildSha` = `git rev-parse --short HEAD`
   Env unutulduysa `version` **`0-dev`** döner (eski davranış: sessizce `127`/`130`).
 - [ ] `docker inspect <imaj> --format '{{json .Config.Labels}}'` → `org.opencontainers.image.revision`
@@ -293,7 +434,7 @@ Rollback'ten sonra yüklenen dosyalar listelenmeli ve gerekirse yeniden yüklenm
 - [ ] `docs/deployments/<tarih>-v<NNN>.md` oluşturuldu (v127.md tablosunu izle)
 - [ ] `docs/deployments/<tarih>-v<NNN>/` altına `config-health-assets.json` kanıtı
 - [ ] `PROJECT-STATE.md` "Sürümler" bölümü güncellendi
-- [ ] Rollback imajı (`akademik-platform-prod-web:v<NNN>-<sha>`) korunuyor
+- [ ] Rollback imajı korunuyor: **çalışan container'ın imajı** (prune silmez). Önceki sürümlerin artık imajları silindi mi?
 
 ## Bilinen sınırlar
 

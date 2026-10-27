@@ -1,9 +1,13 @@
-# Project state — 2026-10-26
+# Project state — 2026-10-27
 
 Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konuşma geçmişini tekrar okumayın.
 
 ## Sürümler
-- **Canlı sürüm doğrulaması (2026-10-26):** Prod: **v130**, kaynak **9f755d6** ("feat: replace spike copy with LibEdge library copy", 2026-10-26 14:57 +0300, `origin/codex/lang-entry` — `origin/main`'e merge edilmemiş), buildDate **2026-10-26**. Kanıt `GET https://elibrary.libedge.com/api/config`: `{"version":"130","buildSha":"9f755d6","buildDate":"2026-10-26","environment":"production"}`; `/api/health` → `{"ok":true,"mode":"db"}`; footer `© 2026 LibEdge · v130 · Üretim · 2026-10-26`. İmaj `akademik-platform:libedge-copy` (`sha256:c9730bf3c0af86063b797331859301ee93b7b5924f1b504225a8200a8b025693`) — **revision etiketi yok**, imaj↔commit bağı doğrulanamadı. **v128 ve v129 için deploy dokümanı yok.** docs/deployments/2026-10-26-v130.md, docs/DEPLOY.md.
+- **Canlı sürüm doğrulaması (2026-10-27):** Prod: **v132**, kaynak **8df115f** (`main`), buildDate **2026-10-27**. Kanıt `GET https://elibrary.libedge.com/api/config`: `{"version":"132","buildSha":"8df115f","mode":"db"}`; `/api/health` → `ok:true, mode:db`, tenant `5799f2a5-…`. Giriş, 13 kitap, PDF ve EPUB okuma doğrulandı. İmaj `libedge-v132`, adı **`.env.r2` içindeki `LIBEDGE_IMAGE=libedge-v132`** ile veriliyor. **DB migration kaydı 001–020** (baseline 001–017, runner ile 018/019/020). Rollback: `libedge-v131`. docs/deployments/2026-10-27-v132.md, docs/DEPLOY.md.
+- **Migration runner (2026-10-27):** `db/migrate.mjs` + `schema_migrations` (filename, checksum, applied_at, duration_ms). Her dosya kendi registry satırıyla aynı transaction'da. `--status`, `--dry-run`, `--baseline`. Sunucuda node yok; runner throwaway `node:22-alpine` container'ında, repo `:ro` mount + anonim `node_modules` volume ile çalışır (`db/README.md`).
+- **Erişim fail-closed (2026-10-27):** `grantAllows` boş grant listesinde artık `false`; `withTenant` env yerine request'in tenant'ını (`AsyncLocalStorage`, `spike/app/tenant-context.mjs`) kullanıyor; bağlam yoksa **patlar**. `019` bozuk seed grant'ı düzeltti, `020` LibEdge tenant'ına **all** kapsamlı grant ekledi.
+- **Grant'ler (canlı):** `77777777-…` collection kapsamlı, **`valid_to = 2027-01-23`** — o tarihte koleksiyon grant'i düşer. `20202020-…` all kapsamlı, **süresiz** (`valid_to = null`). Koleksiyon grant'i süresi dolduğunda erişim all grant'ı üzerinden devam eder; yeni upload'lar hiçbir koleksiyona eklenmediği için collection kapsamı tek başına yetmez.
+- **Image disiplini (2026-10-27):** Deploy öncesi `docker rmi` ile eski imajlar temizlendi (disk %95 doluydu). **Kural: çalışan imaj dışında bir şey saklama** — `prune -a` çalışan imajı zaten korur, artık imajları siler.
 - **Deploy prosedürü artık yazılı (2026-10-26):** docs/DEPLOY.md — iki varyant (`docker-compose.prod.yml` ve `+ docker-compose.libedge.yml`), `--env-file` zorunluluğu, `.env.production`/`.env.r2` sunucuda (git dışında), sürüm doğrulama `curl /api/config`.
 - **Build metadata (2026-10-26):** `APP_VERSION` varsayılanı **`0-dev`** (eski: `130`) — env unutulursa sahte sürüm göstermez. `spike/app/Dockerfile` artık `ARG BUILD_SHA/APP_VERSION/BUILD_DATE` + `org.opencontainers.image.*` LABEL taşır (yalnız `docker inspect` görünürlüğü; runtime env'i compose `environment` veriyor).
 - **`/api/config` kimlik doğrulamasız kalacak** (karar 2026-10-26): build metadata düşük hassasiyetli, `/api/health` zaten `mode`/`tenantId` veriyor. Yeniden değerlendirme koşulu docs/DEPLOY.md "Bilinen sınırlar"da.
@@ -75,7 +79,9 @@ Bu dosya yeni bir oturumda bağlam taşımak için kısa hafızadır. Uzun konu�
 - Prod'daki mayenit kitabı 2026-10-21'de `language='en'` yapıldı (İngilizce sözlükle kök arama çalışıyor). Ingest `--language` verilmezse sessizce `tr` yazar; İngilizce kitaplar için `--language en` şart.
 - İçerik hakları ve gerçek yayıncı kitapları hâlâ yok.
 - i18n kısmi: statik UI ve yaygın dinamik etiketler EN; bazı toast/doğrulama/yardım metinleri ve kitap metadata’sı çevrilmiyor.
-- Grants: `010`–`012` uygulanmalı. Grant yoksa katalog eskisi gibi açık. Seat limit `users.max_sessions` ile birlikte çalışır. **Grup subject + üye ekle/çıkar**, kullanıcı/grup grant’leri, koleksiyon/başlık seçicileri, audit log ve kullanım sayacı var.
+- Grants: `010`–`012` uygulanmalı. **~~Grant yoksa katalog eskisi gibi açık~~ — 2026-10-27'den beri YANLIŞ.** Erişim fail-closed: eşleşen grant yoksa katalog **kapalı** (0 kitap). Kural: kullanıcının tenant'ında ya da üzerinde `active` + süresi geçmemiş bir grant olmalı. Canlıda LibEdge tenant'ı için all kapsamlı süresiz grant (`20202020-…`) var; `77777777-…` collection grant'i 2027-01-23'te sona erer. Seat limit `users.max_sessions` ile birlikte çalışır. **Grup subject + üye ekle/çıkar**, kullanıcı/grup grant’leri, koleksiyon/başlık seçicileri, audit log ve kullanım sayacı var.
+- `download-tickets` ve `/opds` hâlâ **env tenant'ı** ile kurulu (`tenantId: TENANT_ID`). İkinci tenant'ta bu yollar reddeder (`tenant_mismatch` / 401); **sızdırmaz** ama kırılır. Ayrı PR.
+- `2026-10-27` itibarıyla bilinen kozmetik/açık işler v133: EPUB yayıncı CSS'i `style-src` tarafından engelleniyor (blob: URL), `favicon.ico` 404, `<meta name="mobile-web-app-capable">` eksik.
 
 ## Komutlar
 
@@ -125,3 +131,14 @@ Code **90c7b727e50d41def50486bd621789a39cdb8826**, CSS49/SW18. PDF.js marked tex
 ## v127 OCR / publication preparation deployment — 2026-10-25
 
 Code **fbeed6e6fefcad00f13ddb80b98b91fb9ef67351**, CSS49/SW19, app-only deploy; no new production dependency/migration. Source hOCR paragraph order and per-word/paragraph/root language survive rendering; eng/tur normalize en/tr. Local PDF inspection reports facts/review flags, not AA; OCR tool renders PDFs and uses installed local Tesseract models, no upload/CDN, no overwrites. Explicit normalized reading regions/PSM can define header→left→right, with overlapping regions rejected and boxes translated back to page coordinates. Real OCR eng/tur tests10/10, reader/NVDA26/26, regression74/74, units65/65; 34 clean axe/0 violations, JS0. VoiceOver template12 NOT RUN rows; publication review runbook prepared. Default full-page OCR initially interleaved; final explicit PSM3 also reads this sample correctly; reviewed region output was independently tested in NVDA. No generic order/accuracy guarantee. Original PDF and offline blobs do not embed/package OCR sidecars. v127 is live (config127/fbeed6e); v126 remains rollback; live Turkish OCR/NVDA acceptance PASS 7/7/JS0. ACR open. docs/deployments/2026-10-25-v127.md.
+
+## v132 tenant/access hardening + migration runner — 2026-10-27
+
+Code **8df115f** on `main`. Three PRs: #19 (`db/migrate.mjs` + `schema_migrations`, PR merge), #21 (fail-closed tenant binding, squash), #22 (`020` all-scope grant, squash). First deploy that used the runner on production: `--baseline` marked 001–017 without executing them, then 018/019/020 ran under `pg_advisory_lock` in one transaction each. `019` repaired the seed grant whose `subject_id` pointed at the Demo tenant; `020` added the LibEdge tenant's `all`-scope grant because the existing grant is collection-scoped (12 works) and new uploads join no collection, so they would have been invisible under fail-closed.
+
+Verified live: `/api/config` → `132/8df115f`, `mode:db`; login, 13 works, PDF and EPUB all working. Tests on the merged tree: `tenant-access` 4 scenarios/12 checks, `security` 68, `social-drm` 295, `db/migrate.test.mjs` 9/9, `db/019.test.mjs` 6/6, unit 113/113.
+
+Image name now comes from **`.env.r2` → `LIBEDGE_IMAGE=libedge-v132`**; the compose default (`${LIBEDGE_IMAGE:-libedge-v131}`) is only a fallback. **The 2026-10-26 outage root cause is corrected:** the variable was in use all along, it was simply never set, and `LIBEDGE_IMAGE=... sudo docker compose` drops it because `sudo` strips the environment — so compose fell through to the old `libedge-r2` image. Old images were pruned with `docker rmi` before deploying (disk was at 95%). Rule: keep no images except the previous version's rollback.
+
+Open for v133: EPUB publisher stylesheet blocked by `style-src` (blob: URL), `favicon.ico` 404, missing `mobile-web-app-capable` meta; `download-tickets` and `/opds` still bound to the env tenant. docs/deployments/2026-10-27-v132.md.
+
