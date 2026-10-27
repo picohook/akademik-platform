@@ -100,43 +100,67 @@ curl -s https://elibrary.libedge.com/api/config
 
 Kanıt: `docs/deployments/2026-10-25-v127.md` (aynı akış, `APP_VERSION=127`).
 
-## Varyant 2 — `docker-compose.libedge.yml` (libedge-copy) — ⚠️ EC2'de doğrulanacak
+## Varyant 2 — `docker-compose.libedge.yml` (canlı, 2026-10-27'den beri)
 
-Bu dosya `image:` + `pull_policy: never` tanımlar, yani `--build` ile üretilen
-imajın **`LIBEDGE_IMAGE` adıyla etiketlenmesi** gerekir:
+Bu dosya `image:` + `pull_policy: never` tanımlar. **`--build` yeni imaj üretir ama
+devreye girmez** — compose `image:` satırındaki adı kullanır. Canlıda bu satır
+**sabit** olarak `libedge-v131` yazıyor:
 
 ```yaml
 web:
-  image: ${LIBEDGE_IMAGE:-akademik-platform:libedge-r2}
+  image: libedge-v131          # ← sabit; LIBEDGE_IMAGE değişkeni kullanılmıyor
   pull_policy: never
   ports: ["127.0.0.1:3001:3000"]
 ```
 
+> ### 🔴 2026-10-26 kesintisinin kök nedeni
+>
+> O gün satır `image: ${LIBEDGE_IMAGE:-akademik-platform:libedge-r2}` idi.
+> `LIBEDGE_IMAGE` verilmediği için compose varsayılana, yani **eski `libedge-r2`**
+> imajına düştü. Yeni build edilen `libedge-v131` hiç devreye girmedi ve
+> `--force-recreate` bunu **çözmedi** (recreate container'ı yeniler, imajı değiştirmez).
+>
+> **Sürüm atlarken ilk kontrol:** `docker-compose.libedge.yml` içindeki `image:`
+> satırı, build ettiğin imaj adıyla **aynı mı?**
+
+### Doğru deploy akışı (canlıda çalışan)
+
 ```bash
-LIBEDGE_IMAGE=akademik-platform:libedge-copy \
-docker compose -f docker-compose.prod.yml -f docker-compose.libedge.yml \
-  --env-file .env.production --env-file .env.r2 up -d --build
+cd /var/www/akademik-platform
+git fetch origin && git checkout main && git pull --ff-only origin main
+SHA=$(git rev-parse --short HEAD)
+
+cd spike/app && npm ci
+
+sudo docker build \
+  --build-arg BUILD_SHA=$SHA \
+  --build-arg APP_VERSION=131 \
+  --build-arg BUILD_DATE=$(date -I) \
+  -t libedge-v131 .
+
+# Build kimliği gerçekten gömüldü mü?
+sudo docker inspect libedge-v131 --format '{{json .Config.Labels}}'
+# {"...revision":"<SHA>","...version":"131"} — "unknown" ise --build-arg unutulmuş
+
+# Container env'i de aynı SHA'yı göstermeli
+sudo sed -i "s/^BUILD_SHA=.*/BUILD_SHA=$SHA/" .env.r2
+
+cd /var/www/akademik-platform
+sudo docker compose -f docker-compose.prod.yml -f docker-compose.libedge.yml \
+  --env-file .env.r2 up -d --force-recreate
+
+# ATLANMAZ — ağ elle bağlanıyor
+sudo docker network connect akademik-platform-prod_default $(sudo docker ps -q --filter name=academic-web)
 ```
 
-**Açık soru:** Canlıdaki imaj `akademik-platform:libedge-copy`
-(`sha256:c9730bf3c0af86063b797331859301ee93b7b5924f1b504225a8200a8b025693`),
-ne compose varsayılanı (`libedge-r2`) ne de v127 konvansiyonu (`v127-fbeed6e`).
-v128–v130'un hangi komutla deploy edildiği **kanıtlanmadı**. Kapatmak için EC2'de:
-
-```bash
-docker inspect $(docker ps -q --filter name=web) \
-  --format '{{json .Config.Env}}{{"\n"}}{{json .Config.Labels}}{{"\n"}}{{.Config.Image}}{{"\n"}}{{.Image}}'
-```
-
-Çıktı bu belgeye işlenene kadar Varyant 2 bir **varsayımdır**.
-
-### Canlı gerçek (2026-10-26, ürün sahibi teyidi)
+### Canlı gerçek (2026-10-27 doğrulandı)
 
 | | |
 | --- | --- |
-| İmaj | `libedge-v131` (önceki: `akademik-platform:libedge-copy`) |
+| İmaj | `libedge-v131` (rollback: `libedge-v131-9f755d6`) |
 | Port | `127.0.0.1:3001` → container `3000` |
-| Env | `.env.r2` — `DEMO_TENANT_ID=5799f2a5-3d90-41b1-90de-9da07d776052`, `STORAGE_DRIVER=r2`, `APP_VERSION=131` |
+| Trafik | nginx `:80` → `127.0.0.1:3001` → `akademik-platform-web-1` |
+| Env | `.env.r2` — `DEMO_TENANT_ID=5799f2a5-...`, `STORAGE_DRIVER=r2`, `APP_VERSION=131`, `BUILD_SHA=a2bc13f` |
 | DB | PostgreSQL, container `akademik-platform-prod-db-1`, süper kullanıcı `akademik` |
 
 > ### 🔴 Ağ bağlantısı kalıcı değil — her restart'ta tekrar bağlanmalı
