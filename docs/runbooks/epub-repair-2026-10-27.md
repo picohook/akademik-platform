@@ -6,7 +6,10 @@ Kalan iş: **mevcut bozuk dosyayı onarmak** ve **katalogda başka kaç tane old
 
 > Sunucuda çalıştırılır. **`docker` her yerde `sudo` ile** — `ubuntu` kullanıcısı `docker`
 > grubunda değil. `sudo -E` gerekmiyor: `$POSTGRES_*` değişkenleri `sudo` çalışmadan **önce,
-> host kabuğunda** genişliyor.
+> **Komutlar etkileşimli SSH kabuğuna elle yapıştırılır — `set -e` yok.** İnteraktif kabukta
+> `set -e` ilk sıfır-dışı komutta **oturumu kapatır** (ör. `grep` eşleşme bulamazsa `exit 1`).
+> Bu yüzden tüm `DUR` kontrolleri `return 1 2>/dev/null || true` + açık **“DUR, devam etme”**
+> mesajı biçimindedir: karar sizde, oturum düşmez. Hiçbir blok `set -e` gerektirmez.
 
 ---
 
@@ -43,16 +46,20 @@ kabuğunda genişlediği için `sudo` bunları silmez.
 ```bash
 export POSTGRES_USER="$(sudo grep -m1 '^POSTGRES_USER=' /var/www/akademik-platform/.env.production | cut -d= -f2-)"
 export POSTGRES_DB="$(sudo grep -m1 '^POSTGRES_DB=' /var/www/akademik-platform/.env.production | cut -d= -f2-)"
-
-if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_DB" ]; then
-  echo "DUR: POSTGRES_USER/POSTGRES_DB okunamadı — .env.production'ı kontrol et"
-  return 1 2>/dev/null || exit 1
-fi
 echo "user=$POSTGRES_USER db=$POSTGRES_DB"
 ```
 
-> Sonraki blokları **`set -e`** ile çalıştır; hepsini tek kabukta çalıştırıyorsan başta bir
-> kez `set -e` ver. Yukarıdaki `DUR` satırı gerçekten durdurur (`return` ya da `exit`).
+Çıktıda `user=` ya da `db=` **boşsa DUR, devam etme**:
+
+```bash
+if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_DB" ]; then
+  echo "DUR, devam etme: POSTGRES_USER/POSTGRES_DB okunamadı — .env.production'ı kontrol et"
+  return 1 2>/dev/null || true
+fi
+```
+
+> `return` fonksiyon içinde değilse hata verir; `|| true` onu yutar, `sudo`/kabuk oturumu
+> ayakta kalır. Mesaj **DUR** dediğinde gerçekten durun — bu blok sizi zorla çıkarmaz.
 
 Config'i **gerçekten** doğrula — `db` servisi ve imaj görünmeli:
 
@@ -62,11 +69,18 @@ dc config | grep -E 'image:|container_name:' | head
 sudo grep -m1 '^LIBEDGE_IMAGE=' /var/www/akademik-platform/.env.r2   # deploy edilen imaj
 ```
 
+Listede **`db` yoksa DUR, devam etme** — `docker-compose.prod.yml` devrede değil:
+
+```bash
+if ! dc config --services 2>/dev/null | grep -qx 'db'; then
+  echo "DUR, devam etme: db servisi yok — prod.yml + libedge.yml birlikte verilmeli"
+  return 1 2>/dev/null || true
+fi
+```
 
 Çalışma dizini:
 
 ```bash
-set -e                       # bu noktadan sonra her hata durdurur
 WORK=/tmp/epub-repair; mkdir -p "$WORK"; cd "$WORK"
 ```
 
@@ -344,7 +358,10 @@ dc exec -T web node -e "
 HASH=$(sha256sum /tmp/epub-repair/fixed.epub | cut -d' ' -f1)
 echo "yeni sha256: $HASH"
 echo "yeni key  : $NEW_KEY"
-[ -n "$NEW_KEY" ] && [ -n "$HASH" ] || { echo "DUR: NEW_KEY veya HASH boş"; }
+if [ -z "$NEW_KEY" ] || [ -z "$HASH" ]; then
+  echo "DUR, devam etme: NEW_KEY veya HASH boş — update'i çalıştırma"
+  return 1 2>/dev/null || true
+fi
 
 dc exec -T db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "
   update assets
@@ -503,7 +520,8 @@ ve bozuk dosyanın yeni yüklenmesini engeller.
 
 - [ ] §0 `dc` **iki `-f`** (prod + libedge) ve **iki `--env-file`** ile tanımlı; `sudo` içeride
 - [ ] §0 `dc config --services` çıktısında **`db`** görünüyor (prod.yml eksikse görünmez)
-- [ ] §0 `POSTGRES_USER`/`POSTGRES_DB` dolu; boşsa `DUR` gerçekten durdurdu
+- [ ] §0 `POSTGRES_USER`/`POSTGRES_DB` dolu; boşsa `DUR, devam etme` çıktı, **oturum düşmedi**
+- [ ] §0 `dc config --services` listesinde **`db`** var (yoksa `DUR` bloğu uyarıyor)
 - [ ] §1.1 **eski `storage_key` + `source_checksum` not alındı** (§10 için şart)
 - [ ] §1 `sha256sum source.epub` = DB `source_checksum`
 - [ ] §2.2 `broken-list.txt` — bozuk dosyaların **tam** listesi
