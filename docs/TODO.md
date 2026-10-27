@@ -49,8 +49,8 @@ Dosya **çevrimiçi** okunabiliyor (okuyucu XHTML'i olduğu gibi ayrıştırmıy
   - **Not:** ayrıştırıcı **değiştirilmedi** — doğru davranıyor, bozuk olan veri. Bu PR hatayı görünür kılar ve yenilerini engeller.
 - [ ] `import-catalog` dry-run kapsamı: bu yolda içerik ingest'i ayrı bir akıştan geçiyor; upload'daki kabul/ret kuralının oraya da uygulanıp uygulanmayacağına karar ver (şimdilik yalnız `/api/upload` kapalı devre).
 
-- [ ] **İçerik düzeltmesi (kod değil, ayrı iş):** bu EPUB'taki **tüm** XHTML'leri tara (yalnız `ch003` değil), well-formed hale getir, `mimetype` ilk ve **STORE** olacak şekilde yeniden paketle; prod watermark kodunu container içinde düzeltilmiş dosyaya karşı çalıştırıp **OK** gör; R2'ye **aynı key** ile yükle + `assets.source_checksum` güncelle.
-- [ ] **Katalog taraması:** katalogdaki **tüm EPUB'ları** aynı dry-run ile tara ve listele (kaç tanesi indirilemez durumda).
+- [ ] **İçerik düzeltmesi (kod değil, ayrı iş):** bu EPUB'taki **tüm** XHTML'leri tara (yalnız `ch003` değil), well-formed hale getir, `mimetype` ilk ve **STORE** olacak şekilde yeniden paketle; prod watermark kodunu container içinde düzeltilmiş dosyaya karşı çalıştırıp **OK** gör; R2'ye **aynı key** ile yükle + `assets.source_checksum` güncelle. → **Adım adım komutlar: `docs/runbooks/epub-repair-2026-10-27.md`**. Dikkat: `storage.put()` `IfNoneMatch: '*'` kullanıyor, aynı key'e yazmak için önce `remove()`.
+- [ ] **Katalog taraması:** katalogdaki **tüm EPUB'ları** aynı dry-run ile tara ve listele (kaç tanesi indirilemez durumda). Komut: runbook §9.
 
 ## 3. İlk kurum / dış kullanıcıdan önce (zorunlu)
 
