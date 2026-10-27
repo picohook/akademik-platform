@@ -164,3 +164,19 @@ Verified live: image `libedge-v133` (ID `541b98daa159`, LABEL `5225149`/`133`), 
 **Rollback is now `libedge-v132`** — `libedge-v131` was removed with `docker rmi`; `.env.r2.bak-v132` kept.
 
 **Open:** an offline-launch EPUB was not exercised this round, so it is unproven that `v25` is actually served instead of a leftover `v24` shell (see `docs/TODO.md`). Still open from earlier: `download-tickets` and `/opds` bound to the env tenant; SSO. docs/deployments/2026-10-27-v133.md.
+
+## v134 EPUB download 409 made visible — 2026-10-28
+
+Code **b6aa81a** on `main` (PR #29). Live and verified 2026-10-28 01:43 TRT.
+
+The reader got a bare **409** on EPUB download with **nothing shown to the user** — the reason existed only in console output, so a permanently undownloadable title stayed invisible for weeks. Root cause was data, not code: `EPUB/text/ch003.xhtml` in *Scientific Writing for Health Research* contains `<p></li>` (unclosed `<p>`, Pandoc output), so the file is **not well-formed**. Reading worked because the reader hands XHTML to the browser as-is; watermarking parses it as XML and failed. **The parser was correct (fail-closed) and was not changed.**
+
+Three changes: the 409 reason is written to audit (`delivery_failed` / `invalid_storage_key` with `error` + `format`), the reader is shown a human-readable message on all three 409 paths, and ingest now refuses an EPUB that cannot be stamped (`inspectWatermarkable`, 422) so no new title can enter the catalog undownloadable. `watermarkEpub` takes `{ inspectOnly }` so dry-run and the real stamp use the same candidate list. No unwatermarked fallback was added — returning the bytes would silently break the watermark contract in `docs/SOCIAL-DRM.md`.
+
+Verified live: image `libedge-v134` (ID `00bf4340bca2`, LABEL `b6aa81a`/`134`), `/api/config` → `134/b6aa81a/2026-10-27` (server is UTC; the TRT deploy time is 2026-10-28 01:43), `/api/health` → `ok/db/5799f2a5`, R2 PASS. Browser (Altan): clear on-screen message, only the 409 request in the console, no uncaught error. Server side, all three layers agree: log `[download] epub delivery failed: Invalid EPUB package: mismatched XML closing tag`, audit `{"error":"Invalid EPUB package: mismatched XML closing tag","format":"epub","reason":"delivery_failed","book_id":null}`. Tests on the merged tree: unit **126/126**, `social-watermark` **17/17**, `social-drm` 295, `security-headers` 3/3, `tenant-access` 4 scenarios/12 checks. Negative control: stashing the fix drops the suite with `does not provide an export named 'inspectWatermarkable'`.
+
+**Rollback is now `libedge-v133`** — `libedge-v132` was removed with `docker rmi` before the build (disk at 85%, 1023 MB freed); `.env.r2.bak-v133` kept. No migration.
+
+**The book itself is still broken.** v134 only built the correct failure path; the reader still cannot download it. Repair and catalog scan are the next work, in that order: `docs/runbooks/epub-repair-2026-10-27.md`.
+
+**Open:** `book_id` is `null` in the deny audit (found during this deploy) because `auditDenied()` always passes `book = null` (`download-tickets.mjs:144`) even though `server.mjs` holds the book at the 409 site — so "which title is undownloadable" cannot be answered from audit yet; `app.js?v=130-ui-copy` in `public/index.html:436` has not changed since v130, so cache-busting is not actually busting. Still open from earlier: `download-tickets` and `/opds` bound to the env tenant; SSO; offline-launch EPUB never exercised. docs/deployments/2026-10-28-v134.md.
