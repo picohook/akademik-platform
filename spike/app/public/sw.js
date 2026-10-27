@@ -1,4 +1,9 @@
-const CACHE = 'akademik-shell-v24';
+// Bump CACHE whenever the shell or its response headers change. Navigations are
+// network-first, so a new CSP applies immediately while online; but an offline
+// launch falls back to the cached '/' response below, which carries the CSP
+// header it was captured with. Without a rename, `activate` keeps that entry
+// forever and the v133 blob: style-src fix never reaches offline EPUB reading.
+const CACHE = 'akademik-shell-v25';
 const SHELL = [
   '/',
   '/styles.css',

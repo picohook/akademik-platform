@@ -6,7 +6,7 @@ import { cp, mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from 'no
 import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { copyServerFiles } from './helpers/server-files.mjs';
+import { copyServerFiles, ensureShell } from './helpers/server-files.mjs';
 import { promisify } from 'node:util';
 import pg from 'pg';
 import JSZip from 'jszip';
@@ -153,8 +153,8 @@ async function rateLimit() {
 }
 async function shellReady() {
   await page.evaluate(async () => { await navigator.serviceWorker.ready; if (!navigator.serviceWorker.controller) await new Promise(resolve => navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true })); });
-  await until('SW9 complete required shell', () => page.evaluate(async () => { const cache = await caches.open('akademik-shell-v9'); const required = ['/', '/app.js', '/downloads.mjs', '/offline.mjs', '/vendor/pdfjs/pdf.mjs', '/vendor/pdfjs/pdf.worker.mjs', '/vendor/epubjs/jszip.min.js', '/vendor/epubjs/epub.min.js', '/epub-engine.mjs']; return (await Promise.all(required.map(file => cache.match(file, { ignoreSearch: true })))).every(Boolean); }));
-  return { cache: 'akademik-shell-v9', controller: await page.evaluate(() => Boolean(navigator.serviceWorker.controller)) };
+  const cache = await ensureShell(page, appDir, ['/', '/app.js', '/downloads.mjs', '/offline.mjs', '/vendor/pdfjs/pdf.mjs', '/vendor/pdfjs/pdf.worker.mjs', '/vendor/epubjs/jszip.min.js', '/vendor/epubjs/epub.min.js', '/epub-engine.mjs'], (name, label, check) => until(label, check));
+  return { cache, controller: await page.evaluate(() => Boolean(navigator.serviceWorker.controller)) };
 }
 async function offlineReload() {
   await context.setOffline(true); await page.reload({ waitUntil: 'domcontentloaded' }); await page.locator('#loginScreen').waitFor({ state: 'hidden' }); await page.locator('#grid .card').filter({ hasText: fixtures[0].title }).waitFor(); assert.equal(await page.evaluate(() => navigator.onLine), false); return { hardReload: true, nativeNetworkOffline: true, cachedBooks: (await databaseBooks()).length };
@@ -176,7 +176,7 @@ try {
   await setup(); console.log('Owned PostgreSQL, native Edge and API cookie-jar login ready; actual UI offline clicks follow.');
   await stage('pdf-card-native-indexeddb-stamped-bytes', () => captureBook(fixtures[0]));
   await stage('epub-card-native-indexeddb-stamped-bytes', () => captureBook(fixtures[1]));
-  await stage('serviceworker-v9-complete-shell', shellReady);
+  await stage('serviceworker-complete-shell', shellReady);
   await stage('real429-ui-wait-no-write', rateLimit);
   await stage('hard-reload-network-offline', offlineReload);
   await stage('offline-pdf-native-render', () => renderOffline(fixtures[0]));

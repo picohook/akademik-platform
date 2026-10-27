@@ -115,3 +115,33 @@ export async function copyServerFiles(appDir, target, files = null) {
   }
   return list;
 }
+
+// The service worker cache name, read from public/sw.js.
+//
+// Why tests must not hard-code it: browser tests wait for the app shell to be
+// cached by opening caches.open('<name>') and checking for required entries.
+// caches.open() CREATES the cache when the name is unknown, so a stale name
+// yields an empty cache whose checks can never pass - or, worse, an expectation
+// that silently stops matching the shipping service worker. That had already
+// happened: three tests pinned 'akademik-shell-v13' and one pinned
+// 'akademik-shell-v9' while sw.js was on v24. Reading the name from the source
+// keeps the assertion honest across every future bump.
+export async function shellCacheName(appDir = APP_DIR) {
+  const source = await readFile(fileURLToPath(new URL('public/sw.js', toAppDir(appDir))), 'utf8');
+  const match = source.match(/const\s+CACHE\s*=\s*['"]([^'"]+)['"]/);
+  if (!match) throw new Error('public/sw.js: could not find the CACHE constant');
+  return match[1];
+}
+
+// Waits until the shipped service worker has filled its shell cache with every
+// entry in `required`. Registered on `page` from the test; the name is read here
+// so it can never drift from public/sw.js.
+export async function ensureShell(page, appDir, required, onWait) {
+  const cacheName = await shellCacheName(appDir);
+  await onWait(cacheName, `SW complete shell (${cacheName})`, () => page.evaluate(async ({ name, files }) => {
+    const cache = await caches.open(name);
+    const found = await Promise.all(files.map(file => cache.match(file, { ignoreSearch: true })));
+    return found.every(Boolean);
+  }, { name: cacheName, files: required }));
+  return cacheName;
+}

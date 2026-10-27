@@ -1,10 +1,23 @@
 // Builds public/favicon.ico from public/icons/icon-192.png.
 //
-// Why a generator instead of a committed binary with no provenance: the readers
-// and Safari fall back to /favicon.ico when a page declares no icon, and the
-// platform served a 404 there. Rather than hand-copy a file nobody can trace,
-// the ICO is rendered from the same 192px source the web manifest already uses,
-// so the tab icon and the installed-app icon cannot drift apart.
+// Run with:  npm i --no-save sharp && node scripts/build-favicon.mjs
+// Re-running is safe and idempotent: the same source yields the same 705 bytes.
+//
+// sharp is NOT a declared dependency of spike/app, and no build step depends
+// on it: the generated favicon.ico is committed. This script is a one-off
+// tool, run only when the source icon changes. `--no-save` keeps it out of
+// package.json and package-lock.json, so `npm ci --omit=dev` in the Dockerfile
+// does not pull it into the production image for a file that is already built.
+//
+// The install is genuinely needed: spike/app/node_modules has no sharp. Node's
+// resolution walks up the directory tree, so the script may happen to work on a
+// developer machine because a parent directory has sharp installed - that is not
+// a guarantee. Without the install it fails with ERR_MODULE_NOT_FOUND.
+//
+// Why a generator instead of an untraceable binary: the readers and Safari fall
+// back to /favicon.ico when a page declares no icon, and the platform served a
+// 404 there. The ICO is rendered from the same 192px source the web manifest
+// uses, so the tab icon and the installed-app icon cannot drift apart.
 //
 // The ICO container is written directly: an icon directory followed by PNG
 // payloads. Every target browser (Chrome 4+, Firefox 3.5+, Edge, Safari 12+)
