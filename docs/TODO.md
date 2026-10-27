@@ -1,22 +1,25 @@
 # E-Kütüphane — yapılacaklar
 
-Son güncelleme: 2026-10-27. Canlı: elibrary.libedge.com **v133** (`5225149`), mode `db`, tenant LibEdge `5799f2a5-…`.
+Son güncelleme: 2026-10-28. Canlı: elibrary.libedge.com **v134** (`b6aa81a`), mode `db`, tenant LibEdge `5799f2a5-…`.
 Önce `docs/HANDOFF-2026-10-27.md` ve `docs/DEPLOY.md` okunmalı. Bir madde bitince buradan silinir veya "tamamlandı" altına taşınır.
 
-## Tamamlandı (2026-10-27)
+## Tamamlandı (2026-10-28)
+
+- **v134 canlı ve doğrulandı** (`b6aa81a`, imaj `libedge-v134`, ID `00bf4340bca2`): EPUB indirmede 409 artık **nedeniyle** audit'e düşüyor (`delivery_failed` + `error` + `format`), okuyucuya **anlaşılır mesaj** gösteriliyor, **damgalanamayan EPUB yüklemede 422 ile reddediliyor** (`inspectWatermarkable`), `--dry-run` inceleme var. Ayrıştırıcı **değişmedi** — doğru davranıyordu, bozuk olan veri. Tarayıcıda (Altan): anlaşılır mesaj, konsolda yalnız 409, yakalanmamış hata yok. Rollback: `libedge-v133` + `.env.r2.bak-v133`. Bkz. `docs/deployments/2026-10-28-v134.md`.
+- Migration yok (001–020); build öncesi `docker rmi libedge-v132` ile disk açıldı (%85).
 
 - **v133 canlı ve doğrulandı** (`5225149`, imaj `libedge-v133`): CSP `style-src`'ye `blob:` (#25) — EPUB yayıncı stili + tema + yazı boyutu artık çalışıyor; `/favicon.ico` 200 (#26) — kök neden hem eksik `<link rel="icon">` hem de `serveStatic` allowlist'i; `mobile-web-app-capable` standart meta; SW cache `v24` → `v25` — çevrimiçi navigasyon network-first olduğu için eski CSP'li kabuk çevrimdışı açılışta kalıyordu. Bkz. `docs/deployments/2026-10-27-v133.md`.
 - v131 → v132: fail-closed yetki (#21) — her istek oturumdaki tenant'a bağlı, `grantAllows` boş listede `false`.
 - Migration runner (#19): `db/migrate.mjs` + `schema_migrations`; 001–017 baseline, 018/019/020 runner ile uygulandı.
 - 020 (#22): LibEdge tenant'ına `all` kapsamlı, süresiz grant (collection grant 12 kitap kapsıyordu; upload'lar koleksiyona eklenmiyor).
 - Demo hesaplar silindi (017, #17). README canlı duruma göre yeniden yazıldı (#18).
-- Yedek: `backups/pre-v132-20261027-1540.dump`; v133 için `.env.r2.bak-v132` alındı. **Güncel geri dönüş: `libedge-v132` + `.env.r2.bak-v132`** (`libedge-v131` silindi).
+- Yedek: `backups/pre-v132-20261027-1540.dump`. **Güncel geri dönüş: `libedge-v133` + `.env.r2.bak-v133`** (`libedge-v132` v134 build'inden önce silindi).
 - 26 Ekim kesintisinin kök nedeni: `LIBEDGE_IMAGE=... sudo docker compose` — sudo değişkeni siliyordu. Image adı artık `.env.r2` içinde `LIBEDGE_IMAGE`.
 
 ## 1. Hemen — dokümanlar
 
-- PROJECT-STATE, HANDOFF, DEPLOY güncellemesi; `docs/deployments/2026-10-27-v132.md`.
-- DEPLOY.md kuralları: image adı `.env.r2` `LIBEDGE_IMAGE` ile; sunucuda bir önceki sürüm dışında image tutulmaz (8 GB disk).
+- ~~PROJECT-STATE, HANDOFF, DEPLOY güncellemesi; `docs/deployments/2026-10-27-v132.md`.~~ — v134 için yapıldı: `docs/deployments/2026-10-28-v134.md`, `PROJECT-STATE.md` (2026-10-28), bu dosya.
+- DEPLOY.md kuralları: image adı `.env.r2` `LIBEDGE_IMAGE` ile; sunucuda bir önceki sürüm dışında image tutulmaz (8 GB disk). **v134'te uygulandı:** `docker rmi libedge-v132`, rollback `libedge-v133`.
 
 ## 2. v133 — kapatıldı (canlı ve doğrulandı)
 
@@ -25,7 +28,7 @@ Son güncelleme: 2026-10-27. Canlı: elibrary.libedge.com **v133** (`5225149`), 
 - ~~SW cache `v24` → `v25`~~ — **v133'te yapıldı**: yeni CSP'nin çevrimdışı açılışa ulaşması için cache adı artırıldı. Çevrimdışı açılış **test edildi**, SW `v25` tarafı sorun değil (aşağıdaki kalem).
 - **Çevrimdışı doğrulama yapıldı (Altan, 2026-10-27) — SW `v25` OK, ama yeni hata bulundu:** çevrimdışı **EPUB indirme 409** dönüyor; **PDF çevrimdışı indirme çalışıyor** (Discrete Mathematics, 20:19 başarılı). Yani service worker/cache tarafı beklendiği gibi; sorun indirme (delivery) yolunda.
 
-## 2b. v134 — çevrimdışı EPUB indirme 409 (ölçülmüş, yeni)
+## 2b. v134 — kapatıldı (canlı ve doğrulandı); EPUB onarımı açık
 
 **Belirti:** çevrimdışıyken EPUB indirme isteği `409` alıyor. Kullanıcıya hata **gösterilmiyor**, yalnız konsolda.
 
@@ -41,15 +44,17 @@ Son güncelleme: 2026-10-27. Canlı: elibrary.libedge.com **v133** (`5225149`), 
 
 Dosya **çevrimiçi** okunabiliyor (okuyucu XHTML'i olduğu gibi ayrıştırmıyor), yalnız **indirme** yolundan geçen watermark aşamasında patlıyor. Bu yüzden hata v133 deploy'unda görünmedi.
 
-- [x] **v134 kod PR'ı** — branch `fix/v134-epub-download-409`, commit `e963b66` (5 dosya, +139/−18). PR açılmayı bekliyor.
-  - (a) **Yapıldı** — `server.mjs`: `delivery_failed` ve `invalid_storage_key` artık yutmuyor; ikisi de `console.warn` + audit payload (`reason` + `format` + `error`). `auditDenied`'e opsiyonel `details` eklendi. `deliveryErrorDetail` mesajı temizler (UUID → `<id>`, e-posta → `<email>`, ASCII dışı, 200 karakter) — audit'i tenant admin okuyor, filigran satırları kimlik taşıyor.
-  - (b) **Yapıldı** — `public/app.js`: 409 alan **üç** yol da mesaj gösteriyor (çevrimdışı kaydet, ana indir butonu, upload). Çevrimdışı: “Bu kitap şu an çevrimdışı indirilemiyor; kütüphaneye bildirildi”.
-  - (c) **Yapıldı** — `inspectWatermarkable(buffer, format)` (`social-watermark.mjs`): gerçek parse/validate yolu, kimliksiz, hiçbir şey yazmıyor. `/api/upload` EPUB için çalıştırıyor; filigran eklenemeyecek dosya **422** + bozuk girdi adıyla reddediliyor. `watermarkEpub` `{ inspectOnly }` aldı, böylece dry-run ve gerçek damga **aynı** aday listesini kullanıyor. Hata→status eşlemesi artık `error.statusCode`'a uyuyor.
+- [x] **v134 kod PR'ı** — PR #29, `main`'e merge edildi, **canlıya alındı ve doğrulandı** (`b6aa81a`, imaj `libedge-v134`). Bkz. `docs/deployments/2026-10-28-v134.md`.
+  - (a) **Yapıldı ve canlıda** — `server.mjs`: `delivery_failed` ve `invalid_storage_key` artık yutmuyor; ikisi de `console.warn` + audit payload (`reason` + `format` + `error`). `auditDenied`'e opsiyonel `details` eklendi. `deliveryErrorDetail` mesajı temizler (UUID → `<id>`, e-posta → `<email>`, ASCII dışı, 200 karakter) — audit'i tenant admin okuyor, filigran satırları kimlik taşıyor. **Canlı kanıt:** `{"error":"Invalid EPUB package: mismatched XML closing tag","format":"epub","reason":"delivery_failed"}`.
+  - (b) **Yapıldı ve canlıda** — `public/app.js`: 409 alan **üç** yol da mesaj gösteriyor (çevrimdışı kaydet, ana indir butonu, upload). Çevrimdışı: “Bu kitap şu an çevrimdışı indirilemiyor; kütüphaneye bildirildi”. Altan doğruladı: ekranda anlaşılır mesaj, yakalanmamış hata yok.
+  - (c) **Yapıldı ve canlıda** — `inspectWatermarkable(buffer, format)` (`social-watermark.mjs`): gerçek parse/validate yolu, kimliksiz, hiçbir şey yazmıyor. `/api/upload` EPUB için çalıştırıyor; filigran eklenemeyecek dosya **422** + bozuk girdi adıyla reddediliyor. `watermarkEpub` `{ inspectOnly }` aldı, böylece dry-run ve gerçek damga **aynı** aday listesini kullanıyor. Hata→status eşlemesi artık `error.statusCode`'a uyuyor.
   - **Testler:** `social-watermark` 17/17 (3 yeni dry-run senaryosu), `test/*.test.mjs` 126/126, `test:security-headers` 3/3, `test:tenant-access` 4 senaryo/12 kontrol, `test:social-drm` PASS (295 kontrol). **Negatif kontrol:** düzeltme stash'lenince süit `does not provide an export named 'inspectWatermarkable'` ile düşüyor.
   - **Not:** ayrıştırıcı **değiştirilmedi** — doğru davranıyor, bozuk olan veri. Bu PR hatayı görünür kılar ve yenilerini engeller.
+- [ ] **Download deny audit'inde `book_id` null (yeni, küçük PR):** `downloadService.auditDenied()` her zaman `book = null` geçiyor (`download-tickets.mjs:144`); `book_id` yalnızca `issue`/`consume` içindeki `book` nesnesinden geliyor. `server.mjs`'te 409 anında (`invalid_storage_key`, `delivery_failed`) `book` **elimizde olmasına rağmen** geçirilmiyor. Düzeltme: `auditDenied`'e opsiyonel `book` parametresi ekle, bu iki çağrıda `book`'u ver. Etki: onarım sonrası katalog taramasında "hangi kitap indirilemiyor" sorusu audit'ten cevaplanabilsin.
+- [ ] **`app.js?v=130-ui-copy` sürüm etiketi sabit (yeni, küçük PR):** `public/index.html:436` cache-busting etiketi **v130'dan beri** değişmedi. Seçenekler: (i) build sırasında `BUILD_SHA`'dan türet (ör. `?v=<sha>`, `server.mjs` HTML'i servis ederken değiştirir), (ii) her sürümde elle güncelle. Tercih (i) — elle güncelleme unutulur ve bu v134'te okuyucuya yeni hata mesajının ulaşması tarayıcı cache'ine bağlı kaldı.
 - [ ] `import-catalog` dry-run kapsamı: bu yolda içerik ingest'i ayrı bir akıştan geçiyor; upload'daki kabul/ret kuralının oraya da uygulanıp uygulanmayacağına karar ver (şimdilik yalnız `/api/upload` kapalı devre).
 
-- [ ] **İçerik düzeltmesi (kod değil, ayrı iş):** bu EPUB'taki **tüm** XHTML'leri tara (yalnız `ch003` değil), well-formed hale getir, `mimetype` ilk ve **STORE** olacak şekilde yeniden paketle; prod watermark kodunu container içinde düzeltilmiş dosyaya karşı çalıştırıp **OK** gör; R2'ye **aynı key** ile yükle + `assets.source_checksum` güncelle. → **Adım adım komutlar: `docs/runbooks/epub-repair-2026-10-27.md`**. Dikkat: `storage.put()` `IfNoneMatch: '*'` kullanıyor, aynı key'e yazmak için önce `remove()`.
+- [ ] **İçerik düzeltmesi (kod değil, ayrı iş):** bu EPUB'taki **tüm** XHTML'leri tara (yalnız `ch003` değil), well-formed hale getir, `mimetype` ilk ve **STORE** olacak şekilde yeniden paketle; prod watermark kodunu container içinde düzeltilmiş dosyaya karşı çalıştırıp **OK** gör; R2'ye **yeni key** (`…-r1.epub`) ile yükle + `assets.storage_key` ve `assets.source_checksum` güncelle. → **Adım adım komutlar: `docs/runbooks/epub-repair-2026-10-27.md`**. Dikkat: `storage.put()` `IfNoneMatch: '*'` kullanıyor — **aynı key'e yazılamaz**; bu yüzden yeni key, eski nesne de yerinde kalır (§10 geri dönüş bedava).
 - [ ] **Katalog taraması:** katalogdaki **tüm EPUB'ları** aynı dry-run ile tara ve listele (kaç tanesi indirilemez durumda). Komut: runbook §9.
 
 ## 3. İlk kurum / dış kullanıcıdan önce (zorunlu)
