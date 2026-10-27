@@ -4,8 +4,9 @@ Bu dosya **kod dışı** bir iştir. Kod tarafı `fix/v134-epub-download-409` (P
 artık bu durumdaki dosyalar `upload`'ta reddediliyor ve 409'un nedeni audit'e yazılıyor.
 Kalan iş: **mevcut bozuk dosyayı onarmak** ve **katalogda başka kaç tane olduğunu öğrenmek**.
 
-> Sunucuda çalıştırılır. `sudo` kullanılıyorsa **`sudo -E`** ya da değişkenleri `sudo`'dan sonra
-> tekrar export edin — 26 Ekim kesintisinin nedeni buydu (`sudo` env siliyor).
+> Sunucuda çalıştırılır. **`docker` her yerde `sudo` ile** — `ubuntu` kullanıcısı `docker`
+> grubunda değil. `sudo -E` gerekmiyor: `$POSTGRES_*` değişkenleri `sudo` çalışmadan **önce,
+> host kabuğunda** genişliyor.
 
 ---
 
@@ -15,42 +16,57 @@ Kalan iş: **mevcut bozuk dosyayı onarmak** ve **katalogda başka kaç tane old
 cd /var/www/akademik-platform      # compose dosyasının olduğu dizin (DEPLOY.md ile aynı)
 ```
 
-Aşağıdaki komutlarda `dc` kısaltması kullanılır. **İki `--env-file` zorunlu**
-(`DEPLOY.md` ile aynı): `.env.production` `POSTGRES_*`, `DOMAIN`, `DATABASE_URL` sağlar;
-`.env.r2` uygulama/R2 ayarlarını. Biri eksikse compose `required variable ... is missing`
-ile **durur** — 2026-10-27'de tam bu yaşandı.
+`dc` kısaltması **DEPLOY.md ile birebir** aynıdır: **iki `-f`** ve **iki `--env-file`**.
+
+- `docker-compose.prod.yml` **zorunlu**: proje adı (`akademik-platform-prod`) ondan gelir.
+  Yalnız `libedge.yml` verilirse proje adı farklı olur, `db` servisi **tanımsız** kalır ve
+  `dc exec db` / `ps -q web` düşer.
+- `.env.production`: `POSTGRES_*`, `DOMAIN`, `DATABASE_URL`, `SESSION_SECRET`.
+- `.env.r2`: `LIBEDGE_IMAGE`, R2 ayarları.
+
+Biri eksikse compose `required variable ... is missing` ile **durur** — 2026-10-27'de
+`DOMAIN` için tam bu yaşandı.
 
 ```bash
 dc() {
-  docker compose -f /var/www/akademik-platform/docker-compose.libedge.yml \
+  sudo docker compose \
+    -f /var/www/akademik-platform/docker-compose.prod.yml \
+    -f /var/www/akademik-platform/docker-compose.libedge.yml \
     --env-file /var/www/akademik-platform/.env.production \
     --env-file /var/www/akademik-platform/.env.r2 "$@"
 }
 ```
 
-DB bağlantı değişkenleri (yoksa `.env.production`'dan gelir; boşsa elle ver):
+DB bağlantı değişkenleri: `.env.production` root'a ait olduğu için `sudo grep`. Değişken host
+kabuğunda genişlediği için `sudo` bunları silmez.
 
 ```bash
-export POSTGRES_USER="${POSTGRES_USER:-$(grep -m1 '^POSTGRES_USER=' /var/www/akademik-platform/.env.production | cut -d= -f2-)}"
-export POSTGRES_DB="${POSTGRES_DB:-$(grep -m1 '^POSTGRES_DB=' /var/www/akademik-platform/.env.production | cut -d= -f2-)}"
+export POSTGRES_USER="$(sudo grep -m1 '^POSTGRES_USER=' /var/www/akademik-platform/.env.production | cut -d= -f2-)"
+export POSTGRES_DB="$(sudo grep -m1 '^POSTGRES_DB=' /var/www/akademik-platform/.env.production | cut -d= -f2-)"
+
+if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_DB" ]; then
+  echo "DUR: POSTGRES_USER/POSTGRES_DB okunamadı — .env.production'ı kontrol et"
+  return 1 2>/dev/null || exit 1
+fi
 echo "user=$POSTGRES_USER db=$POSTGRES_DB"
-[ -n "$POSTGRES_USER" ] && [ -n "$POSTGRES_DB" ] || { echo "DUR: POSTGRES_USER/POSTGRES_DB boş"; }
 ```
 
-> `sudo` kullanacaksan `sudo -E` ya da `sudo --preserve-env` — 26 Ekim kesintisinin nedeni
-> `sudo`'nun ortamı silmesiydi. `dc` fonksiyonu env dosyalarını açıkça verdiği için
-> `sudo` altında da çalışır; ama `POSTGRES_*` export'ları gitmez.
+> Sonraki blokları **`set -e`** ile çalıştır; hepsini tek kabukta çalıştırıyorsan başta bir
+> kez `set -e` ver. Yukarıdaki `DUR` satırı gerçekten durdurur (`return` ya da `exit`).
 
-Servis adının **`web`** olduğunu doğrula:
+Config'i **gerçekten** doğrula — `db` servisi ve imaj görünmeli:
 
 ```bash
-dc ps
-grep -m1 '^LIBEDGE_IMAGE=' /var/www/akademik-platform/.env.r2   # deploy edilen imaj
+dc config --services
+dc config | grep -E 'image:|container_name:' | head
+sudo grep -m1 '^LIBEDGE_IMAGE=' /var/www/akademik-platform/.env.r2   # deploy edilen imaj
 ```
+
 
 Çalışma dizini:
 
 ```bash
+set -e                       # bu noktadan sonra her hata durdurur
 WORK=/tmp/epub-repair; mkdir -p "$WORK"; cd "$WORK"
 ```
 
@@ -485,7 +501,9 @@ ve bozuk dosyanın yeni yüklenmesini engeller.
 
 ## Kontrol listesi
 
-- [ ] §0 `dc` iki `--env-file` ile tanımlı; `POSTGRES_USER`/`POSTGRES_DB` dolu
+- [ ] §0 `dc` **iki `-f`** (prod + libedge) ve **iki `--env-file`** ile tanımlı; `sudo` içeride
+- [ ] §0 `dc config --services` çıktısında **`db`** görünüyor (prod.yml eksikse görünmez)
+- [ ] §0 `POSTGRES_USER`/`POSTGRES_DB` dolu; boşsa `DUR` gerçekten durdurdu
 - [ ] §1.1 **eski `storage_key` + `source_checksum` not alındı** (§10 için şart)
 - [ ] §1 `sha256sum source.epub` = DB `source_checksum`
 - [ ] §2.2 `broken-list.txt` — bozuk dosyaların **tam** listesi
