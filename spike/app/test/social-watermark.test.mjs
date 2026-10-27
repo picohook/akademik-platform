@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import JSZip from 'jszip';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { getDocument, OPS } from 'pdfjs-dist/legacy/build/pdf.mjs';
-import { watermarkDownload } from '../social-watermark.mjs';
+import { watermarkDownload, inspectWatermarkable } from '../social-watermark.mjs';
 
 const auth = {
   userId: '12345678-1234-4234-8234-123456789abc',
@@ -294,6 +294,36 @@ test('missing, malformed, ambiguous or unsafe EPUB package metadata fails closed
     '<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="package.opf" media-type="application/oebps-package+xml" /><rootfile full-path="other.opf" media-type="application/oebps-package+xml" /></rootfiles></container>',
     '<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles></container>',
   ]) await assert.rejects(watermarkDownload(await epub(undefined, { container }), 'epub', auth), /Invalid EPUB package/);
+});
+
+test('dry run accepts a stampable EPUB and rejects the malformed XHTML that breaks downloads', async () => {
+  // Regression: a Pandoc chapter with <li><p>…</li> reads online (lenient parser)
+  // but fails every watermarked download with a bare 409. The dry run must catch
+  // exactly that file, before it is stored, and must not rewrite the archive.
+  const good = await epub();
+  const report = await inspectWatermarkable(good, 'epub');
+  assert.equal(report.format, 'epub');
+  assert.deepEqual(report.documents, ['OEBPS/chapter.xhtml']);
+
+  const broken = await epub({
+    'OEBPS/chapter.xhtml': '<html><head><title>Book</title></head><body><ol><li>Hypothesis and aims<p></li></ol></body></html>',
+  });
+  await assert.rejects(inspectWatermarkable(broken, 'epub'), /OEBPS\/chapter\.xhtml: Invalid EPUB package: mismatched XML closing tag/);
+  // The same file is still refused by the real stamping path, so the dry run is
+  // measuring the production failure and not a stricter private copy of it.
+  await assert.rejects(watermarkDownload(broken, 'epub', auth), /mismatched XML closing tag/);
+});
+
+test('dry run reports a missing spine and does not accept unreadable source files', async () => {
+  const noSpine = await epub(undefined, { spine: [] });
+  await assert.rejects(inspectWatermarkable(noSpine, 'epub'), /Invalid EPUB package/);
+  await assert.rejects(inspectWatermarkable(Buffer.from('not a zip'), 'epub'));
+  await assert.rejects(inspectWatermarkable(Buffer.from('x'), 'txt'), /Unsupported/);
+});
+
+test('dry run checks PDFs through the same stamping path', async () => {
+  assert.equal((await inspectWatermarkable(await samplePdf(), 'pdf')).format, 'pdf');
+  await assert.rejects(inspectWatermarkable(Buffer.from('not a pdf'), 'pdf'));
 });
 
 test('unsupported format or missing/malformed identity fails instead of returning original', async () => {

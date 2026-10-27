@@ -689,6 +689,12 @@ async function handleOfflineDownload(book) {
       toast(t('Çevrimdışı alan yetersiz'));
       return;
     }
+    // 409 means the server holds a file it will not stamp (e.g. malformed XHTML).
+    // It is a permanent data defect, so retrying never helps: say so plainly.
+    if (error.status === 409) {
+      toast(t('Bu kitap şu an çevrimdışı indirilemiyor; kütüphaneye bildirildi'));
+      return;
+    }
     throw error;
   }
   toast(t('Çevrimdışı kaydedildi'));
@@ -1223,7 +1229,10 @@ async function submitUpload(event) {
     const message = error.message === 'already uploaded' ? 'Bu dosya zaten yüklü'
       : error.message === 'yetkiniz yok' ? 'Bu işlem için yetkiniz yok'
         : error.message === 'file too large' ? 'Dosya 300 MB sınırını aşıyor'
-          : 'Kitap yüklenemedi';
+          // The server explains why an EPUB cannot be watermarked; show it instead of
+          // a generic failure, or the admin re-uploads the same broken file.
+          : /^EPUB indirilemiyor/.test(error.message) ? error.message
+            : 'Kitap yüklenemedi';
     toast(message);
   } finally {
     uploadSubmitButton.disabled = false;
@@ -4285,7 +4294,11 @@ downloadBtn.addEventListener('click', async () => {
       ? t(`Çok fazla indirme isteği; ${error.retryAfter} saniye sonra tekrar deneyin.`)
       : error.code === 'DOWNLOAD_DISABLED'
         ? t('Bu kitapta indirme kapalı')
-        : t(book.format === 'epub' ? 'EPUB indirilemedi' : 'PDF indirilemedi'));
+        // 409 is a stored-file defect, not a transient failure: name it and point
+        // the reader at the library instead of implying a retry would work.
+        : error.status === 409
+          ? t('Bu kitap şu an indirilemiyor; kütüphaneye bildirildi')
+          : t(book.format === 'epub' ? 'EPUB indirilemedi' : 'PDF indirilemedi'));
   } finally {
     downloadBtn.disabled = false;
     downloadBtn.textContent = original;
