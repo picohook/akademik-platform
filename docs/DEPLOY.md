@@ -149,8 +149,8 @@ cd /var/www/akademik-platform
 sudo docker compose -f docker-compose.prod.yml -f docker-compose.libedge.yml \
   --env-file .env.r2 up -d --force-recreate
 
-# ATLANMAZ — ağ elle bağlanıyor
-sudo docker network connect akademik-platform-prod_default $(sudo docker ps -q --filter name=academic-web)
+# Ağ artık compose tarafından yönetiliyor (aşağıdaki nota bakın).
+# Eski sürümlerde gereken elle `docker network connect` artık GEREKMEZ.
 ```
 
 ### Canlı gerçek (2026-10-27 doğrulandı)
@@ -163,22 +163,41 @@ sudo docker network connect akademik-platform-prod_default $(sudo docker ps -q -
 | Env | `.env.r2` — `DEMO_TENANT_ID=5799f2a5-...`, `STORAGE_DRIVER=r2`, `APP_VERSION=131`, `BUILD_SHA=a2bc13f` |
 | DB | PostgreSQL, container `akademik-platform-prod-db-1`, süper kullanıcı `akademik` |
 
-> ### 🔴 Ağ bağlantısı kalıcı değil — her restart'ta tekrar bağlanmalı
+> ### ✅ Ağ bağlantısı artık compose'da (v131 sonrası düzeltme)
 >
-> Web container **`akademik-platform-prod_default`** network'üne **elle** bağlanıyor.
-> Compose bu bağlantıyı yönetmediği için `docker compose up` / restart / host reboot
-> sonrası **kopar** ve web DB'ye ulaşamaz.
+> **2026-10-26'ya kadar** web container `akademik-platform-prod_default`
+> network'üne **elle** bağlanıyordu. Compose bu bağlantıyı yönetmediği için
+> restart / host reboot sonrası **kopuyor** ve web DB'ye ulaşamıyordu
+> (`mode:"demo"`).
 >
-> **Deploy/restart sonrası ZORUNLU adım:**
+> **Artık** `docker-compose.libedge.yml` şunu tanımlıyor:
+>
+> ```yaml
+> services:
+>   web:
+>     networks:
+>       - default
+>       - prod_default
+> networks:
+>   prod_default:
+>     external: true
+>     name: akademik-platform-prod_default
+> ```
+>
+> Böylece `up -d` web'i her seferinde doğru ağa bağlar; elle `docker network
+> connect` **gerekmez**. Yine de doğrula:
 >
 > ```bash
-> docker network connect akademik-platform-prod_default <web-container>
 > curl -s https://elibrary.libedge.com/api/health   # "ok":true, "mode":"db" olmalı
 > ```
 >
-> `mode:"demo"` dönerse ağ **bağlı değil** — DB'ye ulaşamıyor, sessizce demo'ya
-> düşmüş demektir. **Kalıcı çözüm:** `docker-compose.libedge.yml` içine
-> `networks: [default]` + external network tanımı eklemek (henüz yapılmadı).
+> `mode:"demo"` dönerse ağ hâlâ kopuk — compose dosyasının güncel sürümünün
+> sunucuda olduğunu kontrol et (`git rev-parse --short HEAD`).
+>
+> **Not:** `name: akademik-platform-prod_default` bilerek açık yazıldı.
+> `docker-compose.prod.yml` içindeki `name: akademik-platform-prod` ile
+> türetilen ad bugün aynı; prod dosyasındaki `name:` ileride değişirse web
+> sessizce ağdan kopsun istemiyoruz.
 
 ### Tenant durumu
 

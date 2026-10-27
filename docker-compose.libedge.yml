@@ -1,9 +1,35 @@
 # Use with docker-compose.prod.yml; start only db/web, never caddy.
+#
+# Two traps live in this file — read before changing:
+#
+# 1. `image:` pins the image name. `pull_policy: never` plus a pinned name means
+#    `docker compose up --build` BUILDS the new image but KEEPS RUNNING the old
+#    one unless the names match. This caused the 2026-10-26 v131 incident: the
+#    default was `akademik-platform:libedge-r2`, so a freshly built libedge-v131
+#    never took over and `--force-recreate` did not help (it recreates the
+#    container, not the image). Keep the default in sync with the version you
+#    actually build, or set LIBEDGE_IMAGE explicitly.
+#
+# 2. The explicit `networks` list replaces the implicit default network. Without
+#    it, web silently loses its db route after a restart and serves in demo mode.
+#    The external `prod_default` below keeps it attached permanently.
 services:
   web:
-    image: ${LIBEDGE_IMAGE:-akademik-platform:libedge-r2}
+    image: ${LIBEDGE_IMAGE:-libedge-v131}
     pull_policy: never
     env_file:
       - .env.r2
     ports:
       - "127.0.0.1:3001:3000"
+    networks:
+      - default
+      # `name:` makes the actual network name predictable. It currently matches
+      # what the prod project already creates (academic-platform-prod_default ->
+      # akademik-platform-prod_default); the explicit value guards against a
+      # future `name:` change in docker-compose.prod.yml silently detaching web.
+      - prod_default
+
+networks:
+  prod_default:
+    external: true
+    name: akademik-platform-prod_default
