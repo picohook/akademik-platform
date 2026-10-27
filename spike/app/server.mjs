@@ -1,4 +1,5 @@
 import { createStorage, serveStoredAsset } from './storage.mjs';
+import { APP_CSP } from './security-headers.mjs';
 import { normalizeBookVariant } from './public/book-variants.mjs';
 import { mutateAnnotation, memoryAnnotationMutations, purgeAnnotationReceipts } from './annotation-sync.mjs';
 import { currentTenant, runWithTenant } from './tenant-context.mjs';
@@ -1964,13 +1965,7 @@ async function handleRequest(req, res) {
     res.setHeader('referrer-policy', 'no-referrer');
     res.setHeader('cache-control', 'no-store');
   }
-  res.setHeader(
-    'content-security-policy',
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
-    + "img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; "
-    + "frame-src 'self' blob: data:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; "
-    + "form-action 'self'; frame-ancestors 'none'",
-  );
+  res.setHeader('content-security-policy', APP_CSP);
 
   try {
     if (pathname === '/sushi' && req.method === 'GET') {
