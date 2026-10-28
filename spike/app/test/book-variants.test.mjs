@@ -98,7 +98,7 @@ function downloadHarness({ requested = epub, ticketAsset = epub.asset_id, denied
     if (sql.includes('update download_tickets set consumed_at')) return { rowCount: 1 };
     return { rows: [], rowCount: 1 };
   } };
-  const service = createDownloadService({ withTenant: fn => fn(client), tenantId: 'tenant', b2b: true,
+  const service = createDownloadService({ withTenant: fn => fn(client), tenantId: () => 'tenant', b2b: true,
     getBook: async id => id === requested.asset_id || id === requested.id ? { ...requested, allow_download: !disabled } : null,
     activeGrants: async () => [], grantAllows: () => false });
   return { service, queries, auth: { userId: 'user', tenantId: 'tenant' } };

@@ -25,7 +25,9 @@ function serviceOver(client) {
     getBook: async () => null,
     activeGrants: async () => [],
     grantAllows: () => true,
-    tenantId: 'tenant-1',
+    // The tenant is read per request, so it is a function here as well - a plain
+    // string would silently reintroduce the fixed env tenant this change removes.
+    tenantId: () => 'tenant-1',
     b2b: false,
   });
 }

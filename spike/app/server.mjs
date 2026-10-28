@@ -1361,18 +1361,64 @@ async function getBook(id, dbClient = null) {
 }
 
 const downloadService = createDownloadService({
-  withTenant, getBook, activeGrants, grantAllows, tenantId: TENANT_ID, b2b: B2B_DOWNLOADS,
+  // A callback, not TENANT_ID: the service is built once at startup but every call
+  // runs inside a request, and a request's tenant is bound by runWithTenant().
+  // Passing the env tenant here would make the service disagree with withTenant()
+  // for anyone outside the env tenant.
+  withTenant, getBook, activeGrants, grantAllows, tenantId: requestTenant, b2b: B2B_DOWNLOADS,
 });
+
+// Which tenants a timer sweeps. This runs outside any request, so no tenant is
+// bound and nothing can be inferred from the request; the list is read from the
+// database instead of the env.
+//
+// `select id from tenants` returns exactly one row for the app role - tenants_self
+// is `using (id = current_setting('app.tenant_id', true)::uuid)`, so the list would
+// be the env tenant whatever the data holds, and the sweeper would look correct
+// while ignoring every other institution. The list therefore comes from a
+// SECURITY DEFINER function that returns ids only (migration 023). Until that
+// exists, the env tenant remains the single tenant a timer covers, as before.
+async function maintenanceTenantIds() {
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query('select tenant_id from app.maintenance_tenants()');
+    const ids = rows.map(row => row.tenant_id).filter(Boolean);
+    return ids.length ? ids : [TENANT_ID];
+  } catch (error) {
+    // 42883 undefined_function: migration 023 not applied yet. 42501 too: the app
+    // was never granted EXECUTE, which is a deployment mistake rather than a
+    // "no such tenants" answer, but it must not silence the sweep entirely.
+    if (error.code === '42883' || error.code === '42501') {
+      console.warn(`[maintenance] app.maintenance_tenants unavailable (${error.code}); sweeping DEMO_TENANT_ID only`);
+      return [TENANT_ID];
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
 
 // `maintenance()` sweeps one tenant's tickets. It is called from a timer, not a
 // request, so it must name the tenant itself: withTenant throws when nothing is
 // bound, and the previous behaviour - silently reading the env tenant - is what
-// the fail-closed change exists to stop.
-//
-// This still names a single tenant. When a second tenant exists the sweeper has
-// to iterate `tenants` instead; until then it must not pretend to serve them.
+// the fail-closed change exists to stop. One tenant's failure must not stop the
+// others: each is swept inside its own try, and the error is reported with the
+// tenant so a broken institution is identifiable.
 const downloadMaintenanceService = {
-  maintenance: () => runWithTenant(TENANT_ID, () => downloadService.maintenance()),
+  async maintenance() {
+    let ticketsDeleted = 0;
+    let limitsDeleted = 0;
+    for (const tenantId of await maintenanceTenantIds()) {
+      try {
+        const result = await runWithTenant(tenantId, () => downloadService.maintenance(tenantId));
+        ticketsDeleted += result.ticketsDeleted;
+        limitsDeleted += result.limitsDeleted;
+      } catch (error) {
+        console.warn(`[downloads] maintenance failed for tenant ${tenantId}:`, error.message);
+      }
+    }
+    return { ticketsDeleted, limitsDeleted };
+  },
 };
 
 async function updateBook(id, body) {
@@ -2780,26 +2826,39 @@ let annotationMaintenanceTimer;
 let annotationMaintenanceStart;
 async function runAnnotationMaintenance() {
   if (!pool) return;
-  // No request, no session: this timer sweeps one tenant named by env. When a
-  // second tenant exists this must iterate tenants instead of assuming one.
-  const result = await runWithTenant(TENANT_ID, () => withTenant(async (client) => {
-    await client.query('begin');
-    await client.query("select set_config('app.maintenance', 'on', true)");
+  // No request, no session: the tenants come from maintenanceTenantIds(), not from
+  // the env. Each tenant gets its own transaction and its own app.tenant_id, so the
+  // RLS the purge relies on is the tenant being purged rather than whichever one
+  // the process happened to start with. A failing tenant is reported and skipped;
+  // the others still run.
+  let receiptsDeleted = 0;
+  let tombstonesDeleted = 0;
+  for (const tenantId of await maintenanceTenantIds()) {
     try {
-      const purged = await purgeAnnotationReceipts(client, {
-        tenantId: TENANT_ID,
-        retentionDays: ANNOTATION_RECEIPT_RETENTION_DAYS,
-        tombstoneDays: ANNOTATION_TOMBSTONE_RETENTION_DAYS,
-      });
-      await client.query('commit');
-      return purged;
+      const result = await runWithTenant(tenantId, () => withTenant(async (client) => {
+        await client.query('begin');
+        await client.query("select set_config('app.maintenance', 'on', true)");
+        try {
+          const purged = await purgeAnnotationReceipts(client, {
+            tenantId,
+            retentionDays: ANNOTATION_RECEIPT_RETENTION_DAYS,
+            tombstoneDays: ANNOTATION_TOMBSTONE_RETENTION_DAYS,
+          });
+          await client.query('commit');
+          return purged;
+        } catch (error) {
+          await client.query('rollback').catch(() => {});
+          throw error;
+        }
+      }));
+      receiptsDeleted += result.receiptsDeleted;
+      tombstonesDeleted += result.tombstonesDeleted;
     } catch (error) {
-      await client.query('rollback').catch(() => {});
-      throw error;
+      console.warn(`[annotations] retention failed for tenant ${tenantId}:`, error.message);
     }
-  }));
-  if (result.receiptsDeleted || result.tombstonesDeleted) {
-    console.log(`[annotations] retention: ${result.receiptsDeleted} receipts, ${result.tombstonesDeleted} tombstones`);
+  }
+  if (receiptsDeleted || tombstonesDeleted) {
+    console.log(`[annotations] retention: ${receiptsDeleted} receipts, ${tombstonesDeleted} tombstones`);
   }
 }
 if (pool) {

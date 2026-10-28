@@ -64,8 +64,10 @@ Dosya **çevrimiçi** okunabiliyor (okuyucu XHTML'i olduğu gibi ayrıştırmıy
 
 ## 3. İlk kurum / dış kullanıcıdan önce (zorunlu)
 
-- `download-tickets` ve `/opds` hâlâ env tenant'ıyla kurulu → oturum tenant'ı (bugün reddeder, sızdırmaz).
-- Zamanlayıcı işleri (download ticket süpürme, annotation retention) tek tenant varsayıyor → tüm tenant'lar üzerinde dönmeli.
+- **Zamanlayıcı işleri (download ticket süpürme, annotation retention) tek tenant varsayıyor → tüm tenant'lar üzerinde dönmeli.**
+  - [x] **Kod tarafı yapıldı, migration bekliyor.** `download-tickets` servisi artık `tenantId`'yi **istekten** okuyor (`requestTenant()`); sabit `TENANT_ID` kalktı. İki zamanlayıcı `maintenanceTenantIds()` üzerinden döngü yapıyor, her tenant kendi `runWithTenant()` + transaction'ında; bir tenant'ın hatası diğerlerini durdurmuyor ve tenant kimliğiyle loglanıyor. `maintenance(tenant)` tenant'sız çağrılırsa **hata atıyor**, sessizce bir tenant seçmiyor.
+  - [ ] **`select id from tenants` YETMİYOR** — `tenants_self` politikası (`using (id = current_setting('app.tenant_id')::uuid)`) yüzünden app rolü **tek satır** görüyor; döngü sadece env tenant'ı dönerdi ve "düzeltilmiş" görünürdü. Bu yüzden liste `app.maintenance_tenants()` **SECURITY DEFINER** fonksiyonundan (yalnız id döndürür) okunuyor. Fonksiyon bugün **yok**: kod `42883`/`42501` alınca uyarı loglayıp env tenant'a düşüyor. Fonksiyon **023'e değil**, sıradaki migration'a eklenmeli — 023 sözleşme §4.4 listesine bağlı.
+- `/opds` hâlâ env tenant'ıyla kurulu → oturum tenant'ı (bugün reddeder, sızdırmaz). *Not: API-key yolu `OPDS_API_KEY` + `OPDS_USER_EMAIL` + `OPDS_TENANT_ID` üçünü birlikte ister (`opdsTokenAuth`); yalnız `OPDS_TENANT_ID` tanımlamak kimlik doğrulamayı açmıyor.*
 - Upload edilen kitaplar koleksiyona eklenmiyor → collection grant'li kurumlarda yeni kitapların nereye düşeceği kararı.
 
 ## 4. SSO — LibEdge ile tek giriş
