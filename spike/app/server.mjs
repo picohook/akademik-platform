@@ -1249,7 +1249,16 @@ async function opdsTokenAuth(req, url) {
       role: isLibrarian ? 'librarian' : 'reader',
     };
   }
-  return withTenant(async (client) => {
+  // The OPDS client sends an API key, not a cookie, so no session tenant is
+  // bound here, and `users` is under FORCE row level security: resolving the email
+  // under the env tenant only ever sees that tenant's rows, while the OPDS user
+  // generally lives in another one. The tenant is therefore named explicitly by
+  // OPDS_TENANT_ID and the lookup runs inside it. No config means no OPDS, which
+  // is the fail-closed reading of what used to happen silently: the feed queried
+  // whichever tenant the process was started with.
+  const tenantId = String(process.env.OPDS_TENANT_ID || '').trim();
+  if (!tenantId) return null;
+  return runWithTenant(tenantId, () => withTenant(async (client) => {
     const { rows } = await client.query(
       'select id, tenant_id, email, display_name, role from users where email = $1 limit 1',
       [email],
@@ -1262,7 +1271,7 @@ async function opdsTokenAuth(req, url) {
       displayName: rows[0].display_name,
       role: rows[0].role,
     };
-  });
+  }));
 }
 
 async function opdsFeed(auth, req) {
@@ -1292,7 +1301,7 @@ async function opdsFeed(auth, req) {
   }).join('\n');
   return `<?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/terms/">
-  <id>urn:uuid:${escapeXml(TENANT_ID)}</id>
+  <id>urn:uuid:${escapeXml(auth?.tenantId || requestTenant())}</id>
   <title>Akademik Platform</title>
   <updated>${updated}</updated>
   <link rel="self" href="${base}/opds" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
@@ -2004,8 +2013,25 @@ await mkdir(UPLOAD_DIR, { recursive: true });
 // sync, uploads - reads the signed-in user's tenant without being changed.
 const server = http.createServer(async (req, res) => {
   const boundTenant = readSession(req)?.tenantId || TENANT_ID;
-  return runWithTenant(boundTenant, () => handleRequest(req, res));
+  // /opds carries no session cookie. Re-binding the request to the OPDS tenant
+  // once the token has been checked is what makes listBooks and opdsFeed agree
+  // with the tenant opdsTokenAuth resolved; otherwise the feed queries the env
+  // tenant and returns an empty catalogue to a correctly authenticated client.
+  const opdsTenant = await opdsTenantFor(req);
+  return runWithTenant(opdsTenant || boundTenant, () => handleRequest(req, res));
 });
+
+// Cheap enough to run on every request: it only touches env, and only for a GET
+// of /opds. The API key itself is not checked here and must not be: binding a
+// tenant is not authorising anything. opdsTokenAuth stays the gate, and a request
+// without a valid key is rejected before any book is read.
+async function opdsTenantFor(req) {
+  if (req.method !== 'GET') return null;
+  const pathname = String(req.url || '').split('?')[0];
+  if (pathname !== '/opds') return null;
+  if (!String(process.env.OPDS_API_KEY || '').trim()) return null;
+  return String(process.env.OPDS_TENANT_ID || '').trim() || null;
+}
 
 async function handleRequest(req, res) {
   const requestStarted = performance.now();
