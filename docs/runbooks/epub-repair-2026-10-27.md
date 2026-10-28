@@ -11,6 +11,47 @@ Kalan iş: **mevcut bozuk dosyayı onarmak** ve **katalogda başka kaç tane old
 > Bu yüzden tüm `DUR` kontrolleri `return 1 2>/dev/null || true` + açık **“DUR, devam etme”**
 > mesajı biçimindedir: karar sizde, oturum düşmez. Hiçbir blok `set -e` gerektirmez.
 
+## Çalıştırma sırasında öğrenilenler (2026-10-27/28)
+
+Runbook ilk kez çalıştırılırken iki şey yanlış yazılmıştı; aşağıdaki metin **düzeltilmiş**
+halidir. Eski kopyayla çalışan varsa bu farkları bilmeli.
+
+### A. `node -e` içinde `await` çalışmaz → `--input-type=module`
+
+`dc exec -T web node -e "…"` içinde üst düzey `await` **SyntaxError** verir (`-e` yalnız
+CommonJS olarak değerlendirir). Kullanılan biçim ya `.then()` zinciri (aşağıdaki §1.2, §6,
+§10) ya da heredoc + `--input-type=module`'dür:
+
+```bash
+dc exec -T web node --input-type=module -e "$(cat <<'JS'
+import fs from 'node:fs';
+import { createStorage } from './storage.mjs';
+const s = createStorage({ publicDir: process.cwd() + '/public' });
+const bytes = await s.read('r2://' + process.env.R2_PREFIX + '/uploads/7ef29929-dbbd-415d-a008-c18f99362c98.epub');
+fs.writeFileSync('/tmp/source.epub', bytes);
+console.log('bytes', bytes.length);
+JS
+)"
+```
+
+> `<<'JS'` tırnağı **şart**: tırnaksız heredoc `$` ve backtick'leri host kabuğunda genişletir
+> ve `process.env.R2_PREFIX` boş kalır. Bu biçim §5'teki gibi çok satırlı bloklar için
+> `-e`'den okunur, çünkü `-e` içindeki tek satırlık `.then()` zincirleri hata verince
+> satır numarası göstermez.
+
+### B. `psql` tek satırda — `docker exec … psql -c "…"`
+
+Çok satırlı `-c "…"` bloğu etkileşimli kabukta tırnak/`;` sorunları çıkarır. Sorgular **tek
+satır** yazılır; `\` meta-komutu (ör. `\d assets`) kullanılmaz — `-c` onu kabul etmez.
+
+```bash
+sudo docker exec -i akademik-platform-prod-db-1 psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "select a.id, a.format, a.storage_key, a.source_checksum from assets a where a.id = '4773fe55-2f2d-51d5-b7cb-740d477e75fa';"
+```
+
+> `-i` (stdin) ve `-T` (TTY yok) karıştırılmamalı: `dc exec -T` TTY açmaz, heredoc/SQL
+> boru hattı için doğrudur. `dc exec` yerine doğrudan `sudo docker exec` kullanılıyorsa
+> container adı `akademik-platform-prod-db-1`'dir (proje adı `docker-compose.prod.yml`'den).
+
 ---
 
 ## 0. Hazırlık
@@ -354,6 +395,9 @@ dc exec -T web node -e "
 
 `storage_key` artık yeni key; checksum yeni dosyanın sha256'sı. **`id` ile**, `like` ile değil.
 
+> :warning: Sorgu **tek satır** olmalı (bkz. baştaki not B). Çok satırlı `-c "…"` etkileşimli
+> kabukta tırnak/`;` sorunu çıkarır ve `psql` yarım SQL görür.
+
 ```bash
 HASH=$(sha256sum /tmp/epub-repair/fixed.epub | cut -d' ' -f1)
 echo "yeni sha256: $HASH"
@@ -428,6 +472,28 @@ wc -l /tmp/epub-repair/catalog.txt
 ```
 
 ### 9.2 Tara
+
+> Tek satıra indirilmiş ve `--input-type=module` kullanan sürüm (bkz. baştaki not A) vardır.
+> Aşağıda ilk çalıştırmada kullanılan biçim var:
+>
+> ```bash
+> dc exec -T web node --input-type=module -e "$(cat <<'JS'
+> import fs from 'node:fs';
+> import { createStorage } from './storage.mjs';
+> import { inspectWatermarkable } from './social-watermark.mjs';
+> const s = createStorage({ publicDir: process.cwd() + '/public' });
+> const rows = fs.readFileSync('/tmp/catalog.txt', 'utf8').trim().split('\n').filter(Boolean);
+> let ok = 0; const bad = [];
+> for (const row of rows) {
+>   const [id, key, title] = row.split('|');
+>   try { await inspectWatermarkable(await s.read(key), 'epub'); ok += 1; }
+>   catch (e) { bad.push({ id, title, key, error: e.message || String(e) }); console.log('INDIRILEMEZ | ' + title + ' | ' + id + ' | ' + key + ' | ' + (e.message || e)); }
+> }
+> console.log('TOPLAM ' + rows.length + ' | OK ' + ok + ' | INDIRILEMEZ ' + bad.length);
+> fs.writeFileSync('/tmp/scan.json', JSON.stringify(bad, null, 2));
+> JS
+> )" 2>&1 | tee /tmp/epub-repair/scan.log
+> ```
 
 ```bash
 dc cp /tmp/epub-repair/catalog.txt "$(dc ps -q web):/tmp/catalog.txt"
@@ -533,3 +599,54 @@ ve bozuk dosyanın yeni yüklenmesini engeller.
 - [ ] §8 tarayıcıda indirme + çevrimdışı kaydet çalışıyor
 - [ ] §9 `scan.json` üretildi, `docs/TODO.md` §2b'ye eklendi
 - [ ] Bir hafta sonra: §10 eski objeyi sil (yalnız geri dönüş yapılmadıysa)
+
+---
+
+## 11. Onarım kaydı (bu kitap)
+
+Bu bölüm **yapılan işin kaydıdır**; yukarıdaki adımların yerine geçmez. Bir sonraki bozuk
+dosya için §1–§10 tekrar çalıştırılır.
+
+| Öğe | Değer |
+| --- | --- |
+| Kitap | Scientific Writing for Health Research |
+| Asset ID | `4773fe55-2f2d-51d5-b7cb-740d477e75fa` |
+| R2 key (eski) | `libedge/uploads/7ef29929-dbbd-415d-a008-c18f99362c98.epub` |
+| R2 key (yeni) | `libedge/uploads/7ef29929-dbbd-415d-a008-c18f99362c98-r1.epub` |
+| Yeni `storage_key` (DB) | `r2://libedge/uploads/7ef29929-dbbd-415d-a008-c18f99362c98-r1.epub` |
+| Yeni `source_checksum` (sha256) | `<§5 çıktısındaki fixed.epub sha256>` |
+| Eski `source_checksum` (geri dönüş) | `<§1.1'de not alınan değer>` |
+
+> :warning: Bu iki hücre **sunucu çıktısından** doldurulmalı. Elle/ezberden yazılmaz —
+> yanlış checksum, dosyanın yerinde olmadığını gizler.
+
+### 11.1 Ne bulundu
+
+- `EPUB/text/ch003.xhtml` — `<p></li>` (kapanmayan `<p>`, Pandoc çıktısı). §2.1'de
+  `FAIL — EPUB/text/ch003.xhtml: Invalid EPUB package: mismatched XML closing tag`.
+- §2.2 `xmllint` taraması bu kitapla sınırlı değil: **onarılan dosyaların tam listesi
+  `broken-list.txt`'tir.** Kaydı buraya eklerken liste uzunluğu ve dosya adları yazılır.
+
+### 11.2 Ne yapıldı
+
+1. §3.2 kalıbı (`<p></li>` → `<p></p></li>`) uygulandı; §3.3 `xmllint` temiz çıkana kadar
+   tarandı (`unpack.bak/` yedeği yerinde).
+2. §4 yeniden paketleme: `mimetype` **ilk** ve **STORE**.
+3. §5 doğrulama: `dry-run OK` + `watermark OK` + **kimlik yazılan belge > 0**.
+4. §6 yeni key'e yazıldı, `eşit: true`; eski obje **yerinde** bırakıldı.
+5. §7 tek `UPDATE` (`storage_key` + `source_checksum`, `id` ile), `returning` 1 satır.
+6. §8 canlı doğrulama: indirme çalışıyor, çevrimdışı kaydet çalışıyor, log'da
+   `delivery failed` **yok**.
+
+### 11.3 Sonuç
+
+- [ ] §7 `returning` satırı: `storage_key` `-r1.epub` ile bitiyor, checksum §11 tablosuyla aynı
+- [ ] §8.1–§8.3 tarayıcıda OK
+- [ ] §8.4 `dc logs --since 10m web | grep -i 'delivery failed'` → boş
+- [ ] §8.5 `annotations` sayımı: `orphaned` artmadı (§3'teki ilk sayım ile aynı)
+- [ ] §9 katalog taraması **ayrı iş**: sonuç `docs/TODO.md` §2b'ye yazılacak (§9 henüz koşulmadı)
+
+### 11.4 Geri dönüş
+
+§10 aynen geçerli: R2'ye dokunulmaz, yalnız DB §1.1'deki eski değerlere döndürülür.
+`restart` gerekmez — `storage_key` her istekte DB'den okunuyor.
