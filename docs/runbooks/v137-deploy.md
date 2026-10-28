@@ -1,4 +1,4 @@
-# v137 deploy runbook — 021/022 migration'ları + `akademik_catalog` LOGIN
+# v137 deploy runbook — 021/022/024 migration'ları + `akademik_catalog` LOGIN
 
 > **Durum: ÇALIŞTIRILMADI.** Bu dosya bir **plan**dır; hiçbir komut prod'da koşulmadı.
 > Değerler `docs/DEPLOY.md` ve v136 kaydından türetildi, tahmin edilmedi. Gerçek çıktılar
@@ -7,17 +7,21 @@
 > **Ön koşul:** komutları çalıştırmadan önce **Claude'a inceletin** (bkz. §11).
 >
 > Sözleşme: `docs/contracts/libedge-elibrary-v1.md` @ `b15f8b5`.
-> ilgili: PR #40 (`feat/migrations-021-022`), `db/migrations/021-*.sql`, `022-*.sql`, `db/README.md`.
+> ilgili: PR #40 (`feat/migrations-021-022`), PR #43 (`maintenance_tenants` çağrısı, merge `bee0fa5`),
+> PR #44 (`024-maintenance-tenants.sql`, merge `5d4f342`), `db/migrations/021-*.sql`, `022-*.sql`,
+> `024-*.sql`, `db/README.md`.
 
 ## 0. Bu sürümde ne değişiyor
 
 | | |
 | --- | --- |
-| Kodsal değişiklik | **Yok.** v137 yalnız **şema** getiriyor; `server.mjs` davranışı v136 ile aynı |
-| Migration | **021** (kimlik/abonelik tabloları) ve **022** (global katalog sınırı) — ilk kez prod'a girer. Prod şu an **001–020** |
-| Veri taşıması | **Yok.** 021/022 tek bir eseri global kataloğa taşımaz; o **023** ve sözleşme §4.4 listesi onaylanana kadar yazılmaz |
+| Kodsal değişiklik | **Var, ama yalnız `maintenanceTenantIds()`.** #43 (`bee0fa5`) v137 imajıyla **ilk kez** prod'a girer: süpürme döngüsü artık `app.maintenance_tenants()`'ı çağırır. Kullanıcıya görünen yollar (`/opds`, `/api/*`, indirme) v136 ile aynı |
+| Migration | **021** (kimlik/abonelik tabloları), **022** (global katalog sınırı), **024** (`app.maintenance_tenants()`) — üçü de ilk kez prod'a girer. Prod şu an **001–020** |
+| Veri taşıması | **Yok.** 021/022/024 tek bir eseri global kataloğa taşımaz; o **023** ve sözleşme §4.4 listesi onaylanana kadar yazılmaz |
 | Yeni rol | `akademik_catalog` — 022'de **NOLOGIN** yaratılır. LOGIN + parola bu runbook'ta verilir |
+| Yeni şema | `app` — 024 yaratır. Yalnız bir fonksiyon ve iki grant içerir; tablo **yok** |
 | Kırılma riski | `collection_items` üzerine RLS **enable + force**. Prod'da `collection_items` satırlarının `tenant_id`'si doğru olmalı, yoksa koleksiyon grant'leri görünmez olur (bkz. §3.1 ön kontrol) |
+
 
 ## 1. Kurallar (bu runbook boyunca)
 
@@ -94,11 +98,24 @@ Beklenen: `POSTGRES_PASSWORD set: yes`. Boşsa **DUR**.
 cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status'
 ```
 
-**Beklenen:** `021` ve `022` **pending**; geri kalanı `applied`.
+**Beklenen:** `021`, `022` ve `024` **pending**; geri kalanı `applied`.
 
-> Prod 020'ye kadar runner ile ilerledi, yani `schema_migrations` dolu →
-> **baseline GEREKMEZ**. `--status` "not baselined" derse **DUR ve sor**; körlemesine
+> Prod 020'ye kadar runner ile ilerledi, yani `schema_migrations` dolu → **baseline
+> GEREKMEZ**. `--status` "not baselined" derse **DUR ve sor**; körlemesine
 > `--baseline` **çalıştırılmaz** (003 prod'a demo hesap geri ekler).
+>
+> **Ölçüm komutu:** `--status` her dosyayı tek satır yazar — `    pending  021-….sql`
+> (durum **başta**, dosya adı sonda; 2026-10-29'da aynı formatta ölçüldü). `grep`
+> yalnız bu üç satıra daralır ve **sayar**; sessizce boş çıktı ile "beklediğim üç
+> satır" ayırt edilebilsin diye `grep -c` kullanılır, düz `grep` değil:
+
+```bash
+cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status' | grep -cE '^[[:space:]]+pending[[:space:]]+02[124]-'
+```
+
+**Beklenen:** `3`. `2` dönerse 024 **repoda yok** demektir → checkout `5d4f342`
+(#44) içermiyor, **DUR** (`git log -1 --oneline` kontrol edilir). `0` ya da `1`
+dönerse **DUR**, `--status` çıktısının tamamı okunur.
 
 ### 4.2 Kuru çalıştırma
 
@@ -106,7 +123,10 @@ cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platfor
 cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --dry-run'
 ```
 
-**Beklenen:** yalnız `021` ve `022` listelenir; başka dosya yok.
+**Beklenen:** yalnız `021`, `022` ve `024` listelenir; başka dosya yok.
+
+> **024 ayrı bir deploy'da uygulanacaksa** (alternatif plan): o zaman 024 o deploy'un
+> runbook'una taşınır ve buradaki beklenen sayı **`2`** olur. Seçim §11'de.
 
 ### 4.3 Uygula
 
@@ -133,6 +153,68 @@ cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 ps
 
 **Beklenen:** `collection_items|t|t`. `f` dönerse **DUR** — 022 uygulanmamış ya da
 üzerine yazılmış demektir, imaja geçilmez.
+
+### 4.6 `app.maintenance_tenants()` — app rolüyle ölçüm (024'ün asıl kanıtı)
+
+024'ün iddiası tek bir cümle: **app rolü, hiçbir tenant bağlı değilken tüm tenant'ları
+görür**. Migration'ın "başarılı" görünmesi bunu kanıtlamaz — SECURITY DEFINER'ı
+çıkarılmış bir sürüm de tabloyu yaratır ve sessizce **tek** satır döndürür. Bu yüzden
+ölçüm app rolünün kendisiyle yapılır (§7.4 ile aynı gerekçe: süper kullanıcı testi
+kendini kandırır — o `FORCE RLS`'i zaten atlar).
+
+Önce kıyas: düz sorgu app rolünde **kaç satır** görüyor. Bu sayı **fonksiyonun
+döndürdüğünden küçük** olmalı; eşitse fonksiyon bir şey yapmıyor demektir.
+
+```bash
+cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; select count(*) as plain_visible from tenants"
+```
+
+**Beklenen:** `0` (bir tenant bağlı değilken politika `id = ''::uuid` üzerinden hiçbir
+satır göstermez) ya da `1` (havuzda bağlı bir bağlantı kaldıysa). **`0` doğru kıyas**;
+`1` görürsen sorun değil, ama o zaman aşağıdaki sayı **1'den büyük** olmak zorunda.
+
+Şimdi fonksiyon — app rolüyle, bağlı tenant **yokken**:
+
+```bash
+cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; select tenant_id from app.maintenance_tenants() order by tenant_id"
+```
+
+**Beklenen:** prod'daki **tüm** tenant id'leri, biri `5799f2a5-3d90-41b1-90de-9da07d776052`.
+Kıyasla karşılaştırma:
+
+| Görülen | Anlamı | Karar |
+| --- | --- | --- |
+| Fonksiyon `>=` düz sorgu, ve `5799f2a5` içinde | Fonksiyon çalışıyor; hediyesi prod tenant'ı | **Devam** |
+| Fonksiyon çıktısı ile düz sorgu **aynı** ve **1** satır | SECURITY DEFINER ya da grant etkisiz — 024 sessizce daralmış | **DUR** |
+| Boş küme | `tenants` boş **ya da** grant yok; ayırt etmek için §4.6c | **DUR** |
+| `permission denied for function` | grant yok / yanlış role | **DUR** |
+| `schema "app" does not exist` (`3F000`) | 024 uygulanmamış, `app` şeması da yok | **DUR** |
+| `function app.maintenance_tenants() does not exist` (`42883`) | `app` şeması var ama fonksiyon yok — 024 yarım kalmış | **DUR** |
+
+> İki ayrı hata kodu, iki ayrı anlam. 2026-10-29'da ölçüldü: şema yokken Postgres
+> **`3F000`** veriyor (şemayı fonksiyondan önce çözer); şema **var**, fonksiyon yokken
+> **`42883`**. Prod'daki bugünkü durum birincisi. `server.mjs` ikisini de yakalar — biri
+> eksik olsaydı süpürme döngüsü her tick'te throw ederdi.
+
+Aynı soruyu **owner** ile tekrarlamak, farkın rol kaynaklı olduğunu doğrular (`tenants`
+FORCE'd olduğu için owner de politika altındadır; fonksiyon `set local
+row_security = off` ile çalışır, app **çalışamaz**):
+
+```bash
+cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select tenant_id from app.maintenance_tenants() order by tenant_id"
+```
+
+**Beklenen:** app rolünün gördüğü **aynı liste** — bu, iki rolün de aynı doğru cevabı
+aldığını gösterir.
+
+#### 4.6c Boş küme çıkarsa — sebebi ayır
+
+```bash
+cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*) from tenants"
+```
+
+**Beklenen:** `>= 1`. `0` ise prod'da hiç tenant yok (beklenmiyor); `>= 1` iken fonksiyon
+boş dönüyorsa SECURITY DEFINER çalışmıyor demektir → **DUR**.
 
 ## 5. `akademik_catalog` — LOGIN ve parola
 
