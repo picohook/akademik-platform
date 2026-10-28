@@ -96,11 +96,11 @@ deploy komutunda `--env-file` opsiyonel değildir.
 #    BUILD_DATE=2026-10-27
 
 # 2) Build + up
-#    caddy bu dosyada `profiles: [proxy]` ile kapalı. Canlı trafik host nginx'ten
-#    geçiyorsa caddy'yi AÇMA (80/443 için nginx'le çakışır):
+#    caddy bu dosyada `profiles: [proxy]` ile kapalı. Ön yüz cloudflared'dır
+#    (`127.0.0.1:3001`'e tüneller); nginx kapalı. 80/443 dinleyen bir şey AÇMA:
 docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 
-#    Yalnızca caddy ÖN YÜZ ise (nginx yoksa) profili aç:
+#    Yalnızca caddy ön yüz olacaksa (bugün canlıda DEĞİL) profili aç:
 # docker compose -f docker-compose.prod.yml --env-file .env.production \
 #   --profile proxy up -d --build
 
@@ -303,7 +303,7 @@ tutuyor. `rm` ile önce kaldır, sonra `up`.
 | --- | --- |
 | İmaj | `libedge-v132` (**`.env.r2` → `LIBEDGE_IMAGE=libedge-v132`**; rollback: `libedge-v131`) |
 | Port | `127.0.0.1:3001` → container `3000` |
-| Trafik | nginx `:80` → `127.0.0.1:3001` → `akademik-platform-prod-web-1` |
+| Trafik | **cloudflared** (Zero Trust tüneli `libedge-elibrary`) → `127.0.0.1:3001` → `akademik-platform-prod-web-1`. **nginx kapalı**, 80/443 güvenlik grubunda kapalı |
 | Env | `.env.production` + `.env.r2` — `DEMO_TENANT_ID=5799f2a5-...`, `STORAGE_DRIVER=r2`, `APP_VERSION=132`, `BUILD_SHA=8df115f`, `LIBEDGE_IMAGE=libedge-v132` |
 | DB | PostgreSQL, container `akademik-platform-prod-db-1`, süper kullanıcı `akademik` |
 | Migration | 001–020. 001–017 **baseline** (SQL çalıştırılmadan işaretlendi); 018/019/020 runner ile uygulandı |

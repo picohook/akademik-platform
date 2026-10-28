@@ -34,7 +34,7 @@ Do not deploy from memory or from an older README.
 | Database | PostgreSQL 16 with row-level security (`FORCE ROW LEVEL SECURITY` on `users` and `tenants`) |
 | File storage | `STORAGE_DRIVER=local` or `r2`; production uses Cloudflare R2 |
 | Runtime | Docker Compose on AWS EC2 |
-| Front door | Host nginx `:80` → `127.0.0.1:3001` → web container. TLS is terminated upstream; nothing on the box listens on 443 |
+| Front door | **Cloudflare Tunnel** (`cloudflared`, Zero Trust tunnel `libedge-elibrary`) → `127.0.0.1:3001` → web container. nginx is **disabled**; nothing listens on 80/443 on the box and the security group blocks both |
 
 The original specification ([`docs/PLATFORM-SPEC.md`](docs/PLATFORM-SPEC.md)) planned Next.js, NestJS and Keycloak. None of that has been built. The Node harness above is what ships.
 
@@ -49,7 +49,7 @@ The handoff document holds the current values. These are the fixed facts that pe
 | Image | pinned by name in `docker-compose.libedge.yml`. Build the image that line points to, or the old one keeps running |
 | Env files | both `--env-file .env.production --env-file .env.r2` (on the server, never in git) |
 | Restart | `up -d --no-deps web`. Never `down` (the DB gets a new IP and web falls back to `mode: demo`) |
-| Caddy | off (`profiles: [proxy]`). Do not start it next to nginx |
+| Caddy | off (`profiles: [proxy]`). Nothing should take 80/443: the front door is cloudflared, and nginx is disabled |
 
 Verify every deploy. `version` comes from env and proves nothing; check `buildSha` and the image label:
 
