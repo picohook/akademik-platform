@@ -1,4 +1,4 @@
-# E-Kütüphane — yapılacaklar
+﻿# E-Kütüphane — yapılacaklar
 
 Son güncelleme: 2026-10-28. Canlı: elibrary.libedge.com **v136** (`96cc270`), mode `db`, tenant LibEdge `5799f2a5-…`. Trafik: **cloudflared tunnel → `127.0.0.1:3001`**, nginx kapalı.
 Önce `docs/HANDOFF-2026-10-27.md` ve `docs/DEPLOY.md` okunmalı. Bir madde bitince buradan silinir veya "tamamlandı" altına taşınır.
@@ -69,7 +69,12 @@ Dosya **çevrimiçi** okunabiliyor (okuyucu XHTML'i olduğu gibi ayrıştırmıy
 
 ## 3. İlk kurum / dış kullanıcıdan önce (zorunlu)
 
+> **Deploy kapısı:** 021/022/**024/025** prod'a girerken v137 runbook'u izlenir — `docs/runbooks/v137-deploy.md`
+> (parola `read -rs` ile, migration'lar imajdan önce, `akademik_catalog` LOGIN'i ayrı adım,
+> §4.6'da `app.maintenance_tenants()` app rolüyle ölçülür).
+
 - **Zamanlayıcı işleri (download ticket süpürme, annotation retention) tek tenant varsayıyor → tüm tenant'lar üzerinde dönmeli.**
+
   - [x] **Kod tarafı yapıldı, migration bekliyor.** `download-tickets` servisi artık `tenantId`'yi **istekten** okuyor (`requestTenant()`); sabit `TENANT_ID` kalktı. İki zamanlayıcı `maintenanceTenantIds()` üzerinden döngü yapıyor, her tenant kendi `runWithTenant()` + transaction'ında; bir tenant'ın hatası diğerlerini durdurmuyor ve tenant kimliğiyle loglanıyor. `maintenance(tenant)` tenant'sız çağrılırsa **hata atıyor**, sessizce bir tenant seçmiyor.
   - [x] **`select id from tenants` YETMİYOR** — `tenants_self` politikası (`using (id = current_setting('app.tenant_id')::uuid)`) yüzünden app rolü **tek satır** görüyor; döngü sadece env tenant'ı dönerdi ve "düzeltilmiş" görünürdü. Bu yüzden liste `app.maintenance_tenants()` **SECURITY DEFINER** fonksiyonundan (yalnız id döndürür) okunuyor. Fonksiyon **migration 024**'te (`db/migrations/024-maintenance-tenants.sql`), 023'ten **bağımsız** — 023 sözleşme §4.4 listesine bağlı, 024 değil. Ölçüm: `db/024.test.mjs`, **17 kontrol**, 3 tenant'lı fixture'da app rolü **hiçbir tenant bağlı değilken** 3'ünü de görüyor (kıyas: düz sorgu 0 satır; bir tenant bağlıyken 1 satır — ve o bağlı olan).
   - [x] **Yan bulgu, düzeltildi: fallback hiç devreye girmiyordu.** 024 uygulanmamışken `select * from app.maintenance_tenants()` **`42883` değil `3F000`** (`invalid_schema_name`) dönüyor — `app` şeması henüz yok, Postgres şemayı fonksiyondan önce çözer. `server.mjs` yalnız `42883`/`42501` yakalıyordu, yani ziyaretçi sayfalarında **her timer tick'i throw ediyordu** (süit çıktısında `[maintenance] app.maintenance_tenants unavailable (42883)` değil, sessiz stack). Fallback artık `3F000|42P01|42883|42501`. Test bunu iki yönlü ölçüyor: 024 öncesi kod gerçekten `3F000` veriyor, ve `server.mjs` üç kodu da yakalıyor.
