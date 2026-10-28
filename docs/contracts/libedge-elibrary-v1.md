@@ -1,10 +1,11 @@
 # LibEdge ↔ E-Kütüphane entegrasyon sözleşmesi — v1
 
-Durum: **v1 — onaya sunuldu.** Tarih: 2026-10-28. Yazan: Claude. Onay: Altan (bekleniyor). İnceleme: ChatGPT (teknik içerik uygun bulundu, 4 tur).
+Durum: **v1 — onaylandı.** Tarih: 2026-10-28. Yazan: Claude. Onay: Altan (2026-10-28). İnceleme: ChatGPT (teknik içerik uygun bulundu, 4 tur).
+Hizmet politikaları: SSO oturumu 12 saat, lease 72 saat — Altan önerilen değerleri kabul etti (2026-10-28); env ile değiştirilebilir.
 Konum: `picohook/akademik-platform` → `docs/contracts/libedge-elibrary-v1.md`. `libedge-website` bu dosyaya bağlantı verir, kopyalamaz. Uygulama PR'ları bu dosyanın **commit SHA'sını** referans alır.
 Değişiklik geçmişi: **Ek A** (v0.1→v0.2), **Ek B** (v0.2→v0.3), **Ek C** (v0.3→v0.4), **Ek D** (v0.4→v1).
 
-> **Onaylanmamış kalanlar:** §1'deki iki hizmet politikası (12 saat SSO oturumu, 72 saat lease) ve §4.4'teki global eser listesi Altan'ın ayrı kararıdır; bu belgenin onayı onları otomatik onaylamaz. Liste kesinleşmeden migration 022'nin veri taşıma kısmı çalıştırılmaz. Bu belge bir sözleşmedir; çalışan kod veya canlıya geçiş onayı değildir.
+> **Açık kalan:** §4.4'teki global eser listesi Altan'ın ayrı kararıdır; liste kesinleşmeden migration 022'nin veri taşıma kısmı çalıştırılmaz. Bu belge bir sözleşmedir; çalışan kod veya canlıya geçiş onayı değildir.
 
 Bu belge iki sistemin sınırını tanımlar. Bir geliştirici veya AI, sohbet geçmişi olmadan kendi tarafını bu belgeyle yazabilmelidir. Uygulama v1 onayına kadar §9'daki mock yanıtlara karşı yazılır.
 
