@@ -78,7 +78,7 @@ async function freePort() {
 // DEMO_TENANT_ID is set to a tenant that is deliberately NOT where the
 // catalogue lives. The old code trusted this env value for every query; a
 // passing test proves the session's tenant wins instead.
-async function startApp(databaseUrl, demoEnvTenant) {
+async function startApp(databaseUrl, demoEnvTenant, extraEnv = {}) {
   const port = await freePort();
   const child = spawn(process.execPath, ['server.mjs'], {
     cwd: path.join(tempDir, 'app'),
@@ -88,6 +88,7 @@ async function startApp(databaseUrl, demoEnvTenant) {
       PORT: String(port),
       DEMO_TENANT_ID: demoEnvTenant,
       SESSION_SECRET: sessionSecret,
+      ...extraEnv,
     },
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true,
@@ -108,8 +109,8 @@ async function startApp(databaseUrl, demoEnvTenant) {
   return entry.base;
 }
 
-async function request(base, route, session, { method = 'GET', body } = {}) {
-  const headers = {};
+async function request(base, route, session, { method = 'GET', body, headers: extraHeaders = {} } = {}) {
+  const headers = { ...extraHeaders };
   if (session) {
     headers.cookie = session.cookie;
     headers['x-csrf-token'] = session.csrf;
@@ -412,6 +413,45 @@ async function updateBookTenantTest(context) {
   console.log('PASS updateBook: edits land in the session tenant (title, authors, edition), foreign work untouched.');
 }
 
+// Scenario 3c: the OPDS feed is not a browser session.
+//
+// /opds is fetched by reading apps with an API key and no cookie, so nothing
+// binds a session tenant for it and `users` is under FORCE row level security.
+// The feed then queried the env tenant - the demo one - while the OPDS user
+// lives in LibEdge, and built its urn:uuid id from that same env value. An
+// authenticated OPDS client therefore authenticated against the wrong tenant.
+// There is no session to fall back on, so the tenant is named explicitly.
+async function opdsTenantTest(context) {
+  const databaseUrl = await grant(context.port);
+  const apiKey = 'opds-test-key-0123456789';
+  const base = await startApp(databaseUrl, DEMO_TENANT, {
+    OPDS_API_KEY: apiKey,
+    OPDS_USER_EMAIL: context.users.admin.email,
+    OPDS_TENANT_ID: LIBEDGE_TENANT,
+  });
+  await admin.query("update grants set status = 'active', subject_id = $1 where id = $2",
+    [LIBEDGE_TENANT, SEED_GRANT]);
+
+  const feed = await request(base, '/opds', null, {
+    headers: { authorization: `Bearer ${apiKey}` },
+  });
+  check(feed.status === 200, `OPDS feed answered ${feed.status}: ${feed.text.slice(0, 300)}`);
+  for (const row of WORKS) {
+    check(feed.text.includes(row.title),
+      `OPDS feed missing "${row.title}" - the feed queried the env tenant, not the OPDS tenant`);
+  }
+  check(feed.text.includes(`<id>urn:uuid:${LIBEDGE_TENANT}</id>`),
+    `OPDS feed id is not the OPDS tenant's; got: ${(feed.text.match(/<id>[^<]*<\/id>/) || ['none'])[0]}`);
+
+  // The key still has to matter: without it the route stays closed.
+  const anonymous = await request(base, '/opds', null);
+  check(anonymous.status === 401, `OPDS without a key answered ${anonymous.status}, expected 401`);
+  if (feed.status !== 200) console.error('APP LOG:', children[children.length - 1].log);
+
+  scenarioCount++;
+  console.log(`PASS OPDS: feed lists all ${WORKS.length} works under the token's tenant, no cookie needed.`);
+}
+
 // Demo mode has no database: its books, users and grants live in memory. The
 // fail-closed decision applies there too, so the in-memory fixtures must carry
 // the grant db/seed.sql gives the demo tenant. Before, the empty list was
@@ -506,6 +546,7 @@ try {
   await grantedTest(context);
   await adminTest(context);
   await updateBookTenantTest(context);
+  await opdsTenantTest(context);
   await demoModeTest();
 
   // Timers fire outside any request. `startDownloadMaintenance` runs one tick
