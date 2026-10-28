@@ -1405,8 +1405,12 @@ async function updateBook(id, body) {
         : String(body.subjects).split(/[;,]/).map((item) => item.trim()).filter(Boolean));
     }
 
+    // The tenant comes from the session bound by runWithTenant(), not from the
+    // process env. Every other query in this file already reads requestTenant();
+    // these four were the exception, so a write was aimed at whichever tenant
+    // the process was started with rather than the one the caller signed in to.
     if (workSets.length) {
-      workValues.push(id, TENANT_ID);
+      workValues.push(id, requestTenant());
       await client.query(
         `update works set ${workSets.join(', ')}
           where id = $${workIndex} and tenant_id = $${workIndex + 1}`,
@@ -1419,7 +1423,7 @@ async function updateBook(id, body) {
         `update works
             set metadata = jsonb_set(coalesce(metadata, '{}'::jsonb), '{authors}', $1::jsonb)
           where id = $2 and tenant_id = $3`,
-        [JSON.stringify(parseAuthors(body.authors)), id, TENANT_ID],
+        [JSON.stringify(parseAuthors(body.authors)), id, requestTenant()],
       );
     }
 
@@ -1437,7 +1441,7 @@ async function updateBook(id, body) {
       editionIndex += 1;
     }
     if (editionSets.length) {
-      editionValues.push(id, TENANT_ID);
+      editionValues.push(id, requestTenant());
       await client.query(
         `update editions set ${editionSets.join(', ')}
           where work_id = $${editionIndex} and tenant_id = $${editionIndex + 1}`,
@@ -1458,7 +1462,7 @@ async function updateBook(id, body) {
     if (body.allow_print !== undefined) addAsset('allow_print', asBool(body.allow_print));
     if (body.watermark !== undefined) addAsset('watermark', asBool(body.watermark));
     if (assetSets.length) {
-      assetValues.push(id, TENANT_ID);
+      assetValues.push(id, requestTenant());
       await client.query(
         `update assets set ${assetSets.join(', ')}
           where edition_id in (
