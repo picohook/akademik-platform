@@ -1374,10 +1374,10 @@ const downloadService = createDownloadService({
 //
 // `select id from tenants` returns exactly one row for the app role - tenants_self
 // is `using (id = current_setting('app.tenant_id', true)::uuid)`, so the list would
-// be the env tenant whatever the data holds, and the sweeper would look correct
-// while ignoring every other institution. The list therefore comes from a
-// SECURITY DEFINER function that returns ids only (migration 023). Until that
-// exists, the env tenant remains the single tenant a timer covers, as before.
+// be whichever tenant that pooled connection last bound, and the sweeper would look
+// correct while ignoring every other institution. The list therefore comes from a
+// SECURITY DEFINER function that returns ids only (migration 024). Until that is
+// applied to a database, the env tenant remains the single tenant a timer covers.
 async function maintenanceTenantIds() {
   const client = await pool.connect();
   try {
@@ -1385,10 +1385,16 @@ async function maintenanceTenantIds() {
     const ids = rows.map(row => row.tenant_id).filter(Boolean);
     return ids.length ? ids : [TENANT_ID];
   } catch (error) {
-    // 42883 undefined_function: migration 023 not applied yet. 42501 too: the app
-    // was never granted EXECUTE, which is a deployment mistake rather than a
-    // "no such tenants" answer, but it must not silence the sweep entirely.
-    if (error.code === '42883' || error.code === '42501') {
+    // Not a migration problem, but the same answer a missing migration gets, for
+    // three codes rather than one. Measured on PostgreSQL 16 with an empty schema:
+    // `select * from app.maintenance_tenants()` fails with 3F000 (invalid_schema_name
+    // - schema "app" does not exist), not 42883, because Postgres resolves the schema
+    // before the function. 42883 is what remains if the schema exists but the
+    // function does not, and 42501 is a missing EXECUTE grant, which is a deployment
+    // mistake rather than "no such tenants" but must not silence the sweep either.
+    // Catching only 42883 left the sweep throwing on the version of this database
+    // that actually exists today.
+    if (error.code === '3F000' || error.code === '42P01' || error.code === '42883' || error.code === '42501') {
       console.warn(`[maintenance] app.maintenance_tenants unavailable (${error.code}); sweeping DEMO_TENANT_ID only`);
       return [TENANT_ID];
     }
