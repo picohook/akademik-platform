@@ -213,8 +213,17 @@ aldığını gösterir.
 cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*) from tenants"
 ```
 
-**Beklenen:** `>= 1`. `0` ise prod'da hiç tenant yok (beklenmiyor); `>= 1` iken fonksiyon
-boş dönüyorsa SECURITY DEFINER çalışmıyor demektir → **DUR**.
+Bu sorgu **süper kullanıcıyla** koşar, yani politikayı atlar ve doğru toplamı verir:
+
+| `count(*)` | Anlamı | Karar |
+| --- | --- | --- |
+| `0` | Gerçekten tenant yok — fonksiyon doğru cevabı veriyor, boş küme **masum** | Devam — ama `5799f2a5` bekleniyorsa §2 ile karşılaştır |
+| `>= 1` | Tenant var, fonksiyon **görmüyor** → definer/grant etkisiz | **DUR** |
+
+> 2026-10-29'da boş bir fixture'da ölçüldü: `tenants` 0 satırken fonksiyon **boş küme**
+> döndü ve bu **doğruydu**; aynı DB'ye 2 tenant eklendiğinde app rolü de owner da iki
+> satırı gördü. Yani "boş küme" tek başına arıza kanıtı değil — ayırt edici olan,
+> `tenants` **dolu iken** fonksiyonun boş dönmesi.
 
 ## 5. `akademik_catalog` — LOGIN ve parola
 
@@ -448,22 +457,25 @@ cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 ps
 - `R2 PASS` satırı
 - `docker ps` satırları
 - `--status` çıktısı (§4.1 ve §4.4)
+- §4.6'nın üç satırı: `plain_visible` sayısı, app rolünün gördüğü id listesi, owner'ın gördüğü liste
 - §7.4'ün `UPDATE 0` / `DELETE 0` satırları (ya da "global eser yok" notu)
+
 - Rollback imajı ve `bak` dosyası adları
 
 ## 10. Kalan riskler (kabul edildi)
 
 | Risk | Durum |
 | --- | --- |
-| v137 **kod değişikliği yok**; 021/022 prod'da **ilk kez** koşuyor | İzole testte `021-022` 35/35, ama prod verisiyle ilk temas bu runbook. Ana risk bu |
+| v137 **yalnız `maintenanceTenantIds()`** değiştiriyor (#43); 021/022/024 prod'da **ilk kez** koşuyor | İzole testte `021-022` 35/35, `024` 17/17, ama prod verisiyle ilk temas bu runbook. Ana risk bu |
 | `akademik_catalog` parolası `.env.r2`'de plaintext | Docker env dosyası; `R2_SECRET_ACCESS_KEY` de orada. Bileşen düzeyinde ayrı sır yönetimi yok — bilinen sınır |
 | §7.4 bugün anlamsız olabilir | Global eser 0 ise UPDATE edilecek satır yok; 023'ten sonra ölçülür |
 | `/opds` hâlâ env tenant'ı | TODO §3 — bu sürümde **çözülmüyor** |
+| 024 uygulanırsa ama imaj eski kalırsa | Zararsız: v136 kodu fonksiyonu hiç çağırmıyor. Ters yön (imaj yeni, 024 yok) de **kırılmıyor**: `3F000`/`42883` yakalanıp env tenant'a düşülür, her tick'te bir uyarı loglanır. Yine de §4 imajdan önce koşuyor |
 
 ## 11. Çalıştırmadan önce: inceleme
 
 Bu runbook **çalıştırılmadı**. Komutlar çalıştırılmadan önce **Claude'a inceletilecek**;
-özellikle şu üç nokta:
+özellikle şu dört nokta:
 
 1. **§5.1** — `read -rs` + iki `printf | docker exec -i psql` zinciri. Gerçekten tek
    satır mı, parola `ps`/`.bash_history`/container log'una düşmüyor mu?
@@ -473,6 +485,16 @@ Bu runbook **çalıştırılmadı**. Komutlar çalıştırılmadan önce **Claud
    süper kullanıcıdan `set role` yapıldığında RLS'in devreye girdiği ölçülmeli.
    (Kontrol: aynı test `set role` **olmadan** `UPDATE n` dönmeli, `set role` **ile**
    `UPDATE 0`. İkisi de aynıysa test hiçbir şey kanıtlamıyor demektir.)
+4. **§4.6** — 024'ün kanıtı. Kıyas sorgusu (`set role akademik_app; select count(*) from
+   tenants`) **0** dönerken fonksiyon **tüm** tenant'ları döndürmeli; ikisi eşitse
+   SECURITY DEFINER etkisiz. Bu, §7.4 ile aynı "süper kullanıcı kendini kandırır"
+   gerekçesiyle app rolüyle ölçülüyor. Ayrıca `--status` sayacının **3** dönmesi
+   beklenir; `2` dönerse checkout 024'ü içermiyor demektir.
+
+> **Not (2026-10-29):** §4.6 ve §4.1'in beklenen çıktıları boş bir postgres'te
+> (001–022 → 024) gerçekten koşularak ölçüldü, tahmin edilmedi. Ölçülen kodlar:
+> şema yokken `3F000`, şema var/fonksiyon yokken `42883`.
+
 
 > Sözleşme: `docs/contracts/libedge-elibrary-v1.md` @ `b15f8b5`. İlgili: PR #40, `db/README.md`,
 > `docs/DEPLOY.md` §"Migration'lar — imajdan ÖNCE".
