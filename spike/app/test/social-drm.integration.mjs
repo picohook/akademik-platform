@@ -539,7 +539,7 @@ async function maintenanceBounds() {
     try { await client.query("select set_config('app.tenant_id',$1,false)", [tenantId]); return await fn(client); }
     finally { client.release(); }
   };
-  const service = createDownloadService({ withTenant, tenantId, b2b: true });
+  const service = createDownloadService({ withTenant, tenantId: () => tenantId, b2b: true });
   const gate = new pg.Client({ connectionString: adminUrl });
   await gate.connect();
   const prefix = `purge-${runId}-`;
@@ -552,21 +552,21 @@ async function maintenanceBounds() {
       await admin.query("insert into download_tickets(token_hash,tenant_id,user_id,asset_id,work_id,created_at,expires_at) values($1,$2,$3,$4,$5,now()-$6::interval-interval '60 seconds',now()-$6::interval)", [hash, tenant, readerId, assetId, workId, expiry]);
     }
     await admin.query("insert into download_ticket_limits(tenant_id,user_id,kind,window_start,request_count,notified) values($1,$2,'issue',now()-interval '2 days',1,false),($1,$3,'traffic',now(),1,false),($4,$2,'traffic',now()-interval '2 days',1,false)", [tenantId, otherId, readerId, otherTenant]);
-    const skipped = await service.maintenance();
+    const skipped = await service.maintenance(tenantId);
     equal(skipped.skipped, true, 'maintenance skips when another backend owns tenant advisory lock');
     equal(skipped.ticketsDeleted, 0, 'skipped maintenance deletes no tickets');
     equal(skipped.limitsDeleted, 0, 'skipped maintenance deletes no counters');
     await gate.query('begin'); rowLockHeld = true;
     await gate.query('select id from download_tickets where token_hash=$1 for update', [lockedHash]);
     await gate.query("select pg_advisory_unlock(hashtext($1),hashtext('download-maintenance'))", [tenantId]);
-    const first = await service.maintenance();
+    const first = await service.maintenance(tenantId);
     equal(first.ticketsDeleted, 1000, 'maintenance ticket batch is capped at 1000');
     equal(first.limitsDeleted, 1, 'only tenant stale rate rows are removed');
-    const second = await service.maintenance();
+    const second = await service.maintenance(tenantId);
     equal(second.ticketsDeleted, 5, 'second batch removes remaining unlocked aged tickets');
     ok((await admin.query('select id from download_tickets where token_hash=$1', [lockedHash])).rowCount === 1, 'SKIP LOCKED preserves locked ticket without blocking');
     await gate.query('rollback'); rowLockHeld = false;
-    equal((await service.maintenance()).ticketsDeleted, 1, 'unlocked aged ticket is removed on next maintenance');
+    equal((await service.maintenance(tenantId)).ticketsDeleted, 1, 'unlocked aged ticket is removed on next maintenance');
     equal((await admin.query('select count(*)::int as n from download_tickets where token_hash=any($1::text[])', [[recentHash, foreignHash]])).rows[0].n, 2, 'recently expired and other-tenant tickets are retained');
     equal((await admin.query("select count(*)::int as n from download_ticket_limits where (tenant_id=$1 and user_id=$2 and kind='traffic') or tenant_id=$3", [tenantId, readerId, otherTenant])).rows[0].n, 2, 'current and other-tenant rate counters are retained');
     report.scenarios.push('real PostgreSQL maintenance: tenant advisory exclusion, SKIP LOCKED, 1000-row batches, expiry age and tenant boundaries');

@@ -24,6 +24,17 @@ export function startDownloadMaintenance(service, {
 
 // Raw tickets cross the HTTP boundary only in JSON POST bodies. Neither raw
 // tickets nor their hashes belong in audit payloads, URLs, or application logs.
+//
+// Every tenant-scoped statement takes its tenant from the request
+// (`tenantId`), not from the process env. The service used to be constructed with
+// `tenantId: TENANT_ID`, so a signed-in user of a second institution would issue a
+// ticket stamped with the env tenant while withTenant() wrote under their own - the
+// two disagreed, and the audit row landed in the wrong tenant. `tenantId` is now a
+// callback reading requestTenant(), which throws rather than falling back.
+//
+// `maintenance()` is the exception: it runs from a timer with no request, so it is
+// handed the tenant it is sweeping as an argument and has no default. A sweeper that
+// silently picked a tenant would be the same bug in a quieter place.
 export function createDownloadService({ withTenant, getBook, activeGrants, grantAllows, tenantId, b2b }) {
   const digest = value => createHash('sha256').update(value).digest('hex');
 
@@ -31,7 +42,7 @@ export function createDownloadService({ withTenant, getBook, activeGrants, grant
     await client.query(
       `insert into audit_events (tenant_id, actor_id, action, object_type, object_id, payload)
        values ($1, $2, $3, 'asset', $4, $5::jsonb)`,
-      [tenantId, auth.userId, action, book?.asset_id || null,
+      [tenantId(), auth.userId, action, book?.asset_id || null,
         JSON.stringify({ book_id: book?.id || null, ...payload })],
     );
   }
@@ -69,13 +80,13 @@ export function createDownloadService({ withTenant, getBook, activeGrants, grant
            then false else download_ticket_limits.notified end
        returning request_count, notified,
          greatest(1, ceil(extract(epoch from window_start + interval '60 seconds' - clock_timestamp())))::int as retry_after`,
-      [tenantId, auth.userId, kind, limit],
+      [tenantId(), auth.userId, kind, limit],
     );
     if (row.request_count <= limit) return null;
     if (!row.notified) {
       await client.query(
         'update download_ticket_limits set notified = true where tenant_id = $1 and user_id = $2 and kind = $3',
-        [tenantId, auth.userId, kind],
+        [tenantId(), auth.userId, kind],
       );
       await audit(client, auth, 'download.rate_limit', null, { kind, limit, window_seconds: 60 });
     }
@@ -87,7 +98,7 @@ export function createDownloadService({ withTenant, getBook, activeGrants, grant
     // Session role claims can outlive a role change: recheck the database for
     // this exceptional permission, both when issuing and consuming the ticket.
     const { rows } = await client.query(
-      'select role from users where id = $1 and tenant_id = $2', [auth.userId, tenantId],
+      'select role from users where id = $1 and tenant_id = $2', [auth.userId, tenantId()],
     );
     return rows[0]?.role === 'admin';
   }
@@ -101,7 +112,7 @@ export function createDownloadService({ withTenant, getBook, activeGrants, grant
     // Reader compatibility remains unchanged. Full downloads fail closed when
     // a tenant has configured grants but this user has none active/applicable;
     // revoking the final grant must not turn a restricted download into open access.
-    const { rows } = await client.query('select download_grants_required as configured from tenants where id = $1', [tenantId]);
+    const { rows } = await client.query('select download_grants_required as configured from tenants where id = $1', [tenantId()]);
     return rows[0] && !rows[0].configured ? [] : null;
   }
 
@@ -115,10 +126,14 @@ export function createDownloadService({ withTenant, getBook, activeGrants, grant
       return transaction(client => budget(client, auth, 'traffic', DOWNLOAD_REQUEST_LIMIT));
     },
 
-    maintenance() {
+    // `tenant` is required and has no default: this runs from a timer, outside any
+    // request, so there is nothing to read the tenant from and nothing that should
+    // be guessed. The caller loops over tenants and names each one.
+    maintenance(tenant) {
+      if (!tenant) throw new Error('maintenance requires an explicit tenant id');
       return transaction(async client => {
         const { rows: [lock] } = await client.query(
-          "select pg_try_advisory_xact_lock(hashtext($1), hashtext('download-maintenance')) as acquired", [tenantId],
+          "select pg_try_advisory_xact_lock(hashtext($1), hashtext('download-maintenance')) as acquired", [tenant],
         );
         if (!lock.acquired) return { skipped: true, ticketsDeleted: 0, limitsDeleted: 0 };
         const tickets = await client.query(
@@ -126,7 +141,7 @@ export function createDownloadService({ withTenant, getBook, activeGrants, grant
              select id from download_tickets where tenant_id = $1
                and expires_at < clock_timestamp() - interval '1 hour'
              order by expires_at limit 1000 for update skip locked
-           ) delete from download_tickets t using stale where t.id = stale.id`, [tenantId],
+           ) delete from download_tickets t using stale where t.id = stale.id`, [tenant],
         );
         const limits = await client.query(
           `with stale as (
@@ -134,7 +149,7 @@ export function createDownloadService({ withTenant, getBook, activeGrants, grant
                and window_start < clock_timestamp() - interval '1 day'
              order by window_start limit 1000 for update skip locked
            ) delete from download_ticket_limits l using stale
-             where l.tenant_id = stale.tenant_id and l.user_id = stale.user_id and l.kind = stale.kind`, [tenantId],
+             where l.tenant_id = stale.tenant_id and l.user_id = stale.user_id and l.kind = stale.kind`, [tenant],
         );
         return { skipped: false, ticketsDeleted: tickets.rowCount, limitsDeleted: limits.rowCount };
       });
@@ -150,7 +165,8 @@ export function createDownloadService({ withTenant, getBook, activeGrants, grant
 
     issue(bookId, auth, body) {
       return transaction(async client => {
-        if (auth.tenantId !== tenantId) return deny(client, auth, null, 'tenant_mismatch');
+        const tenant = tenantId();
+        if (auth.tenantId !== tenant) return deny(client, auth, null, 'tenant_mismatch');
         const limited = await budget(client, auth, 'issue', DOWNLOAD_ISSUE_LIMIT);
         if (limited) return limited;
         if (!validBody(body, ['watermarkOverride', 'overrideReason'])) return deny(client, auth, null, 'unsupported_issue_fields', true);
@@ -174,7 +190,7 @@ export function createDownloadService({ withTenant, getBook, activeGrants, grant
              (token_hash, tenant_id, user_id, asset_id, work_id, grant_ids, watermark_override, override_reason, created_at, expires_at)
            values ($1, $2, $3, $4, $5, $6, $7, $8, statement_timestamp(), statement_timestamp() + interval '60 seconds')
            returning id, expires_at`,
-          [digest(token), tenantId, auth.userId, book.asset_id, book.id, grantIds, override, override ? reason : null],
+          [digest(token), tenant, auth.userId, book.asset_id, book.id, grantIds, override, override ? reason : null],
         );
         await audit(client, auth, 'download.ticket.issue', book, { ticket_id: ticket.id, watermark_override: override });
         if (override) await audit(client, auth, 'download.watermark.override', book, { ticket_id: ticket.id, reason, phase: 'issue' });
@@ -184,7 +200,8 @@ export function createDownloadService({ withTenant, getBook, activeGrants, grant
 
     consume(bookId, auth, body) {
       return transaction(async client => {
-        if (auth.tenantId !== tenantId) return deny(client, auth, null, 'tenant_mismatch');
+        const tenant = tenantId();
+        if (auth.tenantId !== tenant) return deny(client, auth, null, 'tenant_mismatch');
         if (!validBody(body, ['ticket'])) return deny(client, auth, null, 'unsupported_consume_fields', true);
         if (typeof body.ticket !== 'string' || !/^[0-9a-f]{64}$/.test(body.ticket)) return deny(client, auth, null, 'invalid_ticket');
         const book = await getBook(bookId, client);
@@ -194,7 +211,7 @@ export function createDownloadService({ withTenant, getBook, activeGrants, grant
              from download_tickets
             where token_hash = $1 and tenant_id = $2 and user_id = $3 and work_id = $4
             for update`,
-          [digest(body.ticket), tenantId, auth.userId, book.id],
+          [digest(body.ticket), tenant, auth.userId, book.id],
         );
         if (!ticket || ticket.consumed_at || !ticket.unexpired) return deny(client, auth, null, 'invalid_ticket');
         if (book.asset_id !== ticket.asset_id || book.allow_download === false) return deny(client, auth, book, 'asset_or_download_revoked');
@@ -207,7 +224,7 @@ export function createDownloadService({ withTenant, getBook, activeGrants, grant
           `update download_tickets set consumed_at = clock_timestamp()
             where id = $1 and tenant_id = $2 and user_id = $3 and asset_id = $4
               and consumed_at is null and expires_at > clock_timestamp()`,
-          [ticket.id, tenantId, auth.userId, book.asset_id],
+          [ticket.id, tenant, auth.userId, book.asset_id],
         );
         if (rowCount !== 1) return deny(client, auth, book, 'invalid_ticket');
         const watermark = !ticket.watermark_override && (b2b || book.watermark !== false);
