@@ -347,6 +347,71 @@ async function adminTest(context) {
   console.log('PASS grants: admin sees all 13 works, and loses them when the grant is revoked.');
 }
 
+// Scenario 3b: editing a book must write in the tenant the caller signed in to.
+//
+// updateBook() was the one place that still passed the env tenant into its
+// UPDATE statements instead of requestTenant(). The fixture gives it the demo
+// tenant as DEMO_TENANT_ID while the admin - and the whole catalogue - live
+// under LibEdge, so an edit aimed at env matches no row: the PATCH answers 200
+// because nothing failed, and the change is silently lost. That is worse than
+// an error, because the metadata the catalogue depends on (authors, used by
+// search and OPDS) stops being editable without anyone seeing a failure.
+async function updateBookTenantTest(context) {
+  const databaseUrl = await grant(context.port);
+  const base = await startApp(databaseUrl, DEMO_TENANT);
+  await admin.query("update grants set status = 'active' where id = $1", [SEED_GRANT]);
+
+  const session = await login(base, context.users.admin.email);
+  const work = WORKS[0];
+
+  const patched = await request(base, `/api/books/${work.work}`, session, {
+    method: 'PATCH',
+    body: { title: 'LibEdge catalogue title 01 (edited)', authors: 'Yazar, Deneme', year: 2024 },
+  });
+  check(patched.status === 200, `admin PATCH answered ${patched.status}: ${patched.text.slice(0, 200)}`);
+
+  const stored = await admin.query(
+    `select w.title, w.metadata->'authors' as authors, w.tenant_id, e.publication_year
+       from works w join editions e on e.work_id = w.id
+      where w.id = $1`, [work.work],
+  );
+  const row = stored.rows[0];
+  check(row.title === 'LibEdge catalogue title 01 (edited)',
+    `works.title unchanged after PATCH: ${JSON.stringify(row.title)} - the write went to the env tenant`);
+  check(row.tenant_id === LIBEDGE_TENANT,
+    `works.tenant_id is ${row.tenant_id}, expected ${LIBEDGE_TENANT}`);
+  check(Array.isArray(row.authors) && row.authors[0]?.family === 'Yazar',
+    `metadata.authors not written: ${JSON.stringify(row.authors)}`);
+
+  // The edition and asset branches of the same function take the same tenant.
+  check(Number(row.publication_year) === 2024,
+    `editions.publication_year unchanged: ${JSON.stringify(row.publication_year)}`);
+
+  const asset = await admin.query(
+    `select a.allow_download from assets a where a.edition_id = $1`, [work.edition],
+  );
+  check(asset.rowCount === 1, `asset row for ${work.edition} not found`);
+
+  // A tenant's admin must not reach another tenant's work by id: the write is
+  // scoped by the session tenant, so a work outside it matches no row.
+  const otherTenantWork = randomUUID();
+  await admin.query(
+    `insert into works (id, tenant_id, title, language) values ($1, $2, 'Demo tenant work', 'tr')`,
+    [otherTenantWork, DEMO_TENANT],
+  );
+  const foreign = await request(base, `/api/books/${otherTenantWork}`, session, {
+    method: 'PATCH', body: { title: 'Cross-tenant edit' },
+  });
+  check(foreign.status === 404 || foreign.status === 403,
+    `admin edited a work outside its tenant: ${foreign.status}`);
+  const foreignRow = await admin.query('select title from works where id = $1', [otherTenantWork]);
+  check(foreignRow.rows[0].title === 'Demo tenant work',
+    `cross-tenant title changed to ${JSON.stringify(foreignRow.rows[0].title)}`);
+
+  scenarioCount++;
+  console.log('PASS updateBook: edits land in the session tenant (title, authors, edition), foreign work untouched.');
+}
+
 // Demo mode has no database: its books, users and grants live in memory. The
 // fail-closed decision applies there too, so the in-memory fixtures must carry
 // the grant db/seed.sql gives the demo tenant. Before, the empty list was
@@ -440,6 +505,7 @@ try {
   await ungrantedTest(context);
   await grantedTest(context);
   await adminTest(context);
+  await updateBookTenantTest(context);
   await demoModeTest();
 
   // Timers fire outside any request. `startDownloadMaintenance` runs one tick
