@@ -4,19 +4,20 @@
 -- Schema only. NOTHING IS MOVED TO THE GLOBAL CATALOGUE HERE. The initial
 -- migration of works is 023, which waits on the approved list in contract 4.4.
 --
--- Why this file exists at all. Today every RLS policy on works, editions, assets
--- and asset_pages is `using (tenant_id is null or tenant_id = app.tenant_id)` with
--- no `with check`. A permissive policy's WITH CHECK defaults to its USING
--- expression, so any tenant context can INSERT a row with tenant_id NULL - that
--- is, write into the global catalogue. Nothing in the application does this
--- (updateBook scopes its writes by tenant), so it is a latent hole rather than a
--- live incident. Contract 4.3 closes it in the database, not just in the app:
+-- Why this file exists at all. Every RLS policy on works, editions, assets,
+-- asset_pages and collections is `using (tenant_id is null or tenant_id =
+-- app.tenant_id)` with no `with check`. A permissive policy's WITH CHECK defaults to
+-- its USING expression, so any tenant context can write into the global catalogue.
+-- collection_items had no RLS at all. Contract 4.3 closes this in the database, not
+-- just in the app:
 --
 --   1. akademik_app keeps read on global rows and write on its own tenant's rows,
---      and loses the ability to write global rows at all.
+--      and loses the ability to write global rows at all - including by UPDATE,
+--      which is not covered by WITH CHECK alone.
 --   2. akademik_catalog is a separate login with its own password and its own
 --      connection pool. It may write global rows. It may NOT write tenant rows -
---      not event the staff tenant's - except through catalog_publish_work().
+--      not even the staff tenant's - except through catalog_publish_work() and
+--      catalog_set_withdrawn().
 --   3. catalog_publish_work(work_id) is SECURITY DEFINER with a pinned
 --      search_path and is executable only by akademik_catalog. It moves exactly
 --      one staff tenant's work to global; it cannot be used to reach any other
@@ -87,8 +88,12 @@ update collection_items ci
  where c.id = ci.collection_id
    and ci.tenant_id is distinct from c.tenant_id;
 
+alter table collection_items enable row level security;
 alter table collection_items force row level security;
 
+-- Every policy in this file is dropped before it is created, so re-running 022 on
+-- a database that already has it is a no-op rather than an error.
+drop policy if exists collection_items_tenant on collection_items;
 create policy collection_items_tenant on collection_items
   using (tenant_id is null or tenant_id = current_setting('app.tenant_id', true)::uuid)
   with check (tenant_id is null or tenant_id = current_setting('app.tenant_id', true)::uuid);
@@ -121,11 +126,17 @@ create policy collection_items_tenant on collection_items
 -- restrictive policy of its own that forbids writing global rows outright, while
 -- still allowing every write inside its own tenant.
 
+-- The catalog role's own restriction, in the other direction: it may write global
+-- rows and nothing else. `for all` is safe HERE where it was not for the app,
+-- because the expression is the same on both sides - USING and WITH CHECK are both
+-- `tenant_id is null`, so a row it can see is exactly a row it may write, and it
+-- cannot move a tenant row into the global catalogue this way (that row is not
+-- visible to it at all). Publishing goes through the function below instead.
 do $$
 declare
   t text;
 begin
-  foreach t in array array['works','editions','assets','asset_pages','collections'] loop
+  foreach t in array array['works','editions','assets','asset_pages','collections','collection_items'] loop
     execute format('drop policy if exists %I on %I', t || '_catalog_global', t);
     execute format(
       'create policy %I on %I as restrictive for all to akademik_catalog
@@ -140,40 +151,100 @@ end $$;
 -- with works_tenant rather than ORed, and it exists because works_tenant's missing
 -- WITH CHECK makes `tenant_id is null` permissive for writes.
 --
--- The expression is written as "must not be global" rather than "must equal my
--- tenant" on purpose: a global row's tenant_id is NULL, `NULL = $app` is NULL, and
--- a policy that evaluates to NULL denies - which happens to be right, but only by
--- accident. Saying NOT NULL makes the intent explicit and independent of that.
-drop policy if exists works_app_no_global on works;
-create policy works_app_no_global on works
-  as restrictive for all to akademik_app
-  using (true) with check (tenant_id is not null);
-
-drop policy if exists editions_app_no_global on editions;
-create policy editions_app_no_global on editions
-  as restrictive for all to akademik_app
-  using (true) with check (tenant_id is not null);
-
-drop policy if exists assets_app_no_global on assets;
-create policy assets_app_no_global on assets
-  as restrictive for all to akademik_app
-  using (true) with check (tenant_id is not null);
-
-drop policy if exists asset_pages_app_no_global on asset_pages;
-create policy asset_pages_app_no_global on asset_pages
-  as restrictive for all to akademik_app
-  using (true) with check (tenant_id is not null);
-
-drop policy if exists collections_app_no_global on collections;
-create policy collections_app_no_global on collections
-  as restrictive for all to akademik_app
-  using (true) with check (tenant_id is not null);
+-- SPLIT BY COMMAND, and this is the fix for a defect that a first version missed.
+-- `for all using (true) with check (tenant_id is not null)` looked correct and was
+-- not: WITH CHECK governs rows being written, USING governs rows being READ TO
+-- MODIFY. `using (true)` therefore let the app's UPDATE *see* a global row, and
+-- `with check (tenant_id is not null)` was satisfied once that same UPDATE had
+-- moved the row into the app's own tenant. Measured on PostgreSQL 16: the app
+-- pulled a global work into its tenant with `set tenant_id = <its own>`, and
+-- deleted a global work outright. Neither is possible with the policy below.
+--
+-- So USING carries the same `tenant_id is not null` for UPDATE and DELETE: a
+-- global row is not visible to the app's write paths at all.
+--
+-- SELECT deliberately gets no restrictive policy. Reading the global catalogue is
+-- the entire point of it, and akademik_app's permissive policy already allows it.
+--
+-- A NULL tenant_id never denies anyone by accident either: the app's own rows
+-- always have one, and a policy that evaluates to NULL denies, so the expression
+-- says `is not null` rather than relying on `null = $app` being NULL.
+-- The same three policies on every tenant-owned catalogue table, including
+-- collection_items, because the identical defect existed identically there: an app
+-- bound to tenant A could add a line to a global collection (tenant_id NULL), and
+-- the collection's membership is tenant-visible content.
+do $$
+declare
+  t text;
+begin
+  foreach t in array array['works','editions','assets','asset_pages','collections','collection_items'] loop
+    execute format('drop policy if exists %I on %I', t || '_app_no_global', t);
+    execute format('drop policy if exists %I on %I', t || '_app_no_global_insert', t);
+    execute format('drop policy if exists %I on %I', t || '_app_no_global_update', t);
+    execute format('drop policy if exists %I on %I', t || '_app_no_global_delete', t);
+    execute format(
+      'create policy %I on %I as restrictive for insert to akademik_app
+         with check (tenant_id is not null)', t || '_app_no_global_insert', t);
+    execute format(
+      'create policy %I on %I as restrictive for update to akademik_app
+         using (tenant_id is not null) with check (tenant_id is not null)',
+      t || '_app_no_global_update', t);
+    execute format(
+      'create policy %I on %I as restrictive for delete to akademik_app
+         using (tenant_id is not null)', t || '_app_no_global_delete', t);
+  end loop;
+end $$;
 
 -- The staff tenant's rows are readable by the catalog role so publish can prove
 -- a work is there; they are not writable by it (the policy above forbids it, and
--- no other policy grants it).
-grant select on works, editions, assets, asset_pages, collections to akademik_catalog;
+-- no other privilege grants it).
+--
+-- The write privileges below are the trust boundary itself. First version granted
+-- only SELECT, which made the restrictive policies look enforced while making the
+-- bridge's global writes impossible: the catalog path could read a published work
+-- and not correct its title. Contract 4.3 asks for insert/update/delete on
+-- `tenant_id IS NULL` rows, and that is what these grants give - with the policy
+-- above deciding WHICH rows, and a column list deciding what may change on them.
+--
+-- Columns are named on UPDATE rather than granted table-wide. A table-wide UPDATE
+-- would let the catalog path write tenant_id on a global row - the exact move the
+-- app is now forbidden from making, and the one the policies cannot express,
+-- because `with check (tenant_id is null)` is satisfied by keeping it null and
+-- says nothing about the value before and after.
+grant select on works, editions, assets, asset_pages, collections, collection_items
+  to akademik_catalog;
 grant select on tenants to akademik_catalog;
+
+-- Collections are created and maintained here: the bridge's collection CRUD is a
+-- global write in the catalogue sense.
+grant insert, delete on collections to akademik_catalog;
+grant update (title, slug, description, visibility) on collections to akademik_catalog;
+
+grant insert, delete on collection_items to akademik_catalog;
+
+-- Works metadata, and withdrawal (contract 5.6: withdrawn_at, withdrawn_reason).
+-- withdrawn_at is NOT here: it is contract 4.3's own sentence, restricted to a
+-- global work, and it goes through catalog_set_withdrawn() below so that the
+-- global-row condition lives in the database rather than in the caller.
+grant insert, delete on works to akademik_catalog;
+grant update (title, subtitle, language, abstract, subjects, metadata, content_type,
+              withdrawn_reason) on works to akademik_catalog;
+
+grant insert, delete on editions to akademik_catalog;
+grant update (publisher, publication_year, edition, isbn13, doi, handle,
+              license_uri, license_note, rights_note) on editions to akademik_catalog;
+
+grant insert, delete on assets to akademik_catalog;
+grant insert, delete on asset_pages to akademik_catalog;
+
+-- Child rows of a global work: the catalog path may correct their content but not
+-- move them between parents. The restrictive policy already limits which rows it
+-- sees. format and edition_id are left out of the UPDATE list for that reason.
+grant update (storage_key, page_count, text_content, quality_score, source_system,
+              source_id, source_url, source_checksum, harvested_at, access_status,
+              allow_copy, allow_download, allow_print, watermark) on assets to akademik_catalog;
+grant update (text_content, text_search, source, locator) on asset_pages to akademik_catalog;
+
 
 -- Replacing the permissive read policy on these tables with one that names the
 -- role is not needed: RLS policies are permissive and additive, and akademik_app's
@@ -270,9 +341,59 @@ end$body$;
 -- comments do not avoid it; a terminator that is not a bare statement does. Both
 -- files stay runnable and the runner's rule stays as strict as it was.
 
--- Reaching only this function is the entire write surface of the catalog role.
+-- Reaching only these two functions is the entire write surface of the catalog
+-- role on tenant data. Everything else it may write is a global row.
+
 revoke all on function catalog_publish_work(uuid) from public;
 grant execute on function catalog_publish_work(uuid) to akademik_catalog;
+
+-- Withdrawal and restoration (contracts 4.3, 5.6). Only the global work's
+-- withdrawn_at changes, and only a global work can be reached.
+--
+-- This is a function rather than an UPDATE grant on the column for a specific
+-- reason: a column grant cannot say "global rows only". The restrictive policy
+-- permits a global row and forbids a tenant row, so an UPDATE grant on withdrawn_at
+-- alone would let the catalog path withdraw a staff tenant's title - and contract
+-- 5.6 is about withdrawing a published work, while contract 4.3 forbids this role
+-- touching tenant rows at all.
+--
+-- SECURITY DEFINER is not needed to exceed the caller's rights here; it is used so
+-- the global-row check runs with one definition rather than being repeated by every
+-- caller. It raises instead of quietly updating nothing when the work is not global,
+-- because a silent no-op would look like a successful withdrawal to the bridge.
+create or replace function catalog_set_withdrawn(
+  p_work_id uuid,
+  p_withdraw boolean,
+  p_reason text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $body$
+declare
+  moved int;
+begin
+  if not exists (select 1 from works where id = p_work_id and tenant_id is null) then
+    raise exception 'catalog_set_withdrawn: work % is not in the global catalogue', p_work_id
+      using errcode = 'P0001';
+  end if;
+
+  update works
+     set withdrawn_at = case when p_withdraw then now() else null end,
+         withdrawn_reason = case when p_withdraw then p_reason else null end
+   where id = p_work_id
+     and tenant_id is null;
+  get diagnostics moved = row_count;
+
+  if moved <> 1 then
+    raise exception 'catalog_set_withdrawn: expected to change 1 work, changed %', moved
+      using errcode = 'P0001';
+  end if;
+end$body$;
+
+revoke all on function catalog_set_withdrawn(uuid, boolean, text) from public;
+grant execute on function catalog_set_withdrawn(uuid, boolean, text) to akademik_catalog;
 
 -- Verified after this file, expected: the catalog role cannot write a staff row
 -- directly, and the app role cannot write a global row at all.
@@ -280,8 +401,12 @@ select rolname, rolsuper, rolbypassrls, rolcanlogin
   from pg_roles
  where rolname in ('akademik_app','akademik_catalog');
 
-select tablename, policyname, permissive
-  from pg_policies
- where schemaname = 'public'
-   and policyname like '%catalog_global'
- order by tablename;
+select pol.tablename, pol.policyname, pol.permissive, pol.cmd
+  from pg_policies pol
+ where pol.schemaname = 'public'
+   and (pol.policyname like '%catalog_global' or pol.policyname like '%app_no_global%')
+ order by pol.tablename, pol.policyname;
+
+select c.relname, c.relrowsecurity, c.relforcerowsecurity
+  from pg_class c
+ where c.relname = 'collection_items';

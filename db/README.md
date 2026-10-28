@@ -158,3 +158,28 @@ psql "$DATABASE_URL" -f db/seed.sql
 ```
 
 `schema.sql` is not idempotent for policies and should be treated as an initial migration, not a re-runnable script.
+
+## Migrations 021 and 022, and the `akademik_catalog` credential
+
+`db/migrations/021-*.sql` and `022-*.sql` run through `node db/migrate.mjs`, in that order, from the deployment environment. Both are schema only; no work is moved to the global catalogue until 023.
+
+022 creates the `akademik_catalog` role as **NOLOGIN** on purpose: a password in a migration is a password in git forever. The login is provisioned after the migration, from the deployment secret, and is a separate step:
+
+```sql
+alter role akademik_catalog login password '<from secret>';
+```
+
+The bridge's catalog path must connect as this role, with its own connection pool, and not as `akademik_app`. What it may do is decided by grants and policies, not by the application:
+
+- write global rows (`tenant_id IS NULL`) on `works`, `editions`, `assets`, `asset_pages`, `collections`, `collection_items`;
+- update metadata columns only - `tenant_id` is deliberately not in any UPDATE grant, so the catalog path cannot hand a global row to a tenant;
+- publish a staff tenant's work with `catalog_publish_work(work_id)`;
+- withdraw or restore a global work with `catalog_set_withdrawn(work_id, boolean, reason)`.
+
+It cannot write a tenant row directly, cannot read or modify another tenant's `collection_items`, and cannot withdraw a staff tenant's title. If the role is recreated, both functions and every grant in 022 must be re-applied; re-running the file is safe.
+
+Verification after a deploy, expected `relrowsecurity = t` and `relforcerowsecurity = t`:
+
+```sql
+select relname, relrowsecurity, relforcerowsecurity from pg_class where relname = 'collection_items';
+```

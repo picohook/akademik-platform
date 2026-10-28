@@ -16,8 +16,11 @@ import { promisify } from 'node:util';
 //
 //   * akademik_app cannot INSERT a row into the global catalogue - it used to be
 //     able to, because every policy was USING-only and WITH CHECK inherited it.
-//   * akademik_catalog cannot write a staff tenant's row directly, even though
-//     its own policy is permissive - the restrictive policy is what stops it.
+//   * akademik_app cannot reach a row outside its own tenant by ANY command: it
+//     cannot read another tenant's collection lines, cannot insert into a global
+//     collection, cannot pull a global work into its tenant, cannot delete one.
+//   * akademik_catalog can write the global catalogue (that is its job) and still
+//     cannot touch a tenant row, or change tenant_id on a global one.
 //   * catalog_publish_work() is the only way across, and it moves exactly one
 //     work's rows, leaving annotations and grants alone.
 //   * 021/022 move no existing work: the fixture's works are still tenant-owned
@@ -39,8 +42,13 @@ const pg = createRequire(path.join(appDir, 'package.json'))('pg');
 
 const LIBEDGE = '5799f2a5-3d90-41b1-90de-9da07d776052';
 const DEMO = '11111111-1111-1111-1111-111111111111';
+const OTHER = '22222222-2222-4222-8222-222222222222';
 const COLLECTION = '88888888-8888-8888-8888-888888888888';
+const OTHER_COLLECTION = '88888888-8888-4888-8888-888888888aaa';
+const GLOBAL_COLLECTION = '88888888-8888-4888-8888-8888888888ff';
 const WORK = 'a0000000-0000-4000-8000-000000000001';
+const OTHER_WORK = 'a0000000-0000-4000-8000-0000000000aa';
+const GLOBAL_WORK = 'a0000000-0000-4000-8000-0000000000ff';
 const EDITION = 'b0000000-0000-4000-8000-000000000001';
 const ASSET = 'c0000000-0000-4000-8000-000000000001';
 const STAFF_USER = '99999999-9999-4999-8999-999999999999';
@@ -145,8 +153,8 @@ async function setup() {
   // demo tenant empty. 13 works, one work given an annotation so we can prove
   // publish does not carry reader data across.
   await admin.query(
-    `insert into tenants (id, name, slug) values ($1,'LibEdge','libedge'), ($2,'Demo','demo')`,
-    [LIBEDGE, DEMO],
+    `insert into tenants (id, name, slug) values ($1,'LibEdge','libedge'), ($2,'Demo','demo'), ($3,'Other','other')`,
+    [LIBEDGE, DEMO, OTHER],
   );
   await admin.query(
     `insert into users (id, tenant_id, email, display_name, role)
@@ -185,6 +193,20 @@ async function setup() {
     `insert into grants (id, tenant_id, subject_type, subject_id, scope_type, status)
      values (gen_random_uuid(),$1,'tenant',$1,'all','active')`, [LIBEDGE],
   );
+
+  // The targets for the four attacks the policy split is about. A third tenant
+  // gives cross-tenant reading something to leak; a global collection and a global
+  // work give the app something to write that it must not be able to reach.
+  await admin.query(`insert into works (id, tenant_id, title, language) values ($1,$2,'Other tenant title','tr')`,
+    [OTHER_WORK, OTHER]);
+  await admin.query(`insert into works (id, tenant_id, title, language) values ($1,null,'Already global','tr')`,
+    [GLOBAL_WORK]);
+  await admin.query(`insert into collections (id, tenant_id, title, slug) values ($1,$2,'Other Open','other-open')`,
+    [OTHER_COLLECTION, OTHER]);
+  await admin.query(`insert into collection_items (collection_id, work_id) values ($1,$2)`,
+    [OTHER_COLLECTION, OTHER_WORK]);
+  await admin.query(`insert into collections (id, tenant_id, title, slug) values ($1,null,'Global Shelf','global-shelf')`,
+    [GLOBAL_COLLECTION]);
 }
 
 async function applyMigrations() {
@@ -194,16 +216,23 @@ async function applyMigrations() {
 }
 async function main() {
   await setup();
-  const before = await admin.query('select count(*)::int n from works where tenant_id is not null');
-  check(before.rows[0].n === 13, `fixture should have 13 tenant-owned works, has ${before.rows[0].n}`);
+  const before = await admin.query(
+    'select count(*)::int owned from works where tenant_id = $1', [LIBEDGE],
+  );
+  check(before.rows[0].owned === 13, `fixture should have 13 LibEdge works, has ${before.rows[0].owned}`);
 
   // --- 021/022 must move no data -------------------------------------------------
   await applyMigrations();
   const after = await admin.query(
-    'select count(*)::int total, count(*) filter (where tenant_id is not null)::int owned from works',
+    `select count(*)::int total,
+            count(*) filter (where tenant_id = $1)::int libedge,
+            count(*) filter (where tenant_id is null)::int global
+       from works`, [LIBEDGE],
   );
-  check(after.rows[0].total === 13 && after.rows[0].owned === 13,
-    `migrations 021/022 moved works: total ${after.rows[0].total}, tenant-owned ${after.rows[0].owned} (expected 13/13)`);
+  check(after.rows[0].libedge === 13,
+    `migrations 021/022 moved works: LibEdge owns ${after.rows[0].libedge} (expected 13)`);
+  check(after.rows[0].global === 1,
+    `migrations 021/022 changed global works: ${after.rows[0].global} (expected the 1 fixture row)`);
 
   // The backfill ran: a collection_items row now carries its collection's tenant,
   // which the column never had before.
@@ -237,12 +266,124 @@ async function main() {
     });
 
     // --- akademik_catalog cannot write a tenant row directly ---------------------
-    // Permissive-only would have allowed this: the app's policy still applies to the
-    // catalog role and permissive policies are ORed. The restrictive one denies it.
+    // The catalog role now holds UPDATE on these tables, so this is no longer an
+    // absent-privilege check: the restrictive *_catalog_global policy (tenant_id is
+    // null) is the only thing standing between it and a staff tenant's row, applied
+    // on top of the app's permissive policy that still governs this role. A zero-row
+    // result is the pass condition - the statement is allowed to run, and must reach
+    // no row.
     await asTenant(catalog, LIBEDGE, async () => {
-      await expectError('catalog writes a staff work directly', () => catalog.query(
+      const edited = await catalog.query(
         `update works set title = 'Catalog edited this' where id = $1`, [WORK],
+      );
+      check(edited.rowCount === 0, `catalog edited ${edited.rowCount} staff-tenant rows, expected 0`);
+    });
+    const staffTitle = await admin.query('select title from works where id = $1', [WORK]);
+    check(!/Catalog edited this/.test(staffTitle.rows[0].title),
+      `staff work title changed to ${staffTitle.rows[0].title}`);
+
+    // --- the four attacks, each one a row the app must not be able to reach --------
+    //
+    // These are here because a first version of 022 failed all four. They are not
+    // hypothetical: the reviewer's measurement reproduced each one, and so did this
+    // file before the policies were split by command. Each asserts the OUTCOME, not
+    // just that an error came back, because a restrictive policy that merely hides a
+    // row produces a silent zero-row UPDATE rather than a permission error - which
+    // looks like success to a caller that does not check the count.
+    const app2 = DEMO;
+
+    // 1. Cross-tenant read of collection_items. collection_items had no ENABLE ROW
+    //    LEVEL SECURITY at all, so FORCE was decorative and tenant A read tenant B's
+    //    collection lines.
+    const leak = await asTenant(app, app2, () => app.query(
+      'select count(*)::int n from collection_items where collection_id = $1', [OTHER_COLLECTION],
+    ));
+    check(leak.rows[0].n === 0,
+      `tenant A can read tenant Other's collection_items: ${leak.rows[0].n} rows`);
+    // And its own collection is still readable - the policy did not break the normal path.
+    const ownItems = await asTenant(app, LIBEDGE, () => app.query(
+      'select count(*)::int n from collection_items where collection_id = $1', [COLLECTION],
+    ));
+    check(ownItems.rows[0].n === 1,
+      `the owning tenant lost read on its own collection_items: ${ownItems.rows[0].n} rows`);
+
+    // 2. Adding a line to a global collection changes global catalogue membership.
+    await asTenant(app, app2, async () => {
+      await expectError('app adds to a global collection', () => app.query(
+        'insert into collection_items (collection_id, work_id) values ($1,$2)', [GLOBAL_COLLECTION, WORK],
       ), '42501');
+      checks += 1;
+    });
+
+    // 3. Pulling a global work into the app's own tenant. Using (true) let the UPDATE
+    //    see the global row and WITH CHECK was satisfied once tenant_id became the
+    //    app's own - the row changed hands with no error at all.
+    await asTenant(app, app2, async () => {
+      const pulled = await app.query(
+        'update works set tenant_id = $1 where id = $2 and tenant_id is null', [app2, GLOBAL_WORK],
+      );
+      check(pulled.rowCount === 0, `app moved ${pulled.rowCount} global works into its own tenant`);
+    });
+    const stillGlobal = await admin.query('select tenant_id from works where id = $1', [GLOBAL_WORK]);
+    check(stillGlobal.rows[0].tenant_id === null,
+      `global work is now owned by ${stillGlobal.rows[0].tenant_id}`);
+
+    // 4. Deleting a global work outright.
+    await asTenant(app, app2, async () => {
+      const deleted = await app.query('delete from works where id = $1 and tenant_id is null', [GLOBAL_WORK]);
+      check(deleted.rowCount === 0, `app deleted ${deleted.rowCount} global works`);
+    });
+    const survived = await admin.query('select count(*)::int n from works where id = $1', [GLOBAL_WORK]);
+    check(survived.rows[0].n === 1, 'a global work was deleted by the app');
+
+    // Reads are untouched: the app must still serve the global catalogue to readers,
+    // which is the whole reason SELECT has no restrictive policy.
+    const globalReadable = await asTenant(app, app2, () => app.query(
+      'select count(*)::int n from works where id = $1', [GLOBAL_WORK],
+    ));
+    check(globalReadable.rows[0].n === 1, 'the app lost read access to the global catalogue');
+
+    // --- akademik_catalog can write the global catalogue --------------------------
+    // Only SELECT was granted in the first version, which left the bridge unable to
+    // create a global collection or correct a published work's metadata.
+    await asTenant(catalog, LIBEDGE, async () => {
+      await catalog.query(
+        `insert into collections (id, tenant_id, title, slug) values (gen_random_uuid(), null, 'Bridge shelf', 'bridge-shelf')`,
+      );
+      checks += 1;
+      const edited = await catalog.query(`update works set title = 'Corrected title' where id = $1`, [GLOBAL_WORK]);
+      check(edited.rowCount === 1, `catalog updated ${edited.rowCount} global works, expected 1`);
+      await catalog.query(
+        `insert into collection_items (collection_id, work_id) values ($1,$2)`, [GLOBAL_COLLECTION, GLOBAL_WORK],
+      );
+      checks += 1;
+    });
+
+    // ...but still not tenant_id, even on a global row: the column is deliberately
+    // outside the UPDATE grant, so the catalog path cannot hand a global work to a
+    // tenant any more than the app path can.
+    await asTenant(catalog, LIBEDGE, async () => {
+      await expectError('catalog reassigns a global work to a tenant', () => catalog.query(
+        'update works set tenant_id = $1 where id = $2', [LIBEDGE, GLOBAL_WORK],
+      ), '42501');
+      checks += 1;
+    });
+
+    // --- withdrawal (contract 4.3, 5.6) -------------------------------------------
+    await asTenant(catalog, LIBEDGE, () => catalog.query(
+      'select catalog_set_withdrawn($1, true, $2)', [GLOBAL_WORK, 'Rights claim'],
+    ));
+    const withdrawn = await admin.query(
+      'select withdrawn_at, withdrawn_reason from works where id = $1', [GLOBAL_WORK],
+    );
+    check(withdrawn.rows[0].withdrawn_at !== null && withdrawn.rows[0].withdrawn_reason === 'Rights claim',
+      `withdrawal did not land: ${JSON.stringify(withdrawn.rows[0])}`);
+    // A staff tenant's title cannot be withdrawn through this role: 5.6 is about a
+    // published work, and 4.3 forbids the role touching tenant rows.
+    await asTenant(catalog, LIBEDGE, async () => {
+      await expectError('catalog withdraws a staff work', () => catalog.query(
+        'select catalog_set_withdrawn($1, true, $2)', [WORK, 'not allowed'],
+      ), 'P0001');
       checks += 1;
     });
 
