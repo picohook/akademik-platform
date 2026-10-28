@@ -209,4 +209,6 @@ appears, and neither `akademik_catalog` nor a definer-less function would pass.
 Until 024 is applied, `spike/app/server.mjs` falls back to the env tenant and logs
 a warning on every tick. That fallback has to catch `3F000` (`app` schema missing),
 not just `42883` - Postgres resolves the schema before the function, so the code a
-missing migration actually produces is `invalid_schema_name`.
+missing migration actually produces is `invalid_schema_name`. `42883` is the other
+half: a schema that exists with no function in it. Both were measured; the first is
+what a database without 024 gives you today.

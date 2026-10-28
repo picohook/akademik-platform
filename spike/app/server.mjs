@@ -1392,8 +1392,10 @@ async function maintenanceTenantIds() {
     // before the function. 42883 is what remains if the schema exists but the
     // function does not, and 42501 is a missing EXECUTE grant, which is a deployment
     // mistake rather than "no such tenants" but must not silence the sweep either.
-    // Catching only 42883 left the sweep throwing on the version of this database
-    // that actually exists today.
+    // Catching only 42883 left the sweep throwing on a database that has no
+    // `app` schema - which is every database today, and would have been the state
+    // the first deploy of that code met. The code was merged but not yet shipped
+    // when this was found; v136 runs the commit before it.
     if (error.code === '3F000' || error.code === '42P01' || error.code === '42883' || error.code === '42501') {
       console.warn(`[maintenance] app.maintenance_tenants unavailable (${error.code}); sweeping DEMO_TENANT_ID only`);
       return [TENANT_ID];
