@@ -5,7 +5,10 @@
 // forever and the v133 blob: style-src fix never reaches offline EPUB reading.
 // v26: the '/' shell body now carries a build-derived ?v= token, so a cached v25
 // shell would keep pointing at the pre-token URL.
-const CACHE = 'akademik-shell-v26';
+// v27: epub-engine.mjs rewrites a chapter's external embed into a link card and
+// styles.css styles it; a cached v26 shell would pair the new engine with the old
+// stylesheet, so the card would render unstyled.
+const CACHE = 'akademik-shell-v27';
 const SHELL = [
   '/',
   '/styles.css',

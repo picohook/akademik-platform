@@ -3,7 +3,8 @@
 // iframe/DOM details. Keep annotations and search in our own shapes.
 
 import { findFuzzyWord, foldChars } from './search.mjs?v=1';
-import { bindEpubLinks } from './book-links.mjs';
+import { bindEpubLinks, safeBookUrl } from './book-links.mjs';
+import { t } from './i18n.mjs?v=23';
 
 const THEMES = {
   light: { body: { background: '#ffffff', color: '#222222' } },
@@ -34,6 +35,111 @@ function isEditable(node) {
   if (element.closest?.('input, textarea') || element.isContentEditable) return true;
   const editable = element.closest?.('[contenteditable]');
   return !!editable && editable.getAttribute('contenteditable') !== 'false';
+}
+
+// Chapter documents are served as srcdoc, so their origin is opaque and every
+// script inside is blocked. A publisher's `<iframe>` (a YouTube embed in the
+// catalog's EPUB) therefore cannot render: CSP frame-src is 'self' and nothing
+// would run inside the frame anyway. Widening the policy is not an option — the
+// reader's contract is script-free chapters — and embedding a third-party frame
+// would contact that host and set its cookies from the reader, which the privacy
+// rules forbid. So an external embed becomes a link the reader can choose to
+// follow, in a new tab, with no referrer.
+const EXTERNAL_LINK_TARGET = 'epub-external-link';
+
+function embedAddress(frame) {
+  for (const attribute of ['src', 'data-src']) {
+    const raw = String(frame.getAttribute?.(attribute) || '').trim();
+    if (!raw) continue;
+    // Only an absolute https address is offerable: a relative path is a bundle
+    // resource a link cannot open, and a non-http scheme is never a destination.
+    return /^https:\/\//i.test(raw) ? safeBookUrl(raw) : null;
+  }
+  return null;
+}
+
+// The frame itself goes either way. A frame that cannot render is a blank box the
+// reader will try to click; one with no offerable address leaves nothing behind.
+function removeEmbed(frame) {
+  const root = embedRoot(frame);
+  const parent = root.parentNode;
+  if (parent) parent.removeChild(root);
+}
+
+// `title` is what the publisher said the frame contains, and it is already the
+// iframe's accessible name — so it is reused rather than invented. A generic
+// label is the fallback, and the host is derived from the URL, never trusted.
+function embedLabel(frame, url) {
+  const title = String(frame.getAttribute?.('title') || '').replace(/\s+/g, ' ').trim();
+  if (title) return title;
+  const base = 'Videoyu yeni sekmede aç';
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, '');
+    return host ? `${base} (${host})` : base;
+  } catch { return base; }
+}
+
+function externalLinkCard(doc, url, label) {
+  const link = doc.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('target', '_blank');
+  link.setAttribute('rel', 'noopener noreferrer');
+  link.setAttribute('class', 'app-external-embed');
+  link.setAttribute('data-app-link', EXTERNAL_LINK_TARGET);
+  // The href is already in the accessibility tree; this only adds the fact that
+  // following it leaves the reader, so the card does not look like a chapter link.
+  link.setAttribute('aria-label', `${label} (${t('yeni sekmede açılır')})`);
+  const text = doc.createElement('span');
+  text.textContent = `▶ ${label}`;
+  link.appendChild(text);
+  return link;
+}
+
+const EMBED_WRAPPER = /^(p|div|figure|span|center)$/i;
+const HIDDEN = '[hidden], [aria-hidden="true"]';
+
+// One embed often sits in a paragraph of its own, and the paragraph carries the
+// publisher's `text-align`/margins. Replacing the innermost element alone would
+// leave an empty paragraph behind on the page, so the widest wrapper that holds
+// nothing but this frame is replaced instead. `childNodes`, not `children`: a
+// formatting-only wrapper is usually ` <iframe/>\n `.
+function embedRoot(frame) {
+  let root = frame;
+  for (let depth = 0; depth < 3; depth += 1) {
+    const parent = root.parentNode;
+    if (!parent || parent.nodeType !== 1 || !EMBED_WRAPPER.test(parent.tagName || '')) break;
+    if (parent.childNodes?.length !== 1) break;
+    const hiddenAbove = typeof parent.closest === 'function' && parent.closest(HIDDEN);
+    if (hiddenAbove) break;
+    root = parent;
+  }
+  return root;
+}
+
+// Idempotent: epub.js rewrites srcdoc/innerHTML on every pagination and resize,
+// so this runs again on a document that already holds cards and must not nest
+// them.
+export function normalizeExternalEmbeds(doc) {
+  if (!doc?.querySelectorAll || !doc.createElement) return 0;
+  let replaced = 0;
+  for (const frame of Array.from(doc.querySelectorAll('iframe'))) {
+    // Page-break wrappers hide whole fragments. Rewriting one would turn a hidden
+    // video into a visible card and reflow the pagination that hid it.
+    const insideHidden = typeof frame.closest === 'function' && frame.closest(HIDDEN);
+    if (insideHidden) continue;
+    const url = embedAddress(frame);
+    if (!url) {
+      // Nothing to offer, but the blank box still must not stay on the page.
+      removeEmbed(frame);
+      continue;
+    }
+    const card = externalLinkCard(doc, url, embedLabel(frame, url));
+    const root = embedRoot(frame);
+    if (typeof root.replaceWith === 'function') root.replaceWith(card);
+    else root.parentNode?.replaceChild?.(card, root);
+    replaced += 1;
+  }
+  return replaced;
 }
 
 // Listen inside each chapter document: clipboard events do not cross iframes.
@@ -153,6 +259,17 @@ export class EpubEngine {
       const viewportObserver = new MutationObserver(allowZoom);
       viewportObserver.observe(doc.head, { childList: true, subtree: true, attributes: true, attributeFilter: ['content'] });
       allowZoom();
+      // epub.js assigns srcdoc again on every pagination/resize, which throws the
+      // rewritten chapter away. Re-applying after each batch makes the cards
+      // survive that, and normalizeExternalEmbeds() is idempotent so re-running it
+      // over an already-normalized document costs nothing.
+      normalizeExternalEmbeds(doc);
+      // A chapter is served as srcdoc and epub.js replaces the whole body on every
+      // pagination/resize, so only the body it hands over now can be watched. When
+      // the reference moves, the next contents event observes the new one.
+      const body = contents.body || doc.body;
+      const embedObserver = body ? new MutationObserver(() => normalizeExternalEmbeds(doc)) : null;
+      embedObserver?.observe(body, { childList: true, subtree: true });
       const dispose = bindEpubCopyPolicy(doc, {
         canCopy: () => this.canCopy(),
         onCopyBlocked: (event) => this.onCopyBlocked(event),
@@ -160,6 +277,7 @@ export class EpubEngine {
         onDispose: () => {
           disposeLinks();
           viewportObserver.disconnect();
+          embedObserver?.disconnect();
           doc.removeEventListener('keydown', handleSelectionTools);
           this.copyPolicyDisposers.delete(dispose);
         },
