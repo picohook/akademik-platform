@@ -30,7 +30,7 @@ Son güncelleme: 2026-10-28. Canlı: elibrary.libedge.com **v135** (`c88a778`), 
 - ~~SW cache `v24` → `v25`~~ — **v133'te yapıldı**: yeni CSP'nin çevrimdışı açılışa ulaşması için cache adı artırıldı. Çevrimdışı açılış **test edildi**, SW `v25` tarafı sorun değil (aşağıdaki kalem).
 - **Çevrimdışı doğrulama yapıldı (Altan, 2026-10-27) — SW `v25` OK, ama yeni hata bulundu:** çevrimdışı **EPUB indirme 409** dönüyor; **PDF çevrimdışı indirme çalışıyor** (Discrete Mathematics, 20:19 başarılı). Yani service worker/cache tarafı beklendiği gibi; sorun indirme (delivery) yolunda.
 
-## 2b. v134 — kapatıldı (canlı ve doğrulandı); EPUB onarımı açık
+## 2b. v134 — kapatıldı (canlı ve doğrulandı); EPUB onarımı ve katalog taraması kapatıldı
 
 **Belirti:** çevrimdışıyken EPUB indirme isteği `409` alıyor. Kullanıcıya hata **gösterilmiyor**, yalnız konsolda.
 
@@ -41,8 +41,8 @@ Son güncelleme: 2026-10-28. Canlı: elibrary.libedge.com **v135** (`c88a778`), 
 | Kitap | Scientific Writing for Health Research |
 | Asset | `4773fe55-…` |
 | R2 | `r2://libedge/uploads/7ef29929-dbbd-415d-a008-c18f99362c98.epub` |
-| Bozuk dosya | `EPUB/text/ch003.xhtml` |
-| Bozuk yer | `<li>Hypothesis and aims` / `<p></li>` — kapanmayan `<p>` (Pandoc çıktısı) |
+| Bozuk dosya | `EPUB/text/ch003.xhtml` (ilk görünen) — **tarama 8/20 bozuk buldu** |
+| Bozuk yer | `ch003`: `<li>Hypothesis and aims` / `<p></li>` — kapanmayan `<p>` (Pandoc). Ayrıca `ch004`–`ch008`,`ch013` değersiz `allowfullscreen`, `ch009` kapanmamış `<br>` |
 
 Dosya **çevrimiçi** okunabiliyor (okuyucu XHTML'i olduğu gibi ayrıştırmıyor), yalnız **indirme** yolundan geçen watermark aşamasında patlıyor. Bu yüzden hata v133 deploy'unda görünmedi.
 
@@ -56,8 +56,8 @@ Dosya **çevrimiçi** okunabiliyor (okuyucu XHTML'i olduğu gibi ayrıştırmıy
 - [x] **`app.js?v=130-ui-copy` sürüm etiketi sabit — v135'te yapıldı ve canlıda:** `asset-version.mjs` token'ı `BUILD_SHA`'dan (yoksa `APP_VERSION`, o da yoksa token yok) türetiyor; `server.mjs` `index.html`'i servis ederken `?v=` etiketlerini bu token'la değiştiriyor ve `content-length`'i yeniden hesaplıyor. **Canlı kanıt:** `curl -s localhost:3001/ | grep -o '/app.js?v=[^"]*'` → `/app.js?v=c88a778`. `index.html`'deki `?v=0-dev` yalnızca yer tutucu; elle güncellenmiyor. `sw.js` cache'i `v25` → `v26` (gövde değişti, v133 kuralı).
 - [ ] `import-catalog` dry-run kapsamı: bu yolda içerik ingest'i ayrı bir akıştan geçiyor; upload'daki kabul/ret kuralının oraya da uygulanıp uygulanmayacağına karar ver (şimdilik yalnız `/api/upload` kapalı devre).
 
-- [x] **İçerik düzeltmesi (kod değil, ayrı iş) — yapıldı:** tüm XHTML'ler tarandı, `<p></li>` kalıbı düzeltildi, `mimetype` ilk ve **STORE** olacak şekilde yeniden paketlendi, watermark doğrulaması **OK** verdi, R2'ye **yeni key** (`…-r1.epub`) yüklendi ve `assets.storage_key` + `assets.source_checksum` tek `UPDATE` ile güncellendi. **Kayıt ve kalan değerler: `docs/runbooks/epub-repair-2026-10-27.md` §11.** Eski nesne (§10'a kadar) geri dönüş için R2'de duruyor.
-- [ ] **Katalog taraması:** katalogdaki **tüm EPUB'ları** aynı dry-run ile tara ve listele (kaç tanesi indirilemez durumda). Komut: runbook §9.
+- [x] **İçerik düzeltmesi (kod değil, ayrı iş) — yapıldı:** `xmllint` taraması **20 XML/XHTML dosyası, 8'i bozuk** buldu (`ch003` `<p></li>`; `ch004`–`ch008`,`ch013` değersiz `allowfullscreen`; `ch009` kapanmamış `<br>`). Hepsi düzeltildi (18 satır), ikinci tarama temiz. `mimetype` ilk ve **STORE** olacak şekilde yeniden paketlendi, watermark doğrulaması **OK** verdi, R2'ye **yeni key** (`…-r1.epub`, 93340 bayt, geri okuma `eşit: true`) yüklendi ve `assets.storage_key` + `assets.source_checksum` tek `UPDATE` ile güncellendi. `annotations`: **0 satır** (CFI etkisi yok). **Değerler ve kayıt: `docs/runbooks/epub-repair-2026-10-27.md` §11.** Eski nesne (92948 bayt) §10'a kadar geri dönüş için R2'de duruyor.
+- [x] **Katalog taraması — yapıldı ve kapandı:** katalogda **1 EPUB** var, o da onarılan kitap. **Başka indirilemez EPUB yok.** Katalog büyüdüğünde runbook §9 tekrar çalıştırılır (v134 `inspectWatermarkable` kapısından önce yüklenmiş kayıtları yakalamak için).
 
 ## 3. İlk kurum / dış kullanıcıdan önce (zorunlu)
 

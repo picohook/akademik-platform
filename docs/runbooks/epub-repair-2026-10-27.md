@@ -597,7 +597,7 @@ ve bozuk dosyanın yeni yüklenmesini engeller.
 - [ ] §6 **yeni** key'e (`-r1.epub`) yazıldı, **`eşit: true`**, eski obje duruyor
 - [ ] §7 tek update: `storage_key` + `source_checksum`, `id` ile, `returning` 1 satır
 - [ ] §8 tarayıcıda indirme + çevrimdışı kaydet çalışıyor
-- [ ] §9 `scan.json` üretildi, `docs/TODO.md` §2b'ye eklendi
+- [ ] §9 `scan.json` üretildi, `docs/TODO.md` §2b'ye eklendi — **bu kitapta gerekmedi**: katalogda tek EPUB vardı, tarama kapandı (§11.4). Katalog büyüdüğünde geçerli.
 - [ ] Bir hafta sonra: §10 eski objeyi sil (yalnız geri dönüş yapılmadıysa)
 
 ---
@@ -611,42 +611,70 @@ dosya için §1–§10 tekrar çalıştırılır.
 | --- | --- |
 | Kitap | Scientific Writing for Health Research |
 | Asset ID | `4773fe55-2f2d-51d5-b7cb-740d477e75fa` |
-| R2 key (eski) | `libedge/uploads/7ef29929-dbbd-415d-a008-c18f99362c98.epub` |
-| R2 key (yeni) | `libedge/uploads/7ef29929-dbbd-415d-a008-c18f99362c98-r1.epub` |
+| R2 key (eski) | `libedge/uploads/7ef29929-dbbd-415d-a008-c18f99362c98.epub` — **92948 bayt** |
+| R2 key (yeni) | `libedge/uploads/7ef29929-dbbd-415d-a008-c18f99362c98-r1.epub` — **93340 bayt**, geri okuma `eşit: true` |
 | Yeni `storage_key` (DB) | `r2://libedge/uploads/7ef29929-dbbd-415d-a008-c18f99362c98-r1.epub` |
-| Yeni `source_checksum` (sha256) | `<§5 çıktısındaki fixed.epub sha256>` |
-| Eski `source_checksum` (geri dönüş) | `<§1.1'de not alınan değer>` |
+| Yeni `source_checksum` (sha256) | `59a2ae15f0c862be07ccfffa9d9befec38be2932d10296d5f724a8b881d0b57a` |
+| Eski `source_checksum` (geri dönüş) | `6d45b0c1d329731cd8841e644e78ea91a399ee160ab5186c989cf065730158fb` |
 
-> :warning: Bu iki hücre **sunucu çıktısından** doldurulmalı. Elle/ezberden yazılmaz —
-> yanlış checksum, dosyanın yerinde olmadığını gizler.
+> :warning: `storage_key` **ve** `source_checksum` birlikte yazılmalı (§7 tek `UPDATE`). Yalnız
+> `storage_key` yazılırsa DB'deki checksum eski dosyanınki olur ve iki farklı dosya aynı hash'i
+> taşır — yanlış bir eşleşme, dosyanın yerinde olmadığını gizler.
+>
+> Eski değer, geri dönüşte (§10) gerekir. §10'daki `HASH_OLD_SAVED` bu hücreden alınır. Onarım
+> öncesi bu satırın DB'deki değeri ve `sha256sum source.epub` çıktısı **birebir aynıydı** —
+> yani DB'deki checksum gerçekten indirilen baytları tanımlıyordu.
 
 ### 11.1 Ne bulundu
 
-- `EPUB/text/ch003.xhtml` — `<p></li>` (kapanmayan `<p>`, Pandoc çıktısı). §2.1'de
-  `FAIL — EPUB/text/ch003.xhtml: Invalid EPUB package: mismatched XML closing tag`.
-- §2.2 `xmllint` taraması bu kitapla sınırlı değil: **onarılan dosyaların tam listesi
-  `broken-list.txt`'tir.** Kaydı buraya eklerken liste uzunluğu ve dosya adları yazılır.
+§2.2 `xmllint` taraması: **20 XML/XHTML dosyası, 8'i bozuk.** Yalnız `ch003` değildi:
+
+| Dosya | Bulgu |
+| --- | --- |
+| `ch003.xhtml` | `<p></li>` — kapanmayan `<p>` (Pandoc çıktısı). §2.1'de `FAIL — … mismatched XML closing tag` |
+| `ch004`–`ch008`, `ch013` | `allowfullscreen` **değersiz** (`allowfullscreen=""` yazılmalı) |
+| `ch009.xhtml` | kapanmamış `<br>` |
+
+`ch003` dışındaki yedi dosya **indirmeyi zaten bozuyordu**; §2.1 ve §5 watermark yürüyüşü ilk
+hatada durduğu için şikâyet tek dosya adıyla görünüyordu. Bu, "tek bozuk dosya" varsayımının
+neden yanlış olduğunun kanıtı: semptom tek dosyayı gösterir, tarama hepsini gösterir.
 
 ### 11.2 Ne yapıldı
 
-1. §3.2 kalıbı (`<p></li>` → `<p></p></li>`) uygulandı; §3.3 `xmllint` temiz çıkana kadar
-   tarandı (`unpack.bak/` yedeği yerinde).
-2. §4 yeniden paketleme: `mimetype` **ilk** ve **STORE**.
-3. §5 doğrulama: `dry-run OK` + `watermark OK` + **kimlik yazılan belge > 0**.
-4. §6 yeni key'e yazıldı, `eşit: true`; eski obje **yerinde** bırakıldı.
-5. §7 tek `UPDATE` (`storage_key` + `source_checksum`, `id` ile), `returning` 1 satır.
-6. §8 canlı doğrulama: indirme çalışıyor, çevrimdışı kaydet çalışıyor, log'da
+1. §3.2 kalıbı uygulandı (`<p></li>` → `<p></p></li>`), `allowfullscreen` değerleri
+   `=""` olarak dolduruldu, `<br>` kapatıldı (`<br/>`). Toplam **18 satır** değişti.
+2. §3.3 `xmllint` **ikinci taraması temiz** (20/20 well-formed); `unpack.bak/` yedeği yerinde.
+3. §4 yeniden paketleme: `mimetype` **ilk** ve **STORE**.
+4. §5 doğrulama: `dry-run OK` + `watermark OK` + **kimlik yazılan belge > 0**.
+5. §6 yeni key'e yazıldı (`-r1.epub`, 93340 bayt), geri okuma `eşit: true`; eski obje
+   (92948 bayt) **yerinde** bırakıldı.
+6. §7 tek `UPDATE` (`storage_key` + `source_checksum`, `id` ile), `returning` 1 satır.
+7. §8 canlı doğrulama: indirme çalışıyor, çevrimdışı kaydet çalışıyor, log'da
    `delivery failed` **yok**.
 
 ### 11.3 Sonuç
 
-- [ ] §7 `returning` satırı: `storage_key` `-r1.epub` ile bitiyor, checksum §11 tablosuyla aynı
-- [ ] §8.1–§8.3 tarayıcıda OK
-- [ ] §8.4 `dc logs --since 10m web | grep -i 'delivery failed'` → boş
-- [ ] §8.5 `annotations` sayımı: `orphaned` artmadı (§3'teki ilk sayım ile aynı)
-- [ ] §9 katalog taraması **ayrı iş**: sonuç `docs/TODO.md` §2b'ye yazılacak (§9 henüz koşulmadı)
+- [x] §7 `returning` satırı: `storage_key` `-r1.epub` ile bitiyor, checksum §11 tablosuyla aynı
+- [x] §8.1–§8.3 tarayıcıda OK
+- [x] §8.4 `dc logs --since 10m web | grep -i 'delivery failed'` → boş
+- [x] §8.5 `annotations`: bu asset için **0 satır** — CFI etkisi yok (18 satırlık düzeltme
+      metin akışını değiştirmedi, kullanıcı notu kaybolmadı)
+- [x] §9 katalog taraması: **1 EPUB, o da bu kitap** — başka indirilemez EPUB yok (aşağıda)
 
-### 11.4 Geri dönüş
+### 11.4 Sonuç: katalog taraması (§9)
+
+Tarama **yapıldı ve kapandı**. Katalogda **tek EPUB** var ve onarılan kitap o. Yani bu onarım
+"bilinen tek bozuk dosya"yı değil, **katalogdaki tüm EPUB'ları** kapsıyor: `ch003` dışındaki
+yedi bozuk dosya da aynı kitabın içindeydi (§11.1).
+
+Sonuç: **başka indirilemez EPUB yok.** §9 `scan.json` üretimi bu büyüklükte bir katalog için
+gereksizdi; `docs/TODO.md`'deki katalog taraması maddesi bu sonuçla kapatıldı.
+
+> Katalog büyüdüğünde §9 tekrar anlamlı olur: tarama, yükleme anındaki `inspectWatermarkable`
+> kapısının (v134) **geçmişte kalmış** kayıtları yakalaması için var. Bugün öyle bir kayıt yok.
+
+### 11.5 Geri dönüş
+
 
 §10 aynen geçerli: R2'ye dokunulmaz, yalnız DB §1.1'deki eski değerlere döndürülür.
 `restart` gerekmez — `storage_key` her istekte DB'den okunuyor.
