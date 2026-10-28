@@ -3,9 +3,9 @@
 Durum: **v1 — onaylandı.** Tarih: 2026-10-28. Yazan: Claude. Onay: Altan (2026-10-28). İnceleme: ChatGPT (teknik içerik uygun bulundu, 4 tur).
 Hizmet politikaları: SSO oturumu 12 saat, lease 72 saat — Altan önerilen değerleri kabul etti (2026-10-28); env ile değiştirilebilir.
 Konum: `picohook/akademik-platform` → `docs/contracts/libedge-elibrary-v1.md`. `libedge-website` bu dosyaya bağlantı verir, kopyalamaz. Uygulama PR'ları bu dosyanın **commit SHA'sını** referans alır.
-Değişiklik geçmişi: **Ek A** (v0.1→v0.2), **Ek B** (v0.2→v0.3), **Ek C** (v0.3→v0.4), **Ek D** (v0.4→v1).
+Değişiklik geçmişi: **Ek A** (v0.1→v0.2), **Ek B** (v0.2→v0.3), **Ek C** (v0.3→v0.4), **Ek D** (v0.4→v1), **Ek E** (errata: 022/023 ayrımı, RLS ölçümü).
 
-> **Açık kalan:** §4.4'teki global eser listesi Altan'ın ayrı kararıdır; liste kesinleşmeden migration 022'nin veri taşıma kısmı çalıştırılmaz. Bu belge bir sözleşmedir; çalışan kod veya canlıya geçiş onayı değildir.
+> **Açık kalan:** §4.4'teki global eser listesi Altan'ın ayrı kararıdır; liste kesinleşmeden migration 023'ün veri taşıma kısmı çalıştırılmaz. Bu belge bir sözleşmedir; çalışan kod veya canlıya geçiş onayı değildir.
 
 Bu belge iki sistemin sınırını tanımlar. Bir geliştirici veya AI, sohbet geçmişi olmadan kendi tarafını bu belgeyle yazabilmelidir. Uygulama v1 onayına kadar §9'daki mock yanıtlara karşı yazılır.
 
@@ -223,20 +223,20 @@ RLS okumada `works`, `editions`, `assets`, `asset_pages`, `collections` için `t
 
 1. **Uygulama katmanı:** köprüde iki ayrı token — `entitlements` ve `catalog`. Global yazan uçlar yalnız `catalog` token'ıyla. LibEdge, `catalog` token'ını yalnız personel işlemlerini çalıştıran Worker yolunda tutar ve çağırmadan önce aktörün `super_admin` olduğunu doğrular. Okuyucu aktörü audit'e yazar.
 2. **Veritabanı katmanı:** ayrı, dar yetkili rol **`akademik_catalog`** (NOSUPERUSER, NOBYPASSRLS, kendi parolası, ayrı bağlantı havuzu). Yetkileri:
-   - `tenant_id IS NULL` satırlarına insert/update/delete — yazma politikaları yalnız `current_user = 'akademik_catalog'` iken izin verir; `akademik_app` global satıra **yazamaz** (yalnız okur).
+   - `tenant_id IS NULL` satırlarına insert/update/delete — yazma politikaları yalnız `current_user = 'akademik_catalog'` iken izin verir; `akademik_app` global satıra **yazamaz** (yalnız okur). Politika `as restrictive` yazılır ve **komut bazında** ayrılır: app için `insert`/`update`/`delete` üçü de `tenant_id is not null` ile sınırlıdır (`using (true)` + `with check` yetmez — Ek E), `select` kısıtlanmaz. `tenant_id` kolonu hiçbir role UPDATE yetkisi olarak verilmez.
    - Tenant'a ait (staff dahil) satırlara **genel yazma yetkisi yok**. Yayımlama (§5.6) yalnız `catalog_publish_work(work_id uuid)` fonksiyonuyla yapılır: `SECURITY DEFINER`, `search_path` sabit, sahibi tablo sahibi, `EXECUTE` yalnız `akademik_catalog`'a. Fonksiyon eserin `staff` tenant'ında olduğunu doğrular ve yalnız o eserin `works`, `editions`, `assets`, `asset_pages` satırlarını `tenant_id = NULL` yapar; başka hiçbir şey yapmaz.
-   - Yayından kaldırma/geri koyma (§5.6) yalnız global eserin `withdrawn_at` alanını değiştirir.
+   - Yayından kaldırma/geri koyma (§5.6) yalnız global eserin `withdrawn_at` alanını değiştirir; `catalog_set_withdrawn(work_id, boolean, reason)` fonksiyonuyla, yalnız `akademik_catalog` çağırabilir.
    Köprünün catalog yolu bu rolle bağlanır.
 
 Bu ayrım uygulama hatalarına karşı veritabanı garantisi verir: normal uygulama yolundaki bir hata global katalogu değiştiremez. Aynı süreç iki kimlik bilgisini de tuttuğu için **sürecin ele geçirilmesine** karşı garanti değildir; bu sınır bilerek kabul edilmiştir.
 
-Bugünkü durum (ölçüldü): RLS politikaları yalnız `using` içeriyor, yazma aynı koşula düşüyor; herhangi bir tenant bağlamı teoride global satır ekleyebilir. Uygulama kodu bunu bugün engelliyor (`updateBook` yazmaları `tenant_id = $tenant` koşulu taşıyor). `collection_items` tablosunda `tenant_id` ve RLS yok. İkisi de migration 022 ile kapanır.
+Bugünkü durum (ölçüldü): RLS politikaları yalnız `using` içeriyor, yazma aynı koşula düşüyor; herhangi bir tenant bağlamı teoride global satır ekleyebilir. Uygulama kodu bunu bugün engelliyor (`updateBook` yazmaları `tenant_id = $tenant` koşulu taşıyor). `collection_items` tablosunda `tenant_id` ve RLS yok. İkisi de migration 022 ile kapanır — ve ölçüm sırasında çıktı ki "teoride" değil, gerçekten açık: ayrıntı Ek E.
 
 ### 4.4 İlk taşıma
 
-Toplu varsayım yok. Altan global olacak eserlerin **listesini** (eser ID + başlık) onaylar; migration 022 yalnız o listeyi (works, editions, assets, asset_pages, ilgili koleksiyon ve öğeleri) `tenant_id = NULL`'a taşır. Notlar/ilerleme/oturumlar taşınmaz. Sonraki eserler için §5.6.
+Toplu varsayım yok. Altan global olacak eserlerin **listesini** (eser ID + başlık) onaylar; migration 023 yalnız o listeyi (works, editions, assets, asset_pages, ilgili koleksiyon ve öğeleri) `tenant_id = NULL`'a taşır. Notlar/ilerleme/oturumlar taşınmaz. Sonraki eserler için §5.6.
 
-Migration 022 ayrıca `works` tablosuna `withdrawn_at timestamptz` ve `withdrawn_reason text` ekler (§5.6).
+Migration 022 ayrıca `works` tablosuna `withdrawn_at timestamptz` ve `withdrawn_reason text` ekler (§5.6) — şema kısmı olarak, veri taşımadan.
 
 ---
 
@@ -527,7 +527,7 @@ Lease yenileme:
 | 2 | ~~Trafik yolu ölçümü~~ — yapıldı (§7.1) | altyapı | — | — |
 | 3 | TODO §3 (+ `updateBook` authors) | akademik-platform | Cline | — |
 | 4 | Global olacak eser listesi (§4.4) | — | Altan | — |
-| 5 | Migration 021 + 022 (`akademik_catalog` rolü, yazma politikaları, `collection_items` tenant) | akademik-platform | Cline | 1, 4 |
+| 5 | Migration 021 + 022 (şema) + 023 (taşıma) (`akademik_catalog` rolü, yazma politikaları, `collection_items` tenant) | akademik-platform | Cline | 1, 4 |
 | 6 | Köprü v1 | akademik-platform | Cline | 3, 5 |
 | 7 | SSO (`/auth/libedge/*`) | akademik-platform | Cline | 5 |
 | 8 | Abonelik formu içerik seçicisi + eşitleme durumu + outbox | libedge-website | Harness | 1 (mock), 6 |
@@ -626,3 +626,18 @@ Kurum üyeliği/hesap iptali ayrıldı; `source_id` türle önekli; abonelik eş
 | JIT açıklamasında eski adım numaraları | "§2.3'teki tüm kimlik, hesap, tenant ve üyelik kontrolleri" (§3.3) |
 | Onay kapsamı | Hizmet politikaları ve global eser listesi bu belgenin onayıyla onaylanmış sayılmaz (başlık notu) |
 | Kabul testleri | #20 genişletildi, #25 eklendi |
+
+## Ek E — errata (2026-10-28, uygulama sırasında; `b15f8b5`'e referansla)
+
+Uygulama PR'ları yazılırken ölçülen iki sapma. Sözleşmenin kararı değişmiyor; hangi dosyanın ne yaptığı netleşiyor.
+
+| Konu | Sözleşmede (v1) | Uygulamada |
+|---|---|---|
+| §4.4 ilk taşıma | "migration 022" | Taşıma **023**'te. 022 yalnız şema: `akademik_catalog` rolü, global satır yazma politikaları, `catalog_publish_work`, `catalog_set_withdrawn`, `collection_items.tenant_id` + RLS, `works.withdrawn_at`. Liste gelene kadar 023 yazılmaz |
+| §4.3 veritabanı katmanı | "politikalar yalnız `current_user = 'akademik_catalog'` iken izin verir" | Yalnız bu yetmiyordu: `akademik_app`'in mevcut politikası `USING`-only olduğu için `WITH CHECK` oradan miras alınıyor ve `tenant_id is null` **true** olduğundan app global satıra yazabiliyordu. Ölçüldü (`pg_policies.with_check = null`). 022'de her iki role **`as restrictive`** politika eklendi: app `tenant_id is not null`, catalog `tenant_id is null` |
+| §4.3 `FOR ALL` yeterli değil | — (sözleşme komut ayrımı söylemiyordu) | `for all using (true) with check (tenant_id is not null)` **kusurluydu**: `WITH CHECK` yazılan satırı, `USING` ise *değiştirilmek üzere okunan* satırı denetler. `using (true)` global satırı app'in UPDATE'ine görünür kıldı ve o UPDATE satırı kendi tenant'ına çekince `WITH CHECK` sağlandı. PG16'da ölçüldü: app global eseri kendi tenant'ına çekti ve silebildi. 022 app politikasını **komut bazında** ayırır: `insert` → `with check`, `update` → `using`+`with check`, `delete` → `using`, üçü de `tenant_id is not null`. **SELECT'e kısıtlayıcı politika yok**: global okuma sürer. Altı tablonun hepsi (beş + `collection_items`) aynı üçlüyü alır |
+| `collection_items` RLS | §4.1 satırın tenant'ı olmasını istiyordu | `tenant_id` kolonu eklendi ama RLS **etkin değildi**: `force` tek başına etkisizdi (`relrowsecurity = f`), app başka tenant'ın öğelerini okuyordu. 022 artık `enable` + `force` yazar ve politikayı `drop policy if exists` ile idempotent kurar |
+| §4.3 catalog yazma yetkisi | insert/update/delete `tenant_id IS NULL` satırlara | İlk taslak yalnız `SELECT` veriyordu; köprü global koleksiyon kuramıyor, yayımlanmış eserin metadata'sını düzeltemiyordu. 022 `INSERT`/`DELETE` ve **kolon listeli** `UPDATE` verir; `tenant_id` bilerek listede yoktur, böylece catalog da global eseri bir tenant'a devredemez. §5.6 geri çekme `catalog_set_withdrawn(work_id, boolean, reason)` üzerinden yürür (yalnız global eser; staff eserine `P0001`) |
+
+Ek E bir sözleşme değişikliği değildir; §1'deki kararlar (K1–K7) ve §11 kabul testleri aynen geçerlidir.
+
