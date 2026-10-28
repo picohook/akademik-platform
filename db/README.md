@@ -183,3 +183,30 @@ Verification after a deploy, expected `relrowsecurity = t` and `relforcerowsecur
 ```sql
 select relname, relrowsecurity, relforcerowsecurity from pg_class where relname = 'collection_items';
 ```
+
+## Migration 024, and `app.maintenance_tenants()`
+
+`024-maintenance-tenants.sql` depends on nothing: it creates the `app` schema, one
+function, and the grant on it. **It is not part of 023.** 023 moves works to the
+global catalogue and waits on the approved list in contract §4.4; 024 exists
+because the timers need it and is independent of that decision.
+
+The two timers - download ticket sweep, annotation receipt retention - run outside
+any request, so no tenant is bound. `select id from tenants` is not an answer:
+`tenants_self` is `using (id = current_setting('app.tenant_id', true)::uuid)`, so
+the app role sees **one** row - the tenant that pooled connection last bound, or
+none at all. A sweeper written that way looks correct and covers one institution.
+
+So the list comes from `app.maintenance_tenants()`: `SECURITY DEFINER`, `search_path`
+pinned, returning **ids only**, executable by `akademik_app` alone. `tenants` is
+FORCEd for the owner too, hence the `set local row_security = off` in the file - the
+owner may do that, `akademik_app` may not.
+
+Measured by `node db/024.test.mjs` (17 checks, its own postgres): with no tenant
+bound the app role gets the same list as the owner, a tenant inserted afterwards
+appears, and neither `akademik_catalog` nor a definer-less function would pass.
+
+Until 024 is applied, `spike/app/server.mjs` falls back to the env tenant and logs
+a warning on every tick. That fallback has to catch `3F000` (`app` schema missing),
+not just `42883` - Postgres resolves the schema before the function, so the code a
+missing migration actually produces is `invalid_schema_name`.
