@@ -150,7 +150,7 @@ test('each newly rendered chapter receives policy and engine destruction removes
   const observers = [];
   globalThis.MutationObserver = class {
     constructor(callback) { this.callback = callback; observers.push(this); }
-    observe() {}
+    observe(node) { this.node = node; }
     disconnect() { this.disconnected = true; }
   };
   globalThis.window = { ePub: () => book, innerWidth: 800, innerHeight: 600, addEventListener() {}, removeEventListener() {} };
@@ -165,7 +165,11 @@ test('each newly rendered chapter receives policy and engine destruction removes
     contentHook({ document: frames[1].doc });
     for (const frame of frames) assert.equal(frame.viewport.content, 'width=800, height=600, initial-scale=1');
     frames[1].viewport.content = 'width=320, height=420, maximum-scale=1, minimum-scale=1, user-scalable=no';
-    observers[1].callback();
+    // Found by what it watches, not by creation order: the engine may create other
+    // observers for the same chapter.
+    const viewportObserver = observers.find(observer => observer.node === frames[1].doc.head);
+    assert.ok(viewportObserver, 'nothing watches the chapter head for a viewport re-write');
+    viewportObserver.callback();
     assert.equal(frames[1].viewport.content, 'width=320, height=420');
     for (const frame of frames) assert.equal(frame.dispatch('copy').defaultPrevented, true);
     assert.equal(blocked, 2);
@@ -173,7 +177,9 @@ test('each newly rendered chapter receives policy and engine destruction removes
     assert.equal(deselected, 2);
     frames[0].viewListeners.get('pagehide')();
     assert.equal(engine.copyPolicyDisposers.size, 1);
-    assert.equal(observers[0].disconnected, true);
+    // The disposed chapter's own observer must be disconnected; the chapter still
+    // on screen keeps its own.
+    assert.equal(observers.filter(observer => observer.node === frames[0].doc.head).every(observer => observer.disconnected), true);
     engine.destroy();
     assert.equal(engine.copyPolicyDisposers.size, 0);
     for (const frame of frames) assert.equal(frame.listeners.has('copy'), false);
