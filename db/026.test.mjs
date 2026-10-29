@@ -361,15 +361,15 @@ async function run() {
       [randomUUID(), DEMO, 'Should Not Exist'],
     ), '42501');
 
-    // app.tenant_binding() is the same expression the policies now use, and it is callable
-    // by the app role only because the migration grants it.
-    await app.query("select set_config('app.tenant_id', $1, false)", [DEMO]);
-    const fnBound = await app.query('select app.tenant_binding() as id');
-    check(fnBound.rows[0].id === DEMO, `app.tenant_binding() returned ${JSON.stringify(fnBound.rows[0].id)} while bound`);
-    await app.query('reset app.tenant_id');
-    const fnUnbound = await app.query('select app.tenant_binding() as id');
-    check(fnUnbound.rows[0].id === null,
-      `app.tenant_binding() returned ${JSON.stringify(fnUnbound.rows[0].id)} while unbound; expected NULL`);
+    // The guarded expression is written into the policies, not wrapped in a function. A
+    // function would need an EXECUTE grant to be a precondition for every read, and it had
+    // no caller: this asserts it did not come back.
+    const fn = await admin.query(
+      "select count(*)::int as n from pg_proc p join pg_namespace s on s.oid = p.pronamespace "
+      + "where s.nspname = 'app' and p.proname = 'tenant_binding'");
+    check(fn.rows[0].n === 0,
+      `app.tenant_binding() exists (${fn.rows[0].n} definition(s)); the policies use the ` +
+      'inline nullif and a function has no caller');
 
     // A second application is refused by the migration's own guard rather than silently
     // nesting two nullifs. db/migrate.mjs records what it applied, so this only happens by

@@ -91,7 +91,7 @@ async function probe() {
   // A pool without its own 'error' listener throws on an idle client error; this one is
   // reported in the JSON instead of killing the process with no output.
   pool.on('error', (error) => { out.error = `pool: ${error.message}`; });
-  const out = { ok: true, ids: null, unbound: null, error: null };
+  const out = { ok: true, ids: null, unbound: null, error: null, resetOnly: null };
   try {
     // `seen` and not `rows` or `stats` inside the callback: both are names `pg` owns, and a
     // local that shadows them makes the mapped rows read as undefined with no error.
@@ -110,6 +110,18 @@ async function probe() {
     // `counts` and not `stats`: `stats` is a property of the pool's own objects, and the
     // counter must not shadow it.
     out.counts = { ...bridgeTenantStats };
+  }
+  // What the connection looks like to the NEXT request, without withBridgeTenant's check in
+  // the way. Its check asks whether the connection is safe to reuse; on a database without
+  // 026 the answer is no, but the connection it destroys is not the one measured here. This
+  // is the same pool, max 1, so it is that connection.
+  try {
+    await pool.query('reset app.tenant_id');
+    const read = await pool.query('select id from works');
+    out.resetOnly = { ok: true, ids: read.rows.map((row) => row.id) };
+  } catch (error) {
+    out.resetOnly = { ok: false, error: `${error.code || ''} ${error.message}` };
+  } finally {
     await pool.end().catch(() => {});
   }
   console.log(JSON.stringify(out));
@@ -290,17 +302,26 @@ async function run() {
   await setup();
   await applyMigrations();
 
-  // --- B, without 026: it must fail --------------------------------------------
-  // Measured first. A reset that already worked here would mean the policies never needed
-  // rewriting, and the comparison below would prove nothing.
+  // --- B, without 026: the reset alone leaves the connection unusable -----------
+  // Measured first, and measured on the connection rather than through
+  // withBridgeTenant's own check: that check now refuses to hand a connection back when
+  // the database cannot unbind it, so the arm's `ok` says nothing about whether the reset
+  // worked. `resetOnly` does `reset app.tenant_id` on the same max:1 pool and then runs
+  // the unbound read, which is the request 026 exists for.
   const withoutMigration = await runProbe({ reset: true });
   check(withoutMigration.parsed !== null,
     `the probe produced no JSON. stderr: ${withoutMigration.stderr.slice(0, 400)}`);
-  check(withoutMigration.parsed.ok === false,
-    `returning the connection worked WITHOUT 026 (${withoutMigration.text.slice(0, 300)}); `
+  check(withoutMigration.parsed.resetOnly?.ok === false,
+    `reset app.tenant_id was enough WITHOUT 026 (${withoutMigration.text.slice(0, 300)}); `
     + 'the policy rewrite is then unnecessary or the probe is not measuring it');
-  check(/22P02/.test(withoutMigration.parsed.error || ''),
-    `without 026 the unbound read failed with ${JSON.stringify(withoutMigration.parsed.error)}; expected 22P02`);
+  check(/22P02/.test(withoutMigration.parsed.resetOnly?.error || ''),
+    `without 026 the unbound read failed with ${JSON.stringify(withoutMigration.parsed.resetOnly?.error)}; `
+    + 'expected 22P02');
+  // And withBridgeTenant noticed: it refused to hand the connection back.
+  check(withoutMigration.parsed.counts.resetFailed === 1
+    && withoutMigration.parsed.counts.reset === 0,
+    `without 026 withBridgeTenant reported ${JSON.stringify(withoutMigration.parsed.counts)}; `
+    + 'expected resetFailed = 1 and reset = 0');
 
   // --- with 026 ---------------------------------------------------------------
   await admin.query(await readFile(path.join(dbDir, 'migrations', '026-tenant-binding-nullif.sql'), 'utf8'));

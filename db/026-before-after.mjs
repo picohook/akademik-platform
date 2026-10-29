@@ -349,12 +349,15 @@ async function main() {
         .map(({ row }) => `${row.tablename}.${row.policyname}`),
     };
 
-    // app.tenant_binding() is the only function 026 adds, and only akademik_app may call it.
+    // 026 adds no functions. The inline nullif is the whole change; a function wrapping it
+    // would be a second thing to grant and a second thing to keep in step.
     report.functions = {
       added: functionsAfter.filter((row) => !functionsBefore.some((was) => was.fn === row.fn))
         .map((row) => `${row.fn} (akademik_app execute:${row.app_execute}, akademik_catalog execute:${row.catalog_execute})`),
       before: functionsBefore.map((row) => `${row.fn} (akademik_app execute:${row.app_execute}, akademik_catalog execute:${row.catalog_execute})`),
     };
+    check(report.functions.added.length === 0,
+      `026 added functions: ${report.functions.added.join(', ')}; it should change policies only`);
 
     // With 026 applied: the same four attacks, the same file, the same assertions.
     report.attacks.after026 = await run022Attacks({ with026: true });
