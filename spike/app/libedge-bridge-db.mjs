@@ -24,10 +24,25 @@ const conflict = (code, detail) => new BridgeError(409, code, detail);
 const unprocessable = (code, detail) => new BridgeError(422, code, detail);
 
 // `set_config(..., false)` and not `set local`: the value must survive every statement
-// in the callback and is cleared by the `reset` in the finally block. If the reset were
-// skipped the next request to borrow this connection would run inside the previous
-// request's tenant - the exact leak the tenant scheme exists to prevent - so it is in a
-// finally, not after the happy path.
+// in the callback. What happens afterwards is the subtle part and it is measured, not
+// assumed (PostgreSQL 16, one-connection pool, `max: 1`, so reuse is certain):
+//
+//   * `reset app.tenant_id` leaves the GUC as '' and NOT unset. current_setting(...,
+//     true) then returns '' rather than NULL, and the tenant policies - which all say
+//     `tenant_id is null or tenant_id = current_setting(...)::uuid` - raise 22P02 on
+//     `''::uuid` for the next unbound query on that connection.
+//   * `set_config('app.tenant_id', null, false)` leaves exactly the same ''.
+//   * returning the connection with the tenant still set is the worst of the three:
+//     the next request silently runs inside the previous tenant.
+//   * `client.release(true)` destroys the connection, and the pool's next connection
+//     has the GUC genuinely unset - `is null` true, the unbound read works.
+//
+// So the connection is discarded, not cleaned. That costs one connection per
+// tenant-scoped transaction for the length of the request, which is the right trade for
+// a bridge that answers a handful of writes a second. The alternative is a schema change
+// to the policies (`nullif(current_setting(...), '')::uuid`), which is the real fix and
+// belongs in a migration, not here - it is recorded in db/README.md and raised as a
+// finding rather than patched around silently.
 export async function withBridgeTenant(pool, tenantId, fn) {
   const client = await pool.connect();
   try {
@@ -40,8 +55,9 @@ export async function withBridgeTenant(pool, tenantId, fn) {
     await client.query('rollback').catch(() => {});
     throw error;
   } finally {
-    await client.query('reset app.tenant_id').catch(() => {});
-    client.release();
+    // Always destroyed, on both paths: a rolled-back transaction also leaves the GUC set
+    // on the session, so "only discard on success" would leak the tenant after an error.
+    client.release(true);
   }
 }
 
@@ -673,5 +689,69 @@ export async function readSubscription(pool, sourceId) {
     );
     if (!rows.length) throw notFound('SUBSCRIPTION_NOT_FOUND', `no subscription "${sourceId}"`);
     return rows[0];
+  });
+}
+
+// ---------------------------------------------------------------------------
+// GET /catalog and GET /catalog/works/{id}  (section 5.5)
+// ---------------------------------------------------------------------------
+//
+// The global catalogue is `tenant_id is null`, and that predicate is not decoration: a
+// tenant's own work shares the table and is not shareable through the bridge (§3.2). It
+// is written out rather than left to RLS because these functions also run as
+// akademik_catalog, whose restrictive policy is the complement - `tenant_id is null` -
+// and a query that leaned on the policy would silently change meaning with the role.
+//
+// Withdrawn works are excluded from the list and reported as withdrawn when asked for
+// by id. Hiding them from the list but returning 404 for the id would make a withdrawal
+// indistinguishable from a deletion to a caller that already holds the id (§5.6).
+const CATALOG_WORK_COLUMNS = `
+  w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.content_type,
+  w.withdrawn_at,
+  (select count(*)::int from editions e where e.work_id = w.id and e.tenant_id is null) as editions`;
+
+function catalogWorkRow(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    subtitle: row.subtitle ?? null,
+    language: row.language,
+    abstract: row.abstract ?? null,
+    subjects: row.subjects ?? [],
+    content_type: row.content_type,
+    editions: row.editions,
+    withdrawn: row.withdrawn_at !== null,
+  };
+}
+
+export async function readCatalogPage(pool, { limit, offset = 0 }) {
+  return withBridgeAdmin(pool, async (client) => {
+    // limit + 1 so "there is another page" is answered without a second count over a
+    // table that grows; a `total` here would be a full scan on every catalogue read.
+    const { rows } = await client.query(
+      `select ${CATALOG_WORK_COLUMNS}
+         from works w
+        where w.tenant_id is null and w.withdrawn_at is null
+        order by w.title nulls last, w.id
+        limit $1 offset $2`,
+      [limit + 1, offset],
+    );
+    const page = rows.slice(0, limit);
+    return { works: page.map(catalogWorkRow), has_more: rows.length > limit };
+  });
+}
+
+export async function readCatalogWork(pool, workId) {
+  return withBridgeAdmin(pool, async (client) => {
+    const { rows } = await client.query(
+      `select ${CATALOG_WORK_COLUMNS}
+         from works w
+        where w.tenant_id is null and w.id = $1`,
+      [workId],
+    );
+    // A tenant-owned work is not found here rather than forbidden: telling a caller
+    // that an id exists but belongs to someone else would leak the other tenant's ids.
+    if (!rows.length) throw notFound('WORK_NOT_FOUND', `no global work "${workId}"`);
+    return catalogWorkRow(rows[0]);
   });
 }

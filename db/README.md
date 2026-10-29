@@ -224,6 +224,39 @@ Files applied by `db/migrate.mjs` must not contain begin/commit and must not use
 meta-commands. The body terminator is `$body$`, not a bare dollar pair, for the reason 022
 documents: a line consisting of the bare terminator would end the runner's own transaction.
 
+### Known gap: a connection that has bound a tenant can never be unbound again
+
+Every tenant policy in `schema.sql` and 022 spells the binding as
+
+```sql
+tenant_id is null or tenant_id = current_setting('app.tenant_id', true)::uuid
+```
+
+`current_setting(..., true)` returns **NULL** only while the setting has never been assigned
+on that session. Once it has been set - which any tenant-scoped request does - no undo
+restores it. Measured on PostgreSQL 16 with a one-connection pool, each variant in its own
+pool so reuse is certain:
+
+| after a bound transaction | `current_setting('app.tenant_id', true)` | next unbound read |
+| --- | --- | --- |
+| `reset app.tenant_id` | `''` | **22P02** `invalid input syntax for type uuid: ""` |
+| `reset all` | `''` | **22P02** |
+| `set_config('app.tenant_id', null, false)` | `''` | **22P02** |
+| left set (no undo) | the tenant id | silently reads **the previous tenant's rows** |
+| `client.release(true)` (connection destroyed) | `NULL` | works |
+
+Postgres does not short-circuit the `or`, so the `''::uuid` cast is evaluated even when
+`tenant_id is null` is true - which is why rewriting a query's `where` clause cannot work
+around it. RLS runs before the query's own filter anyway.
+
+Until the policies say `nullif(current_setting('app.tenant_id', true), '')::uuid`,
+**the only safe handling is to discard the connection**, which is what
+`withBridgeTenant` in `spike/app/libedge-bridge-db.mjs` does. Anything else either breaks
+the bridge or, worse, leaks a tenant. The permanent fix belongs in a migration that rewrites
+the twenty-odd policy expressions in `schema.sql` and 022; it is deliberately not bundled
+here, because rewriting RLS on `works`, `assets` and `grants` to fix a connection detail
+would need the same measurement that found this, applied to every affected table.
+
 ## Migration 024, and `app.maintenance_tenants()`
 
 `024-maintenance-tenants.sql` depends on nothing: it creates the `app` schema, one
