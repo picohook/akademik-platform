@@ -2122,16 +2122,22 @@ function isBridgePath(rawUrl) {
 // response stream is too.
 async function handleBridgeRoute(req, res) {
   let url;
-  let pathname;
   try {
     url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-    pathname = decodeURIComponent(url.pathname).slice(BRIDGE_PREFIX.length) || '/';
   } catch {
     // A malformed URL is still a bridge request: the answer is the contract's error
     // shape, not a bare string, or LibEdge parses it as a crash.
     json(res, 400, { error: 'INVALID_BODY', detail: 'malformed url' });
     return;
   }
+  // Still percent-encoded, on purpose. `url.pathname` is the raw path as Node parsed it,
+  // and the bridge decodes each segment exactly once (see splitPath in
+  // libedge-bridge-api.mjs). Decoding here as well would decode twice: a ref written
+  // `a%2525b` would arrive as `a%`, and - worse - an encoded `%2F` would become a real
+  // separator that the route table and every later reader could not tell from one the
+  // caller sent. Removing the prefix from the raw path also keeps the slice exact: the
+  // prefix is ASCII, so a later byte never changes the offset.
+  const pathname = url.pathname.slice(BRIDGE_PREFIX.length) || '/';
 
   const requestId = String(req.headers['x-request-id'] || '').trim() || randomUUID();
   res.setHeader('x-request-id', requestId);

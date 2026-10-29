@@ -55,11 +55,56 @@ const ROUTES = [
   { method: 'GET', pattern: '/catalog/works/:id', scope: 'entitlements', handler: getCatalogWork },
 ];
 
+// The path arrives as the raw `url.pathname` from server.mjs - still percent-encoded,
+// because Node's URL does not decode it. Splitting it and then decoding each segment is
+// what makes a capture correct for a value that legitimately contains `%` characters:
+//
+//   %2F decodes to '/'. A ref of `a%2Fb` would otherwise become the single segment
+//   `a/b` and could be handed to a route that expected two, or - worse - a caller could
+//   send `a%2F..%2Fb` hoping some later reader splits the decoded string. A decoded
+//   segment containing '/' is refused with 400 before any route sees it.
+//
+//   %25 decodes to '%'. Decoding the WHOLE path first (which the earlier version did)
+//   turns `a%2525b` into `a%5b` and then leaves it half-decoded; decoding per segment,
+//   exactly once, is the only version where the value a handler receives is the value
+//   the caller encoded.
+//
+//   '+' is NOT a space here. That rule belongs to `application/x-www-form-urlencoded`
+//   (and to query strings); in a path segment a '+' is a literal plus, so the ref
+//   `a+b` and the ref `a b` stay distinct.
+//
+// The error code is the contract's only 400, INVALID_BODY (5.2): a bridge client has a
+// table of codes and an unrecognised one is a crash, so inventing INVALID_PATH would be
+// worse than stretching the name. The detail says which part of the request was at fault.
+function decodeSegment(segment) {
+  let decoded;
+  try {
+    decoded = decodeURIComponent(segment);
+  } catch {
+    // decodeURIComponent's own message quotes the whole segment back, which is caller
+    // input echoed into a log - so the detail is fixed text.
+    throw new BridgeError(400, 'INVALID_BODY', 'a path segment is not valid percent-encoding');
+  }
+  // '\0' is a legal row value but not a legal path segment, and it is the first thing a
+  // later reader splits on by accident. Same for the decoded '/', above.
+  if (decoded.includes('/') || decoded.includes('\0')) {
+    throw new BridgeError(400, 'INVALID_BODY', 'a path segment decodes to a separator');
+  }
+  return decoded;
+}
+
+function splitPath(pathname) {
+  return String(pathname).split('/').map(decodeSegment);
+}
+
 function matchRoute(method, pathname) {
+  // Decoded once, before the method is looked at: a path that cannot be decoded is
+  // malformed whatever the method, and the answer must not depend on which routes happen
+  // to exist for that verb.
+  const actual = splitPath(pathname);
   for (const route of ROUTES) {
     if (route.method !== method) continue;
     const parts = route.pattern.split('/');
-    const actual = pathname.split('/');
     if (parts.length !== actual.length) continue;
     const params = {};
     let ok = true;
@@ -67,7 +112,7 @@ function matchRoute(method, pathname) {
       const part = parts[index];
       if (part.startsWith(':')) {
         if (!actual[index]) { ok = false; break; }
-        params[part.slice(1)] = decodeURIComponent(actual[index]);
+        params[part.slice(1)] = actual[index];
       } else if (part !== actual[index]) {
         ok = false;
         break;
