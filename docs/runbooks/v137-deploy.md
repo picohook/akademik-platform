@@ -1,4 +1,4 @@
-# v137 deploy runbook — 021/022/024 migration'ları + `akademik_catalog` LOGIN
+﻿# v137 deploy runbook — 021/022/024/025/026 migration'ları + `akademik_catalog` LOGIN
 
 > **Durum: ÇALIŞTIRILMADI.** Bu dosya bir **plan**dır; hiçbir komut prod'da koşulmadı.
 > Değerler `docs/DEPLOY.md` ve v136 kaydından türetildi, tahmin edilmedi. Gerçek çıktılar
@@ -8,19 +8,20 @@
 >
 > Sözleşme: `docs/contracts/libedge-elibrary-v1.md` @ `b15f8b5`.
 > ilgili: PR #40 (`feat/migrations-021-022`), PR #43 (`maintenance_tenants` çağrısı, merge `bee0fa5`),
-> PR #44 (`024-maintenance-tenants.sql`, merge `5d4f342`), `db/migrations/021-*.sql`, `022-*.sql`,
-> `024-*.sql`, `db/README.md`.
+> PR #44 (`024-maintenance-tenants.sql`, merge `5d4f342`), PR #49 (`026-tenant-binding-nullif.sql`,
+> merge `0e180cb`), PR #48 (`withBridgeTenant`'ın `finally` düzeltmesi — varsayılan **değişmedi**),
+> `db/migrations/021-*.sql`, `022-*.sql`, `024-*.sql`, `025-*.sql`, `026-*.sql`, `db/README.md`.
 
 ## 0. Bu sürümde ne değişiyor
 
 | | |
 | --- | --- |
-| Kodsal değişiklik | **Var, ama yalnız `maintenanceTenantIds()`.** #43 (`bee0fa5`) v137 imajıyla **ilk kez** prod'a girer: süpürme döngüsü artık `app.maintenance_tenants()`'ı çağırır. Kullanıcıya görünen yollar (`/opds`, `/api/*`, indirme) v136 ile aynı |
-| Migration | **021** (kimlik/abonelik tabloları), **022** (global katalog sınırı), **024** (`app.maintenance_tenants()`), **025** (köprü için `app.libedge_tenant_by_ref()` + `app.libedge_upsert_tenant()`) — dördü de ilk kez prod'a girer. Prod şu an **001–020** |
-| Veri taşıması | **Yok.** 021/022/024/025 tek bir eseri global kataloğa taşımaz; o **023** ve sözleşme §4.4 listesi onaylanana kadar yazılmaz |
+| Kodsal değişiklik | **Var, ama yalnız `maintenanceTenantIds()`.** #43 (`bee0fa5`) v137 imajıyla **ilk kez** prod'a girer: süpürme döngüsü artık `app.maintenance_tenants()`'ı çağırır. Kullanıcıya görünen yollar (`/opds`, `/api/*`, indirme) v136 ile aynı. **`withBridgeTenant` varsayılanı değişmedi** — hâlâ `client.release(true)`, bkz. §4.7 ve §8 |
+| Migration | **021** (kimlik/abonelik tabloları), **022** (global katalog sınırı), **024** (`app.maintenance_tenants()`), **025** (köprü için `app.libedge_tenant_by_ref()` + `app.libedge_upsert_tenant()`), **026** (her tenant politikasını `nullif(current_setting(...), '')::uuid` biçimine çevirir) — beşi de ilk kez prod'a girer. Prod şu an **001–020** |
+| Veri taşıması | **Yok.** 021/022/024/025/026 tek bir eseri global kataloğa taşımaz; o **023** ve sözleşme §4.4 listesi onaylanana kadar yazılmaz |
 | Yeni rol | `akademik_catalog` — 022'de **NOLOGIN** yaratılır. LOGIN + parola bu runbook'ta verilir |
-| Yeni şema | `app` — 024 yaratır (bir fonksiyon + iki grant); 025 iki fonksiyon daha ekler. Tablo **yok** |
-| Kırılma riski | `collection_items` üzerine RLS **enable + force**. Prod'da `collection_items` satırlarının `tenant_id`'si doğru olmalı, yoksa koleksiyon grant'leri görünmez olur (bkz. §3.1 ön kontrol) |
+| Yeni şema | `app` — 024 yaratır (bir fonksiyon + iki grant); 025 iki fonksiyon daha ekler. **026 hiçbir fonksiyon eklemez ve hiçbir tablo/rol yaratmaz** — yalnız politikaları yeniden yazar |
+| Kırılma riski | `collection_items` üzerine RLS **enable + force**. Prod'da `collection_items` satırlarının `tenant_id`'si doğru olmalı, yoksa koleksiyon grant'leri görünmez olur (bkz. §3.1 ön kontrol). **026'nın down migration'ı yok**: geri dönüş yalnız §3'teki `pg_dump` ile (§8) |
 
 
 ## 1. Kurallar (bu runbook boyunca)
@@ -98,7 +99,13 @@ Beklenen: `POSTGRES_PASSWORD set: yes`. Boşsa **DUR**.
 cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status'
 ```
 
-**Beklenen:** `021`, `022`, `024` ve `025` **pending**; geri kalanı `applied`.
+**Beklenen:** `021`, `022`, `024`, `025` ve `026` **pending**; geri kalanı `applied`.
+Son `applied` satırı **`020`** olmalı (`schema_migrations`'ın bugünkü son kaydı).
+
+> **026 öncesi / sonrası ayrımı burada başlıyor:** §4.3'ten **önce** `--status`'ün en büyük
+> `applied` numarası **`025`**; §4.3'ten **sonra** **`026`**. Ayrıca doğrudan
+> `schema_migrations`'a da bakılır (§4.4b); `--status` dosya sistemini de okur, o yüzden tek
+> başına yetmez — çalıştırılanı kayıt tutar.
 
 > Prod 020'ye kadar runner ile ilerledi, yani `schema_migrations` dolu → **baseline
 > GEREKMEZ**. `--status` "not baselined" derse **DUR ve sor**; körlemesine
@@ -106,18 +113,17 @@ cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platfor
 >
 > **Ölçüm komutu:** `--status` her dosyayı tek satır yazar — `    pending  021-….sql`
 > (durum **başta**, dosya adı sonda; 2026-10-29'da aynı formatta ölçüldü). `grep`
-> yalnız bu dört satıra daralır ve **sayar**; sessizce boş çıktı ile "beklediğim dört
+> yalnız bu beş satıra daralır ve **sayar**; sessizce boş çıktı ile "beklediğim beş
 > satır" ayırt edilebilsin diye `grep -c` kullanılır, düz `grep` değil:
 
 ```bash
-cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status' | grep -cE '^[[:space:]]+pending[[:space:]]+02[1245]-'
+cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status' | grep -cE '^[[:space:]]+pending[[:space:]]+02[12456]-'
 ```
 
-**Beklenen:** `4`. `3` dönerse eksik olan **025**'tir (025 ayrı bir PR'dan gelir; o merge
-edilmeden checkout onu içermez) → `git log -1 --oneline` ve `ls db/migrations/025*`
-kontrol edilir, **DUR**. `3` aynı zamanda 024 başka bir deploy'a taşınmışsa da görülür
-(§4.2'deki alternatif plan). `0` ya da `1` dönerse **DUR**, `--status` çıktısının tamamı
-okunur; hata mesajını beklemeden yorumlama.
+**Beklenen:** `5`. `4` dönerse eksik dosya `026`'dır (en yeni migration; checkout onu
+içermiyorsa `ls db/migrations/026*` boş döner) → **DUR**. `3` dönerse **025** eksiktir.
+`0` ya da `1` dönerse **DUR**, `--status` çıktısının tamamı okunur; hata mesajını
+beklemeden yorumlama.
 
 ### 4.2 Kuru çalıştırma
 
@@ -125,7 +131,7 @@ okunur; hata mesajını beklemeden yorumlama.
 cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --dry-run'
 ```
 
-**Beklenen:** yalnız `021`, `022`, `024` ve `025` listelenir; başka dosya yok.
+**Beklenen:** yalnız `021`, `022`, `024`, `025` ve `026` listelenir; başka dosya yok.
 
 Sanılmasın diye: **025'in bu deploy'da olması zorunlu değil.** Köprü henüz
 `server.mjs`'e bağlanmadı (§11), yani 025 uygulanmadan da imaj sorunsuz çalışır. Ama
@@ -133,7 +139,7 @@ Sanılmasın diye: **025'in bu deploy'da olması zorunlu değil.** Köprü henü
 pencerede uygulanır.
 
 > **024 ayrı bir deploy'da uygulanacaksa** (alternatif plan): o zaman 024 o deploy'un
-> runbook'una taşınır ve buradaki beklenen sayı **`3`** (`021/022/025`) olur. Seçim §11'de.
+> runbook'una taşınır ve buradaki beklenen sayı **`4`** (`021/022/025/026`) olur. Seçim §11'de.
 
 ### 4.3 Uygula
 
@@ -148,6 +154,35 @@ cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platfor
 ```
 
 **Beklenen:** `pending = 0`. Değilse **DUR**.
+
+### 4.4b `schema_migrations` — son kayıt 025'ten 026'ya geçti mi
+
+`--status` **dosya sistemini** de okur: yeni bir `.sql` geldiğinde onu `pending` gösterir.
+Kaydın gerçekten yazıldığını gösteren yer `schema_migrations`'tır. Tablo
+`db/migrate.mjs` §`REGISTRY_DDL`'de tanımlı: `filename` (PK), `checksum`, `applied_at`,
+`duration_ms` — **`version` kolonu yok**, sürüm `filename`'in başındadır.
+
+Ölçüm §4.3'ten **önce** ve **sonra** yapılır — iki farklı sonuç **beklenir**:
+
+```bash
+cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*), max(filename) from schema_migrations"
+```
+
+| Ne zaman | Beklenen |
+| --- | --- |
+| §4.3'ten **önce** | son kayıt **`025-…sql`** (`max(filename)`), `026` **yok**; satır sayısı `N` |
+| §4.3'ten **sonra** | son kayıt **`026-tenant-binding-nullif.sql`**; satır sayısı **`N+5`** (021, 022, 024, 025, 026) |
+
+`max(filename)` metin sıralamasıdır ve `020` < `021` < `022` < `024` < `025` < `026`
+olduğu için bu beş dosyada sıralama sürüm sırasıyla aynıdır — `max` gerçekten en son
+uygulananı verir. `026` satırı görünmüyorsa migration **uygulanmamış** demektir: §4.6a
+koşulmaz, **DUR**.
+
+> **Yarım 026 beklenmez.** `db/migrate.mjs` her dosyayı tek transaction'da çalıştırır ve
+> kaydı **aynı** transaction'da yazar (`insert … ; commit`). 026'nın kendi doğrulaması
+> düşerse dosya `0A000` (`feature_not_supported`) ile geri alınır, kayıt **hiç yazılmaz**.
+> Yani `026` satırı varsa dosyanın *tamamı* koştu; yoksa *hiçbiri*. Bunun dışında bir
+> durum görülürse (kayıt var ama §4.6a düşüyor) bu bir arıza işaretidir — §8.
 
 ### 4.5 RLS gerçekten açıldı mı (ölçüm)
 
@@ -266,6 +301,78 @@ bir tenant'ın bu iki sütunu yazılmaz.
 > yazar; yanlış bir `status` prod tenant'ını etkiler. Create yolu ise gerçek bir satır
 > yaratır. 025'in yazma yolu süitte ölçülür (62 kontrol, `postgres:16-alpine`), prod'da
 > yalnız **grant ve okuma** ölçülür.
+
+### 4.6a 026'nın iki kanıtı — sayım ve bağsız okuma
+
+026'nın iddiası: **bağlı bir bağlantı çözülebilir.** Bunun iki ayrı ölçümü var ve
+**ikisi de** geçmek zorunda; biri "politikalar çevrildi"yi, diğeri "gerçekten çalışıyor"u
+gösterir. İkisi de §4.3'ten **sonra** koşulur.
+
+**1) Kaç politika korumaya alındı — tam `25` olmalı.**
+
+```bash
+cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*) from pg_policies where schemaname='public' and (coalesce(qual,'')||coalesce(with_check,'')) ilike '%nullif(current_setting(%app.tenant_id%'"
+```
+
+**Beklenen: `25`.**
+
+Bu, 026'nın kendi içinde de koştuğu doğrulamayla aynı sayı (`026-tenant-binding-nullif.sql`
+sonundaki `remaining < 20` kontrolü). Fark şu: migration'ın kendi kontrolü **alt sınırı**
+(`>= 20`) korur, buradaki ölçüm **tam sayıyı** bekler — biri 24'e düşerse migration geçer
+ama bu adım düşer.
+
+Sayının nereden geldiği: `pg_policies`'te `public` şemasında 50 politika var, 25'i
+`nullif(...)` biçimine çevrildi, 25'i **bayt bayt aynı** kaldı (021'in
+`bridge_idempotency` politikası bilinçli olarak `coalesce(...)` biçiminde bırakıldı —
+`''` ve NULL'ı aynı sayar, `nullif`'e çevirmek onu gevşetirdi). `public` dışında politika
+**yok**, dolayısıyla başka şemada korumasız kalan politika da yok.
+
+| Görülen | Anlamı | Karar |
+| --- | --- | --- |
+| `25` | 026 tam uygulandı | **Devam** |
+| `24` | Bir politika çevrilmemiş (ya da sonradan eklenmiş ve çevrilmemiş) | **DUR** — §8 |
+| `> 25` | İki kez `nullif` yuvalanmış ya da fazladan politika var | **DUR** — §8 |
+| `0` | 026 hiç koşmamış | **DUR** |
+
+**2) Bağsız okuma `22P02` vermemeli — `akademik_app` ile, `0` satır.**
+
+Bu, 026'nın *asıl* kanıtı: politikalar metin olarak doğru görünse bile bağsız bir oturum
+hata vermeden çalışmalı. §7.4 ile aynı gerekçeyle **app rolüyle** ölçülür (süper kullanıcı
+politikayı atlar; test kendini kandırır).
+
+```bash
+cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; set app.tenant_id = '5799f2a5-3d90-41b1-90de-9da07d776052'; reset app.tenant_id; select count(*) from works"
+```
+
+**Beklenen:** `0` — **ve hata yok.**
+
+```
+0
+```
+
+`set` + `reset` çifti kasıtlı: 026'nın çözdüğü durum tam olarak bu. `reset` GUC'u
+`''`'a bırakır (unset etmez); **026 olmadan** bir sonraki `select` `22P02` verir.
+**026 ile** `nullif(..., '')` → NULL, `is null` doğru olur ve sorgu `0` döner.
+
+| Görülen | Anlamı | Karar |
+| --- | --- | --- |
+| `0`, hata yok | 026 çalışıyor | **Devam** |
+| `ERROR: invalid input syntax for type uuid: ""` (`22P02`) | 026 uygulanmadı ya da `works` politikası çevrilmedi | **DUR** — §8 |
+| `ERROR: permission denied` / `must be member of role` | `akademik_app` rolü yok / `set role` yetkisi yok | **DUR**, rolü §5 ile karşılaştır |
+| `1` | Bağsız okuma bir tenant'ın satırlarını görüyor — **sızıntı** | **DUR** — §8 |
+
+> **`0` neden doğru cevap:** `works` politikası `tenant_id is null or tenant_id = ...`
+> biçiminde; bağsız oturumda `nullif(...)::uuid` NULL olur, `tenant_id = NULL` hiçbir
+> satırı tutmaz, `tenant_id is null` ise yalnız **global** eserleri tutar. 022 tek bir
+> eseri global kataloğa taşımadığı için (§7.4'te de `0` bekleniyor) bugün hiç global eser
+> yok → `0`. Yani `0`, "global eser yok" demektir; **`0` dönmesi `22P02` dönmemesinden
+> daha az şey kanıtlar** — iddia edilen şey hatanın **yokluğu**dur.
+>
+> **Negatif kontrol (süitte yapıldı, prod'da yapılmaz):** `db/026.test.mjs` aynı sorguyu
+> 026 uygulanmadan önce koşuyor ve **`22P02`** alıyor; `db/026-release-flag.test.mjs` ise
+> `withBridgeTenant` altında bayrak açıkken 026 yoksa `resetFailed=1, destroyed=1`, 026
+> varsa `reset=1, destroyed=0` ölçüyor. Yani buradaki `0`, gerçekten bir davranış
+> değişikliğini gösteriyor.
 
 ## 5. `akademik_catalog` — LOGIN ve parola
 
@@ -472,8 +579,9 @@ cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 ps
 | Katman | Geri dönüş |
 | --- | --- |
 | **İmaj** | `.env.r2`: `LIBEDGE_IMAGE=libedge-v136`, `APP_VERSION=136`, `BUILD_SHA=96cc270` → compose `config \| grep image:` → `up -d --no-deps web` |
-| **Env** | `.env.r2.bak-v137` ve `.env.r2.bak-v136` |
+| **Env** | `.env.r2.bak-v137` ve `.env.r2.bak-v136`. **`LIBEDGE_BRIDGE_MEASURE_RESET` prod'da tanımlanmaz** (aşağıya bak) |
 | **Migration 021/022** | **Geri alınmaz** (aşağıya bak) |
+| **Migration 026** | **Down migration'ı yok.** Tek yol §3'teki `pg_dump` (aşağıya bak) |
 
 **021/022 neden geri alınmaz:**
 
@@ -490,6 +598,64 @@ cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 ps
   **v136 kodunu kırıyorsa** (ör. adı çakışan nesne). O zaman yedekten dönüş tartışılır —
   `pg_dump`'ın ilk adım olmasının sebebi bu.
 
+### 8.1 026'dan sonra bir sorun çıkarsa — tek dönüş yolu yedek
+
+026 **veri taşımaz**, yalnız politika metnini değiştirir. Bu yüzden geri dönüşün
+**en olası** biçimi yedek değil, imajın geri alınmasıdır (§8 tablosu): v136 ve v137
+imajlarının ikisi de 026'lı politikaların altında çalışır — `nullif` biçimi bağlı
+oturumlarda `current_setting(...)::uuid` ile **aynı** karşılaştırmadır, yani davranış
+değişmez. İmajı geri almak 026'yı **geri almaz**, almaya da gerek yoktur.
+
+**Ama topluca politika kaybı gibi bir arıza görülürse** (ör. §4.6a `0` döndürüyor,
+uygulamada her sorgu `42501` veriyor, ya da `pg_policies` beklenmedik biçimde azalmış):
+
+> **026'nın down migration'ı yok. Geri dönüş, §3'te alınan `pg_dump`'tan tam geri
+> yüklemedir. Başka bir yol yok.**
+
+Gerekçesi: her politikayı eski `current_setting(...)::uuid` biçimine döndürmek 22P02'yi
+**geri getirir** — yani "düzeltmeyi geri al" işlemi, çözdüğü hatayı yeniden üretir.
+Yarım geri alma (birkaç politikayı geri çevirmek) iki biçimin karıştığı bir katalog
+bırakır ve §4.6a'nın sayımı artık hiçbir şey kanıtlamaz. Bu yüzden geri alma **ya
+tamamen yedekten**, ya hiç.
+
+Prosedür:
+
+```bash
+cd /var/www/akademik-platform && ls -l ~/backup-pre-v137-*.dump
+```
+
+**Tek dosya, MB mertebesinde.** §3'te alınmış olan dosyanın adını §9'a yaz.
+Sonra (onay alındıktan sonra, tek satır):
+
+```bash
+cd /var/www/akademik-platform && sudo docker exec -i akademik-platform-prod-db-1 pg_restore -U akademik -d akademik --clean --if-exists --no-owner -v < ~/backup-pre-v137-<TARİH>.dump
+```
+
+> **Yedekten dönüş 026'yı *ve* §4.3'te uygulanan 021/022/024/025'i birlikte geri alır** —
+> yedek v136'nın şemasını (001–020) taşır. Yani bu adımdan sonra prod **v136 şemasına**
+> döner ve v137 imajı çalışmaya devam ederse `app` şeması/fonksiyonlar yok olur
+> (`3F000`/`42883` — bunlar yakalanıyor, süpürme env tenant'a düşer ama köprü uçları
+> çalışmaz). Bu yüzden yedekten dönüş, **imajın da v136'ya alınmasıyla birlikte** yapılır.
+>
+> Restore **`--clean --if-exists`** kullanır: mevcut nesneleri düşürüp yedekten yeniden
+> yaratır. Prod'da geri alınacak başka bir yazma (yeni kitap, yeni kullanıcı) varsa
+> **kaybolur**. Karar verilmeden önce §9'daki zaman damgasıyla karşılaştır.
+
+### 8.2 `LIBEDGE_BRIDGE_MEASURE_RESET` prod'da **tanımlanmaz**
+
+`withBridgeTenant`'ın varsayılanı hâlâ **`client.release(true)`** — yani her
+tenant-scoped işlemden sonra bağlantı yok edilir. Reset kolunu (`reset` + `release()`)
+ölçen yol yalnız `LIBEDGE_BRIDGE_MEASURE_RESET=1` ile açılır ve **yalnız testte**
+kullanılır (`db/026-release-flag.test.mjs`).
+
+- Prod'da bu değişkeni **tanımlama**. Tanımlanırsa kod 026'lı reset kolunu seçer;
+  ertesi gün 026 geri alınmış bir veritabanında (yedekten dönüş, §8.1) bu kol
+  22P02 verir ve **her tenant-scoped istek kırılır**.
+- Varsayılanı çevirmek ayrı bir iş: `docs/TODO.md` §3. Sıra **önce 026 prod'da ve
+  doğrulanmış olmalı**, sonra varsayılan çevrilir, sonra bu env dalı koddan çıkarılır.
+- `.env.r2` içine bu satırı **elle de ekleme** — ölçüm kolu prod'a `git pull` ile değil,
+  ortam değişkeniyle sızar; tek koruma bu nottur.
+
 ## 9. Deploy kaydı
 
 `docs/deployments/2026-10-??-v137.md` yalnız **gerçek çıktılarla** doldurulur:
@@ -499,10 +665,15 @@ cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 ps
 - `R2 PASS` satırı
 - `docker ps` satırları
 - `--status` çıktısı (§4.1 ve §4.4)
+- §4.4b'nin **iki** satırı: §4.3 öncesi ve sonrası `select count(*), max(filename) from schema_migrations`
+  (beklenen: önce `…|025-…sql`, sonra `…|026-tenant-binding-nullif.sql`)
 - §4.6'nın üç satırı: `plain_visible` sayısı, app rolünün gördüğü id listesi, owner'ın gördüğü liste
+- §4.6a'nın **iki** satırı: politika sayımı (**`25`**) ve bağsız okuma (**`0`**, hata yok)
 - §7.4'ün `UPDATE 0` / `DELETE 0` satırları (ya da "global eser yok" notu)
+- §7.1'in `/api/config` sürümü; `LIBEDGE_BRIDGE_MEASURE_RESET`'in **tanımlı olmadığının** teyidi
 
-- Rollback imajı ve `bak` dosyası adları
+- Rollback imajı (`libedge-v136` + `96cc270`) ve `bak` dosyası adları
+- **§3 yedeğinin tam yolu ve zaman damgası** — 026'nın tek geri dönüş yolu bu (§8.1)
 
 ## 10. Kalan riskler (kabul edildi)
 
@@ -514,6 +685,10 @@ cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 ps
 | §7.4 bugün anlamsız olabilir | Global eser 0 ise UPDATE edilecek satır yok; 023'ten sonra ölçülür |
 | `/opds` hâlâ env tenant'ı | TODO §3 — bu sürümde **çözülmüyor** |
 | 024 uygulanırsa ama imaj eski kalırsa | Zararsız: v136 kodu fonksiyonu hiç çağırmıyor. Ters yön (imaj yeni, 024 yok) de **kırılmıyor**: `3F000`/`42883` yakalanıp env tenant'a düşülür, her tick'te bir uyarı loglanır. Yine de §4 imajdan önce koşuyor |
+| **026 geri alınamaz** (down migration yok) | Yalnız §3'teki `pg_dump` ile dönülür — ve o dönüş 021/022/024/025'i de geri alır, yani imajın da v136'ya çekilmesi gerekir (§8.1). 026 politika metnini ~305 ms boyunca kilitler, veri taşımaz |
+| 026 tek transaction'da 50 tablonun politikasını yeniden yazıyor | Migration ~305 ms sürdü (izole ölçüm). Bu süre boyunca `pg_policies` üzerinde kilit var; Migration imajdan **önce** koştuğu için (§1.5) o an yeni trafik yok. Süre uzarsa §4.3 `lock timeout` verebilir → **DUR**, aynı komut yeniden koşulur (026 idempotent değil: ikinci kez `0A000` verir, ama ilk koşu rollback olduysa kayıt da yoktur, yani yeniden koşmak **ilk** koşudur) |
+| §4.6a'nın `25` sayısı | 025 sonradan bir politika ekler ya da 023 gelirse sayı değişir. O zaman **bu runbook'un beklenen sayısı** güncellenir; sayıyı "yakın bir değere" gevşetmek ölçümü anlamsızlaştırır |
+| `LIBEDGE_BRIDGE_MEASURE_RESET` yanlışlıkla tanımlanırsa | Prod'da reset kolu seçilir ve 026 yoksa her tenant-scoped istek 22P02 verir (§8.2). Bugün 026 var, yani kırılmaz — ama 026 geri alınırsa kırılır. Tanımlanmaz |
 
 ## 11. Çalıştırmadan önce: inceleme
 
@@ -537,10 +712,26 @@ Bu runbook **çalıştırılmadı**. Komutlar çalıştırılmadan önce **Claud
    `t|t` dönmeli; çözümleyici prod tenant'ı için **bir** satır vermeli. Bu adım
    kasıtlı olarak **yazmıyor** — `libedge_upsert_tenant()` prod tenant'ının gerçek
    `(kind, ref)`'iyle çağrılırsa `name`/`status`'u yazar.
+6. **§4.6a** — 026'nın kanıtı. İki kontrol de **birlikte** geçmeli: sayım `25` ve
+   bağsız okuma `0`/hata yok. Sayım tek başına yetmez (politika metni doğru olup
+   davranış bozuk olabilir); bağsız okuma tek başına da yetmez (`0`, "global eser yok"
+   demektir, hatanın yokluğunu ancak negatif kontrol kanıtlar — `db/026.test.mjs`).
+7. **§8.1** — 026 için **tek** dönüş yolu yedek. `pg_restore --clean --if-exists`
+   komutunun prod'da neyi düşüreceği (021–026 dahil) ve yedeğin **imaj geri alma ile
+   birlikte** yapılması gerektiği okunmalı.
 
 > **Köprü bu sürümde bağlanmadı.** 025 yalnız `app` şemasına iki fonksiyon ekler;
 > `server.mjs`'te route, token kontrolü ve `BRIDGE_NOT_CONFIGURED` **yok**. Yani 025
 > uygulanıp uygulanmaması v137 imajının davranışını değiştirmez. Bir sonraki PR'ın konusu.
+
+> **Not (2026-10-30):** §4.6a ve §4.4b bu tarihte eklendi, 026 (#49) `main`'e girdikten
+> sonra. Sayılar (`25`, `0`, `50`) izole bir `postgres:16-alpine` üzerinde şema + tüm
+> migration'lar uygulanarak ölçüldü: `select schemaname, count(*) from pg_policies group by 1`
+> → **`public: 50`**, başka şema **yok**. 026'nın kendi süiti (`db/026.test.mjs`, 18 kontrol)
+> ve kanıt dosyası (`db/026-before-after.mjs`, 101 kontrol) 25 politikanın yeniden yazıldığını,
+> 25'inin bayt bayt aynı kaldığını doğruluyor. §4.6a'nın bağsız okuması
+> `db/026-release-flag.test.mjs`'in ölçtüğü kolun aynısı: 026 yokken `22P02`, 026 varken
+> temiz.
 
 > **Not (2026-10-29):** §4.6 ve §4.1'in beklenen çıktıları boş bir postgres'te
 > (001–022 → 024) gerçekten koşularak ölçüldü, tahmin edilmedi. Ölçülen kodlar:
@@ -551,4 +742,3 @@ Bu runbook **çalıştırılmadı**. Komutlar çalıştırılmadan önce **Claud
 
 > Sözleşme: `docs/contracts/libedge-elibrary-v1.md` @ `b15f8b5`. İlgili: PR #40, `db/README.md`,
 > `docs/DEPLOY.md` §"Migration'lar — imajdan ÖNCE".
-
