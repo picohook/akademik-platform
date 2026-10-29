@@ -353,8 +353,31 @@ async function main() {
   expect(await bridge(base, '/api/libedge/v1/health', { token: null, actor: 'nonsense' }),
     200, undefined, 'health ignores the actor header');
 
-  // An unknown path under the bridge prefix keeps the bridge's error shape rather
-  // than falling through to the app's 404.
+  // A path segment may not carry an encoded separator. `%2F` is the interesting one:
+  // Node leaves it encoded in url.pathname, and decoding it would turn one segment into
+  // two - so a ref of `42%2F9` must be refused rather than silently becoming a different
+  // route or a different tenant. The answer is the contract's 400 and it arrives before
+  // any tenant is looked up.
+  //
+  // Written literally into the URL, not through encodeURIComponent, so the request on the
+  // wire is exactly `%2F` and not a double-escaped `%252F`.
+  const encodedSlash = await bridge(base, '/api/libedge/v1/tenants/institution/42%2F9');
+  expect(encodedSlash, 400, 'INVALID_BODY', 'a ref with an encoded slash');
+  check(!('tenant' in (encodedSlash.data || {})), 'the encoded slash reached the tenant resolver');
+  // The traversal-shaped variant of the same request, and the same answer.
+  expect(await bridge(base, '/api/libedge/v1/tenants/institution/..%2F..%2F42'),
+    400, 'INVALID_BODY', 'a ref that decodes to a traversal');
+  // On the catalog route as well: the id slot must not accept a decoded separator.
+  expect(await bridge(base, '/api/libedge/v1/catalog/works/%2F'),
+    400, 'INVALID_BODY', 'a work id that decodes to a slash');
+  // A segment that is not valid percent-encoding is the same refusal, not a hung request.
+  expect(await bridge(base, '/api/libedge/v1/tenants/institution/42%zz'),
+    400, 'INVALID_BODY', 'a ref with a broken escape');
+  // And a legal encoded value still reaches the resolver as the caller wrote it: `%41` is
+  // `A`, so this resolves to a ref that does not exist rather than to `%41` or to `41`.
+  expect(await bridge(base, '/api/libedge/v1/tenants/institution/%41'),
+    404, 'TENANT_NOT_FOUND', 'an encoded but legal ref');
+
   expect(await bridge(base, '/api/libedge/v1/nope'), 404, 'NOT_FOUND', 'unknown bridge path');
   // The prefix is a prefix: a path that merely starts with the same characters is
   // the app's, and must not be answered with bridge headers. The app refuses it for its

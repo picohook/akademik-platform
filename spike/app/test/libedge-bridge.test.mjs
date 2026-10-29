@@ -6,6 +6,7 @@ import {
   parseStatusPut, parseSubscriptionPut, parseSourceId, subscriptionPayloadSha256,
   revisionDecision, assertLeaseWithinCeiling, parseLimit, leaseMaxHours, slugProblem,
 } from '../libedge-bridge.mjs';
+import { handleBridgeRequest } from '../libedge-bridge-api.mjs';
 
 // The pure half of the LibEdge bridge: no database, no socket.
 //
@@ -54,7 +55,126 @@ function throwsCode(fn, code, status) {
   if (status !== undefined) assert.equal(caught.status, status);
 }
 
-// --- configuration and tokens (5.1) -----------------------------------------
+// --- path decoding (5.1, 5.3) ----------------------------------------------
+
+// The bridge decodes each path segment exactly once, so what a handler receives is what
+// the caller encoded. Driving handleBridgeRequest rather than a helper is deliberate: the
+// bug that motivated these tests lived in the split between server.mjs (which decoded the
+// whole path) and matchRoute (which decoded each capture again).
+//
+// A pool that only records the parameters it was asked for: a path test must not need a
+// database, and a parameter that reaches SQL is visible here.
+function recordingPool() {
+  const calls = [];
+  const client = {
+    query: async (sql, values) => {
+      calls.push({ sql: String(sql).trim(), values });
+      if (/from app\.libedge_tenant_by_ref|select .*from app\.libedge_tenant_by_ref/i.test(sql)) {
+        return { rows: [] };
+      }
+      return { rows: [], rowCount: 0 };
+    },
+    release: () => {},
+  };
+  return {
+    calls,
+    connect: async () => client,
+  };
+}
+
+async function bridgeCall(pathname, { method = 'GET', pool } = {}) {
+  const fake = pool || recordingPool();
+  let answer;
+  try {
+    answer = await handleBridgeRequest({
+      env: { LIBEDGE_ENTITLEMENTS_TOKENS: TOKEN, LIBEDGE_CATALOG_TOKENS: CATALOG },
+      pool: fake,
+      catalogPool: fake,
+      method,
+      pathname,
+      headers: { authorization: `Bearer ${TOKEN}`, 'x-libedge-actor': 'system:path-test' },
+      body: {},
+      query: {},
+      requestId: 'req-path-test',
+      now: NOW,
+    });
+  } catch (error) {
+    answer = { status: error.status, body: { error: error.code, detail: error.detail } };
+  }
+  return { ...answer, pool: fake };
+}
+
+test('an encoded slash in a path segment is refused, not decoded into a separator', async () => {
+  // `a%2Fb` in the ref slot. Decoded, it is the single value `a/b`; left as two segments
+  // it would address a different route. Neither is acceptable, so it is a 400.
+  const answer = await bridgeCall('/tenants/institution/a%2Fb');
+  assert.equal(answer.status, 400);
+  assert.equal(answer.body.error, 'INVALID_BODY');
+  assert.match(answer.body.detail, /separator/);
+
+  // The traversal-shaped version of the same trick, for the same reason.
+  const traversal = await bridgeCall('/tenants/institution/a%2F..%2Fb');
+  assert.equal(traversal.status, 400);
+  assert.equal(traversal.body.error, 'INVALID_BODY');
+
+  // An encoded slash in a UUID slot too: /catalog/works/{id} must not see `a/b`.
+  const work = await bridgeCall('/catalog/works/a%2Fb');
+  assert.equal(work.status, 400);
+  assert.equal(work.body.error, 'INVALID_BODY');
+});
+
+test('percent-decoding happens exactly once, per segment', async () => {
+  // `%2541` is the encoded form of `%41`: one decode gives the literal three characters
+  // `%41`, which must NOT be decoded again into `A`. Reaching the handler means the
+  // request is well formed; the value is observed in the 404 detail, which quotes the ref
+  // the bridge resolved - a single decode, no more.
+  const once = await bridgeCall('/tenants/institution/%2541');
+  assert.equal(once.status, 404);
+  assert.match(once.body.detail, /%41/,
+    `expected the ref to reach the resolver as "%41", got ${JSON.stringify(once.body.detail)}`);
+
+  // A space and a plus are different refs, and an encoded space is not a plus.
+  const space = await bridgeCall('/tenants/institution/a%20b');
+  assert.equal(space.status, 404);
+  assert.match(space.body.detail, /"a b"/,
+    `expected "a b", got ${JSON.stringify(space.body.detail)}`);
+  const plus = await bridgeCall('/tenants/institution/a+b');
+  assert.equal(plus.status, 404);
+  assert.match(plus.body.detail, /"a\+b"/,
+    `expected "a+b" (a plus is not a space in a path), got ${JSON.stringify(plus.body.detail)}`);
+});
+
+test('a path segment that is not valid percent-encoding is a 400, not a crash', async () => {
+  // `%zz` throws URIError inside decodeURIComponent. Before this, it escaped as an
+  // unhandled promise rejection and the request hung.
+  const broken = await bridgeCall('/tenants/institution/%zz');
+  assert.equal(broken.status, 400);
+  assert.equal(broken.body.error, 'INVALID_BODY');
+  // The detail must not echo the caller's bytes back.
+  assert.doesNotMatch(broken.body.detail, /%zz/);
+
+  // A trailing lone '%' is the same fault.
+  const lone = await bridgeCall('/tenants/institution/42%');
+  assert.equal(lone.status, 400);
+  assert.equal(lone.body.error, 'INVALID_BODY');
+
+  // An encoded NUL is a legal row value and not a legal segment.
+  const nul = await bridgeCall('/tenants/institution/a%00b');
+  assert.equal(nul.status, 400);
+  assert.equal(nul.body.error, 'INVALID_BODY');
+});
+
+test('the decoder leaves ordinary routes alone', async () => {
+  // health has no captures, and an unencoded path still routes normally - the guard must
+  // not turn a legal request into a 400.
+  const health = await bridgeCall('/health');
+  assert.equal(health.status, 200);
+  // A literal segment still matches by value after decoding.
+  const unknown = await bridgeCall('/nope/institution/42');
+  assert.equal(unknown.status, 404);
+  assert.equal(unknown.body.error, 'NOT_FOUND');
+});
+
 
 test('a bridge with no token at all is not configured', () => {
   assert.equal(isConfigured({}), false);
