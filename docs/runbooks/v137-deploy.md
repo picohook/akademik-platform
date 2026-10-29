@@ -16,10 +16,10 @@
 | | |
 | --- | --- |
 | Kodsal değişiklik | **Var, ama yalnız `maintenanceTenantIds()`.** #43 (`bee0fa5`) v137 imajıyla **ilk kez** prod'a girer: süpürme döngüsü artık `app.maintenance_tenants()`'ı çağırır. Kullanıcıya görünen yollar (`/opds`, `/api/*`, indirme) v136 ile aynı |
-| Migration | **021** (kimlik/abonelik tabloları), **022** (global katalog sınırı), **024** (`app.maintenance_tenants()`) — üçü de ilk kez prod'a girer. Prod şu an **001–020** |
-| Veri taşıması | **Yok.** 021/022/024 tek bir eseri global kataloğa taşımaz; o **023** ve sözleşme §4.4 listesi onaylanana kadar yazılmaz |
+| Migration | **021** (kimlik/abonelik tabloları), **022** (global katalog sınırı), **024** (`app.maintenance_tenants()`), **025** (köprü için `app.libedge_tenant_by_ref()` + `app.libedge_upsert_tenant()`) — dördü de ilk kez prod'a girer. Prod şu an **001–020** |
+| Veri taşıması | **Yok.** 021/022/024/025 tek bir eseri global kataloğa taşımaz; o **023** ve sözleşme §4.4 listesi onaylanana kadar yazılmaz |
 | Yeni rol | `akademik_catalog` — 022'de **NOLOGIN** yaratılır. LOGIN + parola bu runbook'ta verilir |
-| Yeni şema | `app` — 024 yaratır. Yalnız bir fonksiyon ve iki grant içerir; tablo **yok** |
+| Yeni şema | `app` — 024 yaratır (bir fonksiyon + iki grant); 025 iki fonksiyon daha ekler. Tablo **yok** |
 | Kırılma riski | `collection_items` üzerine RLS **enable + force**. Prod'da `collection_items` satırlarının `tenant_id`'si doğru olmalı, yoksa koleksiyon grant'leri görünmez olur (bkz. §3.1 ön kontrol) |
 
 
@@ -98,7 +98,7 @@ Beklenen: `POSTGRES_PASSWORD set: yes`. Boşsa **DUR**.
 cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status'
 ```
 
-**Beklenen:** `021`, `022` ve `024` **pending**; geri kalanı `applied`.
+**Beklenen:** `021`, `022`, `024` ve `025` **pending**; geri kalanı `applied`.
 
 > Prod 020'ye kadar runner ile ilerledi, yani `schema_migrations` dolu → **baseline
 > GEREKMEZ**. `--status` "not baselined" derse **DUR ve sor**; körlemesine
@@ -106,16 +106,18 @@ cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platfor
 >
 > **Ölçüm komutu:** `--status` her dosyayı tek satır yazar — `    pending  021-….sql`
 > (durum **başta**, dosya adı sonda; 2026-10-29'da aynı formatta ölçüldü). `grep`
-> yalnız bu üç satıra daralır ve **sayar**; sessizce boş çıktı ile "beklediğim üç
+> yalnız bu dört satıra daralır ve **sayar**; sessizce boş çıktı ile "beklediğim dört
 > satır" ayırt edilebilsin diye `grep -c` kullanılır, düz `grep` değil:
 
 ```bash
-cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status' | grep -cE '^[[:space:]]+pending[[:space:]]+02[124]-'
+cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status' | grep -cE '^[[:space:]]+pending[[:space:]]+02[1245]-'
 ```
 
-**Beklenen:** `3`. `2` dönerse 024 **repoda yok** demektir → checkout `5d4f342`
-(#44) içermiyor, **DUR** (`git log -1 --oneline` kontrol edilir). `0` ya da `1`
-dönerse **DUR**, `--status` çıktısının tamamı okunur.
+**Beklenen:** `4`. `3` dönerse eksik olan **025**'tir (025 ayrı bir PR'dan gelir; o merge
+edilmeden checkout onu içermez) → `git log -1 --oneline` ve `ls db/migrations/025*`
+kontrol edilir, **DUR**. `3` aynı zamanda 024 başka bir deploy'a taşınmışsa da görülür
+(§4.2'deki alternatif plan). `0` ya da `1` dönerse **DUR**, `--status` çıktısının tamamı
+okunur; hata mesajını beklemeden yorumlama.
 
 ### 4.2 Kuru çalıştırma
 
@@ -123,10 +125,15 @@ dönerse **DUR**, `--status` çıktısının tamamı okunur.
 cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --dry-run'
 ```
 
-**Beklenen:** yalnız `021`, `022` ve `024` listelenir; başka dosya yok.
+**Beklenen:** yalnız `021`, `022`, `024` ve `025` listelenir; başka dosya yok.
+
+Sanılmasın diye: **025'in bu deploy'da olması zorunlu değil.** Köprü henüz
+`server.mjs`'e bağlanmadı (§11), yani 025 uygulanmadan da imaj sorunsuz çalışır. Ama
+025 uygulanmazsa köprünün tenant ve üyelik uçları çalışmaz — 025 bu yüzden aynı
+pencerede uygulanır.
 
 > **024 ayrı bir deploy'da uygulanacaksa** (alternatif plan): o zaman 024 o deploy'un
-> runbook'una taşınır ve buradaki beklenen sayı **`2`** olur. Seçim §11'de.
+> runbook'una taşınır ve buradaki beklenen sayı **`3`** (`021/022/025`) olur. Seçim §11'de.
 
 ### 4.3 Uygula
 
@@ -193,8 +200,12 @@ Kıyasla karşılaştırma:
 
 > İki ayrı hata kodu, iki ayrı anlam. 2026-10-29'da ölçüldü: şema yokken Postgres
 > **`3F000`** veriyor (şemayı fonksiyondan önce çözer); şema **var**, fonksiyon yokken
-> **`42883`**. Prod'daki bugünkü durum birincisi. `server.mjs` ikisini de yakalar — biri
-> eksik olsaydı süpürme döngüsü her tick'te throw ederdi.
+> **`42883`**. Prod'daki bugünkü durum birincisi. `server.mjs` dördünü de yakalar
+> (`3F000`, `42P01`, `42883`, `42501`) — bu **ölçüm öncesi bir düzeltmeydi**, yani
+> prod'da hiçbir tick throw etmedi: 024 uygulanmadan yeni kod prod'a çıkmadı, ve
+> süpürme o zaman eski tek-tenant yolundan gidiyordu. `3F000` yalnız süit ölçümünde
+> görüldü. `server.mjs` yalnız `42883`/`42501` yakalasaydı, 024 uygulandıktan sonra
+> başka bir arıza süpürmeyi sessizce stack'e düşürürdü.
 
 Aynı soruyu **owner** ile tekrarlamak, farkın rol kaynaklı olduğunu doğrular (`tenants`
 FORCE'd olduğu için owner de politika altındadır; fonksiyon `set local
@@ -224,6 +235,37 @@ Bu sorgu **süper kullanıcıyla** koşar, yani politikayı atlar ve doğru topl
 > döndü ve bu **doğruydu**; aynı DB'ye 2 tenant eklendiğinde app rolü de owner da iki
 > satırı gördü. Yani "boş küme" tek başına arıza kanıtı değil — ayırt edici olan,
 > `tenants` **dolu iken** fonksiyonun boş dönmesi.
+
+#### 4.6d 025'in çalıştığını gör — köprü henüz bağlı değilken
+
+025 uygulandığında `app` şemasında iki fonksiyon daha olur ve **ikisi de aynı
+`tenants_self` duvarını** aşar. Köprü `server.mjs`'e bağlanmadan uçları çağıramazsın,
+ama fonksiyonları doğrudan çağırabilirsin — §4.6'nın aynı gerekçesiyle **app rolüyle**:
+
+```bash
+cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; select has_function_privilege('akademik_app', 'app.libedge_tenant_by_ref(text, text)', 'execute') as by_ref, has_function_privilege('akademik_app', 'app.libedge_upsert_tenant(text, text, text, text, text)', 'execute') as upsert"
+```
+
+**Beklenen:** `t|t`. `f` dönerse 025 uygulanmamış ya da grant düşmüş → **DUR**.
+
+Şimdi çözümleyici — prod'daki gerçek tenant'ın `(kind, ref)`'iyle:
+
+```bash
+cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; select tenant_id, status from app.libedge_tenant_by_ref('institution', '5799f2a5-3d90-41b1-90de-9da07d776052')"
+```
+
+**Beklenen:** tam **bir** satır ve `id` `5799f2a5-…`. **Boş küme de bir cevaptır** —
+tenant bu `(kind, ref)` ile kayıtlı değilse doğru cevap budur; ayırt etmek için
+`select id, libedge_kind, libedge_ref from tenants where id = '5799f2a5-…'` ile
+karşılaştır (owner, politikayı atlar). `libedge_kind`/`libedge_ref` NULL ise prod tenant'ı
+henüz köprüye bağlanmamış demektir ve bu **normaldir** — köprü bağlanana kadar herhangi
+bir tenant'ın bu iki sütunu yazılmaz.
+
+> **Dokunma:** bu adımda `libedge_upsert_tenant()`'ı prod tenant'ının gerçek
+> `(kind, ref)`'iyle çağırma. Update yolu slug'ı **dondurur** ama `name`/`status`
+> yazar; yanlış bir `status` prod tenant'ını etkiler. Create yolu ise gerçek bir satır
+> yaratır. 025'in yazma yolu süitte ölçülür (62 kontrol, `postgres:16-alpine`), prod'da
+> yalnız **grant ve okuma** ölçülür.
 
 ## 5. `akademik_catalog` — LOGIN ve parola
 
@@ -466,7 +508,8 @@ cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 ps
 
 | Risk | Durum |
 | --- | --- |
-| v137 **yalnız `maintenanceTenantIds()`** değiştiriyor (#43); 021/022/024 prod'da **ilk kez** koşuyor | İzole testte `021-022` 35/35, `024` 17/17, ama prod verisiyle ilk temas bu runbook. Ana risk bu |
+| v137 **yalnız `maintenanceTenantIds()`** değiştiriyor (#43); 021/022/024 **ve 025** prod'da **ilk kez** koşuyor | İzole testte `021-022` 35/35, `024` 17/17, 025 62/62, ama prod verisiyle ilk temas bu runbook. Ana risk bu |
+| 025 `tenants`'a iki `SECURITY DEFINER` fonksiyonla yazma yetkisi veriyor | Dar tutuldu: yalnız `institution` kind, `id`/`slug` mevcut kayıtta dondurulmuş, EXECUTE yalnız `akademik_app`. Yine de `tenants_self`'in yanında ikinci bir yol; review'de ayrıca bakılmalı (§11.5) |
 | `akademik_catalog` parolası `.env.r2`'de plaintext | Docker env dosyası; `R2_SECRET_ACCESS_KEY` de orada. Bileşen düzeyinde ayrı sır yönetimi yok — bilinen sınır |
 | §7.4 bugün anlamsız olabilir | Global eser 0 ise UPDATE edilecek satır yok; 023'ten sonra ölçülür |
 | `/opds` hâlâ env tenant'ı | TODO §3 — bu sürümde **çözülmüyor** |
@@ -488,12 +531,22 @@ Bu runbook **çalıştırılmadı**. Komutlar çalıştırılmadan önce **Claud
 4. **§4.6** — 024'ün kanıtı. Kıyas sorgusu (`set role akademik_app; select count(*) from
    tenants`) **0** dönerken fonksiyon **tüm** tenant'ları döndürmeli; ikisi eşitse
    SECURITY DEFINER etkisiz. Bu, §7.4 ile aynı "süper kullanıcı kendini kandırır"
-   gerekçesiyle app rolüyle ölçülüyor. Ayrıca `--status` sayacının **3** dönmesi
-   beklenir; `2` dönerse checkout 024'ü içermiyor demektir.
+   gerekçesiyle app rolüyle ölçülüyor. Ayrıca `--status` sayacının **4** dönmesi
+   beklenir; `3` dönerse checkout 025'i içermiyor demektir.
+5. **§4.6d** — 025'in grant'ı ve okuma yolu. `has_function_privilege` app rolünde
+   `t|t` dönmeli; çözümleyici prod tenant'ı için **bir** satır vermeli. Bu adım
+   kasıtlı olarak **yazmıyor** — `libedge_upsert_tenant()` prod tenant'ının gerçek
+   `(kind, ref)`'iyle çağrılırsa `name`/`status`'u yazar.
+
+> **Köprü bu sürümde bağlanmadı.** 025 yalnız `app` şemasına iki fonksiyon ekler;
+> `server.mjs`'te route, token kontrolü ve `BRIDGE_NOT_CONFIGURED` **yok**. Yani 025
+> uygulanıp uygulanmaması v137 imajının davranışını değiştirmez. Bir sonraki PR'ın konusu.
 
 > **Not (2026-10-29):** §4.6 ve §4.1'in beklenen çıktıları boş bir postgres'te
 > (001–022 → 024) gerçekten koşularak ölçüldü, tahmin edilmedi. Ölçülen kodlar:
-> şema yokken `3F000`, şema var/fonksiyon yokken `42883`.
+> şema yokken `3F000`, şema var/fonksiyon yokken `42883`. 025'in yazma yolu ayrı
+> bir süitte ölçüldü: 62 kontrol, `schema.sql` + 021/022/024/025, `postgres:16-alpine`;
+> prod'da yalnız grant ve okuma ölçülür.
 
 
 > Sözleşme: `docs/contracts/libedge-elibrary-v1.md` @ `b15f8b5`. İlgili: PR #40, `db/README.md`,
