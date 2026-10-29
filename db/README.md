@@ -224,9 +224,9 @@ Files applied by `db/migrate.mjs` must not contain begin/commit and must not use
 meta-commands. The body terminator is `$body$`, not a bare dollar pair, for the reason 022
 documents: a line consisting of the bare terminator would end the runner's own transaction.
 
-### Known gap: a connection that has bound a tenant can never be unbound again
+### Closed gap: a connection that has bound a tenant can never be unbound again
 
-Every tenant policy in `schema.sql` and 022 spells the binding as
+Every tenant policy in `schema.sql` and in migrations up to 025 spelled the binding as
 
 ```sql
 tenant_id is null or tenant_id = current_setting('app.tenant_id', true)::uuid
@@ -249,13 +249,39 @@ Postgres does not short-circuit the `or`, so the `''::uuid` cast is evaluated ev
 `tenant_id is null` is true - which is why rewriting a query's `where` clause cannot work
 around it. RLS runs before the query's own filter anyway.
 
-Until the policies say `nullif(current_setting('app.tenant_id', true), '')::uuid`,
-**the only safe handling is to discard the connection**, which is what
-`withBridgeTenant` in `spike/app/libedge-bridge-db.mjs` does. Anything else either breaks
-the bridge or, worse, leaks a tenant. The permanent fix belongs in a migration that rewrites
-the twenty-odd policy expressions in `schema.sql` and 022; it is deliberately not bundled
-here, because rewriting RLS on `works`, `assets` and `grants` to fix a connection detail
-would need the same measurement that found this, applied to every affected table.
+The workaround was to discard the connection after every tenant-scoped transaction
+(`client.release(true)` in `withBridgeTenant`, `spike/app/libedge-bridge-db.mjs`) - correct,
+and one connect per tenant-scoped transaction for the life of the process.
+
+**026 closes it.** `026-tenant-binding-nullif.sql` rewrites every tenant policy to
+
+```sql
+nullif(current_setting('app.tenant_id', true), '')::uuid
+```
+
+read from `pg_policies` rather than from a list typed into the migration, recreating each
+policy with the same name, command, permissive flag and role list so only `qual` /
+`with_check` change. It is **not re-runnable** by design: a second application raises `0A000`
+instead of nesting a second `nullif`, because `db/migrate.mjs` is the record of what ran.
+021's `bridge_idempotency` policy is left alone - it uses the `coalesce` form on purpose, and
+rewriting it would turn a fail-closed check into a different one.
+
+Both halves are measured, not asserted from the SQL:
+
+* `db/026.test.mjs` - 19 checks on a real `postgres:16-alpine`. Before 026 the reset leaves
+  `''` and the next unbound read on the same connection is `22P02`; after 026 the same
+  sequence returns **no rows** (not the previous tenant's), a bound read still returns
+  exactly its own tenant, an unbound `INSERT` is still refused with `42501`, and a second
+  application raises `0A000`.
+* `db/026-release.test.mjs` - 11 checks. The same sequence under `withBridgeTenant`: with
+  026 it resets and hands the connection back, and the next unbound read on that reused
+  connection returns nothing; without 026 the same arm fails with `22P02`.
+
+What is **not** done yet: `withBridgeTenant` still destroys its connection by default. The
+reset-and-release path exists behind `LIBEDGE_BRIDGE_MEASURE_RESET=1`, is measured by the
+test above, and switching the default is a deploy-order decision - 026 has to be applied in
+the same deploy, before the app that assumes it - not an improvement to slip in ahead of
+that.
 
 ## Migration 024, and `app.maintenance_tenants()`
 
