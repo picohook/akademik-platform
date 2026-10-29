@@ -37,12 +37,27 @@ const unprocessable = (code, detail) => new BridgeError(422, code, detail);
 //   * `client.release(true)` destroys the connection, and the pool's next connection
 //     has the GUC genuinely unset - `is null` true, the unbound read works.
 //
-// So the connection is discarded, not cleaned. That costs one connection per
-// tenant-scoped transaction for the length of the request, which is the right trade for
-// a bridge that answers a handful of writes a second. The alternative is a schema change
-// to the policies (`nullif(current_setting(...), '')::uuid`), which is the real fix and
-// belongs in a migration, not here - it is recorded in db/README.md and raised as a
-// finding rather than patched around silently.
+// So the connection is discarded, not cleaned: one connect per tenant-scoped transaction.
+//
+// The alternative is a schema change (nullif(current_setting(...), '')::uuid), which is
+// db/migrations/026-tenant-binding-nullif.sql. Once 026 is applied, `reset app.tenant_id`
+// genuinely unbinds and the connection can go back to the pool. That is measured, not
+// assumed: db/026-release.test.mjs runs the same sequence both ways in one process and
+// asserts that WITHOUT 026 the reset arm fails with 22P02, that with 026 the same arm
+// returns the tenant's rows while the next unbound read on the reused connection returns
+// none, and that the connection was handed back rather than destroyed.
+//
+// The measurement is kept armed behind LIBEDGE_BRIDGE_MEASURE_RESET so both paths stay
+// testable, and `bridgeTenantStats` exists so the test can assert which path ran. Default
+// stays `release(true)`: switching the default is a deploy-order decision (026 must be
+// applied first, in the same deploy as this file), not a code change to make early.
+const RESET_AND_RELEASE = String(process.env.LIBEDGE_BRIDGE_MEASURE_RESET || '').trim() === '1';
+
+// How the connection was given back, so a test can assert the policy rather than infer it
+// from timing. Exported counters, not a log line: a test that reads a log is a test that
+// breaks when someone rewords it.
+export const bridgeTenantStats = { destroyed: 0, reset: 0, resetFailed: 0 };
+
 export async function withBridgeTenant(pool, tenantId, fn) {
   const client = await pool.connect();
   try {
@@ -55,9 +70,41 @@ export async function withBridgeTenant(pool, tenantId, fn) {
     await client.query('rollback').catch(() => {});
     throw error;
   } finally {
-    // Always destroyed, on both paths: a rolled-back transaction also leaves the GUC set
-    // on the session, so "only discard on success" would leak the tenant after an error.
-    client.release(true);
+    if (RESET_AND_RELEASE) {
+      // Out of the transaction before resetting: `reset` inside one is undone by commit.
+      //
+      // RESET ITSELF NEVER FAILS. Without 026 the GUC is left as '' and `reset` returns
+      // happily; the 22P02 arrives on the NEXT unbound query, on whichever request picks
+      // this connection up. So the reset is followed by a check, and only a check that
+      // returns cleanly licenses handing the connection back. Without it, `resetFailed`
+      // would stay 0 on a database without 026 and the connection would be returned in
+      // exactly the state that breaks the next request.
+      //
+      // The check asks whether the connection is SAFE TO REUSE, not whether the GUC is
+      // literally unset - `reset` never unset it, on either schema. That is why the measure
+      // is a policy-guarded read with no tenant bound, which is the query that would
+      // otherwise fail (22P02 before 026) or, worse, quietly return the previous tenant.
+      try {
+        await client.query('reset app.tenant_id');
+        await client.query("select id from works where false");
+        bridgeTenantStats.reset += 1;
+        client.release();
+      } catch {
+        // A failed check is a destroyed connection too, and it is counted as both: the
+        // question "was it handed back?" must have one answer, not two.
+        bridgeTenantStats.resetFailed += 1;
+        bridgeTenantStats.destroyed += 1;
+        client.release(true);
+      }
+    } else {
+      // Always destroyed, on both paths: a rolled-back transaction also leaves the GUC set
+      // on the session, so "only discard on success" would leak the tenant after an error.
+      bridgeTenantStats.destroyed += 1;
+      client.release(true);
+    }
+    // No `return` here: a bare return inside `finally` discards the value returned above and
+    // turns every successful call into `undefined`. The branch that resets the setting used
+    // to end with one, and the cost was a bridge that returned nothing.
   }
 }
 
