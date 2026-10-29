@@ -4,6 +4,7 @@ import { assetVersionToken, versionShellAssets } from './asset-version.mjs';
 import { normalizeBookVariant } from './public/book-variants.mjs';
 import { mutateAnnotation, memoryAnnotationMutations, purgeAnnotationReceipts } from './annotation-sync.mjs';
 import { currentTenant, runWithTenant } from './tenant-context.mjs';
+import { handleBridgeRequest } from './libedge-bridge-api.mjs';
 import http from 'node:http';
 import path from 'node:path';
 import { createReadStream, createWriteStream } from 'node:fs';
@@ -150,6 +151,25 @@ if (process.env.DATABASE_URL) {
   }
 } else {
   console.log('[db] DATABASE_URL not set, demo mode');
+}
+
+// The LibEdge bridge's catalog half runs as a different role (`akademik_catalog`, 022),
+// so it cannot share the app pool: the role is the authorisation, and a pool is bound
+// to one role by its connection string. Leaving DATABASE_CATALOG_URL unset is a valid
+// state - the bridge simply answers 503 on the catalog path - which is why this is not
+// fatal and why it is logged at startup either way. A wrong URL here is not detected
+// here; the first catalog request that cannot connect reports it.
+let catalogPool = null;
+if (process.env.DATABASE_CATALOG_URL) {
+  try {
+    const pg = await import('pg');
+    catalogPool = new pg.default.Pool({ connectionString: process.env.DATABASE_CATALOG_URL, max: 3 });
+    console.log('[db] catalog pool created');
+  } catch (error) {
+    console.warn('[db] catalog pool unavailable, catalog endpoints will answer 503:', error.message);
+  }
+} else {
+  console.log('[db] DATABASE_CATALOG_URL not set, the bridge catalog path will answer 503');
 }
 
 async function withTenant(fn) {
@@ -2065,7 +2085,20 @@ await mkdir(UPLOAD_DIR, { recursive: true });
 // The very first statement in the request handler binds the tenant, so every
 // withTenant call anywhere below it - through download-tickets, annotation
 // sync, uploads - reads the signed-in user's tenant without being changed.
+const BRIDGE_PREFIX = '/api/libedge/v1';
+
 const server = http.createServer(async (req, res) => {
+  // The bridge is answered before any tenant is bound, and deliberately outside
+  // runWithTenant. Its callers have no session and no cookie: a LibEdge worker signs in
+  // as nobody. Binding the session tenant (or the demo tenant) first would give the
+  // bridge a tenant context it never asked for, and any future bridge code that reached
+  // for requestTenant() would then read an arbitrary tenant's rows and appear to work.
+  // Outside the binding, that mistake throws instead. The bridge's own tenant comes from
+  // the request path and is bound in libedge-bridge-db.mjs for the duration of one
+  // transaction.
+  if (isBridgePath(req.url)) {
+    return handleBridgeRoute(req, res);
+  }
   const boundTenant = readSession(req)?.tenantId || TENANT_ID;
   // /opds carries no session cookie. Re-binding the request to the OPDS tenant
   // once the token has been checked is what makes listBooks and opdsFeed agree
@@ -2074,6 +2107,88 @@ const server = http.createServer(async (req, res) => {
   const opdsTenant = await opdsTenantFor(req);
   return runWithTenant(opdsTenant || boundTenant, () => handleRequest(req, res));
 });
+
+// Prefix check on the raw path, before parsing: the bridge must be recognisable even
+// when the URL is malformed, otherwise a request that `new URL` rejects would be
+// answered by the app's 400 instead of the bridge's error shape.
+function isBridgePath(rawUrl) {
+  const path = String(rawUrl || '').split('?')[0];
+  return path === BRIDGE_PREFIX || path.startsWith(`${BRIDGE_PREFIX}/`);
+}
+
+// Everything below is translation between http and handleBridgeRequest; no bridge
+// decision is made here. The body is read before the call because the request stream is
+// the server's, and the status and headers are set from what comes back because the
+// response stream is too.
+async function handleBridgeRoute(req, res) {
+  let url;
+  let pathname;
+  try {
+    url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    pathname = decodeURIComponent(url.pathname).slice(BRIDGE_PREFIX.length) || '/';
+  } catch {
+    // A malformed URL is still a bridge request: the answer is the contract's error
+    // shape, not a bare string, or LibEdge parses it as a crash.
+    json(res, 400, { error: 'INVALID_BODY', detail: 'malformed url' });
+    return;
+  }
+
+  const requestId = String(req.headers['x-request-id'] || '').trim() || randomUUID();
+  res.setHeader('x-request-id', requestId);
+  res.setHeader('cache-control', 'no-store');
+
+  let body = {};
+  try {
+    body = await readBridgeBody(req);
+  } catch (error) {
+    // readJson throws on oversized or unparseable bodies. Both are the caller's fault
+    // and both get INVALID_BODY rather than an unhandled rejection.
+    json(res, 400, { error: 'INVALID_BODY', request_id: requestId, detail: error.message });
+    return;
+  }
+
+  const query = {};
+  for (const [key, value] of url.searchParams) {
+    if (!(key in query)) query[key] = value;
+  }
+
+  let answer;
+  try {
+    answer = await handleBridgeRequest({
+      env: process.env,
+      pool,
+      catalogPool,
+      method: req.method,
+      pathname,
+      // Only the headers the bridge reads, lower-cased: handing it the whole set would
+      // invite a later reader to trust something the contract does not define.
+      headers: {
+        authorization: req.headers.authorization,
+        'x-libedge-actor': req.headers['x-libedge-actor'],
+      },
+      body,
+      query,
+      requestId,
+      now: new Date(),
+    });
+  } catch (error) {
+    // handleBridgeRequest turns every expected failure into an answer; anything thrown
+    // here is a bug or a broken connection, and it must still be a JSON body so the
+    // caller does not retry against a parse error. The message is logged, not returned:
+    // a database error can name a column and a table.
+    console.error('[bridge] unhandled error', requestId, error?.message, error?.code, error?.routine);
+    json(res, 500, { error: 'INTERNAL', request_id: requestId });
+    return;
+  }
+  json(res, answer.status, answer.body);
+}
+
+// A GET has no body and readJson would return {} for an empty stream, but a caller that
+// sends one anyway must not have it silently dropped.
+async function readBridgeBody(req) {
+  if (req.method === 'GET' || req.method === 'DELETE' || req.method === 'HEAD') return {};
+  return readJson(req);
+}
 
 // Cheap enough to run on every request: it only touches env, and only for a GET
 // of /opds. The API key itself is not checked here and must not be: binding a
@@ -2829,6 +2944,10 @@ async function handleRequest(req, res) {
 
 const stopDownloadMaintenance = pool ? startDownloadMaintenance(downloadMaintenanceService) : () => {};
 server.once('close', stopDownloadMaintenance);
+// The catalog pool is idle when no bridge request is in flight, but keeping a socket to
+// the database open after the server has closed is exactly what stops a test container
+// from being removed cleanly.
+server.once('close', () => { if (catalogPool) catalogPool.end().catch(() => {}); });
 
 let annotationMaintenanceTimer;
 let annotationMaintenanceStart;

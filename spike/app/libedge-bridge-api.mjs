@@ -15,11 +15,12 @@
 import {
   BridgeError, isConfigured, tokenScope, parseActor, parseTenantPut, parseUserPut,
   parseStatusPut, parseSubscriptionPut, parseSourceId, subscriptionPayloadSha256,
-  assertLeaseWithinCeiling, slugProblem,
+  assertLeaseWithinCeiling, slugProblem, parseLimit,
 } from './libedge-bridge.mjs';
 import {
   upsertTenant, readTenant, preProvisionUser, applyAccountStatus, applyMembershipStatus,
   applySubscriptionSync, readSubscription, resolveTenant, withBridgeAdmin,
+  readCatalogPage, readCatalogWork,
 } from './libedge-bridge-db.mjs';
 
 const ACCOUNT_STATUSES = ['active', 'disabled'];
@@ -45,6 +46,13 @@ const ROUTES = [
   { method: 'PUT', pattern: '/accounts/:uid', scope: 'entitlements', handler: putAccount },
   { method: 'PUT', pattern: '/subscriptions/:sourceId', scope: 'entitlements', handler: putSubscription },
   { method: 'GET', pattern: '/subscriptions/:sourceId', scope: 'entitlements', handler: getSubscription },
+  // The catalogue half. These run on the catalog pool (§4.3), and the difference is
+  // not cosmetic: the reader-facing reads below are entitlements and run as
+  // `akademik_app`, while publishing and curating run as `akademik_catalog`. A route
+  // in the wrong half would be rejected by the policies in 022 rather than here, which
+  // is a 500 instead of a 403 - so the scope is stated per route, once.
+  { method: 'GET', pattern: '/catalog', scope: 'entitlements', handler: listCatalogWorks },
+  { method: 'GET', pattern: '/catalog/works/:id', scope: 'entitlements', handler: getCatalogWork },
 ];
 
 function matchRoute(method, pathname) {
@@ -84,7 +92,7 @@ function failure(error, requestId) {
 // Written as { status, body } so a 201 (a tenant or sync row was created) is explicit
 // at the handler rather than inferred here from the shape of the payload.
 export async function handleBridgeRequest({
-  env, pool, method, pathname, headers, body, query = {}, requestId, now,
+  env, pool, catalogPool, method, pathname, headers, body, query = {}, requestId, now,
 }) {
   // `now` is an argument so a test can place the clock; production passes new Date().
   const clock = now || new Date();
@@ -112,14 +120,26 @@ export async function handleBridgeRequest({
     // health takes no actor: it is the one endpoint a monitoring probe calls.
     const actor = route.scope ? parseActor(headers) : null;
 
-    if (!pool) {
+    // Which connection pool the handler runs on is decided here, from the route's
+    // scope, and nowhere else. It is not a second authorisation step - the token was
+    // checked above - it is the contract's separation of roles made real: a catalog
+    // request runs as `akademik_catalog` and can touch global rows, an entitlements
+    // request runs as `akademik_app` and cannot. A handler that reached for the wrong
+    // pool would be writing with a role the policy does not expect, so the choice
+    // lives next to the route table rather than inside each handler.
+    const routePool = route.scope === 'catalog' ? catalogPool : pool;
+    if (!routePool) {
       // Configured but not connected: an operator error, and distinct from a bad
-      // request so it does not send LibEdge retrying a body that was fine.
-      throw new BridgeError(503, 'DATABASE_UNAVAILABLE', 'no database pool');
+      // request so it does not send LibEdge retrying a body that was fine. The
+      // catalog message names the variable, because the fix is in the environment
+      // rather than in the code, and the two pools are configured separately.
+      throw new BridgeError(503, 'DATABASE_UNAVAILABLE', route.scope === 'catalog'
+        ? 'DATABASE_CATALOG_URL is not set: the catalog path needs its own pool'
+        : 'no database pool');
     }
 
     const result = await route.handler({
-      env, pool, params, body, query, actor, requestId, now: clock,
+      env, pool: routePool, params, body, query, actor, requestId, now: clock,
     });
     return { status: result?.status || 200, body: result?.body || {} };
   } catch (error) {
@@ -143,14 +163,24 @@ export async function handleBridgeRequest({
 async function health({ pool }) {
   // A real query, as the contract asks: a health check that only proves the process
   // is alive is the one signal that never fails when it should.
+  //
+  // What it may count is limited by the policy it runs under. `withBridgeAdmin` binds no
+  // tenant, and `tenants_self` shows akademik_app nothing without one - measured on a
+  // database with four tenants, `select count(*) from tenants` returns 0. Counting
+  // tenants here would therefore report 0 forever and look like a healthy, empty
+  // installation. What is counted instead is what is genuinely visible with no binding:
+  // the global catalogue, which has no tenant policy at all.
   const rows = await withBridgeAdmin(pool, async (client) => {
     const { rows: inner } = await client.query(
-      `select (select count(*)::int from tenants) as tenants,
-              (select count(*)::int from works where tenant_id is null) as global_works`,
+      `select (select count(*)::int from works where tenant_id is null) as global_works,
+              (select count(*)::int from collections where tenant_id is null) as global_collections`,
     );
     return inner;
   });
-  return { body: { ok: true, tenants: rows[0].tenants, global_works: rows[0].global_works } };
+  // `schema` is the version marker the bridge needs: without 021/022/025 the counts
+  // above throw and the caller gets DATABASE_UNAVAILABLE, so reaching this line at all
+  // is the assertion that the schema is at least as new as this code.
+  return { body: { ok: true, schema: 'libedge-v1', ...rows[0] } };
 }
 
 async function putTenant({ pool, params, body }) {
@@ -275,5 +305,38 @@ async function getSubscription({ pool, params, now }) {
       applied_at: new Date(row.applied_at).toISOString(),
     },
   };
+}
+
+
+// ---------------------------------------------------------------------------
+// GET /catalog and GET /catalog/works/{id}  (section 5.5)
+// ---------------------------------------------------------------------------
+
+// `limit` goes through the same parser as every other page size, so the bound and the
+// error text are the contract's in one place. `offset` is not in the contract, which
+// means an unexpected value must be refused rather than passed to SQL: a negative or
+// non-numeric offset would be either an error the caller cannot read or a silently
+// different page.
+function parseOffset(raw) {
+  if (raw === undefined || raw === null || raw === '') return 0;
+  if (!/^\d+$/.test(String(raw))) throw new BridgeError(400, 'INVALID_BODY', 'offset must be an integer');
+  return Number(raw);
+}
+
+async function listCatalogWorks({ pool, query }) {
+  const limit = parseLimit(query.limit);
+  const offset = parseOffset(query.offset);
+  const page = await readCatalogPage(pool, { limit, offset });
+  return { body: page };
+}
+
+async function getCatalogWork({ pool, params }) {
+  // The id reaches SQL as a parameter, but a malformed one would surface as a
+  // Postgres 22P02 ("invalid input syntax for type uuid") and be thrown on as a 500.
+  // A caller that mistypes an id should get the contract's 404, not a server fault.
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.id)) {
+    throw new BridgeError(404, 'WORK_NOT_FOUND', `no global work "${params.id}"`);
+  }
+  return { body: { work: await readCatalogWork(pool, params.id) } };
 }
 
