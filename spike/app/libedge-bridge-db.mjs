@@ -72,15 +72,28 @@ export async function withBridgeTenant(pool, tenantId, fn) {
   } finally {
     if (RESET_AND_RELEASE) {
       // Out of the transaction before resetting: `reset` inside one is undone by commit.
-      // A failed reset here is the observable failure of 026 NOT being applied - the next
-      // unbound query on this connection is then 22P02 - so it is counted and the
-      // connection is destroyed rather than returned in an unknown state.
+      //
+      // RESET ITSELF NEVER FAILS. Without 026 the GUC is left as '' and `reset` returns
+      // happily; the 22P02 arrives on the NEXT unbound query, on whichever request picks
+      // this connection up. So the reset is followed by a check, and only a check that
+      // returns cleanly licenses handing the connection back. Without it, `resetFailed`
+      // would stay 0 on a database without 026 and the connection would be returned in
+      // exactly the state that breaks the next request.
+      //
+      // The check asks whether the connection is SAFE TO REUSE, not whether the GUC is
+      // literally unset - `reset` never unset it, on either schema. That is why the measure
+      // is a policy-guarded read with no tenant bound, which is the query that would
+      // otherwise fail (22P02 before 026) or, worse, quietly return the previous tenant.
       try {
         await client.query('reset app.tenant_id');
+        await client.query("select id from works where false");
         bridgeTenantStats.reset += 1;
         client.release();
       } catch {
+        // A failed check is a destroyed connection too, and it is counted as both: the
+        // question "was it handed back?" must have one answer, not two.
         bridgeTenantStats.resetFailed += 1;
+        bridgeTenantStats.destroyed += 1;
         client.release(true);
       }
     } else {

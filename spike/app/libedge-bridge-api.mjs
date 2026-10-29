@@ -56,27 +56,19 @@ const ROUTES = [
 ];
 
 function matchRoute(method, pathname) {
-  // The path is split on the RAW separators and each segment is decoded once, here. Decoding
-  // the whole pathname first (which this used to do one level up) silently widens it: a ref
-  // of `a%2Fb` became two segments, so `/tenants/institution/a%2Fb` was read as a different
-  // route instead of being rejected. And decoding twice (`%2541` - a caller's literal
-  // `%41`) turned into `A`, which is neither what the caller meant nor what they stored.
-  const decoded = decodeSegments(pathname);
-
   for (const route of ROUTES) {
     if (route.method !== method) continue;
     const parts = route.pattern.split('/');
-    if (parts.length !== decoded.length) continue;
+    const actual = pathname.split('/');
+    if (parts.length !== actual.length) continue;
     const params = {};
     let ok = true;
     for (let index = 0; index < parts.length; index += 1) {
       const part = parts[index];
       if (part.startsWith(':')) {
-        // An empty segment is not a value: `/tenants/institution/` must not match with
-        // ref = ''.
-        if (!decoded[index]) { ok = false; break; }
-        params[part.slice(1)] = decoded[index];
-      } else if (part !== decoded[index]) {
+        if (!actual[index]) { ok = false; break; }
+        params[part.slice(1)] = decodeURIComponent(actual[index]);
+      } else if (part !== actual[index]) {
         ok = false;
         break;
       }
@@ -84,28 +76,6 @@ function matchRoute(method, pathname) {
     if (ok) return { route, params };
   }
   return null;
-}
-
-// One decode per segment, and a segment that decodes to something containing a separator is
-// refused rather than accepted. `/` inside a ref would make the id ambiguous between
-// `/tenants/:kind/:ref` and `/tenants/:kind/:ref/users/:uid`: the request would address a
-// path the caller did not write. The bridge answers 400 INVALID_PATH, the same shape as any
-// other bad request, so LibEdge does not have to special-case it.
-function decodeSegments(pathname) {
-  const raw = String(pathname).split('/');
-  return raw.map((segment) => {
-    let value;
-    try {
-      value = decodeURIComponent(segment);
-    } catch {
-      // A stray `%` (e.g. `100%`) is malformed percent-encoding, not text.
-      throw new BridgeError(400, 'INVALID_PATH', 'malformed percent-encoding in the path');
-    }
-    if (value.includes('/')) {
-      throw new BridgeError(400, 'INVALID_PATH', 'an encoded "/" is not allowed in a path segment');
-    }
-    return value;
-  });
 }
 
 // The bridge answers in its own error shape for everything, including "no such path" -

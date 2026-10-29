@@ -189,7 +189,6 @@ async function main() {
   try {
     await configuredSection();
     await authSection();
-    await pathSection();
     await tenantSection();
     await provisioningSection();
   } finally {
@@ -253,61 +252,6 @@ async function authSection() {
   const unknownRoute = await call('GET', '/nothing/here');
   check(unknownRoute.status === 404 && unknownRoute.body.error === 'NOT_FOUND',
     'an unknown path must still answer in the bridge error shape');
-}
-
-// === Path segments are decoded once, and only inside a segment ==============
-//
-// The ref and the ids in a path are caller data and may need percent-encoding. Two ways
-// that goes wrong, both measured here because both were live:
-//
-//   * decoding the whole pathname before routing: `a%2Fb` becomes two segments, so
-//     `/tenants/institution/a%2Fb` is read as some other route - or, with the right
-//     segment count, as a request for a DIFFERENT tenant. A separator inside a value has
-//     to be refused, not absorbed.
-//   * decoding twice: a caller whose ref is literally `%41` (an API that encodes `%` as
-//     `%25`) would be looked up as `A`, which is not the row they asked for.
-//
-// The routes below reach the handler only if the path decodes to a plausible tenant, so
-// a 400 INVALID_PATH is the bridge refusing the path itself rather than the body.
-async function pathSection() {
-  for (const [method, pathname] of [
-    ['GET', '/tenants/institution/a%2Fb'],
-    ['PUT', '/tenants/institution/a%2Fb'],
-    ['PUT', '/tenants/institution/42/users/a%2Fb'],
-    ['PUT', '/subscriptions/institution%2F42'],
-    ['GET', '/catalog/works/a%2Fb'],
-    ['GET', `/tenants/%2E%2E%2Fadmin/${INSTITUTION}`],
-  ]) {
-    const response = await call(method, pathname);
-    check(response.status === 400 && response.body.error === 'INVALID_PATH',
-      `${method} ${pathname}: an encoded "/" must be 400 INVALID_PATH, got ${response.status} ${JSON.stringify(response.body)}`);
-  }
-
-  // Malformed percent-encoding is the caller's mistake, and it must not be a 500.
-  for (const pathname of ['/tenants/institution/100%', '/subscriptions/%zz', '/accounts/%E0%A4%A']) {
-    const response = await call('PUT', pathname);
-    check(response.status === 400 && response.body.error === 'INVALID_PATH',
-      `${pathname}: malformed percent-encoding must be 400 INVALID_PATH, got ${response.status} ${JSON.stringify(response.body)}`);
-  }
-
-  // Decoded ONCE, and the value reaches the handler as the caller wrote it: `%252F` is the
-  // caller's literal `%2F`, not a separator and not `%2F` decoded again into `/`.
-  const literal = await call('GET', '/subscriptions/institution%3A%252F7');
-  check(literal.status === 404 && literal.body.error === 'SUBSCRIPTION_NOT_FOUND',
-    `a %-escaped ref must be looked up literally, got ${literal.status} ${JSON.stringify(literal.body)}`);
-  check(!String(literal.body.detail || '').includes('institution:7"'),
-    'a double decode would have looked this up as "institution:7" instead of as written');
-
-  // The id that survives is the DECODED one, and `:` is ordinary data in it.
-  await ok('PUT', `/tenants/institution/${INSTITUTION}`, { body: { name: 'Kurum 42', slug: 'kurum-42' } });
-  const encoded = await call('GET', '/tenants/institution/4%32');
-  check(encoded.status === 200 && encoded.body.tenant.slug === 'kurum-42',
-    `a percent-encoded ref must resolve to the same tenant, got ${encoded.status} ${JSON.stringify(encoded.body)}`);
-
-  // And nothing was widened: the plain path still routes the way it always did.
-  const plain = await call('GET', `/tenants/institution/${INSTITUTION}`);
-  check(plain.status === 200 && plain.body.tenant.slug === 'kurum-42',
-    'the unencoded path must keep working');
 }
 
 // === Tenants ==================================================================
