@@ -184,6 +184,46 @@ Verification after a deploy, expected `relrowsecurity = t` and `relforcerowsecur
 select relname, relrowsecurity, relforcerowsecurity from pg_class where relname = 'collection_items';
 ```
 
+## Migration 025, and the bridge's two `tenants` functions
+
+`025-libedge-tenant-provisioning.sql` exists because `tenants` is FORCE ROW LEVEL SECURITY
+for the owner too and `tenants_self` has no `with check`, so **no principal can INSERT a
+tenant**. Measured on the shipped schema, `akademik_app` gets
+
+```
+42501  new row violates row-level security policy for table "tenants"
+```
+
+on the create path while the update path works. Widening a grant does not help - a policy
+cannot be satisfied by a caller that does not yet know the id it is inserting. So 025 adds
+two narrow `SECURITY DEFINER` functions, in the shape 018 and 024 already established:
+
+- `app.libedge_tenant_by_ref(kind, ref)` resolves a LibEdge context to a tenant id **before**
+  any tenant is bound. Without it, `select id from tenants` as `akademik_app` returns **zero
+  rows** on a database with four tenants in it - the same trap 024 documents for the timers,
+  on the request side. Returns id, status and the two context columns only, and needs a
+  `(kind, ref)` pair the caller must already know, so it cannot enumerate tenants.
+- `app.libedge_upsert_tenant(kind, ref, name, slug, status)` creates or updates an
+  institution tenant. Its limits, each asserted in `spike/app/test/libedge-bridge.integration.mjs`:
+
+  | refused | because |
+  | --- | --- |
+  | any `kind` but `institution` | the staff and individual tenants are deployment facts, not per-request |
+  | rewriting `id` or `slug` on an existing `(kind, ref)` | a reader's bookmark and a stored session point at them |
+  | a slug already held by another tenant | reported as `409 TENANT_SLUG_TAKEN`, checked under a lock so a race cannot become a 500 |
+  | an unknown `status` | the column's domain is the only source of truth for it |
+
+  It touches `tenants` and nothing else: no users, no memberships, no grants.
+
+EXECUTE is `akademik_app` only on both, `PUBLIC` is revoked, `search_path` is pinned to
+`public, pg_temp`, and a direct `INSERT` by the app role is still refused - the functions are
+the one path, not a door left open beside one. Integration coverage: 61 checks against its
+own `postgres:16-alpine`, applying `schema.sql` then 021, 022, 024 and 025.
+
+Files applied by `db/migrate.mjs` must not contain begin/commit and must not use psql
+meta-commands. The body terminator is `$body$`, not a bare dollar pair, for the reason 022
+documents: a line consisting of the bare terminator would end the runner's own transaction.
+
 ## Migration 024, and `app.maintenance_tenants()`
 
 `024-maintenance-tenants.sql` depends on nothing: it creates the `app` schema, one
