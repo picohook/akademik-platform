@@ -14,7 +14,7 @@
     "test:tenant-access": "node test/tenant-access.integration.mjs",
     "test:watermarks": "node test/social-watermark.test.mjs",
     "test:social-drm": "node test/social-drm.integration.mjs",
-    "test:sso": "node --test test/sso-token.test.mjs test/sso-state.test.mjs test/sso-production-gate.test.mjs",
+    "test:sso": "node --test test/sso-token.test.mjs test/sso-state.test.mjs test/sso-jti.test.mjs test/sso-production-gate.test.mjs",
     "test:sso-integration": "node test/sso-callback.integration.mjs",
     "vectors:sso": "node sso/vectors.mjs"
   },

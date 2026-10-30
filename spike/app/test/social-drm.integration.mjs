@@ -163,6 +163,10 @@ async function setup() {
   const sandbox = path.join(temporary, 'app');
   await mkdir(path.join(sandbox, 'public/seed'), { recursive: true });
   for (const file of await serverFiles(appDir)) {
+    // Nested sources (public/, and sso/ since reader SSO) need their parent directory
+    // before copyFile will write into it; without this a new subdirectory in
+    // server.mjs's import graph fails here and nowhere else.
+    await mkdir(path.dirname(path.join(sandbox, file)), { recursive: true });
     await copyFile(path.join(appDir, file), path.join(sandbox, file));
     report.source[file] = sha(await readFile(path.join(sandbox, file)));
   }

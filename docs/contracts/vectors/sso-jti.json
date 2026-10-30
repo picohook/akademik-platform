@@ -1,0 +1,30 @@
+{
+  "note": "Contract 2.2: jti is random and at least 128 bits. The bytes are fixed so both sides can hard-code them; the Worker must produce exactly this string for exactly these bytes.",
+  "algorithm": "base64url without padding, applied to 32 bytes from a CSPRNG",
+  "bytesHex": "f3a41c07be58d92e6b14af30c8d75e2194b02fa6cd3e81574a9067b2fd1c8e35",
+  "bytes": 32,
+  "bits": 256,
+  "sha256Hex": "5b10f7b7adc3ef955a64d11a59744a4f8d0c7c166c07b160e2f896409654e5eb",
+  "jti": "86QcB75Y2S5rFK8wyNdeIZSwL6bNPoFXSpBnsv0cjjU",
+  "length": 43,
+  "minimumBytes": 16,
+  "minimumBits": 128,
+  "minimumJti": "WlpaWlpaWlpaWlpaWlpaWg",
+  "insufficient": [
+    {
+      "name": "uuid-with-dashes",
+      "jti": "3f2504e0-4f89-11d3-9a0c-0305e82c3301",
+      "why": "36 characters, but 122 bits behind two fixed nibbles; the dashes carry no entropy"
+    },
+    {
+      "name": "repeated-character",
+      "jti": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "why": "43 characters, one distinct byte: base64url only, entropy nil"
+    },
+    {
+      "name": "uuid-hex-no-dashes",
+      "jti": "3f2504e04f8911d39a0c0305e82c3301",
+      "why": "32 characters, but not base64url - it fails the round-trip and carries 122 bits"
+    }
+  ]
+}

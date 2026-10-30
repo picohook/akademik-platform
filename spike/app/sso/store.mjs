@@ -72,12 +72,13 @@ function localRoleFor(claims) {
   return claims.ctx === 'staff' ? claims.role : 'reader';
 }
 
-// users.email is not null in schema.sql, so a token without `email` cannot create a row.
-// 2.2 makes the claim optional; rather than inventing an address the sign-in is refused,
-// with a reason that says whose bug it is.
+// users.email is not null in schema.sql, so a row cannot simply omit the address. `email`
+// is required by 2.2, so the token is expected to carry one; this refuses a token that
+// does not rather than inventing an address that would be stored as identity and shown to
+// the reader.
 function emailFor(claims) {
   if (!claims.email) {
-    throw new SsoRejection('bad_claims', 'token carries no email; users.email is required');
+    throw new SsoRejection('bad_claims', 'token carries no email; 2.2 requires it');
   }
   return claims.email;
 }
@@ -139,6 +140,10 @@ export async function signIn(client, tenant, claims, { sessionHours, now }) {
 
   const role = localRoleFor(claims);
   const email = emailFor(claims);
+  // The display name comes from the optional `name` claim and falls back to the address, so
+  // the UI has something to show without inventing a person. It is display only: the row is
+  // keyed on (tenant, libedge_user_id).
+  const displayName = claims.name || email;
 
   // 10: JIT creation (3.3). The update path deliberately does not touch `status` or
   // `role`: a librarian who demoted this reader in our own admin keeps that decision, and
@@ -147,8 +152,12 @@ export async function signIn(client, tenant, claims, { sessionHours, now }) {
   if (existing.rows.length) {
     userId = existing.rows[0].id;
     await client.query(
-      `update users set email = $2, display_name = coalesce(display_name, $2) where id = $1`,
-      [userId, email]);
+      `update users set email = $2, display_name = case
+         when $3::text is null then display_name
+         when display_name is null or display_name = email then $3
+         else display_name end
+       where id = $1`,
+      [userId, email, claims.name]);
   } else {
     // A pre-bridge row with the same e-mail but no LibEdge id is not adopted silently:
     // identity is keyed on (tenant, libedge_user_id), and linking the two is a decision
@@ -164,7 +173,7 @@ export async function signIn(client, tenant, claims, { sessionHours, now }) {
       `insert into users (tenant_id, email, display_name, libedge_user_id, role)
        values ($1, $2, $3, $4, $5)
        returning id`,
-      [tenant.id, email, email, claims.sub, role]);
+      [tenant.id, email, displayName, claims.sub, role]);
     userId = rows[0].id;
   }
 

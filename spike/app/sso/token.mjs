@@ -28,6 +28,20 @@ export const CLOCK_SKEW_SECONDS = 30;
 
 // 2.2: jti is at least 128 bits of entropy, so at least 22 base64url characters.
 export const MIN_JTI_LENGTH = 22;
+export const MIN_JTI_BYTES = 16;
+
+// The received-string half of 2.2's `jti` rule - the shortest string that can hold 128 bits.
+// Entropy cannot be measured from a string, so this is deliberately only a floor; the
+// producer's obligation (32 random bytes -> base64url) is fixed by the shared vector
+// docs/contracts/vectors/sso-jti.json. base64url decoding is lenient, so a string that does
+// not round-trip is refused: `"a".repeat(43)` is long enough and is not 128 random bits, but
+// a 43-character hex string is not base64url at all, and accepting it would mean accepting a
+// value whose decoded length nobody checked.
+export function jtiEntropyIsSufficient(jti) {
+  if (typeof jti !== 'string' || jti.length < MIN_JTI_LENGTH) return false;
+  const bytes = Buffer.from(jti, 'base64url');
+  return bytes.length >= MIN_JTI_BYTES && bytes.toString('base64url') === jti;
+}
 
 export const CONTEXTS = Object.freeze(['institution', 'individual', 'staff']);
 
@@ -55,9 +69,16 @@ const CLAIM_TYPES = Object.freeze({
   exp: 'integer',
   inst: 'string',
   email: 'string',
+  // Optional display claims of 2.2: typed when present, and dropped when absent. Not
+  // required, because a token without them is a valid token whose reader is shown their
+  // e-mail instead of a name.
+  name: 'string',
+  lang: 'string',
 });
 
-// Required by 2.2 for every token; `inst` and `email` are conditional (see below).
+// Required by 2.2 for every token. `inst` is conditional on `ctx`, and `email` is required
+// but validated separately so its absence has one named reason; `name` and `lang` are
+// optional display claims.
 const REQUIRED = Object.freeze(['iss', 'aud', 'sub', 'ctx', 'role', 'jti', 'nonce', 'iat', 'exp']);
 
 function isPlainObject(value) {
@@ -116,7 +137,12 @@ export function verifyToken(token, { keys, issuer, audience, now = Date.now() })
   // it - two handoffs sharing a jti would collide into one consumed entry. The check is on
   // `jti` alone: the contract gives it a length, and `nonce` is matched against the cookie
   // rather than used as a key, so a shorter one is weak but not a protocol violation.
-  if (claims.jti.length < MIN_JTI_LENGTH) return refuse('bad_claims');
+  //
+  // The length is all a verifier can impose on a received string; it says nothing about
+  // randomness. What the producer must do is fixed by the shared vector in
+  // docs/contracts/vectors/sso-jti.json (32 bytes, base64url), and sso-jti.test.mjs checks
+  // both halves: that the vector round-trips, and that 22 characters is its floor.
+  if (!jtiEntropyIsSufficient(claims.jti)) return refuse('bad_claims');
 
   // `ctx` and `inst` are one decision, per 2.2: institutional tokens carry the tenant ref,
   // and only they do. A personal token with an `inst` is asking to be let into a tenant it
@@ -130,11 +156,11 @@ export function verifyToken(token, { keys, issuer, audience, now = Date.now() })
   const allowed = ALLOWED_LIBEDGE_ROLES[claims.ctx];
   if (!allowed || !allowed.includes(claims.role)) return refuse('bad_role');
 
-  // `email` is optional in 2.2; when present it must be a plausible address, because it
-  // is written to users.email and a malformed one breaks the row, not just the display.
-  if (claims.email !== undefined && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(claims.email)) {
-    return refuse('bad_claims');
-  }
+  // `email` is required by 2.2, and is written to users.email (not null). When present it
+  // must be a plausible address, because a malformed one breaks the row, not just the
+  // display; when absent the token is refused rather than given an invented address.
+  if (claims.email === undefined) return refuse('bad_claims');
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(claims.email)) return refuse('bad_claims');
 
   // `sub` becomes a component of our user rows and the advisory lock key of 2.6, so its
   // shape is fixed rather than merely non-empty. The underscore is not decoration:
@@ -157,6 +183,9 @@ export function verifyToken(token, { keys, issuer, audience, now = Date.now() })
       exp: claims.exp,
       inst: claims.inst ?? null,
       email: claims.email ?? null,
+      // Display only, never identity: 3.3 keys the row on (tenant, libedge_user_id).
+      name: claims.name ?? null,
+      lang: claims.lang ?? null,
     },
   };
 }

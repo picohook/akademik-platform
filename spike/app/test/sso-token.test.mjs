@@ -142,6 +142,39 @@ test('a short jti is refused: the replay table is keyed by it', () => {
   assert.equal(verify(mint({ jti: 'abc' })).reason, 'bad_claims');
 });
 
+test('email is required by 2.2: present and well formed passes, absent or malformed is refused', () => {
+  // 2.2 marks `email` as required (it is the row's human-readable identity and what the UI
+  // shows). The refusal is a claim refusal, not a database error, so the callback never gets
+  // a tenant or a jti row for a token that could not become a user.
+  assert.equal(verify(mint({ email: undefined })).reason, 'bad_claims');
+  assert.equal(verify(mint({ email: '' })).reason, 'bad_claims');
+  assert.equal(verify(mint({ email: 'not-an-address' })).reason, 'bad_claims');
+  assert.equal(verify(mint({ email: 'a@b' })).reason, 'bad_claims');
+  // Positive control: the shared valid vector's own address.
+  const accepted = verify(mint({ email: 'reader@example.edu.tr' }));
+  assert.equal(accepted.ok, true, JSON.stringify(accepted));
+  assert.equal(accepted.claims.email, 'reader@example.edu.tr');
+});
+
+test('name and lang are optional display claims: typed when present, null when absent', () => {
+  // 2.2 marks them "-" (not required). They reach the UI but are never identity: the user row
+  // is keyed on (tenant, libedge_user_id).
+  const withDisplay = verify(mint({ name: 'Ayşe Yılmaz', lang: 'tr' }));
+  assert.equal(withDisplay.ok, true, JSON.stringify(withDisplay));
+  assert.equal(withDisplay.claims.name, 'Ayşe Yılmaz');
+  assert.equal(withDisplay.claims.lang, 'tr');
+
+  const withoutDisplay = verify(mint({ name: undefined, lang: undefined }));
+  assert.equal(withoutDisplay.ok, true, JSON.stringify(withoutDisplay));
+  assert.equal(withoutDisplay.claims.name, null);
+  assert.equal(withoutDisplay.claims.lang, null);
+
+  // Typed when present: a number would be half-understood, so it is refused, as 2.2/2 says of
+  // the claim table.
+  assert.equal(verify(mint({ name: 42 })).reason, 'bad_claims');
+  assert.equal(verify(mint({ lang: ['tr'] })).reason, 'bad_claims');
+});
+
 test('key configuration is validated once, and a private key is refused', () => {
   assert.throws(() => parsePublicKeys(''), KeyConfigError);
   assert.throws(() => parsePublicKeys('[]'), KeyConfigError);

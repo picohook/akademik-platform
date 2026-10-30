@@ -262,6 +262,28 @@ async function happyPath() {
     'the audit row carries the outcome and the IP, and nothing else about the token');
   check(!JSON.stringify(session[0]).includes(granted.claims.jti),
     'neither the token nor its jti is stored in the audit');
+
+  // 2.2's optional `name` claim is display only. 3.3 already fixes the identity key, so this
+  // checks the two places a made-up value would mislead: the user row the UI reads, and the
+  // email column, which must stay the real address rather than being overwritten by a name.
+  const named = token({ name: 'Ayşe Yılmaz', email: 'ayse.yilmaz@example.edu.tr' });
+  const namedResult = await callback(named);
+  check(namedResult.ok === true, `a token with a name must sign in, got ${namedResult.reason}`);
+  const { rows } = await admin.query(
+    'select display_name, email from users where libedge_user_id = $1', [named.claims.sub]);
+  check(rows[0]?.display_name === 'Ayşe Yılmaz',
+    `the name claim becomes display_name, got ${rows[0]?.display_name}`);
+  check(rows[0]?.email === 'ayse.yilmaz@example.edu.tr',
+    `email stays the address, got ${rows[0]?.email}`);
+  // ...and a token without `name` leaves the address in place rather than blanking the row.
+  const plainly = token({ email: 'ayse@example.edu.tr' });
+  const plainlyResult = await callback(plainly);
+  check(plainlyResult.ok === true, `a token without a name must sign in, got ${plainlyResult.reason}`);
+  const afterName = await admin.query(
+    'select display_name, email from users where libedge_user_id = $1', [plainly.claims.sub]);
+  check(afterName.rows[0]?.display_name === 'Ayşe Yılmaz',
+    'a later token without `name` does not blank an existing display name');
+  check(afterName.rows[0]?.email === 'ayse@example.edu.tr', 'the address is updated on every sign-in');
   return { ...result, claims: granted.claims };
 }
 
@@ -313,6 +335,19 @@ async function controls(baseline) {
   // individual tenant's ref must be unknown, not silently resolved.
   const crossed = await callback(token({ inst: 'b2c' }));
   check(crossed.reason === 'unknown_tenant', `crossed ref: ${crossed.reason}`);
+
+  // 6. A token with no `email` (2.2 requires it). The refusal is a claim refusal, and it
+  //    happens before step 7 - so no jti is burned and no tenant is looked up, which matters
+  //    because a jti burned here would make the corrected token a "replay". Nothing is
+  //    written: this is the "no synthetic address" rule, made visible.
+  const before6 = await state();
+  const noEmail = token({ email: undefined });
+  const noEmailResult = await callback(noEmail);
+  check(noEmailResult.reason === 'bad_claims', `no email: ${noEmailResult.reason}`);
+  const after6 = await state();
+  check(after6.jtis === before6.jtis, 'a token without email consumes no jti');
+  check(after6.users === before6.users, 'a token without email creates no user row');
+  check(after6.sessions === before6.sessions, 'a token without email creates no session');
 }
 
 // 6 and 7 need state the callback reads before it writes: the account and the membership.
