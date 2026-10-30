@@ -1,0 +1,50 @@
+{
+  "note": "Signed with the test key above. `now` is the instant the expected verdicts were computed at.",
+  "issuer": "libedge",
+  "audience": "elibrary.libedge.com",
+  "now": 1793523600,
+  "valid": {
+    "token": "eyJhbGciOiJFZERTQSIsImtpZCI6InRlc3QtMjAyNi0xMSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJsaWJlZGdlIiwiYXVkIjoiZWxpYnJhcnkubGliZWRnZS5jb20iLCJzdWIiOiJsdV83ZjNjMWE5ZTRiMmQiLCJjdHgiOiJpbnN0aXR1dGlvbiIsImluc3QiOiI0MiIsInJvbGUiOiJyZWFkZXIiLCJpYXQiOjE3OTM1MjM2MDAsImV4cCI6MTc5MzUyMzY2MCwianRpIjoiajdZYjNRbTBYdlQ5d1oyY1I1bkw4cEsxc0Q0Zkc2aEEwIiwibm9uY2UiOiJrWjNtMFFkMnI4WGIxeU40dFY2d0E5Y0U1Z0g3akwwcCIsImVtYWlsIjoiYXlzZUBleGFtcGxlLmVkdS50ciJ9.zZHZPps8wHjPHGXQQ6qcKo_F4LQJ5s06YhO_kDLfAnYYj_Y--n-iXqhGxSoKHXp4MCgxCaYaJzZMwkRlZ3NHAQ",
+    "expect": "accepted",
+    "claims": {
+      "iss": "libedge",
+      "aud": "elibrary.libedge.com",
+      "sub": "lu_7f3c1a9e4b2d",
+      "ctx": "institution",
+      "inst": "42",
+      "role": "reader",
+      "iat": 1793523600,
+      "exp": 1793523660,
+      "jti": "j7Yb3Qm0XvT9wZ2cR5nL8pK1sD4fG6hA0",
+      "nonce": "kZ3m0Qd2r8Xb1yN4tV6wA9cE5gH7jL0p",
+      "email": "ayse@example.edu.tr"
+    }
+  },
+  "invalid": [
+    {
+      "name": "expired",
+      "expect": "expired",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6InRlc3QtMjAyNi0xMSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJsaWJlZGdlIiwiYXVkIjoiZWxpYnJhcnkubGliZWRnZS5jb20iLCJzdWIiOiJsdV83ZjNjMWE5ZTRiMmQiLCJjdHgiOiJpbnN0aXR1dGlvbiIsImluc3QiOiI0MiIsInJvbGUiOiJyZWFkZXIiLCJpYXQiOjE3OTM1MjM0ODAsImV4cCI6MTc5MzUyMzU0MCwianRpIjoiajdZYjNRbTBYdlQ5d1oyY1I1bkw4cEsxc0Q0Zkc2aEEwIiwibm9uY2UiOiJrWjNtMFFkMnI4WGIxeU40dFY2d0E5Y0U1Z0g3akwwcCIsImVtYWlsIjoiYXlzZUBleGFtcGxlLmVkdS50ciJ9.W1nIFeBs3zaz45OXr2S8dX3xdF9Lj60r2Z3aknyRXVgxlzRkoTnWOSKVqrG4AdFgMO9xlmHr-S4j0rgWBg31Cg"
+    },
+    {
+      "name": "lifetime-too-long",
+      "expect": "bad_claims",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6InRlc3QtMjAyNi0xMSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJsaWJlZGdlIiwiYXVkIjoiZWxpYnJhcnkubGliZWRnZS5jb20iLCJzdWIiOiJsdV83ZjNjMWE5ZTRiMmQiLCJjdHgiOiJpbnN0aXR1dGlvbiIsImluc3QiOiI0MiIsInJvbGUiOiJyZWFkZXIiLCJpYXQiOjE3OTM1MjM2MDAsImV4cCI6MTc5MzUyNzIwMCwianRpIjoiajdZYjNRbTBYdlQ5d1oyY1I1bkw4cEsxc0Q0Zkc2aEEwIiwibm9uY2UiOiJrWjNtMFFkMnI4WGIxeU40dFY2d0E5Y0U1Z0g3akwwcCIsImVtYWlsIjoiYXlzZUBleGFtcGxlLmVkdS50ciJ9.LBIU4yiR9DumE0MbzmsXrrOCKLm1_gUiGwYgDuqV2Dql7TPMgTXKnaoUzaFCInuYMI6eIZa8m2BOdGHlnOz9Bg"
+    },
+    {
+      "name": "wrong-audience",
+      "expect": "bad_audience",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6InRlc3QtMjAyNi0xMSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJsaWJlZGdlIiwiYXVkIjoiZWxpYnJhcnkuZXhhbXBsZS5jb20iLCJzdWIiOiJsdV83ZjNjMWE5ZTRiMmQiLCJjdHgiOiJpbnN0aXR1dGlvbiIsImluc3QiOiI0MiIsInJvbGUiOiJyZWFkZXIiLCJpYXQiOjE3OTM1MjM2MDAsImV4cCI6MTc5MzUyMzY2MCwianRpIjoiajdZYjNRbTBYdlQ5d1oyY1I1bkw4cEsxc0Q0Zkc2aEEwIiwibm9uY2UiOiJrWjNtMFFkMnI4WGIxeU40dFY2d0E5Y0U1Z0g3akwwcCIsImVtYWlsIjoiYXlzZUBleGFtcGxlLmVkdS50ciJ9.p2pzmdc4q4emsbRi43MEm7DwRmB89TpAqLMzQTilcw4RqW9Jh7L1ltzCpfyCv49-XadM94ItuUVP_i8LNF7ICw"
+    },
+    {
+      "name": "individual-admin",
+      "expect": "bad_role",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6InRlc3QtMjAyNi0xMSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJsaWJlZGdlIiwiYXVkIjoiZWxpYnJhcnkubGliZWRnZS5jb20iLCJzdWIiOiJsdV83ZjNjMWE5ZTRiMmQiLCJjdHgiOiJpbmRpdmlkdWFsIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzkzNTIzNjAwLCJleHAiOjE3OTM1MjM2NjAsImp0aSI6Imo3WWIzUW0wWHZUOXdaMmNSNW5MOHBLMXNENGZHNmhBMCIsIm5vbmNlIjoia1ozbTBRZDJyOFhiMXlONHRWNndBOWNFNWdIN2pMMHAiLCJlbWFpbCI6ImF5c2VAZXhhbXBsZS5lZHUudHIifQ.xPh7q0r8Sp39pPY4pUgdxkdxFSR_kdxxrdoSWj1IKqr2oYBCxyN38lI_DhqUzkMu4EHV0ZjIEMbeQeiImXrqBA"
+    },
+    {
+      "name": "institution-without-inst",
+      "expect": "bad_context",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6InRlc3QtMjAyNi0xMSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJsaWJlZGdlIiwiYXVkIjoiZWxpYnJhcnkubGliZWRnZS5jb20iLCJzdWIiOiJsdV83ZjNjMWE5ZTRiMmQiLCJjdHgiOiJpbnN0aXR1dGlvbiIsInJvbGUiOiJyZWFkZXIiLCJpYXQiOjE3OTM1MjM2MDAsImV4cCI6MTc5MzUyMzY2MCwianRpIjoiajdZYjNRbTBYdlQ5d1oyY1I1bkw4cEsxc0Q0Zkc2aEEwIiwibm9uY2UiOiJrWjNtMFFkMnI4WGIxeU40dFY2d0E5Y0U1Z0g3akwwcCIsImVtYWlsIjoiYXlzZUBleGFtcGxlLmVkdS50ciJ9.Ucoqltkr_ZlkIPjlSwzd4qJEmglozVw-5dtYv1XrgDvShhTohwt79vqpJyP8ZlA6kSz8CjUUH9hb3AxYW37ECg"
+    }
+  ]
+}

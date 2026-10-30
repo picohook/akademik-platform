@@ -25,6 +25,17 @@ import {
   foldWords,
   normalizeSearch,
 } from './public/search.mjs';
+import { withBridgeAdmin } from './libedge-bridge-db.mjs';
+import { handleCallback, readCallbackForm, startUrl } from './sso/callback.mjs';
+import { sessionCookieHeader, readSsoSession, sessionHoursFrom, signSsoSession,
+  startSsoMaintenance } from './sso/session.mjs';
+import {
+  STATE_COOKIE,
+  clearStateCookieHeader,
+  newStateValue,
+  stateCookieHeader,
+} from './sso/state.mjs';
+import { loadPublicKeys } from './sso/test-keys.mjs';
 
 function chapterNumberFromHref(href) {
   const base = decodeURIComponent(String(href || '').split('/').pop() || '');
@@ -332,6 +343,9 @@ function readSession(req) {
       sessionVersion: Number(payload.ver || 0),
       sessionId: payload.sid,
       csrf: payload.csrf,
+      // An SSO cookie carries a flag; the password path's cookies do not, so an older
+      // cookie keeps working unchanged. `tenantId` is already above.
+      sso: payload.sso === true,
     };
   } catch {
     return null;
@@ -351,6 +365,11 @@ function setSessionCookie(res, user, secure = false) {
 function clearSessionCookie(res, secure = false) {
   const secureFlag = secure ? ' Secure;' : '';
   res.setHeader('set-cookie', [
+    // One attribute set for both session kinds: an SSO cookie is cleared by the same
+    // header as a password one, because the name and path are the same. A cookie is only
+    // removed when the attributes match what set it; HttpOnly and SameSite=Lax are on both
+    // sides, and `Secure` only appears when the request was secure - which is when it was
+    // set as well.
     `${SESSION_COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0;${secureFlag}`,
     `${CSRF_COOKIE}=; SameSite=Lax; Path=/; Max-Age=0;${secureFlag}`,
   ]);
@@ -478,6 +497,10 @@ async function deleteAllSessions(userId) {
 async function sessionIsValid(auth) {
   if (!auth.sessionId) return false;
   if (!pool) return (demoSessions.get(auth.userId) || []).includes(auth.sessionId);
+  // An SSO session lives in libedge_sessions and is read through its tenant binding (see
+  // sso/session.mjs): the row, not the cookie, decides whether it is still alive. The
+  // password path keeps using user_sessions below.
+  if (auth.sso) return await ssoSessionIsValid(auth);
   try {
     return await withTenant(async (client) => {
       const { rows } = await client.query(
@@ -497,6 +520,43 @@ async function sessionIsValid(auth) {
     });
   } catch (error) {
     console.warn('[auth] session check failed:', error.message);
+    return false;
+  }
+}
+
+// The SSO half of sessionIsValid. The cookie is already verified (HMAC) and carries the
+// tenant; the row is then read through that binding, so a session id from another tenant
+// returns zero rows rather than existing. `readSsoSession` never binds a tenant it was not
+// given, and the binding is not taken from the session id - see the comment there.
+//
+// The `ver` comparison against users.session_version is repeated on this path too: an
+// admin's "sign out everywhere" bumps the column, and an SSO session must respect it just
+// as a password session does.
+async function ssoSessionIsValid(auth) {
+  try {
+    // The password path's binding helper needs app.tenant_id in the async context, so the
+    // tenant from the signed cookie is installed with runWithTenant first. The tenant is
+    // never derived from the session id: it comes from the HMAC-verified payload, and a
+    // cookie naming the wrong tenant simply reads zero rows under RLS.
+    return await runWithTenant(auth.tenantId, async () => {
+      const row = await readSsoSession({ sid: auth.sessionId, tenant: auth.tenantId }, {
+        withTenant: (_tenantId, fn) => withTenant(fn),
+      });
+      if (!row) return false;
+      // The row's user has to be the cookie's user, and still active, and still at the
+      // same session_version - the same three facts the password path checks.
+      if (row.userId !== auth.userId) return false;
+      return await withTenant(async (client) => {
+        const { rows } = await client.query(
+          'select session_version from users where id = $1', [auth.userId]);
+        if (!rows[0]) return false;
+        return Number(rows[0].session_version) === auth.sessionVersion;
+      });
+    });
+  } catch (error) {
+    // Same policy as the password path: a session check that cannot run is a rejection,
+    // not an exception, because the caller is a browser that cannot do anything with a 500.
+    console.warn('[auth] sso session check failed:', error.message);
     return false;
   }
 }
@@ -2208,6 +2268,216 @@ async function opdsTenantFor(req) {
   return String(process.env.OPDS_TENANT_ID || '').trim() || null;
 }
 
+// ---------------------------------------------------------------------------
+// Reader-side SSO (contract 2.1-2.6)
+// ---------------------------------------------------------------------------
+//
+// The configuration is read once, at startup, and a bad value stops the process. That is
+// the opposite of how the bridge treats a missing catalog URL, and deliberately so: the
+// bridge can answer 503 for a path nobody uses yet, while a reader SSO that boots with no
+// keys would fail every sign-in with a generic rejection and no clue where to look.
+//
+// LIBEDGE_SSO_PUBLIC_KEYS unset is a valid state - the e-library simply has no SSO button
+// yet - and is treated as "disabled", not as an error. What is NOT allowed is production
+// starting with the repository's test key loaded; loadPublicKeys refuses that.
+const SSO_ISSUER = process.env.LIBEDGE_SSO_ISSUER || 'libedge';
+const SSO_AUDIENCE = process.env.LIBEDGE_SSO_AUDIENCE || 'elibrary.libedge.com';
+const SSO_HANDOFF_URL = process.env.LIBEDGE_SSO_HANDOFF_URL
+  || 'https://libedge.com/elibrary/handoff';
+const SSO_SESSION_HOURS = ssoSessionHours();
+const SSO_RATE_LIMIT = { max: 20, window: 15 * 60 * 1000 };
+const ssoAttempts = new Map();
+
+// The reason page for a rejected handoff. Deliberately plain: no error code, no reason, no
+// echo of anything the browser sent. The single message comes from callback.mjs so the
+// string a reader sees and the string the tests assert are the same string.
+function rejectionPage(message) {
+  return `<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>Giriş yapılamadı</title></head>
+<body style="font-family:system-ui,sans-serif;max-width:36rem;margin:4rem auto;line-height:1.5">
+<h1>Giriş yapılamadı</h1>
+<p>${message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+<p><a href="${SSO_HANDOFF_URL}">LibEdge'e dön</a></p>
+</body></html>`;
+}
+
+let ssoKeys = null;
+if (process.env.LIBEDGE_SSO_PUBLIC_KEYS) {
+  try {
+    ssoKeys = loadPublicKeys(process.env.LIBEDGE_SSO_PUBLIC_KEYS);
+    console.log(`[sso] ${ssoKeys.size} handoff key(s) loaded`);
+  } catch (error) {
+    // Fatal, including the test-key-in-production case: see sso/test-keys.mjs.
+    console.error('[sso]', error.message);
+    process.exit(1);
+  }
+} else {
+  console.log('[sso] LIBEDGE_SSO_PUBLIC_KEYS not set, reader SSO disabled');
+}
+
+function ssoSessionHours() {
+  try {
+    return sessionHoursFrom(process.env.LIBEDGE_SSO_SESSION_HOURS);
+  } catch (error) {
+    console.error('[sso]', error.message);
+    process.exit(1);
+  }
+}
+
+// Per-IP, per-route budget for the two SSO endpoints (7.4). Separate from the login
+// limiter so that hammering the callback cannot lock a reader out of the password login,
+// and vice versa. It bounds the unauthenticated work: signature verification and, worse,
+// audit writes - an unbounded callback is an unbounded way to grow sso_auth_events.
+function ssoRateStatus(ip) {
+  const now = Date.now();
+  const entry = ssoAttempts.get(ip);
+  if (!entry || entry.reset <= now) return 0;
+  return entry.count >= SSO_RATE_LIMIT.max ? Math.ceil((entry.reset - now) / 1000) : 0;
+}
+
+function recordSsoAttempt(ip) {
+  const now = Date.now();
+  const entry = ssoAttempts.get(ip);
+  if (!entry || entry.reset <= now) {
+    ssoAttempts.set(ip, { count: 1, reset: now + SSO_RATE_LIMIT.window });
+    return;
+  }
+  entry.count += 1;
+}
+
+// application/x-www-form-urlencoded, from the callback's form POST (2.1/4). Read with a
+// hard cap: this endpoint is unauthenticated and reachable from any page.
+async function readForm(req, limit = 8192) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > limit) {
+      const error = new Error('payload too large');
+      error.status = 413;
+      throw error;
+    }
+    chunks.push(chunk);
+  }
+  const params = new URLSearchParams(Buffer.concat(chunks).toString('utf8'));
+  return Object.fromEntries(params);
+}
+
+// GET /auth/libedge/start (2.1/2): mint the state, put it in `__Host-sso_state`, and send
+// the browser to LibEdge with only its hash. The state is generated per request, never
+// reused, and never appears in a URL or a log.
+function ssoStart(req, res, url) {
+  recordSsoAttempt(clientIp(req));
+  const state = newStateValue();
+  const target = startUrl({
+    handoffBase: SSO_HANDOFF_URL,
+    state,
+    ctxHint: url.searchParams.get('ctx'),
+  });
+  res.writeHead(302, {
+    location: target,
+    'set-cookie': stateCookieHeader(state),
+    'cache-control': 'no-store',
+    // The hash is a credential for the handoff window; no referrer, ever.
+    'referrer-policy': 'no-referrer',
+  });
+  res.end();
+}
+
+// POST /auth/libedge/callback (2.1/3-5). Session fixation is handled by the row: this
+// always creates a new libedge_sessions row and a new cookie, and whatever session the
+// browser had before is neither reused nor trusted.
+async function ssoCallback(req, res) {
+  const ip = clientIp(req);
+  const retryAfter = ssoRateStatus(ip);
+  if (retryAfter > 0) {
+    res.setHeader('retry-after', String(retryAfter));
+    json(res, 429, { error: 'too many attempts', retryAfter });
+    return;
+  }
+  recordSsoAttempt(ip);
+
+  let form;
+  try {
+    form = await readForm(req);
+  } catch (error) {
+    json(res, error.status || 400, { error: 'bad request' });
+    return;
+  }
+
+  const cookieState = parseCookies(req.headers.cookie)[STATE_COOKIE] || null;
+
+  // `withAdmin` runs unbound - that is where 2.3/7 resolves the tenant - and `withTenant`
+  // runs bound. The tenant is never read from a request context here: handleCallback gets
+  // it from app.libedge_tenant_by_ref and passes it to the binding, so steps 8-11 cannot
+  // run in a tenant nobody verified the token against.
+  const result = await handleCallback({
+    ...readCallbackForm(form),
+    cookieState,
+    pool,
+    withAdmin: (fn) => withBridgeAdmin(pool, fn),
+    withTenant: (tenantId, fn) => runWithTenant(tenantId, () => withTenant(fn)),
+    keys: ssoKeys,
+    issuer: SSO_ISSUER,
+    audience: SSO_AUDIENCE,
+    sessionHours: SSO_SESSION_HOURS,
+    ip,
+  });
+
+  // The state cookie has done its job either way, and a rejected handoff must not leave a
+  // nonce lying around for the next attempt to reuse.
+  const clearState = clearStateCookieHeader();
+
+  if (!result.ok) {
+    if (result.reason !== 'state_mismatch' && result.reason !== 'expired') {
+      // Not logged per-request on purpose for the two expected-by-arrival reasons; the
+      // audit table already has every attempt.
+      console.warn(`[sso] reject: ${result.reason}`);
+    }
+    res.writeHead(403, {
+      'content-type': 'text/html; charset=utf-8',
+      'cache-control': 'no-store',
+      'set-cookie': clearState,
+    });
+    res.end(rejectionPage(REJECTION_MESSAGE));
+    return;
+  }
+
+  const { session } = result;
+  // `csrf` is a fresh value, not one taken from the request: the point is that the browser
+  // did not choose it.
+  const csrf = randomBytes(18).toString('base64url');
+  // The cookie carries the user's session_version, because `readSession` compares it with
+  // users.session_version on every request (sessionIsValid) and a mismatch is a silent 401.
+  // Read here, in the same tenant, rather than threaded through signIn: the callback is the
+  // only place that needs it.
+  const version = await withTenant(async (client) => {
+    const { rows } = await client.query(
+      'select session_version from users where id = $1', [session.userId]);
+    return Number(rows[0]?.session_version || 0);
+  });
+  const signed = signSsoSession({
+    secret: SESSION_SECRET,
+    session,
+    user: { email: session.email, display_name: session.email, session_version: version },
+    csrf,
+  });
+
+  const secure = isSecureRequest(req) || APP_ENV === 'production';
+  const csrfMaxAge = Math.max(0, Math.floor((session.expiresAt - Date.now()) / 1000));
+  res.writeHead(303, {
+    location: '/',
+    'cache-control': 'no-store',
+    'set-cookie': [
+      sessionCookieHeader(signed, session.expiresAt, { secure }),
+      `${CSRF_COOKIE}=${encodeURIComponent(csrf)}; SameSite=Lax; Path=/; Max-Age=${csrfMaxAge};${
+        secure ? ' Secure;' : ''}`,
+      clearState,
+    ],
+  });
+  res.end();
+}
+
 async function handleRequest(req, res) {
   const requestStarted = performance.now();
   let url;
@@ -2257,6 +2527,24 @@ async function handleRequest(req, res) {
     }
     if (pathname === '/api/health') {
       json(res, 200, { ok: true, mode: pool ? 'db' : 'demo', tenantId: TENANT_ID });
+      return;
+    }
+    // Reader-side SSO (contract 2.1). Both routes are unauthenticated by nature - the
+    // start is what creates the state, and the callback is what creates the session - so
+    // both are rate-limited per IP and both are refused when SSO is not configured, rather
+    // than 404ing and leaving a reader to guess why the LibEdge button does nothing.
+    if (pathname === '/auth/libedge/start' && req.method === 'GET') {
+      ssoStart(req, res, url);
+      return;
+    }
+    if (pathname === '/auth/libedge/callback' && req.method === 'POST') {
+      if (!pool || !ssoKeys) {
+        // 503, not 403: the reader's token may be perfectly good, and the distinction is
+        // what tells an operator to look at configuration rather than at LibEdge.
+        json(res, 503, { error: 'sso unavailable' });
+        return;
+      }
+      await ssoCallback(req, res);
       return;
     }
     // Deliberately unauthenticated: the footer needs brand/version/build values
@@ -3004,9 +3292,15 @@ if (pool) {
   }, 6 * 60 * 60 * 1000);
   annotationMaintenanceTimer.unref?.();
 }
+// The SSO audit sweep (027's 90-day retention, contract 7.5). Only when SSO is actually
+// configured: without the keys nothing writes to sso_auth_events, and a database that has
+// not had 027 applied should not be warned about a table it does not need yet.
+let stopSsoMaintenance = null;
+if (pool && ssoKeys) stopSsoMaintenance = startSsoMaintenance(pool);
 server.once('close', () => {
   clearTimeout(annotationMaintenanceStart);
   clearInterval(annotationMaintenanceTimer);
+  stopSsoMaintenance?.();
 });
 
 server.listen(PORT, '0.0.0.0', () => {

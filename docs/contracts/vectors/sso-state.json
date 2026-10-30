@@ -1,0 +1,8 @@
+{
+  "note": "The cookie header is compared as a string, attribute order included.",
+  "state": "A4tQ0yJm8nR2cV6xB1wE7uH3pK9sL5dF0gZ2iN8oM1q",
+  "stateHash": "RQQKK7aBf2mmOyQt5bfuRXnrbbRCsAd9rOxQzhXNJIY",
+  "cookie": "__Host-sso_state=A4tQ0yJm8nR2cV6xB1wE7uH3pK9sL5dF0gZ2iN8oM1q; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=600",
+  "matchingNonce": "A4tQ0yJm8nR2cV6xB1wE7uH3pK9sL5dF0gZ2iN8oM1q",
+  "otherNonce": "qQ0wE1r2T3y4U5iO6pA7sD8fG9hJ0kL1zX2cV3bN4m"
+}
