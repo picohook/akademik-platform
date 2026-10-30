@@ -57,12 +57,24 @@ export function hashOf(state) {
   return stateHash(state);
 }
 
-// Contract 2.1/4: the browser (or the Worker, 2.1/3) posts `nonce` back. The check is
-// constant-time and requires both sides, so a missing cookie and an empty nonce both
-// fail the same way rather than matching each other.
-export function nonceMatches(stateFromCookie, nonceFromToken) {
-  if (!stateFromCookie || !nonceFromToken) return false;
-  return safeEqual(stateFromCookie, nonceFromToken);
+// Contract 2.3/4: `nonce == base64url(SHA-256(__Host-sso_state))`.
+//
+// The nonce is not the cookie value - it is the *hash* of it, the same string 2.1/2 put in
+// the handoff URL. Comparing the raw cookie would be wrong in two ways at once: the honest
+// Worker never sends back a value equal to the cookie, so a correct token would fail, and
+// accepting the raw state would mean the state itself could be written into the signed
+// token (and, from there, into any log that keeps claims).
+//
+// Hashing the cookie here rather than trusting a `nonce` field from the form is also what
+// makes 2.1/4 true - the callback is a form POST carrying `token` alone. The only nonce we
+// can compare against is one *we* derive. So the function takes (cookie, nonce) and does
+// the derivation itself; a caller cannot accidentally compare raw values again.
+//
+// Constant-time, and computed only when both sides are present: with no cookie there is no
+// hash to compare, and the comparison must fail rather than match an empty string.
+export function nonceMatches(stateFromCookie, nonce) {
+  if (!stateFromCookie || !nonce) return false;
+  return safeEqual(stateHash(stateFromCookie), nonce);
 }
 
 // The `ctx` hint on the start URL (2.1/2). Anything else is ignored: the token's `ctx`

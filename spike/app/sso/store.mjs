@@ -26,6 +26,7 @@
 // spans tenants would be exactly the hole the policy is there to close.
 
 import { randomUUID } from 'node:crypto';
+import { lockLibedgeUser } from '../libedge-bridge-db.mjs';
 
 // A rejection from the callback: (audit reason, message for the operator's log). A class
 // rather than a bare Error so server.mjs can tell a policy refusal - a 403 with a reason -
@@ -91,8 +92,14 @@ function emailFor(claims) {
 // connection and everything below needs a bound one; the two cannot share a transaction
 // without the resolution running under the binding.
 //
-// `client` is already bound to tenant.id by the caller.
+// `client` is already bound to tenant.id by the caller, and is inside a transaction.
 export async function signIn(client, tenant, claims, { sessionHours, now }) {
+  // 2.6 first, before anything is read that a concurrent writer could change. The lock is
+  // `pg_advisory_xact_lock`, held until this transaction ends, so a second handoff for the
+  // same person waits here instead of racing on the user row and the jti. It is taken here
+  // rather than by the caller so that signIn cannot be called in a way that skips it.
+  await lockLibedgeUser(client, claims.sub);
+
   // 8a: the account. 021 keeps this outside users.status because an account can be
   // disabled before the person has ever signed in, and a row that does not exist yet
   // cannot carry the refusal.
@@ -126,12 +133,13 @@ export async function signIn(client, tenant, claims, { sessionHours, now }) {
   // so the audit row written after a replay refusal would be lost with it. rowCount === 0
   // is the same fact - this jti was already consumed - with the transaction still usable.
   //
-  // The jti is kept until the token would have expired anyway. Storing exp means the table
-  // prunes itself, and a token replayed after exp fails the time check before it ever
-  // reaches this statement.
+  // 2.3/9 fixes the retention: `to_timestamp(exp) + interval '30 seconds'`. That is exactly
+  // the window in which a token is still accepted (2.2/3 allows `now <= exp + 30`), so the
+  // jti outlives the token's usability by zero seconds: no token is ever accepted after its
+  // replay row has been pruned, and the row does not linger a day longer than it must.
   const consumed = await client.query(
     `insert into sso_consumed_jti (jti, expires_at)
-     values ($1, to_timestamp($2))
+     values ($1, to_timestamp($2) + interval '30 seconds')
      on conflict (jti) do nothing`,
     [claims.jti, claims.exp]);
   if (consumed.rowCount === 0) {

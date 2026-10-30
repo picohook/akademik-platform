@@ -1,8 +1,8 @@
 {
-  "note": "The cookie header is compared as a string, attribute order included.",
+  "note": "The cookie header is compared as a string, attribute order included. `matchingNonce` is the contract's nonce for this state: base64url(SHA-256(state)), i.e. it equals stateHash (2.1/2, 2.3/4). It is deliberately NOT the state itself.",
   "state": "A4tQ0yJm8nR2cV6xB1wE7uH3pK9sL5dF0gZ2iN8oM1q",
   "stateHash": "RQQKK7aBf2mmOyQt5bfuRXnrbbRCsAd9rOxQzhXNJIY",
   "cookie": "__Host-sso_state=A4tQ0yJm8nR2cV6xB1wE7uH3pK9sL5dF0gZ2iN8oM1q; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=600",
-  "matchingNonce": "A4tQ0yJm8nR2cV6xB1wE7uH3pK9sL5dF0gZ2iN8oM1q",
+  "matchingNonce": "RQQKK7aBf2mmOyQt5bfuRXnrbbRCsAd9rOxQzhXNJIY",
   "otherNonce": "qQ0wE1r2T3y4U5iO6pA7sD8fG9hJ0kL1zX2cV3bN4m"
 }

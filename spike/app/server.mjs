@@ -26,7 +26,7 @@ import {
   normalizeSearch,
 } from './public/search.mjs';
 import { withBridgeAdmin } from './libedge-bridge-db.mjs';
-import { handleCallback, readCallbackForm, startUrl } from './sso/callback.mjs';
+import { REJECTION_MESSAGE, handleCallback, readCallbackForm, startUrl } from './sso/callback.mjs';
 import { sessionCookieHeader, readSsoSession, sessionHoursFrom, signSsoSession,
   startSsoMaintenance } from './sso/session.mjs';
 import {
@@ -189,6 +189,32 @@ async function withTenant(fn) {
   try {
     await client.query("select set_config('app.tenant_id', $1, false)", [tenantId]);
     return await fn(client);
+  } finally {
+    client.release();
+  }
+}
+
+// One transaction, one bound tenant (contract 2.3: steps 5-11 are atomic). This is the
+// shape withBridgeTenant has, on the app pool instead of the bridge pool: the tenant is
+// bound inside the transaction and the transaction is what the advisory lock of 2.6 lives
+// for. withTenant above cannot be used for that - it releases the connection after the
+// statement, which would drop `pg_advisory_xact_lock` (an xact lock, held to commit) at the
+// first await, and would commit the jti insert before the user and session rows existed.
+//
+// The bind is transaction-local. A plain `set_config(..., false)` would survive the commit
+// and leak the tenant to whichever request reused the connection - 024/025 are the record
+// of exactly that trap - so this uses `true` and does not need to reset anything.
+async function withSsoSession(tenantId, fn) {
+  const client = await pool.connect();
+  try {
+    await client.query('begin');
+    await client.query("select set_config('app.tenant_id', $1, true)", [String(tenantId)]);
+    const result = await fn(client);
+    await client.query('commit');
+    return result;
+  } catch (error) {
+    await client.query('rollback').catch(() => {});
+    throw error;
   } finally {
     client.release();
   }
@@ -2285,6 +2311,10 @@ const SSO_AUDIENCE = process.env.LIBEDGE_SSO_AUDIENCE || 'elibrary.libedge.com';
 const SSO_HANDOFF_URL = process.env.LIBEDGE_SSO_HANDOFF_URL
   || 'https://libedge.com/elibrary/handoff';
 const SSO_SESSION_HOURS = ssoSessionHours();
+// 12 hours, in milliseconds. Nothing else in this file may be called before the SSO
+// configuration is read: `ssoSessionHours()` exits the process on a bad value, and a top-level
+// `const` below it would still be in its temporal dead zone when the callback handler runs.
+const SSO_SESSION_TTL_MS = SSO_SESSION_HOURS * 3600_000;
 const SSO_RATE_LIMIT = { max: 20, window: 15 * 60 * 1000 };
 const ssoAttempts = new Map();
 
@@ -2407,16 +2437,26 @@ async function ssoCallback(req, res) {
 
   const cookieState = parseCookies(req.headers.cookie)[STATE_COOKIE] || null;
 
-  // `withAdmin` runs unbound - that is where 2.3/7 resolves the tenant - and `withTenant`
+  // 2.3: steps 5-11 run in ONE transaction, with the tenant bound inside it. `withTenant`
+  // above is deliberately *not* used here: it binds and then releases the connection per
+  // statement, so `pg_advisory_xact_lock` would be released before the inserts that need it
+  // protected, and a failure after the jti insert could not roll that insert back. This
+  // helper is the same shape as withBridgeTenant but on the app pool, so the SSO write path
+  // runs as the application role under RLS rather than as the bridge role.
+  //
+  // The bind is transaction-local (`set_config(..., true)`), so it cannot leak to the next
+  // request that picks this connection up: commit or rollback ends it either way.
+  //
+  // `withAdmin` runs unbound - that is where 2.3/7 resolves the tenant - and withSession
   // runs bound. The tenant is never read from a request context here: handleCallback gets
-  // it from app.libedge_tenant_by_ref and passes it to the binding, so steps 8-11 cannot
-  // run in a tenant nobody verified the token against.
+  // it from app.libedge_tenant_by_ref and passes it in, so nothing below can run in a
+  // tenant the token was not verified against.
   const result = await handleCallback({
     ...readCallbackForm(form),
     cookieState,
     pool,
     withAdmin: (fn) => withBridgeAdmin(pool, fn),
-    withTenant: (tenantId, fn) => runWithTenant(tenantId, () => withTenant(fn)),
+    withSession: (tenantId, fn) => withSsoSession(tenantId, fn),
     keys: ssoKeys,
     issuer: SSO_ISSUER,
     audience: SSO_AUDIENCE,
@@ -2464,7 +2504,13 @@ async function ssoCallback(req, res) {
   });
 
   const secure = isSecureRequest(req) || APP_ENV === 'production';
-  const csrfMaxAge = Math.max(0, Math.floor((session.expiresAt - Date.now()) / 1000));
+  // The CSRF cookie must not outlive the session it belongs to, so its Max-Age is the
+  // session's remaining lifetime. That value is taken from the constant above rather than
+  // recomputed here: a reference to a `let` declared further down the file would be read in
+  // its temporal dead zone inside this handler.
+  const csrfMaxAge = Number.isFinite(session.expiresAt)
+    ? Math.max(0, Math.floor((session.expiresAt - Date.now()) / 1000))
+    : SSO_SESSION_TTL_MS / 1000;
   res.writeHead(303, {
     location: '/',
     'cache-control': 'no-store',

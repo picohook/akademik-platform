@@ -127,8 +127,19 @@ export function verifyToken(token, { keys, issuer, audience, now = Date.now() })
 
   // 6: time window, then jti. Time comes before jti on purpose: a token that is expired
   // *and* a replay is reported as expired, which is the fact an operator needs first.
+  //
+  // 2.2/3 gives the tolerance symmetrically - `iat <= now + 30` and `now <= exp + 30` - and
+  // the second half is the one that is easy to omit. A handoff token lives 60 seconds, a
+  // redirect crosses two networks and a login form, and exp is stamped by the Worker's clock
+  // while it is checked against ours. Without the grace a token minted on a Worker that is
+  // a few seconds behind is refused as expired *while the reader is being sent back*, which
+  // reaches the reader as a generic failure with no way to retry usefully. The grace is
+  // bounded at 30 seconds and does not extend the session, which starts from `now` in
+  // store.mjs - and the replay row is kept until exp + 30 too (2.3/9), so the window in
+  // which a token is accepted is exactly the window in which its jti is remembered.
   const seconds = nowSeconds(now);
-  if (claims.exp <= seconds) return refuse('expired');
+  const expiresAt = claims.exp + CLOCK_SKEW_SECONDS;
+  if (seconds > expiresAt) return refuse('expired');
   if (claims.iat > seconds + CLOCK_SKEW_SECONDS) return refuse('not_yet_valid');
   if (claims.iat >= claims.exp) return refuse('bad_claims');
   if (claims.exp - claims.iat > MAX_LIFETIME_SECONDS) return refuse('bad_claims');

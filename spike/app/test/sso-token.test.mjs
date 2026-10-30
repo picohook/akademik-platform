@@ -61,10 +61,14 @@ test('every vector marked invalid is rejected with its stated reason', () => {
   }
 });
 
-test('an expired token is rejected exactly at exp, not one second before', () => {
+test('a token is accepted until exp + 30 and refused one second later (2.2/3)', () => {
   const { iat, exp } = tokenFile.valid.claims;
   assert.equal(verify(tokenFile.valid.token, (exp - 1) * 1000).ok, true);
-  assert.equal(verify(tokenFile.valid.token, exp * 1000).reason, 'expired');
+  // The tolerance is symmetric, and this is the half that is easy to omit: a Worker whose
+  // clock is behind mints a token that is "expired" the moment it arrives.
+  assert.equal(verify(tokenFile.valid.token, exp * 1000).ok, true);
+  assert.equal(verify(tokenFile.valid.token, (exp + 30) * 1000).ok, true);
+  assert.equal(verify(tokenFile.valid.token, (exp + 31) * 1000).reason, 'expired');
   assert.ok(iat < exp);
 });
 

@@ -14,7 +14,6 @@
 // The audit write is best-effort and never changes the outcome. Losing an audit row is bad;
 // turning a rejected sign-in into a 500 because the audit table was full would be worse.
 
-import { lockLibedgeUser } from '../libedge-bridge-db.mjs';
 import { stateHash } from './ed25519.mjs';
 import { normaliseContextHint, nonceMatches } from './state.mjs';
 import { SsoRejection, resolveSsoTenant, signIn } from './store.mjs';
@@ -26,19 +25,26 @@ import { verifyToken } from './token.mjs';
 export const REJECTION_MESSAGE =
   'LibEdge oturumu doğrulanamadı. LibEdge\'e dönüp yeniden giriş yapın.';
 
-// 2.1/4: the callback is a form POST carrying `token` and `nonce`.
+// 2.1/4: the callback is a form POST carrying `token`. Nothing else.
+//
+// An earlier version also required a `nonce` field in the form. That is not what the
+// contract says, and it is not implementable by an honest Worker: the browser holds the
+// state in an HttpOnly cookie, and the only place the hash of it exists is inside the
+// signed token. Requiring the form to repeat it turned a valid handoff into
+// `missing or oversized nonce`. The nonce is now read from the signed claims and compared
+// against the hash of the cookie (2.3/4), which is both narrower and true to the contract.
+//
+// A `nonce` field, if a client sends one anyway, is ignored rather than rejected: it is not
+// part of the protocol, so it carries no authority, and refusing it would break nothing an
+// attacker cares about while breaking a Worker that helpfully echoes it back.
 export function readCallbackForm(body) {
   const token = typeof body?.token === 'string' ? body.token.trim() : '';
-  const nonce = typeof body?.nonce === 'string' ? body.nonce.trim() : '';
   // The token is capped before it is parsed: 2.2's claim set is small, and a 1 MB "token"
   // is not a token. This also bounds the work one request can cause.
   if (!token || token.length > 4096) {
     throw new SsoRejection('bad_claims', 'missing or oversized token');
   }
-  if (!nonce || nonce.length > 256) {
-    throw new SsoRejection('bad_claims', 'missing or oversized nonce');
-  }
-  return { token, nonce };
+  return { token };
 }
 
 // The start URL (2.1/2): the hash of the state, never the state. A hint outside the three
@@ -57,12 +63,23 @@ export function startUrl({ handoffBase, state, ctxHint }) {
 //   { ok: false, reason }
 // and never throws for an expected refusal.
 //
-// Order (2.3): signature and claims -> state -> tenant -> membership -> jti -> user ->
-// session. The state check sits *after* the signature on purpose: a token that does not
-// verify has no trustworthy nonce, and comparing an attacker-supplied string against a
-// cookie is work an unauthenticated caller should not be able to ask for.
+// `withSession(client => fn(client))` must run `fn` inside ONE transaction and hand it that
+// connection. That is not a convenience: 2.3 says steps 5-11 are one transaction, and the
+// advisory lock of 2.6 is `pg_advisory_xact_lock` - it is held only for the life of a
+// transaction. Wrapped in something that merely binds the tenant and commits per statement,
+// the lock is released between the lookup and the insert, `sso_consumed_jti` cannot be
+// rolled back with a later failure, and two racing handoffs both see an empty replay table.
+//
+// `withAdmin` is used for exactly one thing - 2.3/7, the tenant lookup - because
+// `tenants_self` denies every row before a tenant is bound. It commits before the session
+// transaction starts; nothing is written on that side.
+//
+// Order (2.3): signature and claims -> state -> tenant -> [5-11 in one transaction].
+// The state check sits *after* the signature on purpose: a token that does not verify has
+// no trustworthy nonce, and comparing an attacker-supplied string against a cookie is work
+// an unauthenticated caller should not be able to ask for.
 export async function handleCallback({
-  token, nonce, cookieState, pool, withTenant, withAdmin, keys, issuer, audience,
+  token, cookieState, pool, withSession, withAdmin, keys, issuer, audience,
   sessionHours, now = Date.now(), ip, audit,
 }) {
   let claims = null;
@@ -82,27 +99,22 @@ export async function handleCallback({
     if (!verified.ok) return await fail(verified.reason);
     claims = verified.claims;
 
-    // 2.1/4: the nonce the form posted must equal the value in `__Host-sso_state`.
-    // Without this, anyone who can make a browser POST here can deliver a token they
-    // obtained elsewhere - login CSRF, where the victim ends up signed in as the attacker.
-    if (!nonceMatches(cookieState, nonce)) return await fail('state_mismatch');
-    // ...and the token's own nonce must be that same value. Otherwise the check above
-    // proved only that the browser has a cookie, not that it belongs to *this* token.
+    // 2.3/4: the signed nonce must be base64url(SHA-256(__Host-sso_state)). `nonceMatches`
+    // hashes the cookie itself - the nonce is never compared with the raw state. Without
+    // this check anyone who can make a browser POST here can deliver a token they obtained
+    // elsewhere: login CSRF, where the victim ends up signed in as the attacker.
     if (!nonceMatches(cookieState, claims.nonce)) return await fail('state_mismatch');
 
-    // 7-11, in two transactions: the tenant lookup must run unbound and everything after
-    // it must run bound (see store.mjs). The binding helper takes the tenant as its first
-    // argument - not read from a request context - so this function decides the tenant and
-    // store.mjs never has to guess which tenant it is writing to.
+    // 2.3/7, unbound: `tenants_self` denies every row before a tenant is bound, so this one
+    // lookup runs on the admin path. The tenant is decided here and passed down; steps 5-11
+    // never read it from a request context, and never guess.
     const tenant = await withAdmin((client) => resolveSsoTenant(client, claims));
 
-    const session = await withTenant(tenant.id, async (client) => {
-      // 2.6: the identity lock is held for the rest of the transaction, so a second
-      // handoff for the same person waits here rather than racing on the user row and
-      // the jti.
-      await lockLibedgeUser(client, claims.sub);
-      return signIn(client, tenant, claims, { sessionHours, now });
-    });
+    // 2.3/5-11 in ONE transaction: identity lock, account status, membership, jti, user,
+    // session. The binding helper takes the tenant as its first argument, so the transaction
+    // cannot run bound to a tenant nobody verified the token against.
+    const session = await withSession(tenant.id, (client) =>
+      signIn(client, tenant, claims, { sessionHours, now }));
 
     await write({ outcome: 'login', ctx: claims.ctx, libedgeUserId: claims.sub,
       sessionId: session.sessionId, ip });

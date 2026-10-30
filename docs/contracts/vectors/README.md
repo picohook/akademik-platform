@@ -69,6 +69,31 @@ nothing else.
 The verdicts in `sso-token.json` are stated at the fixed instant `now` in that file, so the
 "expired" and "not yet valid" cases mean the same thing on every run.
 
+## The nonce is the hash of the state cookie
+
+2.3/4 is `nonce == base64url(SHA-256(__Host-sso_state))`, and `sso-state.json`'s
+`matchingNonce` is therefore `base64url(SHA-256(state))` - the same string as `stateHash`,
+which is what 2.1/2 sends to the Worker. It is deliberately **not** the state itself.
+
+Two mistakes are easy here, and both were made before this vector said so:
+
+* comparing the raw cookie value with the nonce (an honest Worker never sends back a value
+  equal to the cookie, so every real sign-in would fail), and
+* requiring a `nonce` field in the callback form. 2.1/4 posts `token` and nothing else; the
+  only nonce a reader can compare against is one it derives from the cookie itself.
+
+`sso-state.test.mjs` asserts that the raw state does **not** match, and
+`test/sso-http.integration.mjs` asserts it again over HTTP against the running server.
+
+## The 30 second tolerance has two halves
+
+2.2/3 bounds the clock in both directions: `iat <= now + 30` and `now <= exp + 30`. The second
+half is easy to omit and was omitted at first: a Worker whose clock is a few seconds behind
+mints a token that arrives already "expired", which reaches the reader as a generic failure.
+The grace is bounded at 30 seconds, never extends the session (which starts from `now`), and
+the replay row of 2.3/9 is kept until `to_timestamp(exp) + interval '30 seconds'` - exactly the
+window in which the token is still accepted, so no token outlives its own replay record.
+
 ## Claims that are required and claims that are not
 
 2.2 fixes the claim table, and the verifier follows it rather than its own convenience:

@@ -24,7 +24,7 @@
 
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { createPrivateKey, generateKeyPairSync, randomBytes, randomUUID } from 'node:crypto';
+import { createHash, createPrivateKey, generateKeyPairSync, randomBytes, randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { readFile } from 'node:fs/promises';
 import net from 'node:net';
@@ -33,7 +33,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { promisify } from 'node:util';
 
-import { handleCallback } from '../sso/callback.mjs';
+import { handleCallback, readCallbackForm } from '../sso/callback.mjs';
 import { withBridgeAdmin, withBridgeTenant } from '../libedge-bridge-db.mjs';
 import { parsePublicKeys } from '../sso/ed25519.mjs';
 import { readSsoSession } from '../sso/session.mjs';
@@ -166,6 +166,10 @@ let nonceCounter = 0;
 function token(overrides = {}, { key = signer, kid = vectorKeys.kid } = {}) {
   nonceCounter += 1;
   const now = Math.floor(NOW / 1000);
+  // The state lives in the cookie; the nonce is its hash (2.3/4). Computing it from bytes
+  // rather than writing a plausible-looking string is the point: a hand-written base64url
+  // value of the wrong length would be a fixture bug that looks like a protocol failure.
+  const state = `state-${String(nonceCounter).padStart(4, '0')}-${randomBytes(23).toString('base64url')}`;
   const claims = {
     iss: ISSUER,
     aud: AUDIENCE,
@@ -175,29 +179,30 @@ function token(overrides = {}, { key = signer, kid = vectorKeys.kid } = {}) {
     role: 'reader',
     iat: now,
     exp: now + 60,
-    // A fresh nonce per token, so each control exercises one refusal and not the replay
-    // guard left behind by the previous one.
-    nonce: `n${String(nonceCounter).padStart(3, '0')}${'x'.repeat(32)}`,
-    jti: randomBytes(18).toString('base64url'),
+    nonce: createHash('sha256').update(state, 'utf8').digest('base64url'),
+    jti: randomBytes(32).toString('base64url'),
     email: 'ayse@example.edu.tr',
     ...overrides,
   };
   for (const name of Object.keys(claims)) if (claims[name] === undefined) delete claims[name];
-  return { token: signToken(key, { alg: 'EdDSA', kid }, claims), claims };
+  return { token: signToken(key, { alg: 'EdDSA', kid }, claims), claims, state };
 }
 
-// One callback, called the way server.mjs calls it. `withAdmin` runs unbound - that is
-// where 2.3/7 resolves the tenant - and `withTenant` binds the tenant this function was
-// given, exactly like withTenant in server.mjs.
-async function callback(granted, { cookieState, now = NOW, audit } = {}) {
+// One callback, called the way server.mjs calls it: a form carrying the token alone, the
+// `__Host-sso_state` cookie as the browser would send it, and an unbound tenant lookup
+// followed by ONE transaction for 2.3/5-11. `withBridgeTenant` is that transaction, so a
+// lock taken inside it is an xact lock and a refusal rolls the jti insert back.
+async function callback(granted, { cookieState, now = NOW, audit, withSession } = {}) {
   const events = [];
+  // The cookie holds the state; the signed claim holds its hash (2.3/4). The two are not
+  // interchangeable, so the default fixture sets both honestly.
+  const defaultState = granted.state ?? `s-${granted.claims.jti}`;
   const result = await handleCallback({
     token: granted.token,
-    nonce: granted.claims.nonce,
-    cookieState: cookieState === undefined ? granted.claims.nonce : cookieState,
+    cookieState: cookieState === undefined ? defaultState : cookieState,
     pool,
     withAdmin: (fn) => withBridgeAdmin(pool, fn),
-    withTenant: (tenantId, fn) => withBridgeTenant(pool, tenantId, fn),
+    withSession: withSession ?? ((tenantId, fn) => withBridgeTenant(pool, tenantId, fn)),
     keys: keySet,
     issuer: ISSUER,
     audience: AUDIENCE,
@@ -305,7 +310,18 @@ async function controls(baseline) {
   check(after.jtis === before.jtis, 'a replayed token consumes no new jti');
   check(after.sessions === before.sessions, 'a replayed token creates no session');
 
-  // 2. Expired (2.2).
+  // 2. Expired (2.2/3). The boundary is exp + 30, and both sides of it are checked: a
+  //    token 20 seconds past exp is still accepted, and the session it opens still ends at
+  //    sign-in + the configured window, not at exp.
+  const exp = Math.floor(NOW / 1000) - 20;
+  const withinSkew = token({ iat: exp - 60, exp });
+  const withinResult = await callback(withinSkew);
+  check(withinResult.ok === true, `exp+20 should be accepted: ${withinResult.reason}`);
+  check(withinResult.session.expiresAt === NOW + SESSION_HOURS * 3600_000,
+    'the 30 second grace must not extend the session');
+  const tooLate = token({ iat: Math.floor(NOW / 1000) - 120, exp: Math.floor(NOW / 1000) - 31 });
+  const tooLateResult = await callback(tooLate);
+  check(tooLateResult.reason === 'expired', `exp-31s: ${tooLateResult.reason}`);
   const expired = token({ iat: Math.floor(NOW / 1000) - 120, exp: Math.floor(NOW / 1000) - 60 });
   const expiredResult = await callback(expired);
   check(expiredResult.reason === 'expired', `expired: ${expiredResult.reason}`);
@@ -317,10 +333,37 @@ async function controls(baseline) {
   const forgedResult = await callback(forged);
   check(forgedResult.reason === 'invalid_signature', `forged: ${forgedResult.reason}`);
 
-  // 4. A cookie state that is not the token's nonce (11 #14): the login-CSRF control.
+  // 4. A cookie state that is not the token's nonce (11 #14): the login-CSRF control. The
+  //    token is honest; only the cookie is wrong, so the refusal can only come from the
+  //    hash comparison.
   const csrf = token();
   const csrfResult = await callback(csrf, { cookieState: 'A'.repeat(43) });
   check(csrfResult.reason === 'state_mismatch', `state: ${csrfResult.reason}`);
+
+  // 4b. The raw state replayed as the nonce (the bug this test was written for): a token
+  //     that carries the cookie value instead of its hash must be refused. An implementation
+  //     that compares the two strings directly accepts this, and that implementation is what
+  //     shipped in the first commit.
+  const rawState = token();
+  const rawNonce = token({ nonce: rawState.state });
+  const rawResult = await callback(rawNonce, { cookieState: rawState.state });
+  check(rawResult.reason === 'state_mismatch', `raw state as nonce: ${rawResult.reason}`);
+
+  // 4c. A missing cookie is a mismatch, not a free pass - and the token is not consumed.
+  const noCookie = token();
+  const beforeCookie = await state();
+  const noCookieResult = await callback(noCookie, { cookieState: null });
+  check(noCookieResult.reason === 'state_mismatch', `no cookie: ${noCookieResult.reason}`);
+  check((await state()).jtis === beforeCookie.jtis, 'a state mismatch consumes no jti');
+  // ...and the same token is still usable once the browser has the cookie back.
+  check((await callback(noCookie)).ok === true, 'the token was not burned by the mismatch');
+
+  // 4d. The token alone is the form (2.1/4): a request without any `nonce` field is the
+  //     honest handoff and must succeed. `readCallbackForm` is what server.mjs calls.
+  const formOnly = readCallbackForm({ token: noCookie.token });
+  check(Object.keys(formOnly).join(',') === 'token', 'the form carries the token and nothing else');
+  const extraField = readCallbackForm({ token: noCookie.token, nonce: 'ignored' });
+  check(Object.keys(extraField).join(',') === 'token', 'a stray nonce field is ignored');
 
   // 5. An institution token handed to the individual tenant (11 #15). The token claims an
   //    institution this server does not know; the tenant must not fall back to the
@@ -473,6 +516,166 @@ async function retentionControl() {
   check(refused, 'akademik_app has no DELETE on sso_auth_events');
 }
 
+// 10: the transaction contract, which the module tests cannot see. Two things are only true
+// if 2.3/5-11 really run in one transaction: the identity lock in 2.6 is an *xact* lock, and
+// a failure after the jti insert must take that insert with it. Both are asserted here by
+// driving the callback through wrappers that record what the connection saw.
+async function transactionControls() {
+  // 10a. The lock is held inside the transaction, and it is the whole time.
+  const seen = [];
+  const grant = token();
+  const result = await callback(grant, {
+    withSession: (tenantId, fn) => withBridgeTenant(pool, tenantId, async (client) => {
+      // 2.3/7 is the only statement outside this transaction, and it is unbound: it must not
+      // carry the binding of a tenant that was still being resolved.
+      seen.push(`bind:${(await client.query(
+        "select current_setting('app.tenant_id', true) as id")).rows[0].id === tenantId ? 'ok' : 'leaked'}`);
+      const probe = async (label) => {
+        // Measured, not guessed: `hashtext` returns int4, so postgres stores the key in
+        // `objid` with `classid = 0` and `objsubid = 1` (a bigint key would use objsubid 2).
+        const { rows } = await client.query(
+          `select count(*)::int as held from pg_locks
+            where locktype = 'advisory' and pid = pg_backend_pid()
+              and classid = 0 and objid = hashtext($1) and objsubid = 1
+              and mode = 'ExclusiveLock' and granted`,
+          [`libedge-user:${grant.claims.sub}`]);
+        seen.push(`${label}:${rows[0].held}`);
+      };
+      await probe('before');
+      const out = await fn(client);
+      await probe('after');
+      return out;
+    }),
+  });
+  check(result.ok === true, `transaction probe callback: ${result.reason}`);
+  // `before:0` is the point: the lock was not taken before the transaction, so it cannot have
+  // been a session-scoped lock that the transaction merely inherited. `after:1` proves it is
+  // still held when the last statement finished - an xact lock, held to commit.
+  check(seen.join(',') === 'bind:ok,before:0,after:1',
+    `the identity lock must be held until commit, saw ${seen.join(',')}`);
+  // `objsubid = 2` is what makes this specific: it selects xact-level advisory locks, so a
+  // session-level lock - which would outlive the transaction and is not what 2.6 asks for -
+  // would not satisfy the check above.
+
+  // 10b. A failure after the jti insert rolls the jti back. The trigger is the session
+  //      insert - step 11, the last write - so everything the transaction wrote before it,
+  //      including the consumed jti at step 9, has to disappear. If the steps ran in separate
+  //      transactions the jti would be burned here, and the reader's retry after the operator
+  //      fixes the cause would be refused as a replay.
+  //
+  //      This runs on its own throwaway database rather than the control's fixture: the
+  //      trigger is an unplanned schema change (a narrow `jti`), and it is left behind in a
+  //      fixture, every later control would be testing the broken schema instead of the
+  //      shipped one. The helper builds and tears the whole thing down.
+  const rollback = await rollbackProbe();
+  check(rollback.failedWith === '22001',
+    `a failure after step 9 must surface as an error, got ${rollback.failedWith}`);
+  check(rollback.jtis === 0, 'a failure after step 9 rolls the jti insert back (one transaction for 2.3/5-11)');
+  check(rollback.sessions === 0, 'and creates no session');
+  check(rollback.users === 0, 'and creates no user row');
+
+  // 10c. The replay row outlives the token by exactly the 30 second grace (2.3/9), so the
+  //      window in which a token is accepted is the window in which its jti is remembered.
+  const { rows } = await admin.query(
+    'select expires_at from sso_consumed_jti where jti = $1', [grant.claims.jti]);
+  check(rows.length === 1, 'the successful token has a replay row');
+  const kept = new Date(rows[0].expires_at).getTime() - (grant.claims.exp + 30) * 1000;
+  check(Math.abs(kept) < 1000, `jti retention must be exp + 30s, off by ${kept}ms`);
+}
+
+// A throwaway database of its own, built exactly like the fixture above, used for the one
+// control that mutates the schema: does a failure at step 11 take the step 9 jti with it?
+//
+// The narrow `jti` is deliberate and is the real trigger - the column is `text` in 021, and
+// the session insert copies the jti into it. Everything else is the shipped schema, so the
+// refusal has to come from the transaction boundary and not from a stub.
+async function rollbackProbe() {
+  const probeName = `libedge-sso-probe-${randomUUID()}`;
+  const probePort = await freePort();
+  let probeAdmin = null;
+  let probePool = null;
+  try {
+    await docker('run', '--detach', '--rm', '--name', probeName,
+      '--tmpfs', '/var/lib/postgresql/data',
+      '--publish', `127.0.0.1:${probePort}:5432`,
+      '--env', 'POSTGRES_USER=mig_admin',
+      '--env', 'POSTGRES_DB=mig',
+      '--env', `POSTGRES_PASSWORD=${adminPassword}`, 'postgres:16-alpine');
+
+    let lastError;
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      const candidate = new pg.Client({
+        connectionString: `postgres://mig_admin:${adminPassword}@127.0.0.1:${probePort}/mig`,
+      });
+      try {
+        await candidate.connect();
+        probeAdmin = candidate;
+        break;
+      } catch (error) {
+        lastError = error;
+        await candidate.end().catch(() => {});
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    }
+    if (!probeAdmin) throw new Error(`probe postgres did not come up: ${lastError?.message}`);
+
+    await probeAdmin.query(await readFile(path.join(repoDir, 'db/schema.sql'), 'utf8'));
+    await probeAdmin.query(
+      "do $$ begin create role akademik_catalog; exception when duplicate_object then null; end $$");
+    for (const file of [
+      '021-libedge-identity-and-subscriptions.sql',
+      '024-maintenance-tenants.sql',
+      '025-libedge-tenant-provisioning.sql',
+      '026-tenant-binding-nullif.sql',
+      '027-reader-sso.sql',
+    ]) {
+      await probeAdmin.query(await readFile(path.join(dbDir, 'migrations', file), 'utf8'));
+    }
+    await probeAdmin.query(`alter role akademik_app password '${adminPassword}'`);
+    await probeAdmin.query(
+      `insert into tenants (id, name, slug, libedge_kind, libedge_ref) values
+         ($1, 'Kurum 42', 'kurum-42', 'institution', $2)`,
+      [INSTITUTION_TENANT, INSTITUTION]);
+    await probeAdmin.query('alter table libedge_sessions alter column jti type varchar(8)');
+
+    probePool = new pg.Pool({
+      connectionString: `postgres://akademik_app:${adminPassword}@127.0.0.1:${probePort}/mig`,
+      max: 2,
+    });
+
+    const grant = token({ sub: 'lu_rollback_probe' });
+    let failedWith = 'none';
+    try {
+      await handleCallback({
+        token: grant.token,
+        cookieState: grant.state,
+        pool: probePool,
+        withAdmin: (fn) => withBridgeAdmin(probePool, fn),
+        withSession: (tenantId, fn) => withBridgeTenant(probePool, tenantId, fn),
+        keys: keySet,
+        issuer: ISSUER,
+        audience: AUDIENCE,
+        sessionHours: SESSION_HOURS,
+        now: NOW,
+        ip: '203.0.113.7',
+        audit: async () => {},
+      });
+    } catch (error) {
+      failedWith = error.code ?? error.reason ?? error.message;
+    }
+
+    const { rows } = await probeAdmin.query(
+      `select (select count(*)::int from sso_consumed_jti) as jtis,
+              (select count(*)::int from libedge_sessions) as sessions,
+              (select count(*)::int from users where libedge_user_id is not null) as users`);
+    return { failedWith, ...rows[0] };
+  } finally {
+    await probePool?.end().catch(() => {});
+    await probeAdmin.end().catch(() => {});
+    await docker('rm', '--force', probeName).catch(() => {});
+  }
+}
+
 // ---------------------------------------------------------------------------
 // The run
 // ---------------------------------------------------------------------------
@@ -484,6 +687,7 @@ async function main() {
     await controls({ granted: token() });
     await accountAndMembershipControls(signedIn.claims.sub);
     await sessionControls(signedIn);
+    await transactionControls();
     await retentionControl();
   } finally {
     await pool?.end().catch(() => {});

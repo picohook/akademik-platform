@@ -11,6 +11,7 @@ import {
   STATE_COOKIE,
   STATE_MAX_AGE_SECONDS,
   clearStateCookieHeader,
+  hashOf,
   newStateValue,
   nonceMatches,
   normaliseContextHint,
@@ -55,13 +56,25 @@ test('a new state is 256 bits of base64url, and never repeats', () => {
   assert.match(a, /^[A-Za-z0-9_-]{43}$/);
 });
 
-test('the nonce comparison is exact, including for empty values', () => {
-  assert.equal(nonceMatches(stateFile.matchingNonce, stateFile.matchingNonce), true);
+test('the nonce is the hash of the cookie, not the cookie (2.3/4)', () => {
+  // The vector's `matchingNonce` is base64url(SHA-256(state)), which is also what 2.1/2
+  // sends to the Worker as `state_hash`. This is the assertion that was wrong the first
+  // time: comparing raw state meant an honest Worker's token could never pass.
+  assert.equal(stateFile.matchingNonce, stateFile.stateHash);
+  assert.equal(hashOf(stateFile.state), stateFile.stateHash);
+  assert.equal(nonceMatches(stateFile.state, stateFile.matchingNonce), true);
+  // The raw state is NOT a valid nonce, on either side of the comparison.
+  assert.notEqual(stateFile.matchingNonce, stateFile.state);
+  assert.equal(nonceMatches(stateFile.state, stateFile.state), false);
+  assert.equal(nonceMatches(stateFile.stateHash, stateFile.stateHash), false);
+  // A hash of the wrong cookie is a mismatch, and so is an unrelated value.
+  assert.equal(nonceMatches(stateFile.otherNonce, stateFile.matchingNonce), false);
   assert.equal(nonceMatches(stateFile.state, stateFile.otherNonce), false);
   // Both missing must not count as a match.
   assert.equal(nonceMatches(null, null), false);
   assert.equal(nonceMatches('', ''), false);
   assert.equal(nonceMatches(stateFile.state, ''), false);
+  assert.equal(nonceMatches(null, stateFile.matchingNonce), false);
 });
 
 test('a ctx hint outside the three contexts is dropped, not forwarded', () => {
