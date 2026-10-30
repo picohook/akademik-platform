@@ -46,8 +46,19 @@ const pg = createRequire(path.join(appDir, 'package.json'))('pg');
 
 const ISSUER = 'libedge';
 const AUDIENCE = 'elibrary.libedge.com';
+// The second institution. The happy path deliberately does not use a tenant the server could
+// have defaulted to: server.mjs falls back to DEMO_TENANT_ID (1111…), and "the session landed
+// in whatever tenant was handy" is exactly the bug a single-tenant fixture cannot see.
 const INSTITUTION_TENANT = '4a4a4a4a-4a4a-4a4a-8a4a-4a4a4a4a4a4a';
 const INSTITUTION = '42';
+// The version every existing user row in this test carries. Not 0, so a cookie signed from
+// the schema default instead of from the row fails /api/me rather than passing by luck.
+const PROVISIONED_VERSION = 3;
+const PROVISIONED_SUB = 'lu_http_provisioned';
+const PROVISIONED_EMAIL = 'okuyucu42@example.edu.tr';
+// A third institution, for the paths that create the reader just in time.
+const OTHER_TENANT = '5b5b5b5b-5b5b-5b5b-8b5b-5b5b5b5b5b5b';
+const OTHER_INSTITUTION = '43';
 const SECRET = 'http-test-session-secret';
 
 const container = `libedge-sso-http-${randomUUID()}`;
@@ -137,8 +148,26 @@ async function setupDatabase() {
 
   await admin.query(
     `insert into tenants (id, name, slug, libedge_kind, libedge_ref) values
-       ($1, 'Kurum 42', 'kurum-42', 'institution', $2)`,
-    [INSTITUTION_TENANT, INSTITUTION]);
+       ($1, 'Kurum 42', 'kurum-42', 'institution', $2),
+       ($3, 'Kurum 43', 'kurum-43', 'institution', $4)`,
+    [INSTITUTION_TENANT, INSTITUTION, OTHER_TENANT, OTHER_INSTITUTION]);
+
+  // The user the happy path signs in, provisioned ahead of the handoff with a version that is
+  // not the schema default. Users have no RLS policy (the tenant is a column, not a policy),
+  // so the owner can seed the row directly; 021's account and membership rows are what the
+  // callback actually checks, and they are inserted here too so the sign-in is a plain update
+  // of an existing reader rather than a JIT creation.
+  await admin.query(
+    `insert into users (tenant_id, email, display_name, libedge_user_id, role, session_version)
+     values ($1, $2, $3, $4, 'reader', $5)`,
+    [INSTITUTION_TENANT, PROVISIONED_EMAIL, 'Provisioned Reader', PROVISIONED_SUB,
+      PROVISIONED_VERSION]);
+  await admin.query(
+    `insert into libedge_accounts (libedge_user_id, status, revision)
+     values ($1, 'active', 1)`, [PROVISIONED_SUB]);
+  await admin.query(
+    `insert into libedge_memberships (tenant_id, libedge_user_id, status, revision)
+     values ($1, $2, 'active', 1)`, [INSTITUTION_TENANT, PROVISIONED_SUB]);
 
   // The server's pool connects as the application role, as in a deployment. That role may
   // not set its own password, so it is changed here by the owner.
@@ -315,8 +344,12 @@ async function startAndHappyPath() {
 
   // 2. The happy path, 2.1/4 to the letter: a token alone in the form, the state in the
   //    cookie. This is the request that failed while the server required a `nonce` field and
-  //    compared the cookie with the raw state.
-  const grant = mint();
+  //    compared the cookie with the raw state. The reader already exists here, with
+  //    session_version 3, so step 10 is the update path and the cookie has to carry that
+  //    version rather than a default.
+  const grant = mint({
+    overrides: { sub: PROVISIONED_SUB, email: PROVISIONED_EMAIL, name: 'Provisioned Reader' },
+  });
   const before = await counts();
   const ok = await postCallback({ token: grant.token, cookie: `__Host-sso_state=${grant.state}` });
   check(ok.response.status === 303, `callback: ${ok.response.status} ${ok.body.slice(0, 160)}`);
@@ -329,6 +362,13 @@ async function startAndHappyPath() {
   check(payload !== null, 'the session cookie verifies with the server secret');
   check(payload?.sso === true && payload?.tenant === INSTITUTION_TENANT,
     `the cookie marks an SSO session in the token's tenant, got ${payload?.tenant}`);
+  check(payload?.tenant !== '11111111-1111-1111-1111-111111111111',
+    'the session is not in the server default tenant');
+  // The version comes from the user row read inside the sign-in transaction. A cookie signed
+  // from the schema default (0) or from a second read that skipped the row would differ here,
+  // and would then be refused by sessionIsValid on the very next request.
+  check(payload?.ver === PROVISIONED_VERSION,
+    `the cookie carries the user's session_version ${PROVISIONED_VERSION}, got ${payload?.ver}`);
   check(typeof payload?.csrf === 'string' && payload.csrf.length >= 20,
     'the cookie carries a fresh csrf value');
 
@@ -339,13 +379,59 @@ async function startAndHappyPath() {
   check(after.rejects === before.rejects, 'a successful sign-in writes no reject row');
 
   const { rows: sessionRows } = await admin.query(
-    'select jti from libedge_sessions where session_id = $1', [payload.sid]);
+    'select jti, tenant_id, user_id from libedge_sessions where session_id = $1', [payload.sid]);
   check(sessionRows.length === 1 && sessionRows[0].jti === grant.claims.jti,
     'the session row carries the jti that opened it');
+  check(sessionRows[0]?.tenant_id === INSTITUTION_TENANT,
+    `the session row is in the token's tenant, got ${sessionRows[0]?.tenant_id}`);
   const { rows: jtiRows } = await admin.query(
     'select expires_at from sso_consumed_jti where jti = $1', [grant.claims.jti]);
   const kept = new Date(jtiRows[0].expires_at).getTime() - (grant.claims.exp + 30) * 1000;
   check(Math.abs(kept) < 2000, `the replay row is kept until exp + 30s, off by ${kept}ms`);
+
+  // 2b. The cookie has to work, not just look right. A 303 alone would pass even if the
+  //     session could never be read back - the version check, the tenant binding and the
+  //     libedge_sessions row are all in that read path, and none of them is exercised by the
+  //     redirect. /api/me is the exact request the reader's first page load makes.
+  const me = await fetch(`http://127.0.0.1:${httpPort}/api/me`, {
+    headers: { cookie: ok.session },
+  });
+  // The body is read once, then checked: calling text() inside the assertion message would
+  // consume it even on success, and the json() below would fail with "Body is unusable".
+  const meBody = await me.json();
+  check(me.status === 200, `/api/me with the new cookie: ${me.status} ${JSON.stringify(meBody)}`);
+  check(meBody.id === sessionRows[0].user_id,
+    `the browser is the reader whose row was written, got ${meBody.id}`);
+  check(meBody.id !== undefined && meBody.email === PROVISIONED_EMAIL,
+    `and it is the provisioned reader, got ${meBody.email}`);
+  // The row itself was updated, not just the cookie: step 10 writes display_name while the row
+  // still carries the address it was seeded with. And the version in the cookie is the one the
+  // database still reports: bumping it - an admin's "sign out everywhere" - must end the
+  // session, which is the only reason the value is in the cookie at all.
+  await admin.query(
+    'update users set session_version = session_version + 1 where id = $1', [meBody.id]);
+  const bumped = await fetch(`http://127.0.0.1:${httpPort}/api/me`, {
+    headers: { cookie: ok.session },
+  });
+  check(bumped.status === 401, `a version bump invalidates the cookie: /api/me ${bumped.status}`);
+  await admin.query(
+    'update users set session_version = $2 where id = $1', [meBody.id, PROVISIONED_VERSION]);
+  const { rows: userRows } = await admin.query(
+    'select display_name, session_version from users where id = $1', [meBody.id]);
+  // The cookie carries the name the callback resolved - step 10's display name, which falls
+  // back to the address only when the token has no `name` claim.
+  check(userRows[0]?.display_name === 'Provisioned Reader',
+    `step 10 wrote the display name, got ${userRows[0]?.display_name}`);
+  check(Number(userRows[0]?.session_version) === PROVISIONED_VERSION,
+    'the session did not bump the version it was issued against');
+  // The token here has no `name` claim, so the callback falls back to the address - and the
+  // reader's own name in our database is not overwritten. The response reports the cookie's
+  // value, which is the identity the reader signed in as.
+  check(meBody.role === 'reader' && meBody.displayName === meBody.email,
+    `the body is the reader the token names, got ${JSON.stringify(meBody)}`);
+  // A 401 here would have cleared the cookie; a 200 must leave it alone.
+  check(!me.headers.getSetCookie().some((line) => line.startsWith(`${SESSION_COOKIE}=`)),
+    '/api/me does not reissue or clear the session cookie');
 
   // 3. The same token again: a replay, refused, and no second session.
   const replay = await postCallback({ token: grant.token, cookie: `__Host-sso_state=${grant.state}` });
@@ -353,6 +439,10 @@ async function startAndHappyPath() {
   check(!replay.session, 'a replay sets no session cookie');
   check(replay.stateCleared, 'a replay clears the state cookie');
   check((await counts()).sessions === after.sessions, 'a replay creates no session row');
+  const replayMe = await fetch(`http://127.0.0.1:${httpPort}/api/me`, {
+    headers: { cookie: ok.session },
+  });
+  check(replayMe.status === 200, 'a replay attempt does not disturb the live session');
 }
 
 async function stateControls() {
@@ -442,15 +532,20 @@ async function transactionControls() {
   await admin.query(
     'create trigger probe_session_insert before insert on libedge_sessions for each row execute function probe_session_insert()');
 
-  // 7. The tenant is bound, and it is bound inside a transaction.
-  const grant = mint();
+  // 7. The tenant is bound, and it is bound inside a transaction. The reader here is created
+  //    just in time, in yet another tenant (43), so the binding cannot be the happy path's
+  //    tenant left over on the connection, and a created row starts at version 0 - taken from
+  //    the row, not assumed.
+  const grant = mint({ overrides: { ctx: 'institution', inst: OTHER_INSTITUTION } });
   const ok = await postCallback({ token: grant.token, cookie: `__Host-sso_state=${grant.state}` });
   check(ok.response.status === 303, `trigger probe callback: ${ok.response.status}`);
   const { rows: events } = await admin.query(
     'select tenant, in_tx from probe_events order by at desc limit 1');
   check(events.length === 1, 'the user insert ran through the probe trigger');
-  check(events[0].tenant === INSTITUTION_TENANT,
+  check(events[0].tenant === OTHER_TENANT,
     `steps 5-11 are bound to the token's tenant, saw ${events[0].tenant}`);
+  check(events[0].tenant !== '11111111-1111-1111-1111-111111111111',
+    'and not the server default tenant');
   check(events[0].in_tx === true, 'the user insert runs inside a transaction');
 
   // 8. A failure at step 11 takes step 9 with it.

@@ -249,6 +249,11 @@ async function happyPath() {
   check(result.ok === true, `a valid token must sign in, got ${result.reason}`);
   check(result.session.role === 'reader', 'an institution reader is a reader here too');
   check(result.session.tenantId === INSTITUTION_TENANT, 'the tenant is resolved from the token');
+  // The cookie's `ver` comes from here, so the value has to leave signIn() - read from the
+  // user row inside the transaction, not queried again by the caller (a second read is a
+  // different snapshot and can be a version ahead).
+  check(result.session.sessionVersion === 0,
+    `a freshly created user carries session_version 0, got ${result.session.sessionVersion}`);
 
   // 2.5: twelve hours, absolute, from the callback's own clock.
   const hours = (result.session.expiresAt - NOW) / 3600_000;

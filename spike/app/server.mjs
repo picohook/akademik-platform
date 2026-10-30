@@ -2489,17 +2489,14 @@ async function ssoCallback(req, res) {
   const csrf = randomBytes(18).toString('base64url');
   // The cookie carries the user's session_version, because `readSession` compares it with
   // users.session_version on every request (sessionIsValid) and a mismatch is a silent 401.
-  // Read here, in the same tenant, rather than threaded through signIn: the callback is the
-  // only place that needs it.
-  const version = await withTenant(async (client) => {
-    const { rows } = await client.query(
-      'select session_version from users where id = $1', [session.userId]);
-    return Number(rows[0]?.session_version || 0);
-  });
+  // It arrives on `session`, read inside the sign-in transaction, and is not queried again
+  // here: a second read outside that transaction could see a version bump that landed after
+  // the session was issued, and would sign a cookie that fails its own check on the first
+  // request - while the row it belongs to is perfectly valid.
   const signed = signSsoSession({
     secret: SESSION_SECRET,
     session,
-    user: { email: session.email, display_name: session.email, session_version: version },
+    user: { email: session.email, display_name: session.email },
     csrf,
   });
 

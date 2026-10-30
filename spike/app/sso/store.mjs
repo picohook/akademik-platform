@@ -121,8 +121,16 @@ export async function signIn(client, tenant, claims, { sessionHours, now }) {
 
   // 8c: a user row we disabled ourselves - a local decision such as conduct. It outlives
   // the LibEdge account status, so both are checked.
+  //
+  // `session_version` is read here, with the row, and not in a second query afterwards. The
+  // cookie has to carry it (server.mjs's sessionIsValid compares it with users.session_version
+  // on every request), and a value read outside this transaction could already be stale: an
+  // admin's "sign out everywhere" between the two reads would produce a cookie that is wrong
+  // from birth, and the reader would be signed out at the first page load with no clue why.
+  // Read inside the transaction and returned to the caller, it is the version the session was
+  // actually issued against - the same snapshot the row below is written in.
   const existing = await client.query(
-    'select id, status from users where tenant_id = $1 and libedge_user_id = $2',
+    'select id, status, session_version from users where tenant_id = $1 and libedge_user_id = $2',
     [tenant.id, claims.sub]);
   if (existing.rows[0]?.status === 'disabled') {
     throw new SsoRejection('user_disabled', 'the local user row is disabled');
@@ -156,9 +164,14 @@ export async function signIn(client, tenant, claims, { sessionHours, now }) {
   // 10: JIT creation (3.3). The update path deliberately does not touch `status` or
   // `role`: a librarian who demoted this reader in our own admin keeps that decision, and
   // the identity provider must not promote them back on every sign-in.
+  //
+  // A created row starts at schema.sql's default (0), and a version bump in a later request
+  // is what makes either value stale - so both are read or returned and never assumed.
   let userId;
+  let sessionVersion;
   if (existing.rows.length) {
     userId = existing.rows[0].id;
+    sessionVersion = Number(existing.rows[0].session_version || 0);
     await client.query(
       `update users set email = $2, display_name = case
          when $3::text is null then display_name
@@ -180,9 +193,12 @@ export async function signIn(client, tenant, claims, { sessionHours, now }) {
     const { rows } = await client.query(
       `insert into users (tenant_id, email, display_name, libedge_user_id, role)
        values ($1, $2, $3, $4, $5)
-       returning id`,
+       returning id, session_version`,
       [tenant.id, email, displayName, claims.sub, role]);
     userId = rows[0].id;
+    // Taken from the row rather than hardcoded to 0, so a schema whose default changes does
+    // not quietly produce a cookie that fails the version check on the very next request.
+    sessionVersion = Number(rows[0].session_version || 0);
   }
 
   // 11: the session. 2.5: the end is absolute - sign-in time plus the configured window -
@@ -204,5 +220,9 @@ export async function signIn(client, tenant, claims, { sessionHours, now }) {
     role,
     email,
     tenantId: tenant.id,
+    // The version the session was issued against, read in this transaction at step 8/10. The
+    // cookie is signed with it (sso/session.mjs), so it has to leave this function - a caller
+    // that queried it again afterwards would be reading a different snapshot.
+    sessionVersion,
   };
 }

@@ -56,6 +56,11 @@ function hmac(secret, body) {
 
 // The payload server.mjs's `currentUser` already expects (sub, tenant, email, name, role,
 // ver, sid, csrf, exp), so nothing downstream has to branch on how the session was made.
+//
+// `ver` is the `session_version` that store.mjs read inside the sign-in transaction and
+// returned on the session. It is deliberately not read here: this module has no database
+// handle, and a second read would be a different snapshot from the one the session row was
+// written in.
 export function signSsoSession({ secret, session, user, csrf, now }) {
   const payload = {
     sub: session.userId,
@@ -63,7 +68,7 @@ export function signSsoSession({ secret, session, user, csrf, now }) {
     email: user.email,
     name: user.display_name || user.email,
     role: session.role,
-    ver: Number(user.session_version || 0),
+    ver: Number(session.sessionVersion || 0),
     sid: session.sessionId,
     csrf,
     // Marks the cookie as an SSO session, so the read path knows to look in

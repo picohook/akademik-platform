@@ -59,7 +59,7 @@ export function startUrl({ handoffBase, state, ctxHint }) {
 }
 
 // The whole flow. Returns
-//   { ok: true,  session: { sessionId, expiresAt, userId, role, email, tenantId } }
+//   { ok: true,  session: { sessionId, expiresAt, userId, role, email, tenantId, sessionVersion } }
 //   { ok: false, reason }
 // and never throws for an expected refusal.
 //
