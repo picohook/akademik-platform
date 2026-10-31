@@ -35,7 +35,15 @@ export function startDownloadMaintenance(service, {
 // `maintenance()` is the exception: it runs from a timer with no request, so it is
 // handed the tenant it is sweeping as an argument and has no default. A sweeper that
 // silently picked a tenant would be the same bug in a quieter place.
-export function createDownloadService({ withTenant, getBook, activeGrants, grantAllows, tenantId, b2b }) {
+//
+// `access` is the authorization decision, and it is passed in rather than rebuilt
+// here. The server already answers "may this session read this book?" for /file,
+// /api/books/:id/search and /marc through canAccessBook(); when this module answered
+// the same question with its own rules the two disagreed. Measured on staging:
+// institution B held no grant, its catalogue was empty and /file answered 404, while
+// download-ticket answered 201 and download streamed the PDF. One question, one
+// answer - so the caller supplies it and every path below uses it.
+export function createDownloadService({ withTenant, getBook, access, grantedIds, tenantId, b2b }) {
   const digest = value => createHash('sha256').update(value).digest('hex');
 
   async function audit(client, auth, action, book, payload = {}) {
@@ -103,17 +111,24 @@ export function createDownloadService({ withTenant, getBook, activeGrants, grant
     return rows[0]?.role === 'admin';
   }
 
-  async function allowedGrantIds(client, book, auth) {
-    const grants = await activeGrants(auth, client);
-    if (grants.length) {
-      const matches = grants.filter(grant => grantAllows(book, [grant]));
-      return matches.length ? matches.map(grant => grant.id) : null;
-    }
-    // Reader compatibility remains unchanged. Full downloads fail closed when
-    // a tenant has configured grants but this user has none active/applicable;
-    // revoking the final grant must not turn a restricted download into open access.
-    const { rows } = await client.query('select download_grants_required as configured from tenants where id = $1', [tenantId()]);
-    return rows[0] && !rows[0].configured ? [] : null;
+  // Whether this session may obtain this book's bytes, decided by the same function
+  // /file uses. A grant list is not the answer on its own: allowedGrantIds() used to
+  // return [] for a tenant whose `download_grants_required` marker was false, which
+  // read as "no grants needed" and let a grantless institution download a title the
+  // catalogue would not even list.
+  async function canDownload(client, book, auth) {
+    if (!book) return false;
+    if (typeof access === 'function') return access(book, auth, client);
+    throw new Error('download service requires an access decision');
+  }
+
+  // The grant ids recorded on the ticket, for the audit trail and for the
+  // "the grant that authorised this was withdrawn" check at consume time. The
+  // decision itself is canDownload()'s; this only remembers which grants it used, so
+  // an empty list means "authorised without a grant" and never "authorised anyway".
+  async function activeGrantsFor(client, auth, book) {
+    if (typeof grantedIds !== 'function') return [];
+    return grantedIds(book, auth, client);
   }
 
   function validBody(body, keys) {
@@ -173,8 +188,7 @@ export function createDownloadService({ withTenant, getBook, activeGrants, grant
         const book = await getBook(bookId, client);
         if (!book) return deny(client, auth, null, 'book_unavailable');
         if (book.allow_download === false) return deny(client, auth, book, 'download_disabled', false, 403, 'download disabled for this title');
-        const grantIds = await allowedGrantIds(client, book, auth);
-        if (grantIds === null) return deny(client, auth, book, 'grant_denied');
+        if (!await canDownload(client, book, auth)) return deny(client, auth, book, 'grant_denied');
         if (body.watermarkOverride !== undefined && typeof body.watermarkOverride !== 'boolean') {
           return deny(client, auth, book, 'invalid_override', true, 400, 'invalid watermark override');
         }
@@ -184,6 +198,7 @@ export function createDownloadService({ withTenant, getBook, activeGrants, grant
         if ((override && (reason.length < 10 || reason.length > 500)) || (!override && body.overrideReason !== undefined)) {
           return deny(client, auth, book, 'override_reason_required', true, 400, 'override reason must contain 10–500 characters');
         }
+        const grantIds = await activeGrantsFor(client, auth, book);
         const token = randomBytes(32).toString('hex');
         const { rows: [ticket] } = await client.query(
           `insert into download_tickets
@@ -215,9 +230,14 @@ export function createDownloadService({ withTenant, getBook, activeGrants, grant
         );
         if (!ticket || ticket.consumed_at || !ticket.unexpired) return deny(client, auth, null, 'invalid_ticket');
         if (book.asset_id !== ticket.asset_id || book.allow_download === false) return deny(client, auth, book, 'asset_or_download_revoked');
-        const grantIds = await allowedGrantIds(client, book, auth);
-        if (grantIds === null || (ticket.grant_ids.length && !ticket.grant_ids.some(id => grantIds.includes(id)))) {
-          return deny(client, auth, book, 'grant_revoked');
+        // Re-decide with the same function /file uses, not with the ticket's own
+        // record: a grant withdrawn or expired since issue must stop the download,
+        // and a ticket issued while a tenant-wide relaxation applied must not outlive
+        // it. The ticket only narrows what that decision already allowed.
+        if (!await canDownload(client, book, auth)) return deny(client, auth, book, 'grant_revoked');
+        if (ticket.grant_ids.length) {
+          const current = await activeGrantsFor(client, auth, book);
+          if (!ticket.grant_ids.some(id => current.includes(id))) return deny(client, auth, book, 'grant_revoked');
         }
         if (ticket.watermark_override && !await currentAdmin(client, auth)) return deny(client, auth, book, 'override_role_revoked', true);
         const { rowCount } = await client.query(

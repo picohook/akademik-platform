@@ -1113,9 +1113,12 @@ function tenantSeatLimit(grants) {
   return limits.length ? Math.min(...limits) : null;
 }
 
-async function canAccessBook(book, auth) {
+// `dbClient` is passed by the download ticket service, which is already inside a
+// transaction on a tenant-bound connection: re-reading through withTenant() there
+// would take a second connection and could not see the caller's uncommitted state.
+async function canAccessBook(book, auth, dbClient = null) {
   if (!book) return false;
-  return grantAllows(book, await activeGrants(auth));
+  return grantAllows(book, await activeGrants(auth, dbClient));
 }
 
 async function usageCsv() {
@@ -1471,7 +1474,17 @@ const downloadService = createDownloadService({
   // runs inside a request, and a request's tenant is bound by runWithTenant().
   // Passing the env tenant here would make the service disagree with withTenant()
   // for anyone outside the env tenant.
-  withTenant, getBook, activeGrants, grantAllows, tenantId: requestTenant, b2b: B2B_DOWNLOADS,
+  withTenant, getBook, tenantId: requestTenant, b2b: B2B_DOWNLOADS,
+  // The authorization decision is the one /file already makes. The service used to
+  // carry its own copy of the rule (allowedGrantIds) and the copies disagreed: a
+  // tenant whose `download_grants_required` marker was false was allowed to download
+  // titles /file refused with 404. Passing canAccessBook() in means "is this book in
+  // the catalogue for me?" has exactly one answer.
+  access: (book, auth, client) => canAccessBook(book, auth, client),
+  // Which grants authorised the book, recorded on the ticket and re-checked on use.
+  grantedIds: async (book, auth, client) => (await activeGrants(auth, client))
+    .filter(grant => grantAllows(book, [grant]))
+    .map(grant => grant.id),
 });
 
 // Which tenants a timer sweeps. This runs outside any request, so no tenant is
