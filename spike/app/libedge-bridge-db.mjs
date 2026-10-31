@@ -548,6 +548,20 @@ async function applyAccessOpen(client, tenant, sourceId, parsed, payloadSha256) 
 
   const scopes = await validateScopes(client, parsed.scopes);
 
+  // The sync row is written BEFORE the grants, and that order is load-bearing:
+  // 021 declares `grants.subscription_source_id references
+  // libedge_subscription_sync(source_id)`, and a foreign key is checked when the row is
+  // written, not at commit. Writing it after the grants meant the first INSERT into
+  // `grants` in this transaction failed with grants_subscription_source_id_fkey - on the
+  // first subscription a tenant ever received, because no sync row for that source_id
+  // existed yet. The read at the top of applySubscriptionSync would also never see the row,
+  // so every later revision would take this same create path and fail the same way.
+  //
+  // It stays inside the same transaction (withBridgeTenant), so the sync row and the
+  // grants commit together or not at all: a grant can never point at a sync row that was
+  // rolled back, and a sync row can never be left behind without its grants.
+  await writeSyncRow(client, tenant.id, sourceId, parsed, payloadSha256, scopes, userId);
+
   // Create or update one grant per scope. subject_id is the user row for a user
   // subject and the tenant itself for a tenant subject: grants.subject_type
   // distinguishes the two, and subject_id is what the reader checks against. The
@@ -594,7 +608,6 @@ async function applyAccessOpen(client, tenant, sourceId, parsed, payloadSha256) 
     [tenant.id, sourceId, scopes.map((scope) => scope.type), scopes.map((scope) => scope.id)],
   );
 
-  await writeSyncRow(client, tenant.id, sourceId, parsed, payloadSha256, scopes, userId);
   await writeAudit(client, tenant.id, sourceId, {
     action: 'update',
     status: parsed.status,
