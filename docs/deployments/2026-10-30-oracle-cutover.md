@@ -86,3 +86,23 @@ ve silmeye yetkisinin olmaması (`f`), admin bağlantısının web'e **girmediğ
 (`admin keys: 0`), geçiş (`stop` → `rename` → `run` → health) ve geri dönüş (136,
 `(healthy)`, db dokunulmadı). §5'teki ölçülmemiş maddeler boş bırakıldı: canlı domain,
 tünel portu, gerçek `spike/app` imajı, prod verisi.
+Runbook'un düzeltilen komutları **Oracle'a bağlanmadan**, yerel Docker'da (29.9.2,
+linux/amd64) aynı adlarla taklit edilerek koşuldu; ayrıntı ve çıktılar
+`docs/runbooks/v137-deploy.md` **§10**. Kapsanan: `--env-file` ile runner `--status`
+(6 pending) ve `--dry-run` (025 + 027 listede), web'in `akademik_catalog` rolüyle bağlanması
+ve silmeye yetkisinin olmaması (`f`), admin bağlantısının web'e **girmediği**
+(`admin keys: 0`), geçiş (`stop` → `rename` → `run` → health) ve geri dönüş (136,
+`(healthy)`, db dokunulmadı). §5'teki ölçülmemiş maddeler boş bırakıldı: canlı domain,
+tünel portu, prod verisi.
+
+**Dördüncü tur (2026-10-31) — gerçek imajla.** Taklit web sunucusu kaldırıldı: PR'ın kendi
+`spike/app/Dockerfile`'ı build edildi (`spike-app:137-local`, `spike-app:136-local`) ve geçici bir
+Postgres'e karşı çalıştırıldı (`db/schema.sql` + gerçek runner ile `9 migration(s) applied`,
+018–027). Doğrulananlar: `/api/health` → `200 {"ok":true,"mode":"db"}`; uygulamanın katalog
+bağlantısı `akademik_catalog` rolüyle → `200` ve 2 eser (`works_catalog_global`); web değişimi
+→ `(healthy)`, `"version":"137"`, `"buildSha":"5b9d811"`; geri dönüş → `"version":"136"`, DB
+dokunulmadı, `-prev` kalıntısı yok. Ayrıca §4.0a artık **salt okuma**: `db` alias'ı yoksa ağ
+`disconnect`/`connect` ile onarılmıyor, URL'de mevcut ağdaki gerçek container adı
+(`libedge-oracle-v136-db`) kullanılıyor; ölçüm: `getent hosts` → `172.21.0.2`, `DNSNames`
+değişmedi. Runbook §10.7/§10.8.
+

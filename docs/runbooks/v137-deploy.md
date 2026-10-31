@@ -262,19 +262,41 @@ kendiliğinden yoktur. Container'ın bu ağdaki `DNSNames` listesi ölçülür:
 sudo docker inspect libedge-oracle-v136-db --format '{{json .NetworkSettings.Networks}}' | grep -o 'DNSNames":\[[^]]*\]'
 ```
 
-**Beklenen:** listede **`db`** var (ör. `["libedge-oracle-v136-db","<id>","db"]`). **Yoksa DUR**:
-`--env-file` ile gelen `@db:5432` çözülmez ve runner `EAI_AGAIN db` verir (yerelde birebir
-ölçüldü, §10.4). Düzeltme `db` container'ına ağ takma adı eklemektir — bu **container'ı yeniden
-yaratmadan** yapılır ve tek satırdır:
-
-```bash
-sudo docker network disconnect libedge-oracle-v136 libedge-oracle-v136-db && sudo docker network connect --alias db libedge-oracle-v136 libedge-oracle-v136-db && sudo docker run --rm --network libedge-oracle-v136 postgres:16-alpine getent hosts db
-```
-
-**Beklenen:** `db` için bir IP satırı (ör. `172.x.x.y  db`). Boşsa **DUR**. Bu adım `db`
-container'ını durdurmaz/yaratmaz; yalnız ağ üyeliğini aynı ağa **alias ile** yeniden bildirir.
-`web` container'ı da aynı takma adı kullanır, bu yüzden §6.1'deki yeni web container'ı bu
-alias olmadan `db`'ye ulaşamaz.
+**Beklenen:** ya listede **`db`** vardır (`["libedge-oracle-v136-db","<id>","db"]`) ya da yalnız
+container adı vardır. İki durumda da deploy **durmez**; hangisi çıktıysa `DB_HOST` onu alır:
+
+| `DNSNames` | `DB_HOST` | Sonuç |
+| --- | --- | --- |
+| `db` içeriyor | `db` | §5.3/§5.4'teki `@db:5432` olduğu gibi kalır |
+| `db` yok | `libedge-oracle-v136-db` | URL'lerde host kısmı **gerçek container adı** olur |
+
+Bu adım **yalnızca okur**: `db` container'ına takma ad **eklenmez**, ağ üyeliği **değiştirilmez**,
+container **yeniden başlatılmaz**. `db` yoksa yalnız env dosyalarındaki host gerçek ada çevrilir:
+
+```bash
+read -r DB_HOST < <(sudo docker inspect libedge-oracle-v136-db --format '{{range $k, $v := .NetworkSettings.Networks}}{{$v.DNSNames}}{{"\n"}}{{end}}' | tr -d '[]' | tr ',' '\n' | tr -d ' ' | grep -qxF db && echo db || echo libedge-oracle-v136-db) && export DB_HOST && echo "DB_HOST=$DB_HOST"
+```
+
+**Beklenen:** `DB_HOST=db` ya da `DB_HOST=libedge-oracle-v136-db`. Çözüldüğünü **salt okuyarak**
+doğrula (hiçbir şey yaratmaz):
+
+```bash
+sudo docker run --rm --network libedge-oracle-v136 postgres:16-alpine getent hosts "$DB_HOST"
+```
+
+**Beklenen:** bir IP satırı (ör. `172.x.x.y  libedge-oracle-v136-db`). Boşsa **DUR**: o ağda
+çözülen bir ad yok. §5.3 ve §5.4'te URL yazılırken `db` yerine `$DB_HOST` kullanılır; `host ok`
+kontrolleri de `$DB_HOST`'u doğrular.
+
+> Yerelde ölçüldü (§10.4): takma ad yokken `DNSNames` = `["libedge-oracle-v136-db","<id>"]` ve
+> `@db:5432` ile runner `getaddrinfo EAI_AGAIN db` verdi; aynı komut `$DB_HOST` ile
+> `connected as akademik (superuser)` verdi. Alias **eklemek gerekmedi** — adı doğru yazmak yetti.
+
+> **Neden otomatik onarım yok:** `network disconnect` + `connect --alias` çalışan DB
+> container'ının ağ üyeliğini deploy sırasında değiştirir; bu iki komut arasındaki anda container
+> **hiçbir ağa bağlı değildir** ve uygulama tüm DB bağlantılarını kaybeder. Deploy'un işi canlı DB
+> ağını değiştirmek değil, var olan adı doğru kullanmaktır.
+
 
 Portlar ve tünel — **container portunu ve host portunu ölç, tahmin etme**:
 
@@ -940,7 +962,7 @@ sudoedit "$ADMIN_ENV"
 İçine **tek satır** (§5.3a'nın çıktısı yapıştırılır):
 
 ```
-DATABASE_ADMIN_URL=postgres://akademik:<PERCENT_ENCODED>@db:5432/akademik
+DATABASE_ADMIN_URL=postgres://akademik:<PERCENT_ENCODED>@$DB_HOST:5432/akademik
 ```
 
 > Sahip rol **`akademik`** (tablo sahibi, DDL); kullanıcı adı sabit ASCII olduğu için
@@ -976,7 +998,7 @@ export WEB_CATALOG_ENV=/home/ubuntu/libedge-oracle-v137/config/web-catalog.env &
 **aynı** percent-encode çıktısı, **aynı** parola:
 
 ```
-DATABASE_CATALOG_URL=postgres://akademik_catalog:<PERCENT_ENCODED>@db:5432/akademik
+DATABASE_CATALOG_URL=postgres://akademik_catalog:<PERCENT_ENCODED>@$DB_HOST:5432/akademik
 ```
 
 > Rol **`akademik_catalog`**'dur (§5.1'de LOGIN aldı; §5.2'de süper/`bypassrls` olmadığı
@@ -1105,6 +1127,26 @@ değişmeden gelir. Tek değişen **imaj etiketidir** (`libedge-oracle-v136:96cc
 verilmiş demektir → **DUR**. `DATABASE_CATALOG_URL` **görünmelidir** (web kataloğa bu bağlantıyla
 bağlanır, §5.4); yoksa §6.1.2'nin ikinci `--env-file`'ı unutulmuş demektir → **DUR**.
 
+`DATABASE_URL` **ayrı bir anahtardır** ve görünmesi beklenir: gerçek uygulama (`spike/app/server.mjs`)
+ana havuzu `DATABASE_URL`'den, katalog havuzunu `DATABASE_CATALOG_URL`'den kurar
+(`[db] PostgreSQL pool created` / `[db] catalog pool created`). Yani `DATABASE_URL`'in **rolü**
+kontrol edilir: web'in ana bağlantısı **`akademik_app`** olmalıdır, sahip rol `akademik`
+**olmamalıdır**. §6.1.3.
+
+**2b) Rolü doğrula — env adı değil, bağlanan rol.** Değerler **basılmaz**; yalnız kullanıcı adı ve
+o rolün süper kullanıcı olup olmadığı okunur:
+
+```bash
+sudo docker run --rm --network libedge-oracle-v136 --env-file /home/ubuntu/libedge-oracle-v136/config/web-runtime.env postgres:16-alpine sh -c 'psql "$DATABASE_URL" -Atc "select current_user||chr(124)||current_setting(chr(105)||chr(115)||chr(95)||chr(115)||chr(117)||chr(112)||chr(101)||chr(114)||chr(117)||chr(115)||chr(101)||chr(114))"'
+```
+
+**Beklenen:** `akademik_app|off`. `akademik|on` çıkarsa web **sahip rolle** bağlanıyor demektir →
+**DUR** (§5.4'ün yasakladığı durum; 022'nin `FORCE RLS` sınırı o bağlantıda işlemez).
+
+> Yerelde ölçüldü (§10.8): `spike/app` imajı `DATABASE_URL` ile **sahip rolle** bağlandığında
+> `/api/health` yine `200` dönüyor — sağlık kontrolü bu hatayı **yakalamaz**, çünkü uygulama
+> sağlıklıdır; yanlış olan yetkidir. Bu yüzden rol kontrolü ayrı bir adımdır.
+
 #### 6.1.2 Durdur → sakla → başlat → sağlık → başarısızsa geri aç
 
 Sıra **sabittir**; adımlar atlanmaz. Eski container **silinmez**, saklanır: §8.0'ın hızlı
@@ -1581,8 +1623,15 @@ dosyası verilirse aynı sorgu `t` döner — bu yüzden §6.1 admin dosyasını
 | --- | --- |
 | `--env-file` + `--network libedge-oracle-v136`, alias **yok** | `failed: getaddrinfo EAI_AGAIN db` / `postgres code: EAI_AGAIN` |
 | `docker inspect …-db` (alias yok) | `"DNSNames":["libedge-oracle-v136-db","<id>"]` — **`db` yok** |
-| §4.0a'nın `network connect --alias db …` satırı | `"DNSNames":["libedge-oracle-v136-db","db","<id>"]`, `getent hosts db` → `172.21.0.3  db  db` |
-| Aynı runner komutu, alias **var** | `connected as akademik (superuser)`, 26 dosya listelendi |
+| §4.0a'nın `DB_HOST` seçimi (`$DB_HOST=libedge-oracle-v136-db`) | `getent hosts libedge-oracle-v136-db` → `172.21.0.2  libedge-oracle-v136-db` |
+| Aynı runner komutu, host `$DB_HOST` (gerçek ad) | `connected as akademik (superuser)`, 26 dosya listelendi |
+| Ağ üyeliği, sonra | `DNSNames` = `["libedge-oracle-v136-db","<id>"]` — **değişmedi**, alias eklenmedi |
+
+> **Ağ onarılmadı.** Yukarıdaki sonucu almak için `network connect --alias db` **kullanılmadı**;
+> yalnızca env dosyasındaki host gerçek container adına çevrildi. Alias ekleyen
+> `disconnect`+`connect` taslağı §4.0a'dan kaldırıldı: bu iki komut arasında DB container'ı ağsız
+> kalıyor ve deploy sırasında canlı DB ağını değiştirmek geri alınması zor bir kesinti riskidir.
+
 
 
 ## 10. Kalan riskler (kabul edildi)
@@ -1627,10 +1676,56 @@ here-string `<<<` `busybox sh`'de `syntax error: unexpected redirection` veriyor
 
 ### 10.6 Kapsam dışı — yerelde ölçülemeyenler
 
-Gerçek `spike/app` imajı build edilmedi (Dockerfile/R2/canlı env gerekir); web uygulaması
-yerine **aynı port/health/env sözleşmesini** taşıyan küçük bir Node sunucusu kullanıldı;
-migration'lar **canlı veriye uygulanmadı**; tünel ve domain yoktur. Bu adımların kanıtı
-Oracle'da §7/§9'da toplanır.
+Gerçek `spike/app` imajı **build edildi ve çalıştırıldı** (§10.7): `Dockerfile` (`node:22-alpine`,
+`npm ci --omit=dev`) değiştirilmeden, `spike-app:137-local` ve `spike-app:136-local` etiketleriyle.
+
+Ölçülemeyenler: **canlı veri** (`db/schema.sql` + migration'lar yerel bir Postgres'e uygulandı,
+prod dump'ına değil), **tünel/domain** (yok), **R2 storage** (`STORAGE_DRIVER` yerelde
+ayarlanmadı), **`config/web-runtime.env` içeriği** (Oracle'da; §6.1.3'ün rol kontrolü bu yüzden
+ayrı bir adım) ve **gerçek `LIBEDGE_*` token'ları** (yerele uzunluk eşiğini geçen test token'ı
+verildi). Bu adımların kanıtı Oracle'da §7/§9'da toplanır.
+
+### 10.7 Gerçek `spike/app` imajı — taklit sunucu değil
+
+Önceki turda web yerine küçük bir Node taklidi kullanılmıştı. Bu turda **PR'ın kendi
+`Dockerfile`'ı** build edildi (değiştirilmedi, `--build-arg` ile etiketlendi) ve **gerçek uygulama**
+geçici bir Postgres'e karşı başlatıldı. Oracle'a bağlanılmadı.
+
+| Adım | Komut / çıktı |
+| --- | --- |
+| Build (v137) | `docker build --build-arg APP_VERSION=137 --build-arg BUILD_SHA=5b9d811 -t spike-app:137-local .` → `naming to … spike-app:137-local`, `found 0 vulnerabilities` |
+| Build (v136) | `git worktree add --detach … main` → aynı Dockerfile, `--build-arg APP_VERSION=136` → `spike-app:136-local` |
+| Şema | `db/schema.sql` + `db/seed.sql` (psql, temiz DB) → 21 tablo |
+| Migration'lar | `--baseline` (001–017 işaretlendi) → `node db/migrate.mjs` → **`9 migration(s) applied`** (018–027) |
+| Roller | `akademik_catalog`: `super=false bypass=false` (§5.2 ile aynı) |
+| Açılış logu | `[db] PostgreSQL pool created` + `[db] catalog pool created` + `[web] http://localhost:3000 (db mode)` |
+| `/api/health` | `200 {"ok":true,"mode":"db","tenantId":"11111111-…"}` |
+| `/api/config` (v136) | `"version":"136","buildSha":"6882887"` |
+| `/api/libedge/v1/catalog` (token + actor) | `200 {"works":[{"title":"Katalog Kaniti 1",…},{"title":"Katalog Kaniti 2",…}],"has_more":false}` |
+| `/api/libedge/v1/health` | `200 {"ok":true,"schema":"libedge-v1","global_works":2,"global_collections":0}` |
+
+> **Katalog gerçekten katalog havuzundan okudu.** `DATABASE_CATALOG_URL` verilmeyince aynı yol
+> `503`/`DATABASE_UNAVAILABLE` verdi; verildiğinde 022'nin `works_catalog_global` politikası
+> altında 2 eser döndü. Yani §5.4'ün tek anahtarlı dosyası uygulamanın katalog okumasını
+> **gerçekten** açıyor.
+
+### 10.8 Web değişimi ve geri dönüş — gerçek imajla, §6.1.2 sırasıyla
+
+| Adım | Çıktı |
+| --- | --- |
+| 1) Durdur + sakla | `docker stop` → `docker rename … -prev`; `docker ps` filtresi → **0** satır |
+| 2) Başlat (v137) | iki `--env-file` + `--health-cmd 'wget -qO- http://127.0.0.1:3000/api/health'` → `Up (healthy)` |
+| 3) Sağlık | `local=200`, `"version":"137"`, `"buildSha":"5b9d811"`; env anahtarları **`DATABASE_URL` + `DATABASE_CATALOG_URL`**, `DATABASE_ADMIN_URL` yok |
+| 3) Katalog | `200`, 2 eser |
+| 4) Geri dönüş | `rm -f` yeni → `rename` + `start` saklanan → `"version":"136"`, `"buildSha":"6882887"`, `local=200` |
+| DB dokunulmadı | Postgres **Up**, `schema_migrations` = 26 satır, `works` = 3 satır |
+| Kalıntı | `-prev` sonekli container sayısı **0** |
+
+> **§6.1.3'ün varlık nedeni ölçüldü:** gerçek uygulama `DATABASE_URL` ile **sahip rolle**
+> (`akademik`, `is_superuser=on`) bağlandığında da `/api/health` `200 {"ok":true}` dönüyor.
+> Sağlık kontrolü bu hatayı yakalamaz; yanlış olan yetkidir, uygulama değil. `akademik_app` ile
+> aynı komut `akademik_app|off` verdi.
+
 
 ## 11. Çalıştırmadan önce: inceleme
 
@@ -1768,9 +1863,11 @@ ilk koşudan önce **Claude'a inceletilecek**; özellikle şu noktalar:
  > **percent-encode** edilir (§5.3a). (3) `libedge-oracle-v137-db` adı **yoktu** → `libedge-oracle-v136-db`;
  > `<(...)` **kalabilir** (`busybox sh` kabul ediyor, ölçüldü) ama `<<<` **kullanılmaz** (`syntax error`).
  > (4) Geçiş ve geri dönüş gerçek container'larla koşuldu (§10.5). Ayrıca yeni bulgu: `db` bir
- > **ağ takma adıdır** ve container adı farklı olduğu için kendiliğinden yoktur — §4.0a artık
- > `DNSNames` ölçüp `network connect --alias db …` ile düzeltiyor (`EAI_AGAIN db` birebir görüldü).
-
+> `DNSNames`'i **salt okuyup** `$DB_HOST`'u seçiyor ve URL'lerde gerçek container adını kullanıyor
+> (`EAI_AGAIN db` birebir görüldü). Ağa **dokunulmaz**: alias ekleyen `network disconnect`/`connect`
+> adımı kaldırıldı (gerekçe §4.0a). Ayrıca gerçek `spike/app` imajı build edilip geçici bir
+> Postgres'e karşı çalıştırıldı (§10.7), web değişimi ve geri dönüş gerçek imajla koşuldu (§10.8).
+
 
 
 
