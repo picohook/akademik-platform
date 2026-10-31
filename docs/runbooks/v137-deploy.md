@@ -23,14 +23,14 @@
 
 | | |
 | --- | --- |
-| Kodsal değişiklik | **Var, ama yalnız `maintenanceTenantIds()`.** #43 (`bee0fa5`) v137 imajıyla **ilk kez** prod'a girer: süpürme döngüsü artık `app.maintenance_tenants()`'ı çağırır. Kullanıcıya görünen yollar (`/opds`, `/api/*`, indirme) v136 ile aynı. **`withBridgeTenant` varsayılanı değişmedi** — hâlâ `client.release(true)`, bkz. §4.7 ve §8 |
+| Kodsal değişiklik | **Var, ve yalnız `maintenanceTenantIds()` değil.** Üç kod değişikliği v137 imajıyla **ilk kez** prod'a girer: (1) #43 (`bee0fa5`) süpürme döngüsü artık `app.maintenance_tenants()`'ı çağırır; (2) **köprü bağlı** — `server.mjs` içinde `const BRIDGE_PREFIX = '/api/libedge/v1'` ve `isBridgePath()` isteği `handleBridgeRoute()`'a yönlendirir, tenant'ı `libedge-bridge-db.mjs` tek transaction içinde bağlar (bugün prod'a `BRIDGE_NOT_CONFIGURED` döner, bkz. §4.6d ve §6.1); (3) #50 okuyucu SSO yolu — `LIBEDGE_SSO_PUBLIC_KEYS` **tanımlıysa** `libedge_sessions`'a yazar (§7.6). **(2) ve (3) çalışma zamanında env ile kapalıdır**, yani 025/027 uygulanmadan da imaj açılışta kırılmaz; ama uçları o an **çalışmaz**. Görünen yollar (`/opds`, mevcut `/api/*`, indirme) v136 ile aynı davranır. **`withBridgeTenant` varsayılanı değişmedi** — hâlâ `client.release(true)`, bkz. §8.2 |
 | Migration | **021** (kimlik/abonelik tabloları), **022** (global katalog sınırı), **024** (`app.maintenance_tenants()`), **025** (köprü için `app.libedge_tenant_by_ref()` + `app.libedge_upsert_tenant()`), **026** (her tenant politikasını `nullif(current_setting(...), '')::uuid` biçimine çevirir), **027** (okuyucu SSO: `libedge_sessions`, `sso_auth_events`, `app.sso_auth_events_purge()`) — **altısı da** ilk kez prod'a girer. Prod şu an **001–020** |
 | Veri taşıması | **Yok.** 021/022/024/025/026/027 tek bir eseri global kataloğa taşımaz; o **023** ve sözleşme §4.4 listesi onaylanana kadar yazılmaz |
 | Yeni rol | `akademik_catalog` — 022'de **NOLOGIN** yaratılır. LOGIN + parola bu runbook'ta verilir |
 | Yeni şema | `app` — 024 yaratır (bir fonksiyon + iki grant); 025 iki fonksiyon daha ekler, 027 bir tane daha. **026 hiçbir fonksiyon eklemez ve hiçbir tablo/rol yaratmaz** — yalnız politikaları yeniden yazar |
 | Yeni tablo | **027**: `libedge_sessions` (FORCE RLS, tek tenant politikası) ve `sso_auth_events` (audit, app rolü için append-only). İkisi de boş başlar |
 | Kırılma riski | `collection_items` üzerine RLS **enable + force**. Prod'da `collection_items` satırlarının `tenant_id`'si doğru olmalı, yoksa koleksiyon grant'leri görünmez olur (bkz. §3.1 ön kontrol). **026'nın down migration'ı yok**: geri dönüş yalnız §3'teki `pg_dump` ile (§8) |
-| **Runner düzeltmesi** | v137 öncesi `db/migrate.mjs`, **025 ve 027'yi "manages its own transaction (end;)" diyerek reddediyordu** — dosyaların kendi transaction'ı yok; reddedilen şey bir plpgsql gövdesinin `end;`'i. Ret sessizdir: `--dry-run` ve gerçek koşu ikisi de dosyayı **atlar**, hata vermez. Düzeltme PR #54. §4.0 ve §4.2b |
+| **Runner düzeltmesi** | v137 öncesi `db/migrate.mjs`, **025 ve 027'yi "manages its own transaction (end;)" diyerek reddediyordu** — dosyaların kendi transaction'ı yok; reddedilen şey bir plpgsql gövdesinin `end;`'i. Ret sessizdir: `--dry-run` ve gerçek koşu ikisi de dosyayı **atlar**, hata vermez. Düzeltme PR #54; aynı PR'ın review'ında maskelemenin **ikinci** hatası da bulundu (iki gövde arasındaki gerçek `commit;` yetkilendiriliyordu) ve kapatıldı. §4.0 ve §4.2b |
 
 
 
@@ -46,17 +46,17 @@
 ## 2. Ön kontrol — değişiklik yapmadan
 
 ```bash
-cd /var/www/akademik-platform && git fetch origin && git checkout main && git pull --ff-only origin main && git log -1 --oneline
+cd /home/ubuntu/akademik-platform && git fetch origin && git checkout main && git pull --ff-only origin main && git log -1 --oneline
 ```
 
 ```bash
-cd /var/www/akademik-platform && sudo docker ps --format '{{.Names}}\t{{.Image}}\t{{.Status}}'
+cd /home/ubuntu/akademik-platform && sudo docker ps --format '{{.Names}}\t{{.Image}}\t{{.Status}}'
 ```
 
 Beklenen: `akademik-platform-prod-web-1` → `libedge-v136` `(healthy)`, `akademik-platform-prod-db-1` → `(healthy)`.
 
 ```bash
-cd /var/www/akademik-platform && curl -s https://elibrary.libedge.com/api/config && echo && curl -s https://elibrary.libedge.com/api/health
+cd /home/ubuntu/akademik-platform && curl -s https://elibrary.libedge.com/api/config && echo && curl -s https://elibrary.libedge.com/api/health
 ```
 
 Beklenen: `/api/config` → `"version":"136"` / `"buildSha":"96cc270"`; `/api/health` → `{"ok":true,"mode":"db",...}`.
@@ -69,7 +69,7 @@ volume'ünde durur (`/var/lib/postgresql/data`), yani host'ta bir dosya kopyalam
 kopyalamak demektir.
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 pg_dump -U akademik -Fc akademik > ~/backup-pre-v137-$(date +%Y%m%d-%H%M).dump
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 pg_dump -U akademik -Fc akademik > ~/backup-pre-v137-$(date +%Y%m%d-%H%M).dump
 ```
 
 ```bash
@@ -95,11 +95,11 @@ ls -l ~/backup-pre-v137-*.dump
 koleksiyonlara bağlı grant'ler sessizce boşalır. Migration'dan **önce** ölçülür:
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*) filter (where tenant_id is null) as null_tenant, count(*) as total from collection_items"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*) filter (where tenant_id is null) as null_tenant, count(*) as total from collection_items"
 ```
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select c.id, c.title, count(ci.*) from collections c left join collection_items ci on ci.collection_id = c.id group by 1,2 order by 3 desc"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select c.id, c.title, count(ci.*) from collections c left join collection_items ci on ci.collection_id = c.id group by 1,2 order by 3 desc"
 ```
 
 | Sonuç | Karar |
@@ -111,33 +111,47 @@ cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 ps
 
 Sunucuda node yok; runner throwaway `node:22-alpine` container'ında koşar (`db/README.md`).
 
-### 4.0 Ortam: hangi container, hangi volume, hangi network
+### 4.0 Ortam: hangi host, hangi container, hangi volume
 
-Bu runbook **mevcut Oracle Docker yapısına** dokunur, yenisini kurmaz. Aşağıdaki üç isim
-her komutta tekrar eder; yanlış ağa bağlanan bir runner `db` adını **çözemez**
-(`EAI_AGAIN`) ve hiçbir şey yapmadan düşer — sessiz bir yarım deploy değil, ama
-tanı koyması zaman alır. Önce ölçülür:
-
-```bash
-cd /var/www/akademik-platform && sudo docker ps --format '{{.Names}}\t{{.Image}}\t{{.Status}}' && sudo docker network ls --format '{{.Name}}'
-```
+Bu runbook **mevcut EC2 sunucusundaki Docker yapısına** dokunur, yenisini kurmaz.
+Aşağıdaki isimler her komutta tekrar eder; yanlış ağa bağlanan bir runner `db` adını
+**çözemez** (`EAI_AGAIN`) ve hiçbir şey yapmadan düşer — tanı koyması zaman alır.
+Önce ölçülür. Değerler tahmin değil: host ve repo yolu `docs/DEPLOY.md`'den, tünel ve
+kapalı portlar `docs/deployments/2026-10-28-v136.md` §5'ten (ölçülmüş), container ve
+volume adları `docker-compose.prod.yml` / `docker-compose.libedge.yml`'den.
 
 | Ne | Beklenen | Nereden geliyor |
 | --- | --- | --- |
+| Host | EC2 `elibrary.libedge.com` (`54.87.37.7`); SSH **22** açık, **80/443 kapalı** | v136 §5 |
+| Repo dizini | **`/home/ubuntu/akademik-platform`** | `docs/DEPLOY.md` |
+| Trafik | **cloudflared** tüneli `libedge-elibrary` → `127.0.0.1:3001`; nginx **kapalı** | v136 §5, ölçüldü |
 | Veritabanı container'ı | `akademik-platform-prod-db-1`, `postgres:16-alpine`, `(healthy)` | `docker-compose.prod.yml` |
 | Uygulama container'ı | `akademik-platform-prod-web-1`, `libedge-v136`, `(healthy)` | `docker-compose.libedge.yml` |
-| Compose projesi | `akademik-platform-prod` | `-p` ile verilir ya da dizin adından türer |
-| Network | `akademik-platform-prod_default` | Compose projesinin varsayılan ağı |
+| Compose projesi | `akademik-platform-prod` | `docker-compose.prod.yml` başındaki `name:` |
+| Network | `akademik-platform-prod_default` | Aynı `name:`'den türer |
 | **Verinin durduğu volume** | **`akademik-platform-prod_pgdata`** | `docker-compose.prod.yml`'deki `pgdata` |
 | Runner'ın gördüğü repo | `-v "$PWD":/repo:ro` (salt okunur) | §4.1'deki `docker run` |
 | Runner'ın `node_modules`'ı | `-v /repo/spike/app/node_modules` (isimsiz volume) | Aynı komut; imaja yazmaz |
 | `app` rolü (RLS) | `akademik_app` | `schema.sql` |
 | Tablo sahibi (DDL) | `akademik` | `POSTGRES_USER` |
+| Env dosyaları (**repoda yok**) | `.env.production` (`POSTGRES_*`, `DATABASE_URL`, `SESSION_SECRET`, `DOMAIN`), `.env.r2` (`LIBEDGE_IMAGE`, `APP_VERSION`, `BUILD_SHA`, R2) | `docs/DEPLOY.md` §Env dosyaları |
+
+> **Tünel bir bağımlılık değil, korunacak bir şeydir.** `cloudflared` host'ta servis
+> olarak koşuyor ve `127.0.0.1:3001`'e tünelliyor. Bu runbook'un hiçbir adımı tüneli
+> durdurmaz, yeniden başlatmaz veya yeniden yapılandırmaz; tünel yalnız §7'nin `curl`
+> doğrulamasında dolaylı görünür. Tünel bozulursa bu ayrı bir arızadır, bu runbook'un
+> konusu değildir.
+
+Container, volume ve network adlarını doğrula:
+
+```bash
+cd /home/ubuntu/akademik-platform && sudo docker ps --format '{{.Names}}	{{.Image}}	{{.Status}}' && sudo docker network ls --format '{{.Name}}'
+```
 
 Volume'u doğrula — **bu adım yedeğin nereye gittiğini de belirler** (§3):
 
 ```bash
-cd /var/www/akademik-platform && sudo docker inspect akademik-platform-prod-db-1 --format '{{range .Mounts}}{{.Type}} {{.Name}} -> {{.Destination}}{{"\n"}}{{end}}'
+cd /home/ubuntu/akademik-platform && sudo docker inspect akademik-platform-prod-db-1 --format '{{range .Mounts}}{{.Type}} {{.Name}} -> {{.Destination}}{{"\n"}}{{end}}'
 ```
 
 **Beklenen:** `volume akademik-platform-prod_pgdata -> /var/lib/postgresql/data`.
@@ -147,22 +161,30 @@ container içinden çalışır — ama §3'teki dosyanın container dışında d
 
 > **Yapılmayacaklar:** `docker compose down` (§1.4 — db'yi kaldırır, volume'u **silmez**
 > ama web sonra `EAI_AGAIN db` alır), `docker volume prune` / `docker system prune --volumes`
-> (**`pgdata` gider**), ve runner'ı `--network host` ile koşmak (container adı `db`
-> çözülmez; ayrıca host'taki Postgres'e bağlanma riski).
+> (**`pgdata` gider**), runner'ı `--network host` ile koşmak (container adı `db`
+> çözülmez; ayrıca host'taki Postgres'e bağlanma riski), ve imaj build'inde kullanılan
+> `docker image prune -a`'nın **rollback imajını** (`libedge-v136`) almasına izin vermek —
+> §8'deki dönüş yolu odur.
 
-`POSTGRES_PASSWORD` repo kökündeki `.env.production`'dan okunur — parola **komut satırına yazılmaz**.
+`POSTGRES_PASSWORD` repo kökündeki `.env.production`'dan okunur — parola **komut satırına
+yazılmaz**. `sudo` ortamı temizlediği için (`env_reset`, §1.2) değişkenler aynı tek satırda
+`set -a` ile yüklenir:
 
 ```bash
-cd /var/www/akademik-platform && set -a && . ./.env.production && set +a && echo "POSTGRES_PASSWORD set: ${POSTGRES_PASSWORD:+yes}"
+cd /home/ubuntu/akademik-platform && set -a && . ./.env.production && set +a && echo "POSTGRES_PASSWORD set: ${POSTGRES_PASSWORD:+yes}"
 ```
 
 Beklenen: `POSTGRES_PASSWORD set: yes`. Boşsa **DUR**.
+
+> **`/var/www/akademik-platform` bu sunucuda yok.** Eski dokümanlarda geçen bu yol başka
+> bir kuruluma aittir; buradaki repo dizini `/home/ubuntu/akademik-platform`'dur.
+> `cd` ile doğrulanmadan hiçbir komut çalıştırılmaz.
 
 
 ### 4.1 Durum — önce
 
 ```bash
-cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status'
+cd /home/ubuntu/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status'
 ```
 
 **Beklenen:** `021`, `022`, `024`, `025`, `026` ve `027` **pending**; geri kalanı `applied`.
@@ -186,7 +208,7 @@ altı satırın **hiçbirinde** `cannot run: …` notu **görünmemeli** — gö
 > satır" ayırt edilebilsin diye `grep -c` kullanılır, düz `grep` değil:
 
 ```bash
-cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status' | grep -cE '^[[:space:]]+pending[[:space:]]+02[124567]-'
+cd /home/ubuntu/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status' | grep -cE '^[[:space:]]+pending[[:space:]]+02[124567]-'
 ```
 
 **Beklenen:** `6`. `5` dönerse eksik dosya `027`'dir (en yeni migration; checkout onu
@@ -201,7 +223,7 @@ bu, §4.2b'deki runner sorununun ta kendisidir. `0` ya da `1` dönerse **DUR**, 
 ### 4.2 Kuru çalıştırma
 
 ```bash
-cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --dry-run' | grep -E 'would apply'
+cd /home/ubuntu/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --dry-run' | grep -E 'would apply'
 ```
 
 **Beklenen:** tek satır, ve içinde **altısı da** olmalı:
@@ -232,11 +254,20 @@ gövdeyi `$tag$` sınırlarına göre **maskeleyip** denetler; üst düzey `comm
 ve kapanmayan bir `$tag$` dosyanın geri kalanını denetimden **gizlemez** (`db/migrate.test.mjs`,
 red→yeşil regresyon).
 
+Maskelemenin kendisi de review'da düzeltildi: ilk sürüm kapanış etiketinden **sonra**
+ilerlemiyordu, yani iki gövde arasındaki gerçek `commit;` **yetkilendiriliyordu**. Bugün
+maskeleme tek geçişte ilerler ve kapanış etiketinden sonra devam eder; ayrıca string,
+identifier, satır ve blok yorumlarını tanır, böylece yorum veya string içindeki `$$`
+gerçek bir komutu gizleyemez. Regresyon bunu `commit;`/`rollback;`/`savepoint`/
+`begin;`/`end;`/`start transaction`/`\begin` için ayrı ayrı ölçer (`db/migrate.test.mjs`,
+14/14). Düzeltmesiz sürümde bu testlerin ilki **kırmızı** veriyordu:
+`two bodies around "commit;" -> []`.
+
 Bu adım, §4.1'in `6` sayısını **tek başına** yeterli görmeyen kişi için: `cannot run` satırı
 **yalnız** `013`–`017`'de olmalı. Tam liste, dosya adlarıyla:
 
 ```bash
-cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status' | grep 'cannot run' | awk '{print $2}'
+cd /home/ubuntu/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status' | grep 'cannot run' | awk '{print $2}'
 ```
 
 | Çıktı | Anlamı | Karar |
@@ -251,11 +282,15 @@ cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platfor
 > **önce ve sonra aynıdır**. `021`/`022`/`024`/`026` bu listede hiç görünmez: onlar `$body$`
 > gövdesi kullanıyor ve zaten düzeltmeden önce de geçiyorlardı.
 
-Sanılmasın diye: **025'in bu deploy'da olması zorunlu değil.** Köprü henüz
-`server.mjs`'e bağlanmadı (§11), yani 025 uygulanmadan da imaj sorunsuz çalışır. Ama
-025 uygulanmazsa köprünün tenant ve üyelik uçları çalışmaz — 025 bu yüzden aynı
-pencerede uygulanır. Aynı şey 027 için **geçerli değildir**: okuyucu SSO yolu v137
-imajında **bağlıdır** (#50), yani 027 uygulanmadan SSO oturumu yazılamaz; §7.6 ölçer.
+Sanılmasın diye: **025 uygulanmadan imaj kırılmaz ama köprü uçları çalışmaz.** Köprü
+v137 imajında **bağlıdır** — `server.mjs:2198` `isBridgePath()` ile `/api/libedge/v1/*`'i
+`handleBridgeRoute()`'a devreder — ama iki ayrı kapısı vardır: token tanımlı değilse
+her istek `503 BRIDGE_NOT_CONFIGURED` (`libedge-bridge-api.mjs:146`), tanımlıysa ve 025
+yoksa `app.libedge_tenant_by_ref()`/`app.libedge_upsert_tenant()` bulunamaz. Yani 025
+bu deploy'da uygulanmazsa **açılış kırılmaz, köprünün tenant/üyelik uçları çalışmaz**.
+025 bu yüzden aynı pencerede uygulanır. 027 için durum **aynıdır**: okuyucu SSO yolu
+v137 imajında bağlıdır (#50) ve `LIBEDGE_SSO_PUBLIC_KEYS` ile açılır; anahtar tanımlıysa
+ve 027 yoksa SSO oturumu yazılamaz, tanımlı değilse SSO kapalı kalır. §7.6 ölçer.
 
 > **024 ayrı bir deploy'da uygulanacaksa** (alternatif plan): o zaman 024 o deploy'un
 > runbook'una taşınır ve buradaki beklenen sayı **`5`** (`021/022/025/026/027`) olur. Seçim §11'de.
@@ -264,7 +299,7 @@ imajında **bağlıdır** (#50), yani 027 uygulanmadan SSO oturumu yazılamaz; �
 ### 4.3 Uygula
 
 ```bash
-cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs'
+cd /home/ubuntu/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs'
 ```
 
 **Beklenen:** altı `applying … <ms> ms` satırı, sonra `6 migration(s) applied`. `applying`
@@ -277,7 +312,7 @@ satırlarında bir `error` görürsen **DUR** — o dosyanın hiçbir kısmı ya
 ### 4.4 Durum — sonra
 
 ```bash
-cd /var/www/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status'
+cd /home/ubuntu/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status'
 ```
 
 **Beklenen:** `pending = 0`. Değilse **DUR**.
@@ -292,7 +327,7 @@ Kaydın gerçekten yazıldığını gösteren yer `schema_migrations`'tır. Tabl
 Ölçüm §4.3'ten **önce** ve **sonra** yapılır — iki farklı sonuç **beklenir**:
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*), max(filename) from schema_migrations"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*), max(filename) from schema_migrations"
 ```
 
 | Ne zaman | Beklenen |
@@ -326,7 +361,7 @@ yanlış retin kurbanıdır ve **025 ise köprü, 027 ise SSO** çalışmaz.
 başarılı görünmesi yetmez, `pg_class` okunur:
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select relname, relrowsecurity, relforcerowsecurity from pg_class where relname = 'collection_items'"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select relname, relrowsecurity, relforcerowsecurity from pg_class where relname = 'collection_items'"
 ```
 
 **Beklenen:** `collection_items|t|t`. `f` dönerse **DUR** — 022 uygulanmamış ya da
@@ -344,7 +379,7 @@ kendini kandırır — o `FORCE RLS`'i zaten atlar).
 döndürdüğünden küçük** olmalı; eşitse fonksiyon bir şey yapmıyor demektir.
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; select count(*) as plain_visible from tenants"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; select count(*) as plain_visible from tenants"
 ```
 
 **Beklenen:** `0` (bir tenant bağlı değilken politika `id = ''::uuid` üzerinden hiçbir
@@ -354,7 +389,7 @@ satır göstermez) ya da `1` (havuzda bağlı bir bağlantı kaldıysa). **`0` d
 Şimdi fonksiyon — app rolüyle, bağlı tenant **yokken**:
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; select tenant_id from app.maintenance_tenants() order by tenant_id"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; select tenant_id from app.maintenance_tenants() order by tenant_id"
 ```
 
 **Beklenen:** prod'daki **tüm** tenant id'leri, biri `5799f2a5-3d90-41b1-90de-9da07d776052`.
@@ -383,7 +418,7 @@ FORCE'd olduğu için owner de politika altındadır; fonksiyon `set local
 row_security = off` ile çalışır, app **çalışamaz**):
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select tenant_id from app.maintenance_tenants() order by tenant_id"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select tenant_id from app.maintenance_tenants() order by tenant_id"
 ```
 
 **Beklenen:** app rolünün gördüğü **aynı liste** — bu, iki rolün de aynı doğru cevabı
@@ -392,7 +427,7 @@ aldığını gösterir.
 #### 4.6c Boş küme çıkarsa — sebebi ayır
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*) from tenants"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*) from tenants"
 ```
 
 Bu sorgu **süper kullanıcıyla** koşar, yani politikayı atlar ve doğru toplamı verir:
@@ -407,14 +442,16 @@ Bu sorgu **süper kullanıcıyla** koşar, yani politikayı atlar ve doğru topl
 > satırı gördü. Yani "boş küme" tek başına arıza kanıtı değil — ayırt edici olan,
 > `tenants` **dolu iken** fonksiyonun boş dönmesi.
 
-#### 4.6d 025'in çalıştığını gör — köprü henüz bağlı değilken
+#### 4.6d 025'in çalıştığını gör — köprü bağlı, uçları kapalı
 
 025 uygulandığında `app` şemasında iki fonksiyon daha olur ve **ikisi de aynı
-`tenants_self` duvarını** aşar. Köprü `server.mjs`'e bağlanmadan uçları çağıramazsın,
-ama fonksiyonları doğrudan çağırabilirsin — §4.6'nın aynı gerekçesiyle **app rolüyle**:
+`tenants_self` duvarını** aşar. Köprü `server.mjs`'te **bağlıdır** (`/api/libedge/v1`),
+ama token tanımlı olmadığı için her istek `503 BRIDGE_NOT_CONFIGURED` döner — yani uç
+üzerinden ölçüm yapılamaz. Fonksiyonlar doğrudan çağrılır, §4.6'nın aynı gerekçesiyle
+**app rolüyle**:
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; select has_function_privilege('akademik_app', 'app.libedge_tenant_by_ref(text, text)', 'execute') as by_ref, has_function_privilege('akademik_app', 'app.libedge_upsert_tenant(text, text, text, text, text)', 'execute') as upsert"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; select has_function_privilege('akademik_app', 'app.libedge_tenant_by_ref(text, text)', 'execute') as by_ref, has_function_privilege('akademik_app', 'app.libedge_upsert_tenant(text, text, text, text, text)', 'execute') as upsert"
 ```
 
 **Beklenen:** `t|t`. `f` dönerse 025 uygulanmamış ya da grant düşmüş → **DUR**.
@@ -422,15 +459,16 @@ cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 ps
 Şimdi çözümleyici — prod'daki gerçek tenant'ın `(kind, ref)`'iyle:
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; select tenant_id, status from app.libedge_tenant_by_ref('institution', '5799f2a5-3d90-41b1-90de-9da07d776052')"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; select tenant_id, status from app.libedge_tenant_by_ref('institution', '5799f2a5-3d90-41b1-90de-9da07d776052')"
 ```
 
 **Beklenen:** tam **bir** satır ve `id` `5799f2a5-…`. **Boş küme de bir cevaptır** —
 tenant bu `(kind, ref)` ile kayıtlı değilse doğru cevap budur; ayırt etmek için
 `select id, libedge_kind, libedge_ref from tenants where id = '5799f2a5-…'` ile
 karşılaştır (owner, politikayı atlar). `libedge_kind`/`libedge_ref` NULL ise prod tenant'ı
-henüz köprüye bağlanmamış demektir ve bu **normaldir** — köprü bağlanana kadar herhangi
-bir tenant'ın bu iki sütunu yazılmaz.
+henüz köprüye bağlanmamış demektir ve bu **normaldir** — bu iki sütun köprü token'ı
+tanımlanıp ilk yazma çağrısı gelene kadar **hiçbir** tenant için yazılmaz, yani 025'in
+uygulanması onları doldurmaz.
 
 > **Dokunma:** bu adımda `libedge_upsert_tenant()`'ı prod tenant'ının gerçek
 > `(kind, ref)`'iyle çağırma. Update yolu slug'ı **dondurur** ama `name`/`status`
@@ -447,7 +485,7 @@ gösterir. İkisi de §4.3'ten **sonra** koşulur.
 **1) Kaç politika korumaya alındı — tam `26` olmalı.**
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*) from pg_policies where schemaname='public' and (coalesce(qual,'')||coalesce(with_check,'')) ilike '%nullif(current_setting(%app.tenant_id%'"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*) from pg_policies where schemaname='public' and (coalesce(qual,'')||coalesce(with_check,'')) ilike '%nullif(current_setting(%app.tenant_id%'"
 ```
 
 **Beklenen: `26`.**
@@ -481,7 +519,7 @@ hata vermeden çalışmalı. §7.4 ile aynı gerekçeyle **app rolüyle** ölç�
 politikayı atlar; test kendini kandırır).
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; set app.tenant_id = '5799f2a5-3d90-41b1-90de-9da07d776052'; reset app.tenant_id; select count(*) from works"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; set app.tenant_id = '5799f2a5-3d90-41b1-90de-9da07d776052'; reset app.tenant_id; select count(*) from works"
 ```
 
 **Beklenen:** `0` — **ve hata yok.**
@@ -522,7 +560,7 @@ cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 ps
 kendi sonucunu zaten yazdı, burada **bağımsız olarak** tekrar okunur:
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select to_regclass('public.libedge_sessions') is not null as sessions, to_regclass('public.sso_auth_events') is not null as events, (select relrowsecurity and relforcerowsecurity from pg_class where oid = 'public.libedge_sessions'::regclass) as sessions_forced, (select count(*) from pg_policies where schemaname = 'public' and tablename = 'libedge_sessions') as sessions_policies, has_table_privilege('akademik_app', 'sso_auth_events', 'delete') as app_can_delete_audit, has_function_privilege('akademik_app', 'app.sso_auth_events_purge(interval)', 'execute') as app_can_purge"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select to_regclass('public.libedge_sessions') is not null as sessions, to_regclass('public.sso_auth_events') is not null as events, (select relrowsecurity and relforcerowsecurity from pg_class where oid = 'public.libedge_sessions'::regclass) as sessions_forced, (select count(*) from pg_policies where schemaname = 'public' and tablename = 'libedge_sessions') as sessions_policies, has_table_privilege('akademik_app', 'sso_auth_events', 'delete') as app_can_delete_audit, has_function_privilege('akademik_app', 'app.sso_auth_events_purge(interval)', 'execute') as app_can_purge"
 ```
 
 **Beklenen (2026-10-31'de ölçüldü, `schema.sql` + 021/022/024/025/026/027):**
@@ -555,7 +593,7 @@ tahmin değil; negatif kontrolü yapılmış bir ölçümün prod'daki karşıl�
 Önce **prod'da kaç satır olduğu** (owner, politikayı atlar):
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set row_security = off; select count(*) from libedge_sessions"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set row_security = off; select count(*) from libedge_sessions"
 ```
 
 Prod'da SSO henüz açılmadığı için **`0` beklenir**. `> 0` ise bir istemci önce yazmış
@@ -564,14 +602,14 @@ geçer (politika metni + `forced`), **davranışsal** kanıt §7.6'da gerçek bi
 aranır.
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; reset app.tenant_id; select count(*) from libedge_sessions"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; reset app.tenant_id; select count(*) from libedge_sessions"
 ```
 
 **Beklenen:** `0` — **ve hata yok.** `22P02` görülürse politikası çevrilmemiş (026/027
 eksik) → **DUR**.
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; set app.tenant_id = '5799f2a5-3d90-41b1-90de-9da07d776052'; select count(*) from libedge_sessions; reset role"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; set app.tenant_id = '5799f2a5-3d90-41b1-90de-9da07d776052'; select count(*) from libedge_sessions; reset role"
 ```
 
 **Beklenen:** bağlı okuma **`22P02` vermez** ve bir tenant'ın satırlarını **başka** bir
@@ -579,7 +617,7 @@ tenant'a göstermez. Prod'da satır olmadığı için `0` normaldir; satır vars
 `tenant_id = 5799f2a5…` olan satır sayısına **eşit** olmalı — owner'la doğrula:
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set row_security = off; select count(*) from libedge_sessions where tenant_id = '5799f2a5-3d90-41b1-90de-9da07d776052'"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set row_security = off; select count(*) from libedge_sessions where tenant_id = '5799f2a5-3d90-41b1-90de-9da07d776052'"
 ```
 
 | Görülen | Anlamı | Karar |
@@ -616,7 +654,7 @@ Güvenlik kuralları:
 ### 5.1 Parolayı `read` ile oku ve rolü aç — tek satır
 
 ```bash
-cd /var/www/akademik-platform && read -rsp 'akademik_catalog password: ' P && echo && printf '\\password akademik_catalog\n%s\n' "$P" | sudo docker exec -i akademik-platform-prod-db-1 psql -U akademik -d akademik -v ON_ERROR_STOP=1 -c "alter role akademik_catalog login" && printf 'alter role akademik_catalog password %s;\n' "'${P//\'/\'\'}'" | sudo docker exec -i akademik-platform-prod-db-1 psql -U akademik -d akademik -v ON_ERROR_STOP=1 && unset P
+cd /home/ubuntu/akademik-platform && read -rsp 'akademik_catalog password: ' P && echo && printf '\\password akademik_catalog\n%s\n' "$P" | sudo docker exec -i akademik-platform-prod-db-1 psql -U akademik -d akademik -v ON_ERROR_STOP=1 -c "alter role akademik_catalog login" && printf 'alter role akademik_catalog password %s;\n' "'${P//\'/\'\'}'" | sudo docker exec -i akademik-platform-prod-db-1 psql -U akademik -d akademik -v ON_ERROR_STOP=1 && unset P
 ```
 
 > `\password` psql'in **kendi** meta-komutudur ve parolayı sunucuda hash'ler; parola
@@ -627,13 +665,13 @@ cd /var/www/akademik-platform && read -rsp 'akademik_catalog password: ' P && ec
 ### 5.2 Ölçüm — rol ve yetkiler
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select rolname, rolcanlogin, rolsuper, rolbypassrls from pg_roles where rolname = 'akademik_catalog'"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select rolname, rolcanlogin, rolsuper, rolbypassrls from pg_roles where rolname = 'akademik_catalog'"
 ```
 
 **Beklenen:** `akademik_catalog|t|f|f` — **LOGIN açık, süper kullanıcı ve `bypassrls` KAPALI**. `t` görürsen **DUR**.
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*) from information_schema.role_table_grants where grantee = 'akademik_catalog'"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*) from information_schema.role_table_grants where grantee = 'akademik_catalog'"
 ```
 
 **Beklenen:** 6 satır (`works`, `editions`, `assets`, `asset_pages`, `collections`, `collection_items`, `tenants` → SELECT; tablo sayısı neyse o). Sayı **0 ise DUR**: 022 uygulanmamış demektir.
@@ -641,7 +679,7 @@ cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 ps
 ### 5.3 Parolayı `.env.r2`'ye yaz — dosyaya, komut satırına değil
 
 ```bash
-cd /var/www/akademik-platform && sudo cp .env.r2 .env.r2.bak-v137 && echo 'CATALOG_DATABASE_URL=postgres://akademik_catalog:REPLACE_ME@db:5432/akademik' | sudo tee -a .env.r2 >/dev/null && grep -c '^CATALOG_DATABASE_URL=' .env.r2
+cd /home/ubuntu/akademik-platform && sudo cp .env.r2 .env.r2.bak-v137 && echo 'CATALOG_DATABASE_URL=postgres://akademik_catalog:REPLACE_ME@db:5432/akademik' | sudo tee -a .env.r2 >/dev/null && grep -c '^CATALOG_DATABASE_URL=' .env.r2
 ```
 
 **Beklenen:** `1`. Sonra `sudo nano .env.r2` (ya da `sudoedit`) ile `REPLACE_ME` **elle**
@@ -659,11 +697,11 @@ Disk 8 GB gp3 ve %85 doluydu (v136'da `docker rmi libedge-v134` ile açıldı). 
 prune'dan korunur ve **rollback odur**.
 
 ```bash
-cd /var/www/akademik-platform && sudo docker image ls --format '{{.Repository}}:{{.Tag}}' && df -h / | tail -1
+cd /home/ubuntu/akademik-platform && sudo docker image ls --format '{{.Repository}}:{{.Tag}}' && df -h / | tail -1
 ```
 
 ```bash
-cd /var/www/akademik-platform && sudo docker image prune -a -f && df -h / | tail -1
+cd /home/ubuntu/akademik-platform && sudo docker image prune -a -f && df -h / | tail -1
 ```
 
 > `prune -a` **çalışmayan etiketli** imajları da siler. Rollback için `libedge-v136`
@@ -671,33 +709,33 @@ cd /var/www/akademik-platform && sudo docker image prune -a -f && df -h / | tail
 > `sudo docker tag <imaj> libedge-keep` ile sabitle ve bu adımı **atla**.
 
 ```bash
-cd /var/www/akademik-platform && git rev-parse --short HEAD
+cd /home/ubuntu/akademik-platform && git rev-parse --short HEAD
 ```
 
 ```bash
-cd /var/www/akademik-platform/spike/app && sudo docker build --build-arg BUILD_SHA=$(git rev-parse --short HEAD) --build-arg APP_VERSION=137 --build-arg BUILD_DATE=$(date -I) -t libedge-v137 .
+cd /home/ubuntu/akademik-platform/spike/app && sudo docker build --build-arg BUILD_SHA=$(git rev-parse --short HEAD) --build-arg APP_VERSION=137 --build-arg BUILD_DATE=$(date -I) -t libedge-v137 .
 ```
 
 ```bash
-cd /var/www/akademik-platform && sudo docker inspect libedge-v137 --format '{{json .Config.Labels}}'
+cd /home/ubuntu/akademik-platform && sudo docker inspect libedge-v137 --format '{{json .Config.Labels}}'
 ```
 
 **Beklenen:** `revision` gerçek SHA, `version` `137`. `unknown` ise `--build-arg` unutulmuş → **DUR**.
 
 ```bash
-cd /var/www/akademik-platform && sudo sed -i "s/^BUILD_SHA=.*/BUILD_SHA=$(git rev-parse --short HEAD)/" .env.r2 && sudo sed -i "s/^APP_VERSION=.*/APP_VERSION=137/" .env.r2 && sudo sed -i "s/^LIBEDGE_IMAGE=.*/LIBEDGE_IMAGE=libedge-v137/" .env.r2 && grep -E '^(APP_VERSION|BUILD_SHA|LIBEDGE_IMAGE)=' .env.r2
+cd /home/ubuntu/akademik-platform && sudo sed -i "s/^BUILD_SHA=.*/BUILD_SHA=$(git rev-parse --short HEAD)/" .env.r2 && sudo sed -i "s/^APP_VERSION=.*/APP_VERSION=137/" .env.r2 && sudo sed -i "s/^LIBEDGE_IMAGE=.*/LIBEDGE_IMAGE=libedge-v137/" .env.r2 && grep -E '^(APP_VERSION|BUILD_SHA|LIBEDGE_IMAGE)=' .env.r2
 ```
 
 **Beklenen:** `APP_VERSION=137`, `BUILD_SHA=<sha>`, `LIBEDGE_IMAGE=libedge-v137`.
 
 ```bash
-cd /var/www/akademik-platform && sudo docker compose -f docker-compose.prod.yml -f docker-compose.libedge.yml --env-file .env.production --env-file .env.r2 config | grep image:
+cd /home/ubuntu/akademik-platform && sudo docker compose -f docker-compose.prod.yml -f docker-compose.libedge.yml --env-file .env.production --env-file .env.r2 config | grep image:
 ```
 
 **Beklenen:** `image: libedge-v137`. Başka bir şey yazıyorsa **DUR** (v131 kesintisinin nedeni tam buydu).
 
 ```bash
-cd /var/www/akademik-platform && sudo docker compose -f docker-compose.prod.yml -f docker-compose.libedge.yml --env-file .env.production --env-file .env.r2 up -d --no-deps web
+cd /home/ubuntu/akademik-platform && sudo docker compose -f docker-compose.prod.yml -f docker-compose.libedge.yml --env-file .env.production --env-file .env.r2 up -d --no-deps web
 ```
 
 ### 6.1 `OPDS_TENANT_ID` / `OPDS_API_KEY` (bu sürümde tanımlanmıyor)
@@ -719,19 +757,19 @@ Her satır **ölçülmüş çıktıyla** kapanır; boş/tahmini satır `docs/dep
 ### 7.1 Container ve sürüm
 
 ```bash
-cd /var/www/akademik-platform && sudo docker ps --format '{{.Names}}\t{{.Image}}\t{{.Status}}'
+cd /home/ubuntu/akademik-platform && sudo docker ps --format '{{.Names}}\t{{.Image}}\t{{.Status}}'
 ```
 
 **Beklenen:** `web-1` → **`libedge-v137`** `(healthy)`, `db-1` → `(healthy)`.
 
 ```bash
-cd /var/www/akademik-platform && curl -s https://elibrary.libedge.com/api/config && echo && curl -s https://elibrary.libedge.com/api/health
+cd /home/ubuntu/akademik-platform && curl -s https://elibrary.libedge.com/api/config && echo && curl -s https://elibrary.libedge.com/api/health
 ```
 
 **Beklenen:** `"version":"137"`, `"buildSha"` = `git rev-parse --short HEAD`'in ilk 7'si, `"buildDate"` = bugün, `"environment":"production"`; health → `"ok":true`, `"mode":"db"`, `tenantId` = `5799f2a5-…` (**değişmemeli**).
 
 ```bash
-cd /var/www/akademik-platform && curl -s https://elibrary.libedge.com/ | grep -o '/app.js?v=[^"]*'
+cd /home/ubuntu/akademik-platform && curl -s https://elibrary.libedge.com/ | grep -o '/app.js?v=[^"]*'
 ```
 
 **Beklenen:** `/app.js?v=<sha>` — `?v=0-dev` **değil**.
@@ -739,7 +777,7 @@ cd /var/www/akademik-platform && curl -s https://elibrary.libedge.com/ | grep -o
 ### 7.2 R2
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-web-1 sh -c 'cd /app && node scripts/check-r2.mjs'
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-web-1 sh -c 'cd /app && node scripts/check-r2.mjs'
 ```
 
 **Beklenen:** `R2 PASS: put/read/range/delete; temporary object removed.` Başka bir şey (yığın izi, `missing R2_ENDPOINT`) → **DUR**.
@@ -765,7 +803,7 @@ politika satırı gizler, hata fırlatmaz.
 Önce kaç global eser var:
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*) from works where tenant_id is null"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*) from works where tenant_id is null"
 ```
 
 **Beklenen:** `0` — 022 tek eser taşımadı. **`0` ise aşağıdaki iki test anlamsızdır**
@@ -773,13 +811,13 @@ cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 ps
 yaz. `> 0` ise devam:
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; update works set title = title where tenant_id is null"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; update works set title = title where tenant_id is null"
 ```
 
 **Beklenen:** `UPDATE 0`. `UPDATE 1+` → **DUR** (başlık aynı yazıldığı için veri bozulmaz, ama 022 tutmuyor demektir).
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; delete from works where tenant_id is null"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; delete from works where tenant_id is null"
 ```
 
 **Beklenen:** `DELETE 0`.
@@ -792,7 +830,7 @@ cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 ps
 ### 7.5 `akademik_catalog` (yalnız §5 yapıldıysa)
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select rolname, rolcanlogin, rolsuper, rolbypassrls from pg_roles where rolname = 'akademik_catalog'"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select rolname, rolcanlogin, rolsuper, rolbypassrls from pg_roles where rolname = 'akademik_catalog'"
 ```
 
 **Beklenen:** `akademik_catalog|t|f|f`.
@@ -809,7 +847,7 @@ değilse `[sso] LIBEDGE_SSO_PUBLIC_KEYS not set, reader SSO disabled` yazar ve g
 hiç görünmez.
 
 ```bash
-cd /var/www/akademik-platform && sudo docker logs --tail 200 akademik-platform-prod-web-1 2>&1 | grep -E '^\[sso\]' | tail -5
+cd /home/ubuntu/akademik-platform && sudo docker logs --tail 200 akademik-platform-prod-web-1 2>&1 | grep -E '^\[sso\]' | tail -5
 ```
 
 | Görülen | Anlamı | Karar |
@@ -829,7 +867,7 @@ SSO açıksa (Altan, tarayıcıda):
 Ardından (owner ile, salt okuma):
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set row_security = off; select (select count(*) from libedge_sessions) as sessions, (select count(*) from sso_auth_events) as events"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set row_security = off; select (select count(*) from libedge_sessions) as sessions, (select count(*) from sso_auth_events) as events"
 ```
 
 **Beklenen:** ikisi de **`> 0`** (en az bir başarılı giriş ve onun audit satırı). `0|0` ise
@@ -838,7 +876,7 @@ SSO yolu hiç çalışmamış demektir — §4.6e geçmiş olsa bile **DUR**: ya
 **girişler reddediliyor** demektir; aşağıdaki `reason` sütununa bak.
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select outcome, coalesce(reason, '-') as reason, count(*) from sso_auth_events group by 1, 2 order by 1, 2"
+cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select outcome, coalesce(reason, '-') as reason, count(*) from sso_auth_events group by 1, 2 order by 1, 2"
 ```
 
 **Beklenen:** en az bir `login|-|1`. `reject` satırları **tek başına sorun değildir** —
@@ -920,14 +958,14 @@ tamamen yedekten**, ya hiç.
 Prosedür:
 
 ```bash
-cd /var/www/akademik-platform && ls -l ~/backup-pre-v137-*.dump
+cd /home/ubuntu/akademik-platform && ls -l ~/backup-pre-v137-*.dump
 ```
 
 **Tek dosya, MB mertebesinde.** §3'te alınmış olan dosyanın adını §9'a yaz.
 Sonra (onay alındıktan sonra, tek satır):
 
 ```bash
-cd /var/www/akademik-platform && sudo docker exec -i akademik-platform-prod-db-1 pg_restore -U akademik -d akademik --clean --if-exists --no-owner -v < ~/backup-pre-v137-<TARİH>.dump
+cd /home/ubuntu/akademik-platform && sudo docker exec -i akademik-platform-prod-db-1 pg_restore -U akademik -d akademik --clean --if-exists --no-owner -v < ~/backup-pre-v137-<TARİH>.dump
 ```
 
 > **Yedekten dönüş 026'yı *ve* §4.3'te uygulanan 021/022/024/025'i birlikte geri alır** —
@@ -983,7 +1021,7 @@ kullanılır (`db/026-release-flag.test.mjs`).
 
 | Risk | Durum |
 | --- | --- |
-| v137 **yalnız `maintenanceTenantIds()`** değiştiriyor (#43); 021/022/024/025/026/027 prod'da **ilk kez** koşuyor | İzole testte `021-022` 35/35, `024` 17/17, 025 62/62, 027 (SSO süiti + §4.6e'nin izole ölçümü), ama prod verisiyle ilk temas bu runbook. Ana risk bu |
+| v137'de **üç** kod değişikliği var — `maintenanceTenantIds()` (#43), **bağlı köprü** (`/api/libedge/v1`, token yoksa `503 BRIDGE_NOT_CONFIGURED`) ve flag'li okuyucu SSO (#50); 021/022/024/025/026/027 prod'da **ilk kez** koşuyor | İzole testte `021-022` 35/35, `024` 17/17, 025 62/62, 027 (SSO süiti + §4.6e'nin izole ölçümü), ama prod verisiyle ilk temas bu runbook. Ana risk bu |
 | **Runner 025/027'yi sessizce atlıyordu** (#54) | Ret **hata değil**, atlama üretiyordu: `--dry-run` ve gerçek koşu ikisi de dosyayı listelemiyor, deploy "başarılı" görünüyor, köprü (`3F000`/`42883`) ve SSO çalışmıyor. Düzeltildi + kırmızı→yeşil regresyon (`db/migrate.test.mjs`). §4.1'in `6` sayısı ve §4.2b bunun sahada görünen yüzü |
 | 025 `tenants`'a iki `SECURITY DEFINER` fonksiyonla yazma yetkisi veriyor | Dar tutuldu: yalnız `institution` kind, `id`/`slug` mevcut kayıtta dondurulmuş, EXECUTE yalnız `akademik_app`. Yine de `tenants_self`'in yanında ikinci bir yol; review'de ayrıca bakılmalı (§11.5) |
 | 027 SSO oturumunu `libedge_sessions`'a bağlıyor, FORCE RLS ile | Politika `nullif` biçiminde (026'nın deseni); bağsız okuma 0 satır. İzole ölçüm: 2 satır varken bağsız `0`, bağlı `1`, komşu tenant `0` (§4.6e). Prod'da kanıt §7.6 |
@@ -1038,23 +1076,29 @@ Bu runbook **çalıştırılmadı**. Komutlar çalıştırılmadan önce **Claud
 9. **§8.1** — 026/027 için **tek** dönüş yolu yedek. `pg_restore --clean --if-exists`
    komutunun prod'da neyi düşüreceği (021–027 dahil) ve yedeğin **imaj geri alma ile
    birlikte** yapılması gerektiği okunmalı.
-10. **§4.0** — Oracle'daki mevcut container/volume/network adları. `pgdata` volume'u
+10. **§4.0** — EC2'deki mevcut host/container/volume/network adları. `pgdata` volume'u
     (`akademik-platform-prod_pgdata`) ve `akademik-platform-prod_default` ağı bu
     runbook'un her komutunda geçtiği için, sunucudaki gerçek adlarla **birebir**
     eşleştiği `docker ps` / `docker inspect` çıktısıyla doğrulanmalı. `down` ve
     `volume prune` yasaklarının sebebi de burada.
 
-> **Köprü bu sürümde bağlanmadı.** 025 yalnız `app` şemasına iki fonksiyon ekler;
-> `server.mjs`'te route, token kontrolü ve `BRIDGE_NOT_CONFIGURED` **yok**. Yani 025
-> uygulanıp uygulanmaması v137 imajının davranışını değiştirmez. Bir sonraki PR'ın konusu.
+> **Köprü v137'de bağlıdır** (eski bir not "bağlanmadı" diyordu; güncel kod aksini
+> söylüyor). `server.mjs` içinde `BRIDGE_PREFIX = '/api/libedge/v1'` tanımlı, `isBridgePath()`
+> isteği `runWithTenant`'ın **dışında** `handleBridgeRoute()`'a devrediyor, tenant'ı
+> `libedge-bridge-db.mjs` tek transaction içinde bağlıyor. Prod'a bugün dönen cevap
+> `503 BRIDGE_NOT_CONFIGURED`'dır: köprü token'ı tanımlı değil. Yani 025 **fonksiyonları
+> sağlar**, uçları **açmaz** — uçları açmak `LIBEDGE_BRIDGE_*` değişkenlerini tanımlamak
+> demektir ve bu runbook'un kapsamı **dışındadır** (§6.1). 025 uygulanmadan token
+> tanımlanırsa köprü `42883` benzeri bir hatayla düşer; bu yüzden sıra: önce 025, sonra
+> token.
 
-> **Not (2026-10-31):** Bu tarihte runbook **027** için genişletildi ve **Oracle'daki
+> **Not (2026-10-31):** Bu tarihte runbook **027** için genişletildi ve **EC2'deki
 > mevcut Docker yapısına** bağlandı:
 >
 > - **Runner düzeltmesi (#54).** `db/migrate.mjs` 025 ve 027'yi "manages its own transaction
 >   (end;)" diyerek **reddediyordu**; ret hata değil **atlama** üretiyordu. Ölçüm: düzeltmesiz
 >   `main` (`c03442c`) `--status`'te iki dosyaya `cannot run`, düzeltmeyle temiz. Regresyon
->   `db/migrate.test.mjs` (red→yeşil), 12/12 geçiyor. Migration dosyaları ve
+>   `db/migrate.test.mjs` (red→yeşil), 14/14 geçiyor. Migration dosyaları ve
 >   `schema_migrations` kayıtları **değişmedi** (git diff boş).
 > - **Beklenen sayılar** 5/25/026'dan **6/26/027**'ye çekildi. Yeni: §4.0 (container/volume/
 >   network), §4.2b (yanlış ret kontrolü), §4.6e (027'nin yapısal kanıtı), §7.6 (SSO davranış
@@ -1064,7 +1108,7 @@ Bu runbook **çalıştırılmadı**. Komutlar çalıştırılmadan önce **Claud
 >   (`public` toplamı 51); 027'nin blok çıktısı `t&#124;t&#124;t&#124;1&#124;f&#124;t`. RLS'in gerçekten kestiği
 >   ayrıca kanıtlandı: 2 oturum satırı varken app rolü bağsız **0**, A tenant'ına bağlı **1**,
 >   B'nin satırını A bağlamında **0** gördü.
-> - **Prod'a dokunulmadı:** Oracle'a bağlanılmadı, migration/deploy koşulmadı, staging'deki
+> - **Prod'a dokunulmadı:** EC2'ye bağlanılmadı, migration/deploy koşulmadı, staging'deki
 >   025/027 kayıtları ve checksum'lar **yeniden çalıştırılmadı / baseline edilmedi**.
 
 > **Not (2026-10-30):** §4.6a ve §4.4b bu tarihte eklendi, 026 (#49) `main`'e girdikten

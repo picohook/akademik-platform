@@ -47,8 +47,15 @@ the registry from the database. A refused file leaves nothing behind.
   body is not mistaken for the file's own transaction. That misreading is not
   hypothetical: 025 and 027 were refused for it, and a refused file is simply
   skipped by `--dry-run` and by a real run — the deploy reports nothing wrong and
-  the SQL never lands. A `commit;` outside a body is still refused, and an
-  unterminated `$tag$` does not hide the rest of the file from the check.
+  the SQL never lands. A `commit;` outside a body is still refused — including
+  one **between** two bodies, which an earlier version of the masking swallowed
+  and authorized. The masker reads the file in one forward pass and resumes
+  *after* each closing tag, so `$$ ... $$; commit; $$ ... $$` reports the
+  `commit;`. It also tracks string literals, quoted identifiers, `--` comments
+  and (nested) `/* */` comments: a `$$` inside any of those is text, not an
+  opening quote, and cannot hide a real statement after it. A `$1` parameter and
+  a lone `$` are not quotes either. An unterminated `$tag$` does not hide the
+  rest of the file from the check.
 - **No psql meta-commands.** No `\set`, `\i`, `\echo` and so on: the runner
   sends the file to the server, and Postgres cannot parse a backslash command.
   Write the values out literally instead of parameterising them with `\set`.

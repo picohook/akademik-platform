@@ -96,42 +96,102 @@ const DOLLAR_QUOTE = /\$([A-Za-z_][A-Za-z0-9_]*)?\$/g;
 // position in the result is a position in the input and a match on the result
 // can be reported against the original text.
 //
-// What is deliberately still visible outside a body: string literals ('...') and
-// comments. A `commit;` inside a single-quoted string is dead SQL, and refusing
-// it costs nothing; leaving literals out of this scanner keeps it to one job.
+// One forward pass, and it has to be: an earlier version resumed scanning at the
+// opening byte of the closing tag, so the next pass read that same `$$` as a new
+// opening quote and masked up to the *next* real quote. Everything between two
+// bodies disappeared, including a real `commit;` - the file was authorized and
+// its commit would have ended the runner's transaction. A second pass cannot be
+// trusted to agree with the first about which `$` is an opening and which is a
+// closing one, so there is only one pass and it always moves past what it has
+// consumed.
 //
-// An unterminated quote is masked to the end of the file only when no tag of the
-// same form closes it - see below for why that is the safe direction.
+// The same pass also decides what *is* a quote, because a `$$` that merely looks
+// like one must not be able to hide a real statement:
+//
+// - `'...'` string literals and `"..."` identifiers are skipped, with `''` and
+//   `""` doubling as escapes. `select 'a $$ b';` contains no body.
+// - `--` line comments and `/* */` block comments are skipped, nesting included
+//   (Postgres nests block comments). `$$` in a comment is text in a comment.
+// - `$1` positional parameters and a lone `$` are not tags: a dollar quote is
+//   `$$` or `$tag$` where the tag starts with a letter or underscore.
+//
+// Skipped text is copied through unmasked. A `commit;` written inside a string or
+// a comment is dead SQL, and refusing it costs nothing; the point is that it must
+// not hide a `commit;` that is not.
+//
+// An unclosed tag does not mask the rest of the file. Guessing that the body runs
+// to EOF would hide a real `commit;` after a typo, which is the failure this
+// check exists to prevent; the file is reported as written instead.
 function maskDollarQuotedBodies(sql) {
-  let masked = '';
-  let cursor = 0;
+  const out = sql.split('');
+  const blank = (from, to) => {
+    for (let i = from; i < to; i += 1) if (out[i] !== '\n') out[i] = ' ';
+  };
 
-  while (cursor < sql.length) {
-    DOLLAR_QUOTE.lastIndex = cursor;
-    const open = DOLLAR_QUOTE.exec(sql);
-    if (!open) break;
+  let i = 0;
+  while (i < sql.length) {
+    const ch = sql[i];
 
-    const tag = open[0];
-    const bodyStart = open.index + tag.length;
-    // The closing tag is the same `$tag$`, so `indexOf` is the whole rule: a
-    // `$inner$` inside a `$outer$` body does not close it, which is exactly what
-    // Postgres does.
-    const close = sql.indexOf(tag, bodyStart);
-    // No terminator: leave the rest of the file as SQL rather than assume the
-    // body runs to EOF. Assuming EOF would hide a real `commit;` that follows a
-    // typo, which is the failure this whole check exists to prevent. Report it
-    // as written instead; if it is a body, the tag is simply missing and the file
-    // is broken anyway.
-    if (close === -1) break;
+    // Line comment: to the end of the line, not consumed for quote purposes.
+    if (ch === '-' && sql[i + 1] === '-') {
+      const end = sql.indexOf('\n', i);
+      i = end === -1 ? sql.length : end;
+      continue;
+    }
 
-    masked += sql.slice(cursor, bodyStart);
-    // Only the body: the closing tag stays, because a body can end `end$body$`
-    // and the `end` must not be seen as a statement.
-    masked += sql.slice(bodyStart, close).replace(/[^\n]/g, ' ');
-    cursor = close;
+    // Block comment, and Postgres allows them to nest.
+    if (ch === '/' && sql[i + 1] === '*') {
+      let depth = 0;
+      let j = i;
+      while (j < sql.length) {
+        if (sql.startsWith('/*', j)) { depth += 1; j += 2; } else if (sql.startsWith('*/', j)) {
+          depth -= 1;
+          j += 2;
+          if (depth === 0) break;
+        } else j += 1;
+      }
+      i = j;
+      continue;
+    }
+
+    // String literal and quoted identifier: a doubled quote is an escape, so
+    // `'it''s'` ends at the last quote and `'a $$ b'` has no body in it.
+    if (ch === "'" || ch === '"') {
+      let j = i + 1;
+      while (j < sql.length) {
+        if (sql[j] === ch) {
+          if (sql[j + 1] === ch) j += 2;
+          else { j += 1; break; }
+        } else j += 1;
+      }
+      i = j;
+      continue;
+    }
+
+    if (ch === '$') {
+      DOLLAR_QUOTE.lastIndex = i;
+      const open = DOLLAR_QUOTE.exec(sql);
+      // A `$` that does not start a tag (`$1`, `$ 5`, a lone `$`) is not a quote
+      // and is skipped as ordinary text.
+      if (open && open.index === i) {
+        const tag = open[0];
+        const bodyStart = i + tag.length;
+        const close = sql.indexOf(tag, bodyStart);
+        // No terminator: stop masking and leave the rest as SQL, so the check
+        // still sees whatever follows.
+        if (close !== -1) {
+          blank(bodyStart, close);
+          // Resume *after* the closing tag. Resuming at `close` was the bug.
+          i = close + tag.length;
+          continue;
+        }
+      }
+    }
+
+    i += 1;
   }
 
-  return masked + sql.slice(cursor);
+  return out.join('');
 }
 
 // Every top-level transaction-control statement in a file, as written. Empty for

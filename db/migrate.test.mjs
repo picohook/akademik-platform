@@ -234,6 +234,142 @@ test('transaction control inside a dollar-quoted body is not the file\'s own tra
   }
 });
 
+// Regression, second bug, found in review of #54: masking stopped at the wrong
+// place.
+//
+// `maskDollarQuotedBodies` masked a body, then resumed scanning at the *opening*
+// byte of the closing tag. The next pass therefore read that same closing `$$`
+// as the opening quote of a new body, and the "body" it masked ran to the end
+// of the next real quote - swallowing everything in between. One function in a
+// file hid the statement after it; two functions hid everything up to the
+// second one's closing tag.
+//
+// The consequence is the one the rule exists to prevent, so it is stated plainly:
+// this text was runnable.
+//
+//     create function f() ... $$ ... end; $$ language plpgsql;
+//     commit;
+//     create function g() ... $$ ... end; $$ language plpgsql;
+//
+// The real `commit;` on line 2 was reported as `[]`. A file like that passes the
+// check, runs, and its commit ends the runner's transaction - the migration's
+// changes commit, its registry row does not.
+//
+// Every case below puts a real statement *between or after* two bodies, so a
+// fix that only stops the first swallow does not pass them.
+test('a statement between two dollar-quoted bodies is still the file\'s own transaction', () => {
+  // `$${...}` in a template literal collapses `$$` to a single `$`, so the tags
+  // are concatenated: written as `$${unit}$$` the opening tag would be `$begin…`.
+  const tag = '$$';
+  const twoBodies = (between, unit = 'begin perform 1; end;') => [
+    `create function f() returns void as ${tag}${unit}${tag} language plpgsql;`,
+    between,
+    `create function g() returns void as ${tag}${unit}${tag} language plpgsql;`,
+  ].join('\n');
+
+
+  const cases = {
+    // The exact shape that was mis-authorized: commit between two bodies.
+    'commit;': ['commit;'],
+    'rollback;': ['rollback;'],
+    'savepoint sp1;': ['savepoint'],
+    'begin;': ['begin;'],
+    'end;': ['end;'],
+    'start transaction;': ['start transaction'],
+    '\\begin': ['\\begin'],
+    'release savepoint sp1;': ['release savepoint'],
+    'rollback to savepoint sp1;': ['rollback to savepoint'],
+  };
+
+  for (const [between, expected] of Object.entries(cases)) {
+    const sql = twoBodies(between);
+
+    // Not authorized: the message has to name the command, because the whole
+    // failure mode was a file that looked clean.
+    const found = psqlTransactionControl(sql);
+    assert.deepEqual(found, expected, `two bodies around ${JSON.stringify(between)} -> ${JSON.stringify(found)}`);
+
+    const reason = expectRunnable(sql);
+    assert.ok(reason, `${JSON.stringify(between)} between two bodies was not refused`);
+    assert.ok(
+      reason.startsWith('manages its own transaction'),
+      `${JSON.stringify(between)} -> ${reason}`,
+    );
+  }
+
+  // A gap of two statements, so a fix that only looks one line past the closing
+  // tag does not pass either.
+  const twoStatements = twoBodies('select 1;\ncommit;');
+  assert.deepEqual(psqlTransactionControl(twoStatements), ['commit;']);
+
+  // Tagged quotes too: the wrong resumption was not specific to `$$`.
+  const tagged = [
+    'create function f() returns void as $a$ begin perform 1; end; $a$ language plpgsql;',
+    'commit;',
+    'create function g() returns void as $b$ begin perform 1; end; $b$ language plpgsql;',
+  ].join('\n');
+  assert.deepEqual(psqlTransactionControl(tagged), ['commit;']);
+});
+
+// The other half of the same review: text that is *not* a body must not be able
+// to darken what follows it. A quote that never closes, a quote that only looks
+// like one, and a quote inside a comment or a string are all "text the masker
+// does not own" - and in every case the real statement after it is still found.
+test('a dollar sign that is not a real body boundary cannot hide a statement after it', () => {
+  const hidden = {
+    // A single `$` (money, an operator, a regex `$`, a template) is not a quote.
+    'select 1 + 1 as $1;\ncommit;': ['commit;'],
+    "select 'costs $5' as price;\ncommit;": ['commit;'],
+    'select regexp_replace(x, $$, $$$$) from t;\ncommit;': ['commit;'],
+    // `$$` inside a line comment is text in a comment, not an opening quote.
+    'select 1; -- here is $$ and it is not a quote\ncommit;': ['commit;'],
+    'select 1; -- $tag$ also not a quote\nrollback;': ['rollback;'],
+    // ...and the same inside a block comment.
+    'select 1; /* $$ body-looking text */\ncommit;': ['commit;'],
+    // `$$` inside a string literal is part of the literal, not a quote.
+    "select 'a $$ b' as s;\ncommit;": ['commit;'],
+    "select 'a $body$ b' as s;\nsavepoint sp1;": ['savepoint'],
+    // A tag that opens and never closes must not swallow the rest of the file.
+    'create function f() returns void as $odd$ begin perform 1;\ncommit;': ['commit;'],
+    // Two unclosed tags in a row, so the second is not mistaken for a closer.
+    'select $a$ , $b$ ;\ncommit;': ['commit;'],
+  };
+
+  for (const [sql, expected] of Object.entries(hidden)) {
+    assert.deepEqual(psqlTransactionControl(sql), expected, JSON.stringify(sql));
+  }
+
+  // A body whose contents look like quotes. Postgres finds the first `$$`, and
+  // nothing inside a `$$` body can spell `$$` - not even in a comment - so the
+  // tricky contents use *tagged* quotes and a tag that only looks like a
+  // delimiter. What matters is that none of it is read as an opening quote, and
+  // none of it is read as a statement.
+  const realBodyWithTrickyContents = [
+    'create function f() returns text as $$',
+    'declare',
+    '  s text := \'a $q$ b\';',
+    'begin',
+    '  /* $x$ is a tag that never opens a body here */',
+    '  s := s || \'-- commit; is text\' || \'savepoint nope\';',
+    '  return s;',
+    'end;',
+    '$$ language plpgsql;',
+    'select 1;',
+  ].join('\n');
+  assert.deepEqual(psqlTransactionControl(realBodyWithTrickyContents), []);
+
+  // And the same thing through the public entry point, so masking cannot become
+  // so strict that a real function declaration starts being refused - that was
+  // the first bug, and a scanner that treated `$x$` above as an opening quote
+  // would reintroduce it.
+  assert.equal(expectRunnable(realBodyWithTrickyContents), null);
+
+  // The `end;`-touching-the-closing-tag shape 025 and 027 use, with a `$tag$`
+  // delimiter whose text appears inside the body as ordinary characters.
+  const endTouchesTag = 'do $b$\nbegin\n  perform 1;\nend$b$;\nselect 1;';
+  assert.deepEqual(psqlTransactionControl(endTouchesTag), []);
+});
+
 test('real transaction control is still refused, dollar-quoted blocks or not', () => {
   // The message names every statement it found, so the assertion is on the
   // command, not on the phrasing.
