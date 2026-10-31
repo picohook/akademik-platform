@@ -19,12 +19,14 @@ function fakeClient() {
   };
 }
 
-function serviceOver(client) {
+function serviceOver(client, { access = async () => true } = {}) {
   return createDownloadService({
     withTenant: fn => fn(client),
     getBook: async () => null,
-    activeGrants: async () => [],
-    grantAllows: () => true,
+    // The authorization decision is the caller's; these tests are about auditing, so
+    // it is granted unless a test says otherwise.
+    access,
+    grantedIds: async () => [],
     // The tenant is read per request, so it is a function here as well - a plain
     // string would silently reintroduce the fixed env tenant this change removes.
     tenantId: () => 'tenant-1',
