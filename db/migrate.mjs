@@ -20,7 +20,9 @@
 //   run. Its commit would end the runner's transaction early, so the registry
 //   row would land outside it - the migration's changes committed, the record
 //   of them not, or vice versa. 013-017 predate this rule and break it; they
-//   are only ever baselined, never executed.
+//   are only ever baselined, never executed. Dollar-quoted bodies are masked
+//   before the check, so a plpgsql `begin ... end;` is not read as the file's
+//   own transaction - it was, and 025 and 027 were skipped for it.
 // - Runs take a session-level advisory lock, so two deploys racing each other
 //   queue up instead of both deciding the same file is pending.
 // - A file whose checksum changed after it was applied is reported and, unless
@@ -75,12 +77,154 @@ const ADVISORY_LOCK_KEY = 8_026_071_001;
 // DO block body (indented, and not a statement boundary of its own) is not
 // caught but a real one is. Also catches savepoints and psql's \begin, both of
 // which move transaction state out from under the runner.
+//
+// This regex knows nothing about dollar quotes, which is why it is no longer the
+// only thing consulted: a plpgsql body is valid SQL that contains `begin` and
+// `end;` on lines of their own, and this pattern reads the `end;` as the file's.
+// 025 and 027 were refused for exactly that reason. `expectRunnable` now masks
+// bodies out first; the tests still run this pattern against the masked text, and
+// against raw text to show what it would have said.
 const TRANSACTION_CONTROL = /^\s*(?:--[^\n]*\n\s*)*(?:\\begin|\\commit|\\rollback|begin\s*(?:transaction|work)?\s*;|start\s+transaction\b|commit\s*(?:work|transaction)?\s*;|rollback\s*(?:work|transaction)?\s*;|end\s*(?:work|transaction)?\s*;|savepoint\b|release\s+savepoint\b|rollback\s+to\s+savepoint\b)/im;
+
+// A dollar quote: `$$`, or `$tag$` with a tag that cannot start with a digit.
+// Both forms are in the shipped migrations - 013 and 027 use `$$`, 022, 024, 025
+// and 026 use `$body$`.
+const DOLLAR_QUOTE = /\$([A-Za-z_][A-Za-z0-9_]*)?\$/g;
+
+// Replaces the contents of every dollar-quoted string with spaces, leaving the
+// quotes and the newlines where they were. Same length, same line breaks, so a
+// position in the result is a position in the input and a match on the result
+// can be reported against the original text.
+//
+// One forward pass, and it has to be: an earlier version resumed scanning at the
+// opening byte of the closing tag, so the next pass read that same `$$` as a new
+// opening quote and masked up to the *next* real quote. Everything between two
+// bodies disappeared, including a real `commit;` - the file was authorized and
+// its commit would have ended the runner's transaction. A second pass cannot be
+// trusted to agree with the first about which `$` is an opening and which is a
+// closing one, so there is only one pass and it always moves past what it has
+// consumed.
+//
+// The same pass also decides what *is* a quote, because a `$$` that merely looks
+// like one must not be able to hide a real statement:
+//
+// - `'...'` string literals and `"..."` identifiers are skipped, with `''` and
+//   `""` doubling as escapes. `select 'a $$ b';` contains no body.
+// - `--` line comments and `/* */` block comments are skipped, nesting included
+//   (Postgres nests block comments). `$$` in a comment is text in a comment.
+// - `$1` positional parameters and a lone `$` are not tags: a dollar quote is
+//   `$$` or `$tag$` where the tag starts with a letter or underscore.
+//
+// Skipped text is copied through unmasked. A `commit;` written inside a string or
+// a comment is dead SQL, and refusing it costs nothing; the point is that it must
+// not hide a `commit;` that is not.
+//
+// An unclosed tag does not mask the rest of the file. Guessing that the body runs
+// to EOF would hide a real `commit;` after a typo, which is the failure this
+// check exists to prevent; the file is reported as written instead.
+function maskDollarQuotedBodies(sql) {
+  const out = sql.split('');
+  const blank = (from, to) => {
+    for (let i = from; i < to; i += 1) if (out[i] !== '\n') out[i] = ' ';
+  };
+
+  let i = 0;
+  while (i < sql.length) {
+    const ch = sql[i];
+
+    // Line comment: to the end of the line, not consumed for quote purposes.
+    if (ch === '-' && sql[i + 1] === '-') {
+      const end = sql.indexOf('\n', i);
+      i = end === -1 ? sql.length : end;
+      continue;
+    }
+
+    // Block comment, and Postgres allows them to nest.
+    if (ch === '/' && sql[i + 1] === '*') {
+      let depth = 0;
+      let j = i;
+      while (j < sql.length) {
+        if (sql.startsWith('/*', j)) { depth += 1; j += 2; } else if (sql.startsWith('*/', j)) {
+          depth -= 1;
+          j += 2;
+          if (depth === 0) break;
+        } else j += 1;
+      }
+      i = j;
+      continue;
+    }
+
+    // String literal and quoted identifier: a doubled quote is an escape, so
+    // `'it''s'` ends at the last quote and `'a $$ b'` has no body in it.
+    if (ch === "'" || ch === '"') {
+      let j = i + 1;
+      while (j < sql.length) {
+        if (sql[j] === ch) {
+          if (sql[j + 1] === ch) j += 2;
+          else { j += 1; break; }
+        } else j += 1;
+      }
+      i = j;
+      continue;
+    }
+
+    if (ch === '$') {
+      DOLLAR_QUOTE.lastIndex = i;
+      const open = DOLLAR_QUOTE.exec(sql);
+      // A `$` that does not start a tag (`$1`, `$ 5`, a lone `$`) is not a quote
+      // and is skipped as ordinary text.
+      if (open && open.index === i) {
+        const tag = open[0];
+        const bodyStart = i + tag.length;
+        const close = sql.indexOf(tag, bodyStart);
+        // No terminator: stop masking and leave the rest as SQL, so the check
+        // still sees whatever follows.
+        if (close !== -1) {
+          blank(bodyStart, close);
+          // Resume *after* the closing tag. Resuming at `close` was the bug.
+          i = close + tag.length;
+          continue;
+        }
+      }
+    }
+
+    i += 1;
+  }
+
+  return out.join('');
+}
+
+// Every top-level transaction-control statement in a file, as written. Empty for
+// a file the runner may execute. Exported for the tests, which is where the
+// "real commands are still refused" half of the rule is pinned.
+function psqlTransactionControl(sql) {
+  const masked = maskDollarQuotedBodies(sql);
+  const found = [];
+  const scan = new RegExp(TRANSACTION_CONTROL.source, 'gim');
+  for (const match of masked.matchAll(scan)) {
+    const keyword = match[0].split('\n').pop().trim();
+    if (keyword) found.push(keyword);
+  }
+  return found;
+}
+
 
 // psql meta-commands cannot be sent to the server at all: pg parses them as
 // syntax errors. 017 uses \set, which is why it can never be executed by this
 // runner - only baselined.
 const PSQL_METACOMMAND = /^\s*\\(?!begin|commit|rollback)\w+/im;
+
+// The meta-command check has the mirror-image blind spot: a body can contain a
+// backslash (`\n` inside a format(), a `\d` in a regex) and a line inside a body
+// can start with one. Same masking, so a `\set` a body happens to contain is not
+// read as a file-level meta-command.
+function psqlMetaCommands(sql) {
+  const masked = maskDollarQuotedBodies(sql);
+  const found = [];
+  const scan = new RegExp(PSQL_METACOMMAND.source, 'gim');
+  for (const match of masked.matchAll(scan)) found.push(match[0].trim());
+  return found;
+}
 
 const sha = (text) => createHash('sha256').update(text, 'utf8').digest('hex');
 const prefix = (filename) => filename.split('-')[0];
@@ -103,13 +247,13 @@ async function loadFiles() {
 // the reason instead of failing, because "cannot be run" is a permanent
 // property of a historical file, not an error in this run.
 function expectRunnable(sql) {
-  const control = sql.match(TRANSACTION_CONTROL);
-  if (control) {
-    return `manages its own transaction (${control[0].trim().split('\n').pop().trim()}) - the runner needs one transaction per file so the registry row commits with it`;
+  const control = psqlTransactionControl(sql);
+  if (control.length) {
+    return `manages its own transaction (${control.join(', ')}) - the runner needs one transaction per file so the registry row commits with it`;
   }
-  const meta = sql.match(PSQL_METACOMMAND);
-  if (meta) {
-    return `contains the psql meta-command ${meta[0].trim()}, which the server cannot parse`;
+  const meta = psqlMetaCommands(sql);
+  if (meta.length) {
+    return `contains the psql meta-command ${meta.join(', ')}, which the server cannot parse`;
   }
   return null;
 }
@@ -373,7 +517,10 @@ async function main() {
 
 // Exported for db/migrate.test.mjs. Importing this file must not connect to
 // anything, so main() only runs when it is the entry point.
-export { expectRunnable, loadFiles, refuseUnbaselined, TRANSACTION_CONTROL, PSQL_METACOMMAND };
+export {
+  expectRunnable, loadFiles, psqlMetaCommands, psqlTransactionControl, refuseUnbaselined,
+  maskDollarQuotedBodies, TRANSACTION_CONTROL, PSQL_METACOMMAND,
+};
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().then(

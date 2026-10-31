@@ -42,9 +42,25 @@ the registry from the database. A refused file leaves nothing behind.
   transaction, so the registry row would land outside it: the changes committed
   and unrecorded, or recorded and rolled back. Let the runner open and close the
   transaction.
+  The check runs on the file **with dollar-quoted bodies masked out**, so the
+  `begin` ... `end;` of a `do $$ ... $$` block or a `language plpgsql` function
+  body is not mistaken for the file's own transaction. That misreading is not
+  hypothetical: 025 and 027 were refused for it, and a refused file is simply
+  skipped by `--dry-run` and by a real run — the deploy reports nothing wrong and
+  the SQL never lands. A `commit;` outside a body is still refused — including
+  one **between** two bodies, which an earlier version of the masking swallowed
+  and authorized. The masker reads the file in one forward pass and resumes
+  *after* each closing tag, so `$$ ... $$; commit; $$ ... $$` reports the
+  `commit;`. It also tracks string literals, quoted identifiers, `--` comments
+  and (nested) `/* */` comments: a `$$` inside any of those is text, not an
+  opening quote, and cannot hide a real statement after it. A `$1` parameter and
+  a lone `$` are not quotes either. An unterminated `$tag$` does not hide the
+  rest of the file from the check.
 - **No psql meta-commands.** No `\set`, `\i`, `\echo` and so on: the runner
   sends the file to the server, and Postgres cannot parse a backslash command.
   Write the values out literally instead of parameterising them with `\set`.
+  Checked with the same masking as above, so a backslash inside a function body
+  is not read as a file-level meta-command.
 - **Idempotent or guarded.** `--baseline` marks a file applied without running
   it, so a file that is later run by mistake, or run twice out of order, must
   not duplicate data. `create ... if not exists`, `on conflict do nothing`, and
