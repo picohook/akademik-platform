@@ -51,6 +51,7 @@ Bu değerler **ortam devri sırasında doğrulandı**. Her deploy'dan önce yine
 | `cloudflared` host servisi (`libedge-elibrary`) | `libedge-oracle-live-tunnel` container'ı |
 | Compose (`docker-compose.prod.yml` + `docker-compose.libedge.yml`) | **Compose yok** — `docker run` |
 | `.env.production` + `.env.r2` (repo kökü) | `config/web-runtime.env` (`--env-file`) |
+| Sırların dağılımı (v137 runbook) | `config/admin.env` → yalnız `DATABASE_ADMIN_URL`, **yalnız migration runner'a**; `config/web-catalog.env` → yalnız `DATABASE_CATALOG_URL` (`akademik_catalog` rolü), **web container'ına**; ikisi de `0600 root`. Web'e **admin bağlantısı verilmez** (runbook §5.3/§5.4) |
 
 ## 4. Değişmeyenler
 
@@ -70,4 +71,18 @@ Aşağıdakiler bu kayıt yazılırken **ölçülmedi**; tahminle doldurulmadı:
 - Sunucu mimarisi (`uname -m`) ve disk doluluğu.
 - Canlı domain adı ve tünelin host portu (runbook §4.0a'da `$LIVE_DOMAIN` / `$TUNNEL_PORT`).
 - v137'nin build/run imaj etiketi ve release dizini (`$NEW_IMAGE`, §2.1) — deploy anında ölçülür.
+- `libedge-oracle-v136-db`'nin `libedge-oracle-v136` ağında **`db` takma adı** taşıyıp
+  taşımadığı — `@db:5432` bu ada bağlıdır; runbook §4.0a ölçer, yoksa takma adı ekler. (Yerelde
+  takma ad yoktu ve runner `EAI_AGAIN db` verdi; runbook §10.4.)
 - EC2 instance'ının kalıcı olarak mı yoksa geçici olarak mı durdurulduğu (silinmedi).
+
+## 6. Yerel Docker kanıtı (2026-10-31)
+
+Runbook'un düzeltilen komutları **Oracle'a bağlanmadan**, yerel Docker'da (29.9.2,
+linux/amd64) aynı adlarla taklit edilerek koşuldu; ayrıntı ve çıktılar
+`docs/runbooks/v137-deploy.md` **§10**. Kapsanan: `--env-file` ile runner `--status`
+(6 pending) ve `--dry-run` (025 + 027 listede), web'in `akademik_catalog` rolüyle bağlanması
+ve silmeye yetkisinin olmaması (`f`), admin bağlantısının web'e **girmediği**
+(`admin keys: 0`), geçiş (`stop` → `rename` → `run` → health) ve geri dönüş (136,
+`(healthy)`, db dokunulmadı). §5'teki ölçülmemiş maddeler boş bırakıldı: canlı domain,
+tünel portu, gerçek `spike/app` imajı, prod verisi.
