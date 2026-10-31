@@ -100,7 +100,10 @@ function downloadHarness({ requested = epub, ticketAsset = epub.asset_id, denied
   } };
   const service = createDownloadService({ withTenant: fn => fn(client), tenantId: () => 'tenant', b2b: true,
     getBook: async id => id === requested.asset_id || id === requested.id ? { ...requested, allow_download: !disabled } : null,
-    activeGrants: async () => [], grantAllows: () => false });
+    // The ticket path asks the same question /file asks. The harness answers it the
+    // way the server's canAccessBook does for a tenant whose grants do not match.
+    access: async () => !denied,
+    grantedIds: async () => [] });
   return { service, queries, auth: { userId: 'user', tenantId: 'tenant' } };
 }
 

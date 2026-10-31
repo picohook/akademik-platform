@@ -62,8 +62,8 @@ test('ticket statements take the tenant from the request, not from a fixed value
   const service = createDownloadService({
     withTenant: async (fn) => fn(client),
     getBook: async () => null,
-    activeGrants: async () => [],
-    grantAllows: () => true,
+    access: async () => true,
+    grantedIds: async () => [],
     tenantId: () => {
       if (!bound) throw new Error('no tenant bound to this request');
       return bound;
