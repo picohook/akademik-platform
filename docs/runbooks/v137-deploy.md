@@ -1,4 +1,4 @@
-﻿# v137 deploy runbook — 021/022/024/025/026/**027** migration'ları + `akademik_catalog` LOGIN
+# v137 deploy runbook — 021/022/024/025/026/**027** migration'ları + `akademik_catalog` LOGIN
 
 > **Durum: ÇALIŞTIRILMADI.** Bu dosya bir **plan**dır; hiçbir komut prod'da koşulmadı.
 > Değerler `docs/DEPLOY.md` ve v136 kaydından türetildi, tahmin edilmedi. Gerçek çıktılar
@@ -37,29 +37,44 @@
 ## 1. Kurallar (bu runbook boyunca)
 
 1. **Her komut tek satır.** Çok satırlı yapıştırma SSH'ta kilitleniyor; `\` ile bölünmüş komut yazılmaz.
-2. `sudo` ortamı temizler: `LIBEDGE_IMAGE=... sudo docker compose` **çalışmaz**; imaj adı `.env.r2` içine yazılır.
+2. `sudo` ortamı temizler: değişken **komutun başına** yazılmaz; değerler `config/web-runtime.env` dosyasında durur ve gerektiğinde `set -a` ile yüklenir (§4.0).
 3. Parola **komut satırına yazılmaz** → `ps`/`history`'ye düşer. Yalnız `read -rs` ile okunur ve doğrudan `psql`'in stdin'ine verilir.
-4. `docker compose down` **kullanılmaz** (db'yi kaldırır; web sonra `EAI_AGAIN db` alır).
+4. **db container'ı durdurulmaz/yeniden yaratılmaz** (web sonra `EAI_AGAIN db` alır). Bu sunucuda Compose **yok**; `docker compose …` komutu burada **hiç çalışmaz**.
 5. Sıra: **yedek → migration → imaj**. Migration'lar imajdan **önce** (yeni imaj fail-closed: grant yoksa katalog boş görünür).
 6. Bir adım beklenen çıktıyı vermezse **DUR**; sonraki adıma geçilmez.
+7. **İsimler §4.0'a göre ölçülür.** Sunucu `92.5.157.233`, dizin `/home/ubuntu/libedge-oracle-v136`; başka bir host/dizin/isim varsayılmaz.
 
 ## 2. Ön kontrol — değişiklik yapmadan
 
+Doğru sunucuda ve doğru dizinde olduğunu **ölç** (çıktı §9'a yazılır):
+
 ```bash
-cd /home/ubuntu/akademik-platform && git fetch origin && git checkout main && git pull --ff-only origin main && git log -1 --oneline
+cd /home/ubuntu/libedge-oracle-v136 && pwd && hostname && git log -1 --oneline
+```
+
+**Beklenen:** `/home/ubuntu/libedge-oracle-v136` ve bir commit satırı. `cd` hata verirse
+**DUR** — o dizin bu sunucuda yok demektir, §4.0.
+
+```bash
+cd /home/ubuntu/libedge-oracle-v136 && git fetch origin && git checkout main && git pull --ff-only origin main && git log -1 --oneline
 ```
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker ps --format '{{.Names}}\t{{.Image}}\t{{.Status}}'
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker ps --format '{{.Names}}\t{{.Image}}\t{{.Status}}'
 ```
 
-Beklenen: `akademik-platform-prod-web-1` → `libedge-v136` `(healthy)`, `akademik-platform-prod-db-1` → `(healthy)`.
+Beklenen: `libedge-oracle-v136-web` → `libedge-oracle-v136:96cc270-arm64` `(healthy)`,
+`libedge-oracle-v136-db` → `(healthy)`, `libedge-oracle-live-tunnel` → `Up`. Ayrıntılı
+doğrulama §4.0a'da; buradaki satır yalnız "stack ayakta" kontrolüdür.
 
 ```bash
-cd /home/ubuntu/akademik-platform && curl -s https://elibrary.libedge.com/api/config && echo && curl -s https://elibrary.libedge.com/api/health
+curl -s https://elibrary.libedge.com/api/config && echo && curl -s https://elibrary.libedge.com/api/health
 ```
 
 Beklenen: `/api/config` → `"version":"136"` / `"buildSha":"96cc270"`; `/api/health` → `{"ok":true,"mode":"db",...}`.
+Bu iki `curl` **Cloudflare Tunnel** üzerinden gelir (host'ta 80/443 dinleyen nginx ya da
+benzeri bir servis yok) — boş ya da `502` dönerse sorun sırası şudur: önce §7.1'in
+`127.0.0.1:3001` çağrısı, sonra tünel. **Tünel bu runbook'ta onarılmaz.**
 
 ## 3. Yedek — her şeyden önce
 
@@ -69,7 +84,7 @@ volume'ünde durur (`/var/lib/postgresql/data`), yani host'ta bir dosya kopyalam
 kopyalamak demektir.
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 pg_dump -U akademik -Fc akademik > ~/backup-pre-v137-$(date +%Y%m%d-%H%M).dump
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db pg_dump -U akademik -Fc akademik > ~/backup-pre-v137-$(date +%Y%m%d-%H%M).dump
 ```
 
 ```bash
@@ -95,11 +110,11 @@ ls -l ~/backup-pre-v137-*.dump
 koleksiyonlara bağlı grant'ler sessizce boşalır. Migration'dan **önce** ölçülür:
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*) filter (where tenant_id is null) as null_tenant, count(*) as total from collection_items"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "select count(*) filter (where tenant_id is null) as null_tenant, count(*) as total from collection_items"
 ```
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select c.id, c.title, count(ci.*) from collections c left join collection_items ci on ci.collection_id = c.id group by 1,2 order by 3 desc"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "select c.id, c.title, count(ci.*) from collections c left join collection_items ci on ci.collection_id = c.id group by 1,2 order by 3 desc"
 ```
 
 | Sonuç | Karar |
@@ -111,80 +126,171 @@ cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-
 
 Sunucuda node yok; runner throwaway `node:22-alpine` container'ında koşar (`db/README.md`).
 
-### 4.0 Ortam: hangi host, hangi container, hangi volume
+### 4.0 Ortam: hangi sunucu, hangi container, hangi volume
 
-Bu runbook **mevcut EC2 sunucusundaki Docker yapısına** dokunur, yenisini kurmaz.
-Aşağıdaki isimler her komutta tekrar eder; yanlış ağa bağlanan bir runner `db` adını
-**çözemez** (`EAI_AGAIN`) ve hiçbir şey yapmadan düşer — tanı koyması zaman alır.
-Önce ölçülür. Değerler tahmin değil: host ve repo yolu `docs/DEPLOY.md`'den, tünel ve
-kapalı portlar `docs/deployments/2026-10-28-v136.md` §5'ten (ölçülmüş), container ve
-volume adları `docker-compose.prod.yml` / `docker-compose.libedge.yml`'den.
+Bu runbook **canlı Oracle sunucusundaki mevcut Docker yapısına** dokunur, yenisini
+kurmaz. Aşağıdaki isimler her komutta tekrar eder; yanlış ağa bağlanan bir runner `db`
+adını **çözemez** (`EAI_AGAIN`) ve hiçbir şey yapmadan düşer — tanı koyması zaman alır.
 
-| Ne | Beklenen | Nereden geliyor |
+> **Hangi ortam canlı?** **Oracle.** AWS EC2 kurulumu 2026-10-30'da **devre dışı
+> bırakıldı** (`docs/deployments/2026-10-30-oracle-cutover.md`): V136 cutover / final
+> parity / public health **PASS**, tarayıcı kontrolü başarılı, EC2 instance
+> `i-0b0c3d5032408d855` **durduruldu**. EC2'ye ait kayıtlar (`docs/DEPLOY.md`,
+> `docs/deployments/2026-10-28-v136.md` §5 ve öncesi) **tarihsel**dir; bu runbook onları
+> kaynak olarak **kullanmaz**. Komutlarda `elibrary.libedge.com`, `54.87.37.7`,
+> `akademik-platform-prod*`, `libedge-v136`, `libedge-oracle-v136`,
+> `libedge-oracle-v136-pgdata` geçiyorsa **o satır eski** — bu ortama göre düzeltilmeden
+> çalıştırılmaz.
+
+| Ne | Beklenen | Nasıl doğrulanır |
 | --- | --- | --- |
-| Host | EC2 `elibrary.libedge.com` (`54.87.37.7`); SSH **22** açık, **80/443 kapalı** | v136 §5 |
-| Repo dizini | **`/home/ubuntu/akademik-platform`** | `docs/DEPLOY.md` |
-| Trafik | **cloudflared** tüneli `libedge-elibrary` → `127.0.0.1:3001`; nginx **kapalı** | v136 §5, ölçüldü |
-| Veritabanı container'ı | `akademik-platform-prod-db-1`, `postgres:16-alpine`, `(healthy)` | `docker-compose.prod.yml` |
-| Uygulama container'ı | `akademik-platform-prod-web-1`, `libedge-v136`, `(healthy)` | `docker-compose.libedge.yml` |
-| Compose projesi | `akademik-platform-prod` | `docker-compose.prod.yml` başındaki `name:` |
-| Network | `akademik-platform-prod_default` | Aynı `name:`'den türer |
-| **Verinin durduğu volume** | **`akademik-platform-prod_pgdata`** | `docker-compose.prod.yml`'deki `pgdata` |
+| Host | **`92.5.157.233`** | §2 |
+| Dizin | **`/home/ubuntu/libedge-oracle-v136`** | §2 (`pwd`) |
+| Web container | **`libedge-oracle-v136-web`** | §4.0a |
+| DB container | **`libedge-oracle-v136-db`** | §4.0a |
+| DB adı / sahibi | **`akademik` / `akademik`** | §4.0a (`POSTGRES_DB`, `POSTGRES_USER`) |
+| Ağ | **`libedge-oracle-v136`** | §4.0a |
+| **Verinin durduğu volume** | **`libedge-oracle-v136-pgdata`** | §4.0a (`docker inspect … .Mounts`) |
+| Canlı imaj | **`libedge-oracle-v136:96cc270-arm64`** | §4.0a + §6 |
+| Tünel container'ı | **`libedge-oracle-live-tunnel`** | §4.0a |
+| Giriş | **Cloudflare Tunnel → `127.0.0.1:3001`** | §4.0a (port eşlemesi) |
+| Çalıştırma | **`docker run`; Compose kullanılmıyor** | §6 |
+| Runtime env (host'ta) | **`/home/ubuntu/libedge-oracle-v136/config/web-runtime.env`** | §4.0a |
 | Runner'ın gördüğü repo | `-v "$PWD":/repo:ro` (salt okunur) | §4.1'deki `docker run` |
 | Runner'ın `node_modules`'ı | `-v /repo/spike/app/node_modules` (isimsiz volume) | Aynı komut; imaja yazmaz |
 | `app` rolü (RLS) | `akademik_app` | `schema.sql` |
 | Tablo sahibi (DDL) | `akademik` | `POSTGRES_USER` |
-| Env dosyaları (**repoda yok**) | `.env.production` (`POSTGRES_*`, `DATABASE_URL`, `SESSION_SECRET`, `DOMAIN`), `.env.r2` (`LIBEDGE_IMAGE`, `APP_VERSION`, `BUILD_SHA`, R2) | `docs/DEPLOY.md` §Env dosyaları |
 
-> **Tünel bir bağımlılık değil, korunacak bir şeydir.** `cloudflared` host'ta servis
-> olarak koşuyor ve `127.0.0.1:3001`'e tünelliyor. Bu runbook'un hiçbir adımı tüneli
-> durdurmaz, yeniden başlatmaz veya yeniden yapılandırmaz; tünel yalnız §7'nin `curl`
-> doğrulamasında dolaylı görünür. Tünel bozulursa bu ayrı bir arızadır, bu runbook'un
-> konusu değildir.
+**Bilinmeyenler — tahmin edilmez.** Bu runbook yazılırken sunucuya **bağlanılmadı**;
+`config/web-runtime.env`'in içeriği ve web container'ının tam başlatma parametreleri
+(`docker run` argümanları) **görülmedi**. Bu yüzden §4.0a bunları **salt okunur**
+komutlarla operatöre ölçtürür; ölçüm tabloyla uyuşmazsa §4.0b'deki kural uygulanır.
+Hiçbir adım bu değerleri varsayarak yazılmaz.
 
-Container, volume ve network adlarını doğrula:
+> **Tünel bir bağımlılık değil, korunacak bir şeydir.** `libedge-oracle-live-tunnel`
+> host `127.0.0.1:3001`'e tünelliyor; bu runbook'un hiçbir adımı tüneli durdurmaz,
+> yeniden başlatmaz veya yeniden yapılandırmaz. Tünel yalnız §7'nin `curl`
+> doğrulamasında dolaylı görünür. Tünel bozulursa bu ayrı bir arızadır.
 
-```bash
-cd /home/ubuntu/akademik-platform && sudo docker ps --format '{{.Names}}	{{.Image}}	{{.Status}}' && sudo docker network ls --format '{{.Name}}'
-```
+#### 4.0a Ortamı salt okunur doğrula — yapacak bir şey yok, yalnız ölçüm
 
-Volume'u doğrula — **bu adım yedeğin nereye gittiğini de belirler** (§3):
+Aşağıdaki komutların **hiçbiri** container durdurmaz, volume'e dokunmaz, imaj silmez,
+sunucuda dosya yaratmaz; hepsi `docker ps` / `network ls` / `inspect` — yani **salt okunur**.
 
-```bash
-cd /home/ubuntu/akademik-platform && sudo docker inspect akademik-platform-prod-db-1 --format '{{range .Mounts}}{{.Type}} {{.Name}} -> {{.Destination}}{{"\n"}}{{end}}'
-```
-
-**Beklenen:** `volume akademik-platform-prod_pgdata -> /var/lib/postgresql/data`.
-`bind` görürsen (host dizini) yedek ve restore komutları **değişmez** — `pg_dump`/`pg_restore`
-container içinden çalışır — ama §3'teki dosyanın container dışında durduğu **host yolu**
-§9'a yazılır. `Type` ne olursa olsun veri `db` container'ının içinden okunur.
-
-> **Yapılmayacaklar:** `docker compose down` (§1.4 — db'yi kaldırır, volume'u **silmez**
-> ama web sonra `EAI_AGAIN db` alır), `docker volume prune` / `docker system prune --volumes`
-> (**`pgdata` gider**), runner'ı `--network host` ile koşmak (container adı `db`
-> çözülmez; ayrıca host'taki Postgres'e bağlanma riski), ve imaj build'inde kullanılan
-> `docker image prune -a`'nın **rollback imajını** (`libedge-v136`) almasına izin vermek —
-> §8'deki dönüş yolu odur.
-
-`POSTGRES_PASSWORD` repo kökündeki `.env.production`'dan okunur — parola **komut satırına
-yazılmaz**. `sudo` ortamı temizlediği için (`env_reset`, §1.2) değişkenler aynı tek satırda
-`set -a` ile yüklenir:
+Çalışan container'lar ve imajları:
 
 ```bash
-cd /home/ubuntu/akademik-platform && set -a && . ./.env.production && set +a && echo "POSTGRES_PASSWORD set: ${POSTGRES_PASSWORD:+yes}"
+sudo docker ps --format '{{.Names}}\t{{.Image}}\t{{.Status}}' | sort
 ```
 
-Beklenen: `POSTGRES_PASSWORD set: yes`. Boşsa **DUR**.
+**Beklenen:** `libedge-oracle-v136-db`, `libedge-oracle-v136-web` ve
+`libedge-oracle-live-tunnel` satırları; web imajı `libedge-oracle-v136:96cc270-arm64`.
+Fazladan bir `*-web`/`*-db` çifti görünüyorsa (eski bir stack hâlâ ayakta) **DUR**: hangi
+stack'in canlı olduğunu tünelin hedefi belirler.
 
-> **`/var/www/akademik-platform` bu sunucuda yok.** Eski dokümanlarda geçen bu yol başka
-> bir kuruluma aittir; buradaki repo dizini `/home/ubuntu/akademik-platform`'dur.
-> `cd` ile doğrulanmadan hiçbir komut çalıştırılmaz.
+Ağ:
+
+```bash
+sudo docker network ls --format '{{.Name}}'
+```
+
+**Beklenen:** `libedge-oracle-v136` listede. Runner `--network libedge-oracle-v136` ile
+koşar; bu ad yoksa `db` çözülmez (§4.1).
+
+Volume — **bu adım yedeğin nereye gittiğini de belirler** (§3):
+
+```bash
+sudo docker inspect libedge-oracle-v136-db --format '{{range .Mounts}}{{.Type}} {{.Name}} -> {{.Destination}}{{"\n"}}{{end}}'
+```
+
+**Beklenen:** `volume libedge-oracle-v136-pgdata -> /var/lib/postgresql/data`.
+`bind` görürsen (host dizini) yedek ve restore komutları **değişmez** — `pg_dump`/
+`pg_restore` container içinden çalışır — ama yedek dosyasının host'taki yolu §9'a aynen
+yazılır. **Volume adı başkaysa DUR**: §8.1'in tek dönüş yolu bu volume'deki veridir.
+
+Portlar ve tünel:
+
+```bash
+sudo docker inspect libedge-oracle-v136-web libedge-oracle-live-tunnel --format '{{.Name}} {{json .NetworkSettings.Ports}}'
+```
+
+**Beklenen:** web `3001/tcp` → `127.0.0.1:3001` (yalnız localhost, `0.0.0.0` değil).
+Tünel host ağı kullanıyorsa port bölümü boş görünür — bu **hata değil**; tünelin gerçekten
+`127.0.0.1:3001`'e gittiği §7.1'in `curl`'üyle doğrulanır. Tünelle **oynanmaz**.
+
+DB adı ve sahibi:
+
+```bash
+sudo docker inspect libedge-oracle-v136-db --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -E '^POSTGRES_(DB|USER)='
+```
+
+**Beklenen:** `POSTGRES_DB=akademik`, `POSTGRES_USER=akademik`. Farklıysa §3/§4/§7'deki
+`-U akademik -d akademik` **yanlıştır** → **DUR**, doğru değerle düzeltilir. Bu komut
+yalnız `POSTGRES_DB`/`POSTGRES_USER` süzer; `POSTGRES_PASSWORD` ekrana **basılmaz**.
+
+Sunucu mimarisi (canlı imaj etiketi `-arm64` ile bitiyor; §6'daki build buna bağlı):
+
+```bash
+uname -m && sudo docker inspect libedge-oracle-v136:96cc270-arm64 --format '{{.Architecture}}/{{.Os}}'
+```
+
+**Beklenen:** ikisi **uyumlu** (ör. `aarch64` ↔ `arm64/linux`). Uyuşmuyorsa **DUR**:
+§6'daki build farklı mimaride çıkar ve yeni container açılmaz.
+
+> **Web container'ının `docker run` argümanları henüz yazılmadı — ve tahmin edilmez.**
+> §6'daki geçiş adımı container'ı **aynı bayraklarla** yeniden başlatmak zorundadır
+> (`--network`, `--env-file`, port, volume, restart policy). Bunları uydurmak yerine §6.1
+> mevcut container'ın `.Config`/`.HostConfig` değerlerini **yazdırır**; geçiş o çıktıya
+> göre yapılır. §6.1'e geçmeden önce §4.0a'nın çıktıları §9'a yazılır.
+
+#### 4.0b Ölçüm tabloyla uyuşmazsa
+
+| Ölçüm | Karar |
+| --- | --- |
+| Adlar ve volume birebir uyuşuyor | Devam |
+| Yalnız `Status` farklı (ör. `(unhealthy)`) | **DUR** — önce sağlık sorunu çözülür; sağlıksız stack üstüne deploy yapılmaz |
+| Volume adı farklı | **DUR** — yedek yolu ve §8.1 belirsizleşir; önce hangi volume'ün canlı olduğu kanıtlanır |
+| `uname -m` ile imaj mimarisi uyuşmuyor | **DUR** — §6'daki build bu sunucuda çalışmayacak bir imaj üretir |
+| Container/yol adı farklı | **DUR** — runbook'un 50+ komutu yanlış hedefe gider; adlar **ölçümle** güncellenir, tahminle değil |
+
+> **Yapılmayacaklar:** **db** container'ını `docker stop`/`docker rm` ile kaldırmak
+> (web sonra `EAI_AGAIN db` alır), `docker volume prune` / `docker system prune --volumes`
+> (**`libedge-oracle-v136-pgdata` gider**), runner'ı `--network host` ile koşmak
+> (container adı `db` çözülmez; ayrıca host'taki Postgres'e bağlanma riski), ve
+> `docker image prune -a`'nın **rollback imajını** (`libedge-oracle-v136:96cc270-arm64`)
+> almasına izin vermek — §8'deki dönüş yolu odur.
+>
+> Bu sunucuda **Compose yoktur**: eski `docker compose down/up` komutlarının buradaki
+> karşılığı **hiç yoktur**; onları "docker eşdeğerine çevirerek" yazmak da yanlıştır.
+
+`POSTGRES_PASSWORD` **host'taki** `config/web-runtime.env`'den okunur — parola **komut
+satırına yazılmaz**. Önce anahtarın **var olup olmadığı** ölçülür; değeri **basılmaz**:
+
+```bash
+cd /home/ubuntu/libedge-oracle-v136 && sudo grep -c '^POSTGRES_PASSWORD=.' config/web-runtime.env
+```
+
+**Beklenen:** `1`. `0` dönerse dosyada bu anahtar **yok** → **DUR**: §4.1'deki
+`DATABASE_ADMIN_URL` boş parolayla kurulur ve sessizce geçersiz olur.
+
+Sonra `sudo` ortamı temizlediği için (`env_reset`, §1.2) değişkenler aynı tek satırda
+`set -a` ile yüklenir; çıktı yalnız **tanımlı olup olmadığını** söyler:
+
+```bash
+cd /home/ubuntu/libedge-oracle-v136 && set -a && . <(sudo cat config/web-runtime.env) && set +a && echo "POSTGRES_PASSWORD set: ${POSTGRES_PASSWORD:+yes}"
+```
+
+**Beklenen:** `POSTGRES_PASSWORD set: yes`. Boşsa **DUR**.
+
+> **`/var/www/akademik-platform` ve `/home/ubuntu/akademik-platform` bu sunucuda yok.**
+> İkisi de **eski EC2 kurulumunun** yollarıdır. Buradaki dizin
+> `/home/ubuntu/libedge-oracle-v136`'tür; `pwd` ile doğrulanmadan hiçbir komut çalıştırılmaz.
 
 
 ### 4.1 Durum — önce
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status'
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker run --rm --network libedge-oracle-v136 -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status'
 ```
 
 **Beklenen:** `021`, `022`, `024`, `025`, `026` ve `027` **pending**; geri kalanı `applied`.
@@ -208,7 +314,7 @@ altı satırın **hiçbirinde** `cannot run: …` notu **görünmemeli** — gö
 > satır" ayırt edilebilsin diye `grep -c` kullanılır, düz `grep` değil:
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status' | grep -cE '^[[:space:]]+pending[[:space:]]+02[124567]-'
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker run --rm --network libedge-oracle-v136 -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status' | grep -cE '^[[:space:]]+pending[[:space:]]+02[124567]-'
 ```
 
 **Beklenen:** `6`. `5` dönerse eksik dosya `027`'dir (en yeni migration; checkout onu
@@ -223,7 +329,7 @@ bu, §4.2b'deki runner sorununun ta kendisidir. `0` ya da `1` dönerse **DUR**, 
 ### 4.2 Kuru çalıştırma
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --dry-run' | grep -E 'would apply'
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker run --rm --network libedge-oracle-v136 -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --dry-run' | grep -E 'would apply'
 ```
 
 **Beklenen:** tek satır, ve içinde **altısı da** olmalı:
@@ -267,7 +373,7 @@ Bu adım, §4.1'in `6` sayısını **tek başına** yeterli görmeyen kişi içi
 **yalnız** `013`–`017`'de olmalı. Tam liste, dosya adlarıyla:
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status' | grep 'cannot run' | awk '{print $2}'
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker run --rm --network libedge-oracle-v136 -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status' | grep 'cannot run' | awk '{print $2}'
 ```
 
 | Çıktı | Anlamı | Karar |
@@ -299,7 +405,7 @@ ve 027 yoksa SSO oturumu yazılamaz, tanımlı değilse SSO kapalı kalır. §7.
 ### 4.3 Uygula
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs'
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker run --rm --network libedge-oracle-v136 -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs'
 ```
 
 **Beklenen:** altı `applying … <ms> ms` satırı, sonra `6 migration(s) applied`. `applying`
@@ -312,7 +418,7 @@ satırlarında bir `error` görürsen **DUR** — o dosyanın hiçbir kısmı ya
 ### 4.4 Durum — sonra
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker run --rm --network akademik-platform-prod_default -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status'
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker run --rm --network libedge-oracle-v136 -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status'
 ```
 
 **Beklenen:** `pending = 0`. Değilse **DUR**.
@@ -327,7 +433,7 @@ Kaydın gerçekten yazıldığını gösteren yer `schema_migrations`'tır. Tabl
 Ölçüm §4.3'ten **önce** ve **sonra** yapılır — iki farklı sonuç **beklenir**:
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*), max(filename) from schema_migrations"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "select count(*), max(filename) from schema_migrations"
 ```
 
 | Ne zaman | Beklenen |
@@ -361,7 +467,7 @@ yanlış retin kurbanıdır ve **025 ise köprü, 027 ise SSO** çalışmaz.
 başarılı görünmesi yetmez, `pg_class` okunur:
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select relname, relrowsecurity, relforcerowsecurity from pg_class where relname = 'collection_items'"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "select relname, relrowsecurity, relforcerowsecurity from pg_class where relname = 'collection_items'"
 ```
 
 **Beklenen:** `collection_items|t|t`. `f` dönerse **DUR** — 022 uygulanmamış ya da
@@ -379,7 +485,7 @@ kendini kandırır — o `FORCE RLS`'i zaten atlar).
 döndürdüğünden küçük** olmalı; eşitse fonksiyon bir şey yapmıyor demektir.
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; select count(*) as plain_visible from tenants"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "set role akademik_app; select count(*) as plain_visible from tenants"
 ```
 
 **Beklenen:** `0` (bir tenant bağlı değilken politika `id = ''::uuid` üzerinden hiçbir
@@ -389,7 +495,7 @@ satır göstermez) ya da `1` (havuzda bağlı bir bağlantı kaldıysa). **`0` d
 Şimdi fonksiyon — app rolüyle, bağlı tenant **yokken**:
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; select tenant_id from app.maintenance_tenants() order by tenant_id"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "set role akademik_app; select tenant_id from app.maintenance_tenants() order by tenant_id"
 ```
 
 **Beklenen:** prod'daki **tüm** tenant id'leri, biri `5799f2a5-3d90-41b1-90de-9da07d776052`.
@@ -418,7 +524,7 @@ FORCE'd olduğu için owner de politika altındadır; fonksiyon `set local
 row_security = off` ile çalışır, app **çalışamaz**):
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select tenant_id from app.maintenance_tenants() order by tenant_id"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "select tenant_id from app.maintenance_tenants() order by tenant_id"
 ```
 
 **Beklenen:** app rolünün gördüğü **aynı liste** — bu, iki rolün de aynı doğru cevabı
@@ -427,7 +533,7 @@ aldığını gösterir.
 #### 4.6c Boş küme çıkarsa — sebebi ayır
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*) from tenants"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "select count(*) from tenants"
 ```
 
 Bu sorgu **süper kullanıcıyla** koşar, yani politikayı atlar ve doğru toplamı verir:
@@ -451,7 +557,7 @@ ama token tanımlı olmadığı için her istek `503 BRIDGE_NOT_CONFIGURED` dön
 **app rolüyle**:
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; select has_function_privilege('akademik_app', 'app.libedge_tenant_by_ref(text, text)', 'execute') as by_ref, has_function_privilege('akademik_app', 'app.libedge_upsert_tenant(text, text, text, text, text)', 'execute') as upsert"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "set role akademik_app; select has_function_privilege('akademik_app', 'app.libedge_tenant_by_ref(text, text)', 'execute') as by_ref, has_function_privilege('akademik_app', 'app.libedge_upsert_tenant(text, text, text, text, text)', 'execute') as upsert"
 ```
 
 **Beklenen:** `t|t`. `f` dönerse 025 uygulanmamış ya da grant düşmüş → **DUR**.
@@ -459,7 +565,7 @@ cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-
 Şimdi çözümleyici — prod'daki gerçek tenant'ın `(kind, ref)`'iyle:
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; select tenant_id, status from app.libedge_tenant_by_ref('institution', '5799f2a5-3d90-41b1-90de-9da07d776052')"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "set role akademik_app; select tenant_id, status from app.libedge_tenant_by_ref('institution', '5799f2a5-3d90-41b1-90de-9da07d776052')"
 ```
 
 **Beklenen:** tam **bir** satır ve `id` `5799f2a5-…`. **Boş küme de bir cevaptır** —
@@ -485,7 +591,7 @@ gösterir. İkisi de §4.3'ten **sonra** koşulur.
 **1) Kaç politika korumaya alındı — tam `26` olmalı.**
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*) from pg_policies where schemaname='public' and (coalesce(qual,'')||coalesce(with_check,'')) ilike '%nullif(current_setting(%app.tenant_id%'"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "select count(*) from pg_policies where schemaname='public' and (coalesce(qual,'')||coalesce(with_check,'')) ilike '%nullif(current_setting(%app.tenant_id%'"
 ```
 
 **Beklenen: `26`.**
@@ -519,7 +625,7 @@ hata vermeden çalışmalı. §7.4 ile aynı gerekçeyle **app rolüyle** ölç�
 politikayı atlar; test kendini kandırır).
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; set app.tenant_id = '5799f2a5-3d90-41b1-90de-9da07d776052'; reset app.tenant_id; select count(*) from works"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "set role akademik_app; set app.tenant_id = '5799f2a5-3d90-41b1-90de-9da07d776052'; reset app.tenant_id; select count(*) from works"
 ```
 
 **Beklenen:** `0` — **ve hata yok.**
@@ -560,7 +666,7 @@ cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-
 kendi sonucunu zaten yazdı, burada **bağımsız olarak** tekrar okunur:
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select to_regclass('public.libedge_sessions') is not null as sessions, to_regclass('public.sso_auth_events') is not null as events, (select relrowsecurity and relforcerowsecurity from pg_class where oid = 'public.libedge_sessions'::regclass) as sessions_forced, (select count(*) from pg_policies where schemaname = 'public' and tablename = 'libedge_sessions') as sessions_policies, has_table_privilege('akademik_app', 'sso_auth_events', 'delete') as app_can_delete_audit, has_function_privilege('akademik_app', 'app.sso_auth_events_purge(interval)', 'execute') as app_can_purge"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "select to_regclass('public.libedge_sessions') is not null as sessions, to_regclass('public.sso_auth_events') is not null as events, (select relrowsecurity and relforcerowsecurity from pg_class where oid = 'public.libedge_sessions'::regclass) as sessions_forced, (select count(*) from pg_policies where schemaname = 'public' and tablename = 'libedge_sessions') as sessions_policies, has_table_privilege('akademik_app', 'sso_auth_events', 'delete') as app_can_delete_audit, has_function_privilege('akademik_app', 'app.sso_auth_events_purge(interval)', 'execute') as app_can_purge"
 ```
 
 **Beklenen (2026-10-31'de ölçüldü, `schema.sql` + 021/022/024/025/026/027):**
@@ -593,7 +699,7 @@ tahmin değil; negatif kontrolü yapılmış bir ölçümün prod'daki karşıl�
 Önce **prod'da kaç satır olduğu** (owner, politikayı atlar):
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set row_security = off; select count(*) from libedge_sessions"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "set row_security = off; select count(*) from libedge_sessions"
 ```
 
 Prod'da SSO henüz açılmadığı için **`0` beklenir**. `> 0` ise bir istemci önce yazmış
@@ -602,14 +708,14 @@ geçer (politika metni + `forced`), **davranışsal** kanıt §7.6'da gerçek bi
 aranır.
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; reset app.tenant_id; select count(*) from libedge_sessions"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "set role akademik_app; reset app.tenant_id; select count(*) from libedge_sessions"
 ```
 
 **Beklenen:** `0` — **ve hata yok.** `22P02` görülürse politikası çevrilmemiş (026/027
 eksik) → **DUR**.
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; set app.tenant_id = '5799f2a5-3d90-41b1-90de-9da07d776052'; select count(*) from libedge_sessions; reset role"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "set role akademik_app; set app.tenant_id = '5799f2a5-3d90-41b1-90de-9da07d776052'; select count(*) from libedge_sessions; reset role"
 ```
 
 **Beklenen:** bağlı okuma **`22P02` vermez** ve bir tenant'ın satırlarını **başka** bir
@@ -617,7 +723,7 @@ tenant'a göstermez. Prod'da satır olmadığı için `0` normaldir; satır vars
 `tenant_id = 5799f2a5…` olan satır sayısına **eşit** olmalı — owner'la doğrula:
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set row_security = off; select count(*) from libedge_sessions where tenant_id = '5799f2a5-3d90-41b1-90de-9da07d776052'"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "set row_security = off; select count(*) from libedge_sessions where tenant_id = '5799f2a5-3d90-41b1-90de-9da07d776052'"
 ```
 
 | Görülen | Anlamı | Karar |
@@ -649,12 +755,12 @@ Güvenlik kuralları:
   **stdin**'ine verilir; `ps`, `.bash_history` ve container log'unda görünmez.
 - Parola **en az 32 karakter**, rastgele (parola yöneticisi üretir). Kopyala-yapıştır
   yapılırken terminale **ekrana basılmaz**.
-- `.env.r2.bak-v136` **ve** `.env.r2` yedeği bu adımdan önce alınır.
+- `config/web-runtime.env` (canlı runtime env dosyası) bu adımdan önce yedeklenir; yedek adı §9'a yazılır.
 
 ### 5.1 Parolayı `read` ile oku ve rolü aç — tek satır
 
 ```bash
-cd /home/ubuntu/akademik-platform && read -rsp 'akademik_catalog password: ' P && echo && printf '\\password akademik_catalog\n%s\n' "$P" | sudo docker exec -i akademik-platform-prod-db-1 psql -U akademik -d akademik -v ON_ERROR_STOP=1 -c "alter role akademik_catalog login" && printf 'alter role akademik_catalog password %s;\n' "'${P//\'/\'\'}'" | sudo docker exec -i akademik-platform-prod-db-1 psql -U akademik -d akademik -v ON_ERROR_STOP=1 && unset P
+cd /home/ubuntu/libedge-oracle-v136 && read -rsp 'akademik_catalog password: ' P && echo && printf '\\password akademik_catalog\n%s\n' "$P" | sudo docker exec -i libedge-oracle-v136-db psql -U akademik -d akademik -v ON_ERROR_STOP=1 -c "alter role akademik_catalog login" && printf 'alter role akademik_catalog password %s;\n' "'${P//\'/\'\'}'" | sudo docker exec -i libedge-oracle-v136-db psql -U akademik -d akademik -v ON_ERROR_STOP=1 && unset P
 ```
 
 > `\password` psql'in **kendi** meta-komutudur ve parolayı sunucuda hash'ler; parola
@@ -665,80 +771,126 @@ cd /home/ubuntu/akademik-platform && read -rsp 'akademik_catalog password: ' P &
 ### 5.2 Ölçüm — rol ve yetkiler
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select rolname, rolcanlogin, rolsuper, rolbypassrls from pg_roles where rolname = 'akademik_catalog'"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "select rolname, rolcanlogin, rolsuper, rolbypassrls from pg_roles where rolname = 'akademik_catalog'"
 ```
 
 **Beklenen:** `akademik_catalog|t|f|f` — **LOGIN açık, süper kullanıcı ve `bypassrls` KAPALI**. `t` görürsen **DUR**.
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*) from information_schema.role_table_grants where grantee = 'akademik_catalog'"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "select count(*) from information_schema.role_table_grants where grantee = 'akademik_catalog'"
 ```
 
 **Beklenen:** 6 satır (`works`, `editions`, `assets`, `asset_pages`, `collections`, `collection_items`, `tenants` → SELECT; tablo sayısı neyse o). Sayı **0 ise DUR**: 022 uygulanmamış demektir.
 
-### 5.3 Parolayı `.env.r2`'ye yaz — dosyaya, komut satırına değil
+### 5.3 `CATALOG_DATABASE_URL`'i runtime env dosyasına yaz — dosyaya, komut satırına değil
+
+Yedek önce, sonra anahtar ekle. Dosya yolu §4.0'da ölçülen yoldur ve **`sudo` gerekir**
+(`config/` root'a aitse; `ls -l config/` ile bakılır):
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo cp .env.r2 .env.r2.bak-v137 && echo 'CATALOG_DATABASE_URL=postgres://akademik_catalog:REPLACE_ME@db:5432/akademik' | sudo tee -a .env.r2 >/dev/null && grep -c '^CATALOG_DATABASE_URL=' .env.r2
+cd /home/ubuntu/libedge-oracle-v136 && sudo cp config/web-runtime.env config/web-runtime.env.bak-pre-v137 && sudo sh -c 'echo "CATALOG_DATABASE_URL=postgres://akademik_catalog:REPLACE_ME@db:5432/akademik" >> config/web-runtime.env' && sudo grep -c '^CATALOG_DATABASE_URL=' config/web-runtime.env
 ```
 
-**Beklenen:** `1`. Sonra `sudo nano .env.r2` (ya da `sudoedit`) ile `REPLACE_ME` **elle**
-değiştirilir — yani parola komut geçmişine hiç girmez.
+**Beklenen:** `1`. Sonra `sudo nano config/web-runtime.env` (ya da `sudoedit`) ile
+`REPLACE_ME` **elle** değiştirilir — yani parola komut geçmişine hiç girmez.
+
+> **Bu satır container'a ancak `--env-file` ile geçer.** Bu sunucuda web container'ı
+> `docker run … --env-file …` ile kalkıyor; dosyayı değiştirmek **çalışan** container'ı
+> değiştirmez. §6.1'deki yeniden yaratma, dosyayı aynı bayrakla yeniden okur. Yani bu
+> adım **yeniden yaratmadan önce** yapılır, sonra §6.1'deki `docker inspect` çıktısında
+> `CATALOG_DATABASE_URL`'in **env anahtar listesinde** göründüğü doğrulanır.
 
 > **Not (bilinçli sınır):** `CATALOG_DATABASE_URL` **v136/v137 kodunda okunmuyor**;
 > yalnız köprü PR'ı için yer tutucu. Kullanılmayan bir env değişkeni sessiz kalmamalı:
-> köprü PR'ı bunu okuyana kadar `.env.r2`'de durmasının zararı yok, ama **deploy
+> köprü PR'ı bunu okuyana kadar dosyada durmasının zararı yok, ama **deploy
 > doğrulamasında kanıt sayılmaz**.
 
 ## 6. İmaj — build, etiket, geçiş
 
-Disk 8 GB gp3 ve %85 doluydu (v136'da `docker rmi libedge-v134` ile açıldı). Build
-öncesi **çalışan imajın dışındakiler** temizlenir; çalışan imaj (`libedge-v136`)
-prune'dan korunur ve **rollback odur**.
+**Bu sunucuda Compose yok.** Container'lar düz `docker run` ile başlatıldı ve runtime env
+host'taki `config/web-runtime.env` dosyasında duruyor. Yani "imajı değiştirmek" burada
+`docker run` argümanlarının **birebir** tekrarı demektir; bayraklardan biri eksikse web
+sessizce yanlış ağa ya da yanlış env ile kalkar. Bu yüzden §6.1 **önce ölçer**, sonra
+yeniden yaratır.
+
+Disk durumu (v136 döneminde disk %85 doluydu; bu sunucuda **ölçülmemiştir**):
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker image ls --format '{{.Repository}}:{{.Tag}}' && df -h / | tail -1
+df -h / | tail -1 && sudo docker image ls --format '{{.Repository}}:{{.Tag}}'
+```
+
+**Beklenen:** boş alan **en az 3 GB** ve listede `libedge-oracle-v136:96cc270-arm64`.
+Disk doluysa **DUR**; aşağıdaki temizlik adımı yalnız **ölçümden sonra** çalıştırılır.
+
+```bash
+cd /home/ubuntu/libedge-oracle-v136 && git rev-parse --short HEAD
 ```
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker image prune -a -f && df -h / | tail -1
+cd /home/ubuntu/libedge-oracle-v136/spike/app && sudo docker build --build-arg BUILD_SHA=$(git rev-parse --short HEAD) --build-arg APP_VERSION=137 --build-arg BUILD_DATE=$(date -I) -t libedge-v137 .
 ```
 
-> `prune -a` **çalışmayan etiketli** imajları da siler. Rollback için `libedge-v136`
-> **çalışan** imaj olduğu için korunur. Farklı bir imajı elde tutmak istiyorsan
-> `sudo docker tag <imaj> libedge-keep` ile sabitle ve bu adımı **atla**.
+> **Mimari.** Canlı imajın etiketi `-arm64` ile bitiyor; bu sunucunun mimarisi
+> `uname -m` ile **doğrulanır** ve build ona göre yapılır. `uname -m` `aarch64` dönerse
+> `docker build` yerel olarak doğru imajı üretir; **çapraz build'e (`--platform`) bu
+> runbook'ta yer yok** — çıktı farklı mimaride olursa container açılmaz.
 
 ```bash
-cd /home/ubuntu/akademik-platform && git rev-parse --short HEAD
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker inspect libedge-v137 --format '{{json .Config.Labels}} {{.Architecture}}'
 ```
+
+**Beklenen:** `revision` gerçek SHA, `version` `137`, ve `Architecture` canlı imajla
+**aynı** (`uname -m` ile uyumlu). `unknown` ise `--build-arg` unutulmuş → **DUR**.
+Mimari uyuşmuyorsa **DUR** — imaj bu sunucuda çalışmaz.
+
+### 6.1 Geçiş — mevcut container'ın parametrelerini ölç, sonra yeniden yarat
+
+**Bu bölüm tahmin içermez.** Web container'ının `docker run` argümanları bu runbook
+yazılırken görülmedi; o yüzden önce mevcut container'ın kendi tanımı **yazdırılır**,
+geçiş o çıktıya bakılarak yapılır. Aşağıdaki üç komut **salt okunur**.
+
+Ağ, port, restart policy ve volume'ler:
 
 ```bash
-cd /home/ubuntu/akademik-platform/spike/app && sudo docker build --build-arg BUILD_SHA=$(git rev-parse --short HEAD) --build-arg APP_VERSION=137 --build-arg BUILD_DATE=$(date -I) -t libedge-v137 .
+sudo docker inspect libedge-oracle-v136-web --format 'network={{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}ports={{json .HostConfig.PortBindings}} restart={{json .HostConfig.RestartPolicy}} binds={{json .HostConfig.Binds}} mounts={{range .Mounts}}{{.Type}}:{{.Name}}{{.Source}}->{{.Destination}} {{end}}'
 ```
+
+Env **dosyası** ve tek tek env (yalnız anahtar adları; değer yok):
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker inspect libedge-v137 --format '{{json .Config.Labels}}'
+sudo docker inspect libedge-oracle-v136-web --format '{{range .Config.Env}}{{println (index (split . "=") 0)}}{{end}}' | sort
 ```
 
-**Beklenen:** `revision` gerçek SHA, `version` `137`. `unknown` ise `--build-arg` unutulmuş → **DUR**.
+Yeniden yaratmayı **birebir** kurmak için tam komut satırı:
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo sed -i "s/^BUILD_SHA=.*/BUILD_SHA=$(git rev-parse --short HEAD)/" .env.r2 && sudo sed -i "s/^APP_VERSION=.*/APP_VERSION=137/" .env.r2 && sudo sed -i "s/^LIBEDGE_IMAGE=.*/LIBEDGE_IMAGE=libedge-v137/" .env.r2 && grep -E '^(APP_VERSION|BUILD_SHA|LIBEDGE_IMAGE)=' .env.r2
+sudo docker inspect libedge-oracle-v136-web --format '{{json .Config.Cmd}} {{json .Config.Entrypoint}} {{json .Config.WorkingDir}}'
 ```
 
-**Beklenen:** `APP_VERSION=137`, `BUILD_SHA=<sha>`, `LIBEDGE_IMAGE=libedge-v137`.
+**Karar kuralı:** Yeniden yaratma komutu bu üç çıktıdaki değerleri **aynen** taşır;
+`--network`, `--restart`, port eşlemesi (`127.0.0.1:3001:3001`), volume/bind'ler ve env
+dosyası (`--env-file /home/ubuntu/libedge-oracle-v136/config/web-runtime.env`) değişmeden
+gelir. Tek değişen imaj adıdır (`libedge-oracle-v136:96cc270-arm64` → `libedge-v137:137`).
+Çıktı ile yazacağın komut arasında **tek bir fark** bile varsa **DUR** ve §9'a yaz —
+imaj adı dışında hiçbir bayrak değişmemelidir.
+
+Geçişin kendisi (sıra ve geri alma):
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker compose -f docker-compose.prod.yml -f docker-compose.libedge.yml --env-file .env.production --env-file .env.r2 config | grep image:
+sudo docker ps -a --filter name=libedge-oracle-v136-web --format '{{.Names}} {{.Image}} {{.Status}}'
 ```
 
-**Beklenen:** `image: libedge-v137`. Başka bir şey yazıyorsa **DUR** (v131 kesintisinin nedeni tam buydu).
+**Beklenen:** tek satır, çalışıyor. Aynı ada sahip **eski container silinmez** — önce
+`sudo docker rename libedge-oracle-v136-web libedge-oracle-v136-web-prev-$(date +%Y%m%d-%H%M)`
+ile **saklanır** (§8'in hızlı dönüşü odur: imaj geri almak değil, **eski container'ı geri
+almak**). Silme (`docker rm`) yalnız §7 doğrulamaları geçtikten **sonra** ve §8 kaydı
+alındıktan sonra yapılır.
 
-```bash
-cd /home/ubuntu/akademik-platform && sudo docker compose -f docker-compose.prod.yml -f docker-compose.libedge.yml --env-file .env.production --env-file .env.r2 up -d --no-deps web
-```
+> **`libedge-oracle-v136-db` container'ına ve `libedge-oracle-v136-pgdata` volume'üne bu
+> bölümde dokunulmaz.** Geçiş yalnız **web** container'ı içindir. Yeni web container'ı aynı
+> ağa (`libedge-oracle-v136`) bağlanır, yoksa `db` adını çözemez.
 
-### 6.1 `OPDS_TENANT_ID` / `OPDS_API_KEY` (bu sürümde tanımlanmıyor)
+### 6.2 `OPDS_TENANT_ID` / `OPDS_API_KEY` (bu sürümde tanımlanmıyor)
 
 Kodu okudum, davranış tahmin değil (`server.mjs:1232` `opdsTokenAuth`):
 
@@ -756,20 +908,32 @@ Her satır **ölçülmüş çıktıyla** kapanır; boş/tahmini satır `docs/dep
 
 ### 7.1 Container ve sürüm
 
+Tünel hedefi **önce doğrudan** ölçülür: iki `curl` aynı gövdeyi vermeli. Cloudflare
+katmanı ayrı bir arıza kaynağıdır ve tünel bu runbook'ta onarılmaz (§4.0).
+
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker ps --format '{{.Names}}\t{{.Image}}\t{{.Status}}'
+cd /home/ubuntu/libedge-oracle-v136 && curl -s http://127.0.0.1:3001/api/config && echo && curl -s https://elibrary.libedge.com/api/config
 ```
 
-**Beklenen:** `web-1` → **`libedge-v137`** `(healthy)`, `db-1` → `(healthy)`.
+**Beklenen:** iki çağrı da `"version":"137"` döner. `127.0.0.1:3001` doğru ama dış URL
+yanlışsa arıza **tüneldedir** → **DUR**, tünel ayrı ele alınır. `127.0.0.1:3001`
+yanıt vermiyorsa arıza **web container'ındadır**.
 
 ```bash
-cd /home/ubuntu/akademik-platform && curl -s https://elibrary.libedge.com/api/config && echo && curl -s https://elibrary.libedge.com/api/health
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker ps --format '{{.Names}}\t{{.Image}}\t{{.Status}}'
+```
+
+**Beklenen:** `libedge-oracle-v137-web` (ya da §6.1'de seçilen ad) → **`libedge-v137`**
+`(healthy)`, `libedge-oracle-v136-db` → `(healthy)`, `libedge-oracle-live-tunnel` → `Up`.
+
+```bash
+cd /home/ubuntu/libedge-oracle-v136 && curl -s https://elibrary.libedge.com/api/config && echo && curl -s https://elibrary.libedge.com/api/health
 ```
 
 **Beklenen:** `"version":"137"`, `"buildSha"` = `git rev-parse --short HEAD`'in ilk 7'si, `"buildDate"` = bugün, `"environment":"production"`; health → `"ok":true`, `"mode":"db"`, `tenantId` = `5799f2a5-…` (**değişmemeli**).
 
 ```bash
-cd /home/ubuntu/akademik-platform && curl -s https://elibrary.libedge.com/ | grep -o '/app.js?v=[^"]*'
+cd /home/ubuntu/libedge-oracle-v136 && curl -s https://elibrary.libedge.com/ | grep -o '/app.js?v=[^"]*'
 ```
 
 **Beklenen:** `/app.js?v=<sha>` — `?v=0-dev` **değil**.
@@ -777,7 +941,7 @@ cd /home/ubuntu/akademik-platform && curl -s https://elibrary.libedge.com/ | gre
 ### 7.2 R2
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-web-1 sh -c 'cd /app && node scripts/check-r2.mjs'
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-web sh -c 'cd /app && node scripts/check-r2.mjs'
 ```
 
 **Beklenen:** `R2 PASS: put/read/range/delete; temporary object removed.` Başka bir şey (yığın izi, `missing R2_ENDPOINT`) → **DUR**.
@@ -803,7 +967,7 @@ politika satırı gizler, hata fırlatmaz.
 Önce kaç global eser var:
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select count(*) from works where tenant_id is null"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "select count(*) from works where tenant_id is null"
 ```
 
 **Beklenen:** `0` — 022 tek eser taşımadı. **`0` ise aşağıdaki iki test anlamsızdır**
@@ -811,13 +975,13 @@ cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-
 yaz. `> 0` ise devam:
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; update works set title = title where tenant_id is null"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "set role akademik_app; update works set title = title where tenant_id is null"
 ```
 
 **Beklenen:** `UPDATE 0`. `UPDATE 1+` → **DUR** (başlık aynı yazıldığı için veri bozulmaz, ama 022 tutmuyor demektir).
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set role akademik_app; delete from works where tenant_id is null"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "set role akademik_app; delete from works where tenant_id is null"
 ```
 
 **Beklenen:** `DELETE 0`.
@@ -830,7 +994,7 @@ cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-
 ### 7.5 `akademik_catalog` (yalnız §5 yapıldıysa)
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select rolname, rolcanlogin, rolsuper, rolbypassrls from pg_roles where rolname = 'akademik_catalog'"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "select rolname, rolcanlogin, rolsuper, rolbypassrls from pg_roles where rolname = 'akademik_catalog'"
 ```
 
 **Beklenen:** `akademik_catalog|t|f|f`.
@@ -847,7 +1011,7 @@ değilse `[sso] LIBEDGE_SSO_PUBLIC_KEYS not set, reader SSO disabled` yazar ve g
 hiç görünmez.
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker logs --tail 200 akademik-platform-prod-web-1 2>&1 | grep -E '^\[sso\]' | tail -5
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker logs --tail 200 libedge-oracle-v136-web 2>&1 | grep -E '^\[sso\]' | tail -5
 ```
 
 | Görülen | Anlamı | Karar |
@@ -867,7 +1031,7 @@ SSO açıksa (Altan, tarayıcıda):
 Ardından (owner ile, salt okuma):
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "set row_security = off; select (select count(*) from libedge_sessions) as sessions, (select count(*) from sso_auth_events) as events"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "set row_security = off; select (select count(*) from libedge_sessions) as sessions, (select count(*) from sso_auth_events) as events"
 ```
 
 **Beklenen:** ikisi de **`> 0`** (en az bir başarılı giriş ve onun audit satırı). `0|0` ise
@@ -876,7 +1040,7 @@ SSO yolu hiç çalışmamış demektir — §4.6e geçmiş olsa bile **DUR**: ya
 **girişler reddediliyor** demektir; aşağıdaki `reason` sütununa bak.
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec akademik-platform-prod-db-1 psql -U akademik -d akademik -Atc "select outcome, coalesce(reason, '-') as reason, count(*) from sso_auth_events group by 1, 2 order by 1, 2"
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db psql -U akademik -d akademik -Atc "select outcome, coalesce(reason, '-') as reason, count(*) from sso_auth_events group by 1, 2 order by 1, 2"
 ```
 
 **Beklenen:** en az bir `login|-|1`. `reject` satırları **tek başına sorun değildir** —
@@ -893,7 +1057,7 @@ sözleşme 7.5'teki kodlarla karşılaştırılır.
 > `42883` uyarısı loglanır ve geçilir). 027 yine de bu deploy'da uygulanıyor çünkü flag'i
 > açmak migration gerektirmemeli.
 
-> **Geri dönüş notu:** 027 uygulandıysa imaj geri alınsa bile (`libedge-v136`) bu iki tablo
+> **Geri dönüş notu:** 027 uygulandıysa imaj geri alınsa bile (`libedge-oracle-v136:96cc270-arm64`) bu iki tablo
 > **kalır**. v136 imajında `libedge_sessions` okuyan kod **yoktur** (okuyucu SSO #50 ile
 > geldi) ve `libedge_sessions`'a yazan tek yol SSO callback'idir; yani v136 bu tabloları hiç
 > görmez. §8'deki imaj geri alma 027'yi geri almayı **gerektirmez**; 027'nin tek geri dönüşü
@@ -903,10 +1067,31 @@ sözleşme 7.5'teki kodlarla karşılaştırılır.
 
 ## 8. Rollback
 
+### 8.0 En hızlı dönüş — eski web container'ı geri al (imaj rebuild yok)
+
+§6.1'de eski container `libedge-oracle-v136-web-prev-<ts>` adıyla **saklandı**; yani
+dönüş bir imaj build'i değil, iki `docker` komutudur. Container **silinmemişse**:
+
+```bash
+sudo docker stop libedge-oracle-v137-web && sudo docker rename libedge-oracle-v137-web libedge-oracle-v137-web-bad && sudo docker rename libedge-oracle-v136-web-prev-<ts> libedge-oracle-v136-web && sudo docker start libedge-oracle-v136-web
+```
+
+`<ts>` yerine §9'a yazılan gerçek zaman damgası gelir. **Beklenen:** `docker ps`'te
+`libedge-oracle-v136-web` çalışıyor ve §7.1'in `/api/config` çağrısı `"version":"136"`
+döndürüyor. Bu yol container'ı **yeni env dosyasıyla** başlatmaz — eski container kendi
+`docker run` anındaki env'i taşır, yani §5.3'ün eklediği satır ona geçmez.
+
+> Eski container silinmişse (`docker rm`), yukarıdaki yol yoktur: §6.1'deki ölçülmüş
+> bayraklarla `docker run … libedge-oracle-v136:96cc270-arm64` komutu kurulur. Bu yüzden
+> §6.1'in `docker inspect` çıktısı **§9'a yazılmadan** eski container **silinmez**.
+
+### 8.0a Sonra ne geri alınır
+
 | Katman | Geri dönüş |
 | --- | --- |
-| **İmaj** | `.env.r2`: `LIBEDGE_IMAGE=libedge-v136`, `APP_VERSION=136`, `BUILD_SHA=96cc270` → compose `config \| grep image:` → `up -d --no-deps web` |
-| **Env** | `.env.r2.bak-v137` ve `.env.r2.bak-v136`. **`LIBEDGE_BRIDGE_MEASURE_RESET` prod'da tanımlanmaz** (aşağıya bak) |
+| **Web container** (en hızlı) | §6.1'de saklanan eski container'a dön: yeni container'ı durdur, eskisini eski adına geri adlandır (§8.0) |
+| **İmaj** | Geri dönüş imajı **`libedge-oracle-v136:96cc270-arm64`** (rebuild yok, `docker run` ile aynı bayraklar + bu imaj) |
+| **Env** | `config/web-runtime.env.bak-pre-v137`. **`LIBEDGE_BRIDGE_MEASURE_RESET` prod'da tanımlanmaz** (aşağıya bak) |
 | **Migration 021/022** | **Geri alınmaz** (aşağıya bak) |
 | **Migration 025** | **Geri alınmaz**: `create or replace function` + grant. v136 kodu bu iki fonksiyonu hiç çağırmaz; durmaları zarar vermez |
 | **Migration 026** | **Down migration'ı yok.** Tek yol §3'teki `pg_dump` (aşağıya bak) |
@@ -958,14 +1143,14 @@ tamamen yedekten**, ya hiç.
 Prosedür:
 
 ```bash
-cd /home/ubuntu/akademik-platform && ls -l ~/backup-pre-v137-*.dump
+cd /home/ubuntu/libedge-oracle-v136 && ls -l ~/backup-pre-v137-*.dump
 ```
 
 **Tek dosya, MB mertebesinde.** §3'te alınmış olan dosyanın adını §9'a yaz.
 Sonra (onay alındıktan sonra, tek satır):
 
 ```bash
-cd /home/ubuntu/akademik-platform && sudo docker exec -i akademik-platform-prod-db-1 pg_restore -U akademik -d akademik --clean --if-exists --no-owner -v < ~/backup-pre-v137-<TARİH>.dump
+cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec -i libedge-oracle-v136-db pg_restore -U akademik -d akademik --clean --if-exists --no-owner -v < ~/backup-pre-v137-<TARİH>.dump
 ```
 
 > **Yedekten dönüş 026'yı *ve* §4.3'te uygulanan 021/022/024/025'i birlikte geri alır** —
@@ -990,8 +1175,8 @@ kullanılır (`db/026-release-flag.test.mjs`).
   22P02 verir ve **her tenant-scoped istek kırılır**.
 - Varsayılanı çevirmek ayrı bir iş: `docs/TODO.md` §3. Sıra **önce 026 prod'da ve
   doğrulanmış olmalı**, sonra varsayılan çevrilir, sonra bu env dalı koddan çıkarılır.
-- `.env.r2` içine bu satırı **elle de ekleme** — ölçüm kolu prod'a `git pull` ile değil,
-  ortam değişkeniyle sızar; tek koruma bu nottur.
+- `config/web-runtime.env` içine bu satırı **elle de ekleme** — ölçüm kolu prod'a `git pull`
+  ile değil, ortam değişkeniyle sızar; tek koruma bu nottur.
 
 ## 9. Deploy kaydı
 
@@ -1002,6 +1187,13 @@ kullanılır (`db/026-release-flag.test.mjs`).
 - `R2 PASS` satırı
 - `docker ps` satırları
 - §4.0'ın `docker inspect … .Mounts` satırı (veri hangi volume/bind'de) ve `docker network ls` satırı
+- §4.0a'nın **altı** satırı: `docker ps` (üç container + imaj adı), `network ls`,
+  `.Mounts` (volume adı), port eşlemesi, `POSTGRES_DB`/`POSTGRES_USER`, ve
+  `POSTGRES_PASSWORD` anahtar sayımı (`1`)
+- §6.1'in `docker inspect` çıktıları (network/ports/restart/mounts, env **anahtar** listesi,
+  cmd/entrypoint) — §8.0'ın dönüşü bunlara dayanır
+- Saklanan eski container'ın adı (`libedge-oracle-v136-web-prev-<ts>`) ve silindiği/zamanı
+- `uname -m` ve `docker inspect libedge-v137 … .Architecture` (mimari eşleşmesi)
 - `--status` çıktısı (§4.1 ve §4.4)
 - §4.2'nin `would apply:` satırı (**altı** dosya) ve §4.2b'nin `cannot run` listesi (**yalnız 013–017**)
 - §4.3'ün `6 migration(s) applied` satırı ve dosya başına `ms`
@@ -1014,8 +1206,10 @@ kullanılır (`db/026-release-flag.test.mjs`).
 - §7.4'ün `UPDATE 0` / `DELETE 0` satırları (ya da "global eser yok" notu)
 - §7.1'in `/api/config` sürümü; `LIBEDGE_BRIDGE_MEASURE_RESET`'in **tanımlı olmadığının** teyidi
 
-- Rollback imajı (`libedge-v136` + `96cc270`) ve `bak` dosyası adları
+- Rollback imajı (`libedge-oracle-v136:96cc270-arm64`) ve `config/web-runtime.env.bak-pre-v137` yedek adı
 - **§3 yedeğinin tam yolu ve zaman damgası** — 026/027'nin tek geri dönüş yolu bu (§8.1)
+- **Ortam notu:** bu deploy Oracle sunucusunda (`92.5.157.233`) koştu; EC2 tarihseldir
+  (`docs/deployments/2026-10-30-oracle-cutover.md`)
 
 ## 10. Kalan riskler (kabul edildi)
 
@@ -1026,7 +1220,7 @@ kullanılır (`db/026-release-flag.test.mjs`).
 | 025 `tenants`'a iki `SECURITY DEFINER` fonksiyonla yazma yetkisi veriyor | Dar tutuldu: yalnız `institution` kind, `id`/`slug` mevcut kayıtta dondurulmuş, EXECUTE yalnız `akademik_app`. Yine de `tenants_self`'in yanında ikinci bir yol; review'de ayrıca bakılmalı (§11.5) |
 | 027 SSO oturumunu `libedge_sessions`'a bağlıyor, FORCE RLS ile | Politika `nullif` biçiminde (026'nın deseni); bağsız okuma 0 satır. İzole ölçüm: 2 satır varken bağsız `0`, bağlı `1`, komşu tenant `0` (§4.6e). Prod'da kanıt §7.6 |
 | 027 audit tablosu kişisel veri tutuyor (IP) | 90 gün saklama `app.sso_auth_events_purge()` ile; app rolü `DELETE` **edemez** (§4.6e `f`). Token/e-posta/claim **yazılmıyor** |
-| `akademik_catalog` parolası `.env.r2`'de plaintext | Docker env dosyası; `R2_SECRET_ACCESS_KEY` de orada. Bileşen düzeyinde ayrı sır yönetimi yok — bilinen sınır |
+| `akademik_catalog` parolası `config/web-runtime.env` içinde plaintext | Docker env dosyası; `R2_SECRET_ACCESS_KEY` de orada. Bileşen düzeyinde ayrı sır yönetimi yok — bilinen sınır |
 | §7.4 bugün anlamsız olabilir | Global eser 0 ise UPDATE edilecek satır yok; 023'ten sonra ölçülür |
 | `/opds` hâlâ env tenant'ı | TODO §3 — bu sürümde **çözülmüyor** |
 | 024 uygulanırsa ama imaj eski kalırsa | Zararsız: v136 kodu fonksiyonu hiç çağırmıyor. Ters yön (imaj yeni, 024 yok) de **kırılmıyor**: `3F000`/`42883` yakalanıp env tenant'a düşülür, her tick'te bir uyarı loglanır. Yine de §4 imajdan önce koşuyor |
@@ -1076,11 +1270,16 @@ Bu runbook **çalıştırılmadı**. Komutlar çalıştırılmadan önce **Claud
 9. **§8.1** — 026/027 için **tek** dönüş yolu yedek. `pg_restore --clean --if-exists`
    komutunun prod'da neyi düşüreceği (021–027 dahil) ve yedeğin **imaj geri alma ile
    birlikte** yapılması gerektiği okunmalı.
-10. **§4.0** — EC2'deki mevcut host/container/volume/network adları. `pgdata` volume'u
-    (`akademik-platform-prod_pgdata`) ve `akademik-platform-prod_default` ağı bu
-    runbook'un her komutunda geçtiği için, sunucudaki gerçek adlarla **birebir**
-    eşleştiği `docker ps` / `docker inspect` çıktısıyla doğrulanmalı. `down` ve
-    `volume prune` yasaklarının sebebi de burada.
+10. **§4.0 + §4.0a + §6.1** — canlı ortam **Oracle**'dır (`92.5.157.233`); EC2
+    (`i-0b0c3d5032408d855`) 2026-10-30'da **durduruldu** ve artık canlı değil. Container
+    (`libedge-oracle-v136-web` / `-db` / `libedge-oracle-live-tunnel`), volume
+    (`libedge-oracle-v136-pgdata`) ve ağ (`libedge-oracle-v136`) adları **her komutta**
+    geçtiği için sunucudaki gerçek adlarla birebir eşleştiği `docker ps` / `docker inspect`
+    çıktısıyla **doğrulanmalı**. Bu sunucuda **Compose yok**; `docker compose …` komutları
+    çalışmaz. §6.1'in `docker inspect` çıktısı alınmadan web container'ı **yeniden
+    yaratılmaz** ve eski container **silinmez** (§8.0 dönüşü ona dayanır).
+11. **§4.0b** — ölçüm tabloyla uyuşmazsa **DUR** kuralı. Yanlış volume adıyla alınan yedek,
+    026/027'nin tek dönüş yolunu geçersiz kılar.
 
 > **Köprü v137'de bağlıdır** (eski bir not "bağlanmadı" diyordu; güncel kod aksini
 > söylüyor). `server.mjs` içinde `BRIDGE_PREFIX = '/api/libedge/v1'` tanımlı, `isBridgePath()`
@@ -1092,8 +1291,36 @@ Bu runbook **çalıştırılmadı**. Komutlar çalıştırılmadan önce **Claud
 > tanımlanırsa köprü `42883` benzeri bir hatayla düşer; bu yüzden sıra: önce 025, sonra
 > token.
 
-> **Not (2026-10-31):** Bu tarihte runbook **027** için genişletildi ve **EC2'deki
-> mevcut Docker yapısına** bağlandı:
+> **Not (2026-10-31b):** Oracle ortamına göre yeniden yazıldı. AWS EC2 kurulumu
+> 2026-10-30'da devre dışı bırakıldı (`docs/deployments/2026-10-30-oracle-cutover.md`);
+> **canlı ortam Oracle'dır**. Değişenler:
+>
+> - **Yol ve isimler:** `/home/ubuntu/akademik-platform` → **`/home/ubuntu/libedge-oracle-v136`**;
+>   `akademik-platform-prod-db-1` / `-web-1` → **`libedge-oracle-v136-db` / `-web`**; ağ
+>   `akademik-platform-prod_default` → **`libedge-oracle-v136`**; volume
+>   `akademik-platform-prod_pgdata` → **`libedge-oracle-v136-pgdata`**; imaj `libedge-v136` →
+>   **`libedge-oracle-v136:96cc270-arm64`**; tünel `libedge-elibrary` (host servisi) →
+>   **`libedge-oracle-live-tunnel`** (container), giriş **Cloudflare Tunnel → `127.0.0.1:3001`**.
+> - **Compose kaldırıldı.** Sunucu `docker run` ile çalışıyor (Compose yok). §6 eski
+>   `docker compose config` / `up -d --no-deps web` adımlarının yerine **§6.1: mevcut
+>   container'ın `docker inspect` çıktısını ölç → aynı bayraklarla yeniden yarat** akışını
+>   kullanır. Yeniden yaratma komutu **tahmin edilmedi**: bayraklar ölçümden gelir.
+> - **Env dosyaları:** repo kökündeki `.env.production` / `.env.r2` → host'taki
+>   **`/home/ubuntu/libedge-oracle-v136/config/web-runtime.env`**. `--env-file` ile okunur.
+> - **Yeni §4.0a / §4.0b:** ortamı **salt okunur** komutlarla doğrulama (container, ağ,
+>   volume, port eşlemesi, `POSTGRES_DB`/`POSTGRES_USER`, `POSTGRES_PASSWORD` anahtar sayımı)
+>   ve ölçüm uyuşmazsa **DUR** tablosu.
+> - **Yeni §8.0:** imaj rebuild'i yerine **eski container'ı geri alma** (en hızlı dönüş),
+>   çünkü §6.1'de eski container `libedge-oracle-v136-web-prev-<ts>` adıyla saklanıyor.
+> - **Bilinmeyen bırakılanlar:** web container'ının tam `docker run` argümanları,
+>   `config/web-runtime.env` içeriği, disk doluluğu ve sunucu mimarisi (`uname -m`) bu
+>   runbook yazılırken **ölçülmedi** (sunucuya bağlanılmadı). Bunlar tahminle doldurulmadı;
+>   §4.0a ve §6.1 operatöre ölçtürüyor.
+> - **Prod'a dokunulmadı:** Oracle'a **bağlanılmadı**, deploy/migration koşulmadı, SSH
+>   kullanılmadı. Eski AWS kayıtları (v103–v136, `docs/DEPLOY.md`) **silinmedi**; tarihsel
+>   olarak duruyor.
+>
+> **Not (2026-10-31):** Bu tarihte runbook **027** için genişletildi:
 >
 > - **Runner düzeltmesi (#54).** `db/migrate.mjs` 025 ve 027'yi "manages its own transaction
 >   (end;)" diyerek **reddediyordu**; ret hata değil **atlama** üretiyordu. Ölçüm: düzeltmesiz
