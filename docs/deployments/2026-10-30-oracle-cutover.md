@@ -30,7 +30,8 @@ EC2 durduruldu; trafik artık Oracle sunucusundan Cloudflare Tunnel ile servis e
 | DB volume | `libedge-oracle-v136-pgdata` |
 | Canlı imaj | `libedge-oracle-v136:96cc270-arm64` |
 | Tunnel container | `libedge-oracle-live-tunnel` |
-| Giriş | Cloudflare Tunnel → `127.0.0.1:3001` |
+| Tünel host portu | **canlı ortamda ölçülür** — kayıtta sabit yazılmaz (runbook §4.0a `$TUNNEL_PORT`) |
+| Canlı domain | **bu kayıtta sabitlenmedi** — runbook §4.0a `$LIVE_DOMAIN` ile ölçülür |
 | Çalıştırma | `docker run` — **Compose kullanılmıyor** |
 | Runtime env | `/home/ubuntu/libedge-oracle-v136/config/web-runtime.env` |
 
@@ -56,8 +57,8 @@ Bu değerler **ortam devri sırasında doğrulandı**. Her deploy'dan önce yine
 - Veritabanı adı ve sahibi: `akademik` / `akademik`; app rolü `akademik_app`.
 - Migration geçmişi `schema_migrations` ile yönetilir; devir sırasında şema **001–020**
   düzeyinde (v137 runbook'u 021–027'yi bu ortamda uygulamak için yazıldı).
-- Giriş noktası hâlâ Cloudflare Tunnel → `127.0.0.1:3001`; host'ta 80/443 dinleyen bir
-  web sunucusu yok.
+- Giriş noktası hâlâ Cloudflare Tunnel üzerinden; host'ta 80/443 dinleyen bir web sunucusu
+  yok. Tünelin host portu ve canlı domain **bu kayıtta sabitlenmedi**: runbook §4.0a ölçer.
 
 ## 5. Doğrulanmayanlar (bilinçli olarak boş)
 
@@ -67,4 +68,6 @@ Aşağıdakiler bu kayıt yazılırken **ölçülmedi**; tahminle doldurulmadı:
   env-file). Ölçüm komutu: `docs/runbooks/v137-deploy.md` §6.1.
 - `config/web-runtime.env` içeriği (yalnız dosyanın **yolu** biliniyor).
 - Sunucu mimarisi (`uname -m`) ve disk doluluğu.
+- Canlı domain adı ve tünelin host portu (runbook §4.0a'da `$LIVE_DOMAIN` / `$TUNNEL_PORT`).
+- v137'nin build/run imaj etiketi ve release dizini (`$NEW_IMAGE`, §2.1) — deploy anında ölçülür.
 - EC2 instance'ının kalıcı olarak mı yoksa geçici olarak mı durdurulduğu (silinmedi).

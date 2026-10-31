@@ -31,33 +31,38 @@
 | Yeni tablo | **027**: `libedge_sessions` (FORCE RLS, tek tenant politikası) ve `sso_auth_events` (audit, app rolü için append-only). İkisi de boş başlar |
 | Kırılma riski | `collection_items` üzerine RLS **enable + force**. Prod'da `collection_items` satırlarının `tenant_id`'si doğru olmalı, yoksa koleksiyon grant'leri görünmez olur (bkz. §3.1 ön kontrol). **026'nın down migration'ı yok**: geri dönüş yalnız §3'teki `pg_dump` ile (§8) |
 | **Runner düzeltmesi** | v137 öncesi `db/migrate.mjs`, **025 ve 027'yi "manages its own transaction (end;)" diyerek reddediyordu** — dosyaların kendi transaction'ı yok; reddedilen şey bir plpgsql gövdesinin `end;`'i. Ret sessizdir: `--dry-run` ve gerçek koşu ikisi de dosyayı **atlar**, hata vermez. Düzeltme PR #54; aynı PR'ın review'ında maskelemenin **ikinci** hatası da bulundu (iki gövde arasındaki gerçek `commit;` yetkilendiriliyordu) ve kapatıldı. §4.0 ve §4.2b |
+| **Deploy düzeni** | Kod **canlı dizine girmez**: canlı dizin (`/home/ubuntu/libedge-oracle-v136`) Git checkout değildir, runner da orayı okumaz. v137 **release dizinine** klonlanır (§2.1), imaj etiketi bir kez üretilir ve build/run **aynı** etiketi kullanır (§6.0). Katalog parolası runtime env'e değil **korumalı admin env** dosyasına yazılır (§5.3) |
 
 
 
 ## 1. Kurallar (bu runbook boyunca)
 
 1. **Her komut tek satır.** Çok satırlı yapıştırma SSH'ta kilitleniyor; `\` ile bölünmüş komut yazılmaz.
-2. `sudo` ortamı temizler: değişken **komutun başına** yazılmaz; değerler `config/web-runtime.env` dosyasında durur ve gerektiğinde `set -a` ile yüklenir (§4.0).
+2. `sudo` ortamı temizler: değişken **komutun başına** yazılmaz. Runtime değerleri `config/web-runtime.env` dosyasında durur ve container'a `--env-file` ile geçer. **Env dosyası kabukta `source` edilmez** (`set -a; . …` dahil); admin parolası (`config/admin.env`) yalnız kullanıldığı komuta, tek seferlik verilir (§5.3).
 3. Parola **komut satırına yazılmaz** → `ps`/`history`'ye düşer. Yalnız `read -rs` ile okunur ve doğrudan `psql`'in stdin'ine verilir.
 4. **db container'ı durdurulmaz/yeniden yaratılmaz** (web sonra `EAI_AGAIN db` alır). Bu sunucuda Compose **yok**; `docker compose …` komutu burada **hiç çalışmaz**.
 5. Sıra: **yedek → migration → imaj**. Migration'lar imajdan **önce** (yeni imaj fail-closed: grant yoksa katalog boş görünür).
 6. Bir adım beklenen çıktıyı vermezse **DUR**; sonraki adıma geçilmez.
-7. **İsimler §4.0'a göre ölçülür.** Sunucu `92.5.157.233`, dizin `/home/ubuntu/libedge-oracle-v136`; başka bir host/dizin/isim varsayılmaz.
+7. **İsimler §4.0'a göre ölçülür.** Sunucu `92.5.157.233`, canlı dizin `/home/ubuntu/libedge-oracle-v136`; başka bir host/dizin/isim varsayılmaz.
+8. **Canlı dizin Git checkout değildir**: orada `git fetch/checkout/pull` çalıştırılmaz. Kaynak kod §2.1'deki **release dizininden** gelir.
+9. **Port ve domain sabit yazılmaz**: §4.0a'da `docker inspect` / `curl` ile ölçülür; sonraki adımlar yalnız o değişkenleri kullanır.
 
 ## 2. Ön kontrol — değişiklik yapmadan
 
 Doğru sunucuda ve doğru dizinde olduğunu **ölç** (çıktı §9'a yazılır):
 
 ```bash
-cd /home/ubuntu/libedge-oracle-v136 && pwd && hostname && git log -1 --oneline
+cd /home/ubuntu/libedge-oracle-v136 && pwd && hostname && ls -d .git 2>/dev/null || echo 'Git checkout DEGIL (beklenen)'
 ```
 
-**Beklenen:** `/home/ubuntu/libedge-oracle-v136` ve bir commit satırı. `cd` hata verirse
-**DUR** — o dizin bu sunucuda yok demektir, §4.0.
+**Beklenen:** `/home/ubuntu/libedge-oracle-v136` ve `Git checkout DEGIL`. Bu dizin **canlı
+dizindir**: içinde sürüm izi (Git geçmişi) tutulmaz, dosyaları elle değiştirilmez; yalnız
+çalışan stack'in ve `config/web-runtime.env`'in yanında durur. v137 kodu **ayrı bir release
+dizinine** çıkarılır (§3.2). `cd` hata verirse **DUR** — o dizin bu sunucuda yok demektir, §4.0.
 
-```bash
-cd /home/ubuntu/libedge-oracle-v136 && git fetch origin && git checkout main && git pull --ff-only origin main && git log -1 --oneline
-```
+**Bu dizinde `git` komutu çalıştırılmaz** (`git fetch` / `git checkout` / `git pull` yok):
+canlı dizin bir çalışma kopyası değildir, orada `checkout` yapmak çalışan servisin dosyalarını
+habersiz değiştirir.
 
 ```bash
 cd /home/ubuntu/libedge-oracle-v136 && sudo docker ps --format '{{.Names}}\t{{.Image}}\t{{.Status}}'
@@ -67,14 +72,43 @@ Beklenen: `libedge-oracle-v136-web` → `libedge-oracle-v136:96cc270-arm64` `(he
 `libedge-oracle-v136-db` → `(healthy)`, `libedge-oracle-live-tunnel` → `Up`. Ayrıntılı
 doğrulama §4.0a'da; buradaki satır yalnız "stack ayakta" kontrolüdür.
 
+Canlı domain **ölçülür** (kodda sabit yok; §4.0a `$LIVE_DOMAIN`'i tanımlar, tekrar tanımla):
+
 ```bash
-curl -s https://elibrary.libedge.com/api/config && echo && curl -s https://elibrary.libedge.com/api/health
+read -rp 'canlı domain (https:// olmadan): ' LIVE_DOMAIN && export LIVE_DOMAIN && curl -s "https://$LIVE_DOMAIN/api/config" && echo && curl -s "https://$LIVE_DOMAIN/api/health"
 ```
 
 Beklenen: `/api/config` → `"version":"136"` / `"buildSha":"96cc270"`; `/api/health` → `{"ok":true,"mode":"db",...}`.
 Bu iki `curl` **Cloudflare Tunnel** üzerinden gelir (host'ta 80/443 dinleyen nginx ya da
 benzeri bir servis yok) — boş ya da `502` dönerse sorun sırası şudur: önce §7.1'in
-`127.0.0.1:3001` çağrısı, sonra tünel. **Tünel bu runbook'ta onarılmaz.**
+`127.0.0.1:$TUNNEL_PORT` çağrısı, sonra tünel. **Tünel bu runbook'ta onarılmaz.**
+
+### 2.1 Release dizini — kaynak kod canlı dizine girmez
+
+v137 kodu **canlı dizinin içine** çıkarılmaz; ayrı bir release dizinine alınır. Böylece
+çalışan stack'in dosyaları ile yeni sürümün dosyaları birbirine karışmaz ve geri dönüş
+"dosyaları eski hâline getir" değil, "eski container'ı aç" olur (§8.0).
+
+```bash
+export RELEASE_DIR=/home/ubuntu/libedge-oracle-v137 && test ! -e "$RELEASE_DIR" && echo "release dizini bos: $RELEASE_DIR" || echo "UYARI: $RELEASE_DIR zaten var — once incele (DUR)"
+```
+
+**Beklenen:** `release dizini bos`. Dizin zaten varsa **DUR**: içinde ne olduğu (yarım
+kalmış bir önceki deneme mi?) bilinmeden üzerine yazılmaz.
+
+Doldurma — kaynak **Git'ten**, hedef **release dizini**; canlı dizine hiçbir şey yazılmaz:
+
+```bash
+mkdir -p "$RELEASE_DIR" && cd "$RELEASE_DIR" && git clone --depth 1 --branch main https://github.com/picohook/akademik-platform.git src && cd src && git rev-parse --short HEAD && test -f spike/app/Dockerfile && echo 'Dockerfile var'
+```
+
+**Beklenen:** bir SHA ve `Dockerfile var`. SHA'yı §9'a yaz — imaj etiketi bu SHA'yı taşır (§6.0),
+yani hangi kodun canlıya çıktığı **kanıtlanabilir** olur. Klon başarısızsa **DUR** (canlı
+dizinden kopyalama yapılmaz: orada sürüm izi yok).
+
+> **Release dizini her deploy'da yeniden kullanılmaz.** Aynı dizine ikinci kez deploy
+> edilecekse önce yeni bir `src` klonu alınır (`src-<sha>`), eskisi §7 geçtikten sonra silinir.
+> Çalışan imajın kaynağı **asla** yerinde değiştirilmez.
 
 ## 3. Yedek — her şeyden önce
 
@@ -137,25 +171,36 @@ adını **çözemez** (`EAI_AGAIN`) ve hiçbir şey yapmadan düşer — tanı k
 > parity / public health **PASS**, tarayıcı kontrolü başarılı, EC2 instance
 > `i-0b0c3d5032408d855` **durduruldu**. EC2'ye ait kayıtlar (`docs/DEPLOY.md`,
 > `docs/deployments/2026-10-28-v136.md` §5 ve öncesi) **tarihsel**dir; bu runbook onları
-> kaynak olarak **kullanmaz**. Komutlarda `elibrary.libedge.com`, `54.87.37.7`,
-> `akademik-platform-prod*`, `libedge-v136`, `libedge-oracle-v136`,
-> `libedge-oracle-v136-pgdata` geçiyorsa **o satır eski** — bu ortama göre düzeltilmeden
-> çalıştırılmaz.
+> kaynak olarak **kullanmaz**.
+
+> **Eski isim uyarısı (yalnız AWS/Compose kalıntıları içindir).** Aşağıdaki adlar **bu
+> ortamın** adlarıdır ve uyarı kapsamı **dışındadır**: ağ `libedge-oracle-v136`, volume
+> `libedge-oracle-v136-pgdata`, container'lar `libedge-oracle-v136-db` /
+> `libedge-oracle-v136-web` / `libedge-oracle-live-tunnel`. Bunlar Oracle'ın **gerçek**
+> adlarıdır. Yalnız şu biçimler eski AWS kurulumuna aittir ve **düzeltilmeden
+> çalıştırılmaz**: `akademik-platform-prod*` container adları, `akademik-platform-prod_default`
+> ağı, `akademik-platform-prod_pgdata` volume'ü, `libedge-v136` (etiketsiz eski imaj adı),
+> `docker compose -f docker-compose.*.yml`. Canlı domain ve tünel portu **tahmin
+> edilmez**: §4.0a'da `curl` ve `docker inspect` ile ölçülür.
 
 | Ne | Beklenen | Nasıl doğrulanır |
 | --- | --- | --- |
 | Host | **`92.5.157.233`** | §2 |
-| Dizin | **`/home/ubuntu/libedge-oracle-v136`** | §2 (`pwd`) |
+| Canlı dizin (Git checkout **değil**) | **`/home/ubuntu/libedge-oracle-v136`** | §2 (`pwd`) |
+| Release dizini (v137'nin kopyası) | **`/home/ubuntu/libedge-oracle-v137`** | §3.2 |
+| Admin env (korumalı, `0600 root`) | **`/home/ubuntu/libedge-oracle-v137/config/admin.env`** | §4.0a + §5.3 |
 | Web container | **`libedge-oracle-v136-web`** | §4.0a |
 | DB container | **`libedge-oracle-v136-db`** | §4.0a |
 | DB adı / sahibi | **`akademik` / `akademik`** | §4.0a (`POSTGRES_DB`, `POSTGRES_USER`) |
 | Ağ | **`libedge-oracle-v136`** | §4.0a |
 | **Verinin durduğu volume** | **`libedge-oracle-v136-pgdata`** | §4.0a (`docker inspect … .Mounts`) |
-| Canlı imaj | **`libedge-oracle-v136:96cc270-arm64`** | §4.0a + §6 |
+| Canlı imaj (v136, geri dönüş için) | **`libedge-oracle-v136:96cc270-arm64`** | §4.0a + §6 |
+| Yeni imaj (v137) | **`libedge-oracle-v137:137`** — build ve run **aynı** etiket | §6.0 |
 | Tünel container'ı | **`libedge-oracle-live-tunnel`** | §4.0a |
-| Giriş | **Cloudflare Tunnel → `127.0.0.1:3001`** | §4.0a (port eşlemesi) |
+| Tünel host portu | **§4.0a'da ölçülür** (kodda sabit yok) | §4.0a `$TUNNEL_PORT` |
+| Canlı domain | **§4.0a'da ölçülür** (kodda sabit yok) | §4.0a `$LIVE_DOMAIN` |
 | Çalıştırma | **`docker run`; Compose kullanılmıyor** | §6 |
-| Runtime env (host'ta) | **`/home/ubuntu/libedge-oracle-v136/config/web-runtime.env`** | §4.0a |
+| Runtime env (host'ta, container'a `--env-file`) | **`/home/ubuntu/libedge-oracle-v136/config/web-runtime.env`** | §4.0a |
 | Runner'ın gördüğü repo | `-v "$PWD":/repo:ro` (salt okunur) | §4.1'deki `docker run` |
 | Runner'ın `node_modules`'ı | `-v /repo/spike/app/node_modules` (isimsiz volume) | Aynı komut; imaja yazmaz |
 | `app` rolü (RLS) | `akademik_app` | `schema.sql` |
@@ -168,9 +213,9 @@ komutlarla operatöre ölçtürür; ölçüm tabloyla uyuşmazsa §4.0b'deki kur
 Hiçbir adım bu değerleri varsayarak yazılmaz.
 
 > **Tünel bir bağımlılık değil, korunacak bir şeydir.** `libedge-oracle-live-tunnel`
-> host `127.0.0.1:3001`'e tünelliyor; bu runbook'un hiçbir adımı tüneli durdurmaz,
-> yeniden başlatmaz veya yeniden yapılandırmaz. Tünel yalnız §7'nin `curl`
-> doğrulamasında dolaylı görünür. Tünel bozulursa bu ayrı bir arızadır.
+> host portuna tünelliyor ve o port **§4.0a'da ölçülür** (`$TUNNEL_PORT`); bu runbook'un
+> hiçbir adımı tüneli durdurmaz, yeniden başlatmaz veya yeniden yapılandırmaz. Tünel yalnız
+> §7'nin `curl` doğrulamasında dolaylı görünür. Tünel bozulursa bu ayrı bir arızadır.
 
 #### 4.0a Ortamı salt okunur doğrula — yapacak bir şey yok, yalnız ölçüm
 
@@ -208,15 +253,41 @@ sudo docker inspect libedge-oracle-v136-db --format '{{range .Mounts}}{{.Type}} 
 `pg_restore` container içinden çalışır — ama yedek dosyasının host'taki yolu §9'a aynen
 yazılır. **Volume adı başkaysa DUR**: §8.1'in tek dönüş yolu bu volume'deki veridir.
 
-Portlar ve tünel:
+Portlar ve tünel — **container portunu ve host portunu ölç, tahmin etme**:
 
 ```bash
-sudo docker inspect libedge-oracle-v136-web libedge-oracle-live-tunnel --format '{{.Name}} {{json .NetworkSettings.Ports}}'
+sudo docker inspect libedge-oracle-v136-web --format '{{range $p, $b := .NetworkSettings.Ports}}{{$p}} -> {{range $b}}{{.HostIp}}:{{.HostPort}} {{end}}{{"\n"}}{{end}}'
 ```
 
-**Beklenen:** web `3001/tcp` → `127.0.0.1:3001` (yalnız localhost, `0.0.0.0` değil).
-Tünel host ağı kullanıyorsa port bölümü boş görünür — bu **hata değil**; tünelin gerçekten
-`127.0.0.1:3001`'e gittiği §7.1'in `curl`'üyle doğrulanır. Tünelle **oynanmaz**.
+Çıktıyı değişkenlere al (sonraki bölümler bunları kullanır):
+
+```bash
+read -r CONTAINER_PORT HOST_ADDR HOST_PORT < <(sudo docker inspect libedge-oracle-v136-web --format '{{range $p, $b := .NetworkSettings.Ports}}{{$p}}{{" "}}{{range $b}}{{.HostIp}} {{.HostPort}}{{end}}{{end}}' | tr -d '/tcp') && export CONTAINER_PORT HOST_ADDR HOST_PORT && echo "container=$CONTAINER_PORT host=$HOST_ADDR:$HOST_PORT"
+```
+
+**Beklenen:** tek bir eşleme, `HostIp` **`127.0.0.1`** (yalnız localhost, `0.0.0.0` değil).
+`CONTAINER_PORT` **ölçülen değerdir** ve §6.1'deki `docker run -p` bu değerle kurulur; runbook
+hiçbir yerde port numarası **sabitlemez**. Birden fazla eşleme ya da `0.0.0.0` görürsen **DUR**
+(§4.0b): hangi portun canlı olduğunu tünelin hedefi belirler.
+
+Tünelin hedefi (host ağı kullanıyorsa `Ports` boş görünür — bu **hata değil**):
+
+```bash
+export TUNNEL_PORT="$HOST_PORT" && echo "tunnel hedefi: 127.0.0.1:$TUNNEL_PORT" && sudo docker inspect libedge-oracle-live-tunnel --format '{{.HostConfig.NetworkMode}} {{json .NetworkSettings.Ports}} {{range .Config.Cmd}}{{println .}}{{end}}' | head -20
+```
+
+**Beklenen:** tünelin yapılandırması `127.0.0.1:$TUNNEL_PORT`'a işaret ediyor. Farklı bir port
+görünüyorsa `$TUNNEL_PORT`'u **ölçülen** değere göre düzelt (§7'de kullanılır); tünelle **oynanmaz**.
+
+Canlı domain — **sabit yazılmaz, ölçülür**:
+
+```bash
+read -rp 'canlı domain (ör. host adı, https:// olmadan): ' LIVE_DOMAIN && export LIVE_DOMAIN && curl -s -o /dev/null -w "http=%{http_code} host=$LIVE_DOMAIN\n" "https://$LIVE_DOMAIN/api/config" && curl -s "https://$LIVE_DOMAIN/api/config"
+```
+
+**Beklenen:** `http=200` ve gövdede canlı sürüm bilgisi. `$LIVE_DOMAIN` §7'nin tüm dış çağrılarında
+kullanılır; kod içinde domain sabiti **yoktur**. Boş/yanlış domain girilirse §7'deki dış kontrol
+anlamsızlaşır → **DUR**.
 
 DB adı ve sahibi:
 
@@ -252,6 +323,8 @@ uname -m && sudo docker inspect libedge-oracle-v136:96cc270-arm64 --format '{{.A
 | Volume adı farklı | **DUR** — yedek yolu ve §8.1 belirsizleşir; önce hangi volume'ün canlı olduğu kanıtlanır |
 | `uname -m` ile imaj mimarisi uyuşmuyor | **DUR** — §6'daki build bu sunucuda çalışmayacak bir imaj üretir |
 | Container/yol adı farklı | **DUR** — runbook'un 50+ komutu yanlış hedefe gider; adlar **ölçümle** güncellenir, tahminle değil |
+| Web için birden fazla port eşlemesi ya da `0.0.0.0` | **DUR** — hangi portun canlı olduğu belirsiz; kanıtlanmadan §6.1 çalıştırılmaz |
+| `$LIVE_DOMAIN` boş / `http != 200` | **DUR** — dış kontrol (§7) yapılamaz; domain ölçülür, uydurulmaz |
 
 > **Yapılmayacaklar:** **db** container'ını `docker stop`/`docker rm` ile kaldırmak
 > (web sonra `EAI_AGAIN db` alır), `docker volume prune` / `docker system prune --volumes`
@@ -283,14 +356,22 @@ cd /home/ubuntu/libedge-oracle-v136 && set -a && . <(sudo cat config/web-runtime
 **Beklenen:** `POSTGRES_PASSWORD set: yes`. Boşsa **DUR**.
 
 > **`/var/www/akademik-platform` ve `/home/ubuntu/akademik-platform` bu sunucuda yok.**
-> İkisi de **eski EC2 kurulumunun** yollarıdır. Buradaki dizin
-> `/home/ubuntu/libedge-oracle-v136`'tür; `pwd` ile doğrulanmadan hiçbir komut çalıştırılmaz.
+> İkisi de **eski EC2 kurulumunun** yollarıdır. Canlı dizin `/home/ubuntu/libedge-oracle-v136`,
+> kaynak kodun okunduğu yer ise **release dizinidir** (`$RELEASE_DIR/src`, §2.1).
+>
+> **Aşağıdaki runner komutları `$RELEASE_DIR/src` içinde koşar** — canlı dizinde değil.
+> `$RELEASE_DIR` §2.1'de tanımlandı; yeni bir kabukta yeniden tanımlanmalı. Tanımsızken komut
+> `cd ""` ile **yanlış yerde** koşar, bu yüzden önce şunu çalıştır:
+>
+> ```bash
+> test -d "$RELEASE_DIR/src/db" && echo "release OK: $RELEASE_DIR/src" || echo 'DUR: $RELEASE_DIR tanimsiz ya da src yok'
+> ```
 
 
 ### 4.1 Durum — önce
 
 ```bash
-cd /home/ubuntu/libedge-oracle-v136 && sudo docker run --rm --network libedge-oracle-v136 -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status'
+cd "$RELEASE_DIR/src" && sudo docker run --rm --network libedge-oracle-v136 -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status'
 ```
 
 **Beklenen:** `021`, `022`, `024`, `025`, `026` ve `027` **pending**; geri kalanı `applied`.
@@ -314,7 +395,7 @@ altı satırın **hiçbirinde** `cannot run: …` notu **görünmemeli** — gö
 > satır" ayırt edilebilsin diye `grep -c` kullanılır, düz `grep` değil:
 
 ```bash
-cd /home/ubuntu/libedge-oracle-v136 && sudo docker run --rm --network libedge-oracle-v136 -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status' | grep -cE '^[[:space:]]+pending[[:space:]]+02[124567]-'
+cd "$RELEASE_DIR/src" && sudo docker run --rm --network libedge-oracle-v136 -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status' | grep -cE '^[[:space:]]+pending[[:space:]]+02[124567]-'
 ```
 
 **Beklenen:** `6`. `5` dönerse eksik dosya `027`'dir (en yeni migration; checkout onu
@@ -329,7 +410,7 @@ bu, §4.2b'deki runner sorununun ta kendisidir. `0` ya da `1` dönerse **DUR**, 
 ### 4.2 Kuru çalıştırma
 
 ```bash
-cd /home/ubuntu/libedge-oracle-v136 && sudo docker run --rm --network libedge-oracle-v136 -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --dry-run' | grep -E 'would apply'
+cd "$RELEASE_DIR/src" && sudo docker run --rm --network libedge-oracle-v136 -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --dry-run' | grep -E 'would apply'
 ```
 
 **Beklenen:** tek satır, ve içinde **altısı da** olmalı:
@@ -373,7 +454,7 @@ Bu adım, §4.1'in `6` sayısını **tek başına** yeterli görmeyen kişi içi
 **yalnız** `013`–`017`'de olmalı. Tam liste, dosya adlarıyla:
 
 ```bash
-cd /home/ubuntu/libedge-oracle-v136 && sudo docker run --rm --network libedge-oracle-v136 -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status' | grep 'cannot run' | awk '{print $2}'
+cd "$RELEASE_DIR/src" && sudo docker run --rm --network libedge-oracle-v136 -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status' | grep 'cannot run' | awk '{print $2}'
 ```
 
 | Çıktı | Anlamı | Karar |
@@ -405,7 +486,7 @@ ve 027 yoksa SSO oturumu yazılamaz, tanımlı değilse SSO kapalı kalır. §7.
 ### 4.3 Uygula
 
 ```bash
-cd /home/ubuntu/libedge-oracle-v136 && sudo docker run --rm --network libedge-oracle-v136 -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs'
+cd "$RELEASE_DIR/src" && sudo docker run --rm --network libedge-oracle-v136 -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs'
 ```
 
 **Beklenen:** altı `applying … <ms> ms` satırı, sonra `6 migration(s) applied`. `applying`
@@ -418,7 +499,7 @@ satırlarında bir `error` görürsen **DUR** — o dosyanın hiçbir kısmı ya
 ### 4.4 Durum — sonra
 
 ```bash
-cd /home/ubuntu/libedge-oracle-v136 && sudo docker run --rm --network libedge-oracle-v136 -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status'
+cd "$RELEASE_DIR/src" && sudo docker run --rm --network libedge-oracle-v136 -v "$PWD":/repo:ro -v /repo/spike/app/node_modules -w /repo/spike/app -e DATABASE_ADMIN_URL="postgres://akademik:${POSTGRES_PASSWORD}@db:5432/akademik" node:22-alpine sh -c 'npm ci --omit=dev --no-audit --no-fund >/dev/null && node /repo/db/migrate.mjs --status'
 ```
 
 **Beklenen:** `pending = 0`. Değilse **DUR**.
@@ -577,7 +658,7 @@ tanımlanıp ilk yazma çağrısı gelene kadar **hiçbir** tenant için yazılm
 uygulanması onları doldurmaz.
 
 > **Dokunma:** bu adımda `libedge_upsert_tenant()`'ı prod tenant'ının gerçek
-> `(kind, ref)`'iyle çağırma. Update yolu slug'ı **dondurur** ama `name`/`status`
+> `(kind, ref)`'iyle çağırma. Update yolu slug'ı **döndürür** ama `name`/`status`
 > yazar; yanlış bir `status` prod tenant'ını etkiler. Create yolu ise gerçek bir satır
 > yaratır. 025'in yazma yolu süitte ölçülür (62 kontrol, `postgres:16-alpine`), prod'da
 > yalnız **grant ve okuma** ölçülür.
@@ -782,28 +863,54 @@ cd /home/ubuntu/libedge-oracle-v136 && sudo docker exec libedge-oracle-v136-db p
 
 **Beklenen:** 6 satır (`works`, `editions`, `assets`, `asset_pages`, `collections`, `collection_items`, `tenants` → SELECT; tablo sayısı neyse o). Sayı **0 ise DUR**: 022 uygulanmamış demektir.
 
-### 5.3 `CATALOG_DATABASE_URL`'i runtime env dosyasına yaz — dosyaya, komut satırına değil
+### 5.3 `DATABASE_CATALOG_URL`'i **korumalı admin env dosyasına** yaz — runtime env'e değil
 
-Yedek önce, sonra anahtar ekle. Dosya yolu §4.0'da ölçülen yoldur ve **`sudo` gerekir**
-(`config/` root'a aitse; `ls -l config/` ile bakılır):
+Katalog parolası **runtime env dosyasına** yazılmaz. `config/web-runtime.env` web
+container'ının okuduğu, sık yedeklenen ve sık kopyalanan dosyadır; admin parolası oraya
+konursa parola o dosyayı gören her yere yayılır. Bunun yerine **ayrı, korumalı** bir dosya
+kullanılır: `$RELEASE_DIR/config/admin.env` (`0600`, sahibi `root`), yani yalnız `root`
+okuyabilir ve dosya web container'ının `--env-file`'ı **değildir**.
 
 ```bash
-cd /home/ubuntu/libedge-oracle-v136 && sudo cp config/web-runtime.env config/web-runtime.env.bak-pre-v137 && sudo sh -c 'echo "CATALOG_DATABASE_URL=postgres://akademik_catalog:REPLACE_ME@db:5432/akademik" >> config/web-runtime.env' && sudo grep -c '^CATALOG_DATABASE_URL=' config/web-runtime.env
+export ADMIN_ENV=/home/ubuntu/libedge-oracle-v137/config/admin.env && sudo install -d -m 0700 -o root -g root "$(dirname "$ADMIN_ENV")" && sudo install -m 0600 -o root -g root /dev/null "$ADMIN_ENV" && sudo ls -l "$ADMIN_ENV"
 ```
 
-**Beklenen:** `1`. Sonra `sudo nano config/web-runtime.env` (ya da `sudoedit`) ile
-`REPLACE_ME` **elle** değiştirilir — yani parola komut geçmişine hiç girmez.
+**Beklenen:** `-rw------- 1 root root`. `0644` ya da başka sahip görürsen **DUR**.
 
-> **Bu satır container'a ancak `--env-file` ile geçer.** Bu sunucuda web container'ı
-> `docker run … --env-file …` ile kalkıyor; dosyayı değiştirmek **çalışan** container'ı
-> değiştirmez. §6.1'deki yeniden yaratma, dosyayı aynı bayrakla yeniden okur. Yani bu
-> adım **yeniden yaratmadan önce** yapılır, sonra §6.1'deki `docker inspect` çıktısında
-> `CATALOG_DATABASE_URL`'in **env anahtar listesinde** göründüğü doğrulanır.
+```bash
+sudo sh -c 'printf "%s\n" "DATABASE_CATALOG_URL=postgres://akademik_catalog:REPLACE_ME@db:5432/akademik" > /home/ubuntu/libedge-oracle-v137/config/admin.env' && sudo grep -c '^DATABASE_CATALOG_URL=' /home/ubuntu/libedge-oracle-v137/config/admin.env
+```
 
-> **Not (bilinçli sınır):** `CATALOG_DATABASE_URL` **v136/v137 kodunda okunmuyor**;
-> yalnız köprü PR'ı için yer tutucu. Kullanılmayan bir env değişkeni sessiz kalmamalı:
-> köprü PR'ı bunu okuyana kadar dosyada durmasının zararı yok, ama **deploy
-> doğrulamasında kanıt sayılmaz**.
+**Beklenen:** `1`. Sonra `sudoedit /home/ubuntu/libedge-oracle-v137/config/admin.env` ile
+`REPLACE_ME` **elle** değiştirilir — parola komut geçmişine, `ps` çıktısına ve log'a girmez.
+
+> **Dosya kabukta `source` edilmez.** `source admin.env` / `. admin.env` / `set -a; . …`
+> yazımı **yasaktır**: parola kabuk ortamına, `env`/`ps e` çıktısına ve hata ayıklamada
+> kabuk izine düşer, ayrıca kabuktan çıkan her alt sürece miras kalır. Değer **yalnız
+> kullanıldığı komuta**, tek seferlik ve `sudo` içinde verilir — kabuğa hiç girmez:
+>
+> ```bash
+> sudo sh -c 'set -e; IFS= read -r line < <(grep "^DATABASE_CATALOG_URL=" /home/ubuntu/libedge-oracle-v137/config/admin.env); exec docker exec -i -e DATABASE_CATALOG_URL="${line#DATABASE_CATALOG_URL=}" libedge-oracle-v137-db psql -U akademik_catalog -d akademik -Atc "select current_user"'
+> ```
+>
+> Yani desen **`sh -c` içinde oku → aynı süreçte `-e` ile ver → `exec`**; değişken ne
+> çağıran kabuğa ne de başka bir sürece geçer. `DATABASE_CATALOG_URL`'i `export` edip
+> sonra kullanan bir yazım da bu kurala aykırıdır.
+Parolayı **grep'lemek/`echo` etmek yasaktır**; §5.3'ün doğrulaması yalnız **anahtar sayısı**
+ve dosya izinleridir (§4.0a'daki `POSTGRES_PASSWORD` kuralının aynısı):
+
+```bash
+sudo grep -c '^DATABASE_CATALOG_URL=' "$ADMIN_ENV" && sudo grep -oP '^[A-Z_]+(?==)' "$ADMIN_ENV" | sort -u
+```
+
+**Beklenen:** `1` ve yalnız anahtar adları (`DATABASE_CATALOG_URL`), değer **basılmaz**.
+
+> **Container'a `--env-file` ile geçmez — bu bilinçlidir.** `admin.env` web container'ının
+> env dosyası değildir; çalışan container'a da §6.1'de eklenmez. Katalog yazma yolunu
+> kullanacak süreç (köprü v1 / migration) bu değeri **yalnız kendi `docker run`/`exec`
+> çağrısında**, tek seferlik olarak alır. Yani bu adım **çalışan web container'ını
+> değiştirmez** ve §6.1'in env listesinde `DATABASE_CATALOG_URL` **görünmemelidir**; görünürse
+> parola yanlış dosyaya sızmış demektir → **DUR**.
 
 ## 6. İmaj — build, etiket, geçiş
 
@@ -812,6 +919,22 @@ host'taki `config/web-runtime.env` dosyasında duruyor. Yani "imajı değiştirm
 `docker run` argümanlarının **birebir** tekrarı demektir; bayraklardan biri eksikse web
 sessizce yanlış ağa ya da yanlış env ile kalkar. Bu yüzden §6.1 **önce ölçer**, sonra
 yeniden yaratır.
+
+### 6.0 Etiketi bir kez belirle — build ve run **aynı** etiketi kullanır
+
+Etiket iki yerde geçer (`docker build -t`, `docker run <imaj>`) ve ikisi **birebir aynı
+olmak zorundadır**. İki ayrı isim (`libedge-v137` ile `libedge-v137:137` gibi) kullanmak
+§7'deki doğrulamayı ve §8.0'daki geri dönüşü belirsizleştirir: hangi imajın koştuğu
+container adından değil, **etiketten** okunur.
+
+```bash
+export RELEASE_SHA=$(cd /home/ubuntu/libedge-oracle-v137/src && git rev-parse --short HEAD) && export NEW_IMAGE="libedge-oracle-v137:137-${RELEASE_SHA}-$(uname -m | sed 's/x86_64/amd64/; s/aarch64/arm64/')" && echo "NEW_IMAGE=$NEW_IMAGE"
+```
+
+**Beklenen:** `libedge-oracle-v137:137-<sha>-<arch>` — sürüm, **release sha'sı** (§2.1'de
+kanıtlanan commit) ve sunucunun **ölçülen** mimarisi tek etikette. Aşağıdaki tüm `docker build`
+ve `docker run` komutları **`$NEW_IMAGE`** kullanır; runbook hiçbir yerde ikinci bir v137 adı
+yazmaz. Deploy kaydına (§9) bu tam etiket yazılır.
 
 Disk durumu (v136 döneminde disk %85 doluydu; bu sunucuda **ölçülmemiştir**):
 
@@ -823,72 +946,124 @@ df -h / | tail -1 && sudo docker image ls --format '{{.Repository}}:{{.Tag}}'
 Disk doluysa **DUR**; aşağıdaki temizlik adımı yalnız **ölçümden sonra** çalıştırılır.
 
 ```bash
-cd /home/ubuntu/libedge-oracle-v136 && git rev-parse --short HEAD
+cd /home/ubuntu/libedge-oracle-v137/src && sudo docker build --build-arg BUILD_SHA="$RELEASE_SHA" --build-arg APP_VERSION=137 --build-arg BUILD_DATE=$(date -I) -t "$NEW_IMAGE" spike/app
 ```
+
+> **Mimari.** Etiketin son parçası `uname -m`'den gelir (§4.0a ile aynı kaynak). `uname -m`
+> `aarch64` dönerse `docker build` yerel olarak doğru imajı üretir; **çapraz build'e
+> (`--platform`) bu runbook'ta yer yok** — çıktı farklı mimaride olursa container açılmaz.
 
 ```bash
-cd /home/ubuntu/libedge-oracle-v136/spike/app && sudo docker build --build-arg BUILD_SHA=$(git rev-parse --short HEAD) --build-arg APP_VERSION=137 --build-arg BUILD_DATE=$(date -I) -t libedge-v137 .
+sudo docker inspect "$NEW_IMAGE" --format '{{json .Config.Labels}} {{.Architecture}}' && sudo docker inspect libedge-oracle-v136:96cc270-arm64 --format '{{.Architecture}}'
 ```
 
-> **Mimari.** Canlı imajın etiketi `-arm64` ile bitiyor; bu sunucunun mimarisi
-> `uname -m` ile **doğrulanır** ve build ona göre yapılır. `uname -m` `aarch64` dönerse
-> `docker build` yerel olarak doğru imajı üretir; **çapraz build'e (`--platform`) bu
-> runbook'ta yer yok** — çıktı farklı mimaride olursa container açılmaz.
+**Beklenen:** `revision` = `$RELEASE_SHA`, `version` `137`, ve `Architecture` canlı imajla
+**aynı**. `unknown` ise `--build-arg` unutulmuş → **DUR**. Mimari uyuşmuyorsa **DUR**.
 
-```bash
-cd /home/ubuntu/libedge-oracle-v136 && sudo docker inspect libedge-v137 --format '{{json .Config.Labels}} {{.Architecture}}'
-```
 
-**Beklenen:** `revision` gerçek SHA, `version` `137`, ve `Architecture` canlı imajla
-**aynı** (`uname -m` ile uyumlu). `unknown` ise `--build-arg` unutulmuş → **DUR**.
-Mimari uyuşmuyorsa **DUR** — imaj bu sunucuda çalışmaz.
-
-### 6.1 Geçiş — mevcut container'ın parametrelerini ölç, sonra yeniden yarat
+### 6.1 Geçiş — ölç, durdur, sakla, başlat, sağlık, değilse geri aç
 
 **Bu bölüm tahmin içermez.** Web container'ının `docker run` argümanları bu runbook
-yazılırken görülmedi; o yüzden önce mevcut container'ın kendi tanımı **yazdırılır**,
-geçiş o çıktıya bakılarak yapılır. Aşağıdaki üç komut **salt okunur**.
+yazılırken görülmedi; o yüzden önce mevcut container'ın kendi tanımı **yazdırılır**, geçiş
+o çıktıya bakılarak yapılır.
+
+**Kapsam ve değişmezler:**
+
+| Nesne | Geçişte |
+| --- | --- |
+| `libedge-oracle-v136-web` | **Durdurulur, saklanır; yerine `$NEW_IMAGE` ile yenisi açılır** |
+| `libedge-oracle-v136-db` | **Dokunulmaz** — durdurulmaz, yeniden başlatılmaz, yeniden yaratılmaz |
+| `libedge-oracle-v136-pgdata` | **Dokunulmaz** — volume'e yazılmaz, kopyalanmaz, silinmez |
+| `libedge-oracle-live-tunnel` | **Dokunulmaz** — aynı host portuna bakmaya devam eder |
+| `config/web-runtime.env` | **Dokunulmaz** — yeni container aynı `--env-file` ile kalkar |
+
+#### 6.1.1 Ölç — salt okunur
 
 Ağ, port, restart policy ve volume'ler:
 
 ```bash
-sudo docker inspect libedge-oracle-v136-web --format 'network={{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}ports={{json .HostConfig.PortBindings}} restart={{json .HostConfig.RestartPolicy}} binds={{json .HostConfig.Binds}} mounts={{range .Mounts}}{{.Type}}:{{.Name}}{{.Source}}->{{.Destination}} {{end}}'
+sudo docker inspect libedge-oracle-v136-web --format 'network={{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}restart={{json .HostConfig.RestartPolicy}} binds={{json .HostConfig.Binds}} mounts={{range .Mounts}}{{.Type}}:{{.Name}}{{.Source}}->{{.Destination}} {{end}}ports={{json .HostConfig.PortBindings}}'
 ```
 
-Env **dosyası** ve tek tek env (yalnız anahtar adları; değer yok):
+Env **anahtar adları** (değer yok) ve `--env-file`:
 
 ```bash
-sudo docker inspect libedge-oracle-v136-web --format '{{range .Config.Env}}{{println (index (split . "=") 0)}}{{end}}' | sort
+sudo docker inspect libedge-oracle-v136-web --format '{{range .Config.Env}}{{println (index (split . "=") 0)}}{{end}}' | sort && echo 'envfile: /home/ubuntu/libedge-oracle-v136/config/web-runtime.env'
 ```
 
-Yeniden yaratmayı **birebir** kurmak için tam komut satırı:
+Entrypoint, cmd, workdir, user ve sağlık kontrolü:
 
 ```bash
-sudo docker inspect libedge-oracle-v136-web --format '{{json .Config.Cmd}} {{json .Config.Entrypoint}} {{json .Config.WorkingDir}}'
+sudo docker inspect libedge-oracle-v136-web --format 'entrypoint={{json .Config.Entrypoint}} cmd={{json .Config.Cmd}} workdir={{json .Config.WorkingDir}} user={{json .Config.User}} health={{json .Config.Healthcheck}}'
 ```
 
 **Karar kuralı:** Yeniden yaratma komutu bu üç çıktıdaki değerleri **aynen** taşır;
-`--network`, `--restart`, port eşlemesi (`127.0.0.1:3001:3001`), volume/bind'ler ve env
-dosyası (`--env-file /home/ubuntu/libedge-oracle-v136/config/web-runtime.env`) değişmeden
-gelir. Tek değişen imaj adıdır (`libedge-oracle-v136:96cc270-arm64` → `libedge-v137:137`).
-Çıktı ile yazacağın komut arasında **tek bir fark** bile varsa **DUR** ve §9'a yaz —
-imaj adı dışında hiçbir bayrak değişmemelidir.
+`--network`, `--restart`, port eşlemesi (`$HOST_ADDR:$HOST_PORT:$CONTAINER_PORT` —
+**§4.0a'da ölçülen** değerler, sabit değil), `--env-file` ve `--health-*` bayrakları
+değişmeden gelir. Tek değişen **imaj etiketidir** (`libedge-oracle-v136:96cc270-arm64` →
+`$NEW_IMAGE`). Çıktı ile yazacağın komut arasında imaj dışında **tek bir fark** bile varsa
+**DUR** ve §9'a yaz. Env listesinde `DATABASE_CATALOG_URL` görünürse §5.3 ihlal edilmiş
+demektir → **DUR**.
 
-Geçişin kendisi (sıra ve geri alma):
+#### 6.1.2 Durdur → sakla → başlat → sağlık → başarısızsa geri aç
+
+Sıra **sabittir**; adımlar atlanmaz. Eski container **silinmez**, saklanır: §8.0'ın hızlı
+dönüşü imajı geri almak değil, **eski container'ı geri açmaktır**.
+
+**1) Durdur ve sakla.** Yeni container aynı portu bağlayacağı için eski önce durdurulur;
+`rm` **edilmez**, `rename` edilir:
 
 ```bash
-sudo docker ps -a --filter name=libedge-oracle-v136-web --format '{{.Names}} {{.Image}} {{.Status}}'
+export PREV_NAME="libedge-oracle-v136-web-prev-$(date +%Y%m%d-%H%M)" && sudo docker stop libedge-oracle-v136-web && sudo docker rename libedge-oracle-v136-web "$PREV_NAME" && sudo docker ps -a --filter name="$PREV_NAME" --format '{{.Names}} {{.Image}} {{.Status}}' && echo "PREV_NAME=$PREV_NAME"
 ```
 
-**Beklenen:** tek satır, çalışıyor. Aynı ada sahip **eski container silinmez** — önce
-`sudo docker rename libedge-oracle-v136-web libedge-oracle-v136-web-prev-$(date +%Y%m%d-%H%M)`
-ile **saklanır** (§8'in hızlı dönüşü odur: imaj geri almak değil, **eski container'ı geri
-almak**). Silme (`docker rm`) yalnız §7 doğrulamaları geçtikten **sonra** ve §8 kaydı
-alındıktan sonra yapılır.
+**Beklenen:** tek satır, `Exited` ve **eski imaj** (`libedge-oracle-v136:96cc270-arm64`).
+`$PREV_NAME`'i §9'a yaz — geri dönüşün tek anahtarı budur. `restart` politikası
+`unless-stopped`/`always` olsa da **elle durdurulan** container kendiliğinden kalkmaz; yine de
+teyit et:
 
-> **`libedge-oracle-v136-db` container'ına ve `libedge-oracle-v136-pgdata` volume'üne bu
-> bölümde dokunulmaz.** Geçiş yalnız **web** container'ı içindir. Yeni web container'ı aynı
-> ağa (`libedge-oracle-v136`) bağlanır, yoksa `db` adını çözemez.
+```bash
+sudo docker ps --filter name=libedge-oracle-v136-web --format '{{.Names}} {{.Status}}'
+```
+
+**Beklenen:** **boş**. Hâlâ `Up` görünüyorsa **DUR** (port çakışır, restart policy beklenenden farklı).
+
+**2) Yeniyi başlat.** Komut 6.1.1'in çıktısından **birebir** kurulur; `<>` içindeki her değer
+**ölçülen** değerdir (tahmin değil), imaj §6.0'ın `$NEW_IMAGE`'ı:
+
+```bash
+sudo docker run -d --name libedge-oracle-v136-web --network libedge-oracle-v136 --restart <ölçülen> -p "$HOST_ADDR:$HOST_PORT:$CONTAINER_PORT" --env-file /home/ubuntu/libedge-oracle-v136/config/web-runtime.env --health-cmd=<ölçülen> --health-interval=<ölçülen> --health-retries=<ölçülen> "$NEW_IMAGE"
+```
+
+> `--env-file` **canlı dizindeki** `config/web-runtime.env`'tir ve değişmez; `config/admin.env`
+> (§5.3) buraya **eklenmez**. `binds`/`mounts` çıktısı boş değilse o bayraklar da aynen taşınır.
+
+**3) Sağlık kontrolü — yalnız "Up" yetmez.** Docker healthcheck **ve** doğrudan HTTP:
+
+```bash
+sleep 15 && sudo docker ps --filter name=libedge-oracle-v136-web --format '{{.Names}} {{.Image}} {{.Status}}' && curl -s -o /dev/null -w 'local=%{http_code}\n' "http://$HOST_ADDR:$HOST_PORT/api/config" && curl -s "http://$HOST_ADDR:$HOST_PORT/api/config"
+```
+
+**Beklenen (üçü birlikte):** `(healthy)`, `local=200`, gövdede `"version":"137"` ve
+`"buildSha"` = `$RELEASE_SHA`; imaj etiketi `$NEW_IMAGE`. Biri bile tutmuyorsa **adım 4**
+çalıştırılır — "biraz bekleyip tekrar bakmak" **değil**.
+
+**4) Başarısızsa eskiyi geri aç.** Yalnız **başarısız yeni** kaldırılır; saklanan eskiye
+dokunulmaz:
+
+```bash
+sudo docker rm -f libedge-oracle-v136-web && sudo docker rename "$PREV_NAME" libedge-oracle-v136-web && sudo docker start libedge-oracle-v136-web && sleep 10 && sudo docker ps --filter name=libedge-oracle-v136-web --format '{{.Names}} {{.Image}} {{.Status}}' && curl -s -o /dev/null -w 'local=%{http_code}\n' "http://$HOST_ADDR:$HOST_PORT/api/config" && curl -s "http://$HOST_ADDR:$HOST_PORT/api/config"
+```
+
+**Beklenen:** `Up`/`(healthy)`, **eski imaj**, `local=200` ve `"version":"136"` — yani canlı
+ortam geçiş öncesi hâline döndü. Buradan sonra §8.0 uygulanır: kök neden bulunmadan ikinci
+deneme yapılmaz.
+
+> **DB ve tünel bu dört adımın hiçbirinde geçmez.** Geçişte `stop`/`start`/`restart` **yalnız**
+> `libedge-oracle-v136-web` adına uygulanır; `libedge-oracle-v136-db`,
+> `libedge-oracle-live-tunnel` ve volume'e giden hiçbir komut bu bölümde yoktur. Tünel aynı
+> `$HOST_ADDR:$HOST_PORT`'a baktığı için web değişimi tünelde **yapılandırma değişikliği
+> gerektirmez**.
 
 ### 6.2 `OPDS_TENANT_ID` / `OPDS_API_KEY` (bu sürümde tanımlanmıyor)
 
@@ -912,31 +1087,33 @@ Tünel hedefi **önce doğrudan** ölçülür: iki `curl` aynı gövdeyi vermeli
 katmanı ayrı bir arıza kaynağıdır ve tünel bu runbook'ta onarılmaz (§4.0).
 
 ```bash
-cd /home/ubuntu/libedge-oracle-v136 && curl -s http://127.0.0.1:3001/api/config && echo && curl -s https://elibrary.libedge.com/api/config
+curl -s "http://$HOST_ADDR:$HOST_PORT/api/config" && echo && curl -s "https://$LIVE_DOMAIN/api/config"
 ```
 
-**Beklenen:** iki çağrı da `"version":"137"` döner. `127.0.0.1:3001` doğru ama dış URL
-yanlışsa arıza **tüneldedir** → **DUR**, tünel ayrı ele alınır. `127.0.0.1:3001`
-yanıt vermiyorsa arıza **web container'ındadır**.
+**Beklenen:** iki çağrı da yeni sürümü döndürür. HOST_ADDR:HOST_PORT doğru ama dış URL
+yanlışsa arıza **tüneldedir** -> **DUR**, tünel ayrı ele alınır. HOST_ADDR:HOST_PORT
+yanıt vermiyorsa arıza **web container'ındadır**. (Değişkenler 4.0a'da ölçüldü; yeni kabukta
+yeniden tanımlanmalı - port ve domain **sabit yazılmaz**.)
 
 ```bash
-cd /home/ubuntu/libedge-oracle-v136 && sudo docker ps --format '{{.Names}}\t{{.Image}}\t{{.Status}}'
+sudo docker ps --format '{{.Names}}\t{{.Image}}\t{{.Status}}'
 ```
 
-**Beklenen:** `libedge-oracle-v137-web` (ya da §6.1'de seçilen ad) → **`libedge-v137`**
-`(healthy)`, `libedge-oracle-v136-db` → `(healthy)`, `libedge-oracle-live-tunnel` → `Up`.
+**Beklenen:** `libedge-oracle-v136-web` (ad 6.1'de korunur) -> **`$NEW_IMAGE`** `(healthy)`,
+`libedge-oracle-v136-db` -> `(healthy)`, `libedge-oracle-live-tunnel` -> `Up` (aynı container,
+yeniden başlatılmamış: `CreatedAt` değişmemiş olmalı).
 
 ```bash
-cd /home/ubuntu/libedge-oracle-v136 && curl -s https://elibrary.libedge.com/api/config && echo && curl -s https://elibrary.libedge.com/api/health
+curl -s "https://$LIVE_DOMAIN/api/config" && echo && curl -s "https://$LIVE_DOMAIN/api/health"
 ```
 
-**Beklenen:** `"version":"137"`, `"buildSha"` = `git rev-parse --short HEAD`'in ilk 7'si, `"buildDate"` = bugün, `"environment":"production"`; health → `"ok":true`, `"mode":"db"`, `tenantId` = `5799f2a5-…` (**değişmemeli**).
+**Beklenen:** `version` `137`, `buildSha` = `$RELEASE_SHA`, `buildDate` = bugün, `environment` `production`; health -> `ok:true`, `mode` `db`, `tenantId` = `5799f2a5-...` (**değişmemeli**).
 
 ```bash
-cd /home/ubuntu/libedge-oracle-v136 && curl -s https://elibrary.libedge.com/ | grep -o '/app.js?v=[^"]*'
+curl -s "https://$LIVE_DOMAIN/" | grep -o '/app.js?v=[^\"]*'
 ```
 
-**Beklenen:** `/app.js?v=<sha>` — `?v=0-dev` **değil**.
+**Beklenen:** `/app.js?v=<sha>` - `?v=0-dev` **değil**.
 
 ### 7.2 R2
 
@@ -952,7 +1129,7 @@ Tarayıcıda (Altan):
 
 | Adım | Beklenen |
 | --- | --- |
-| `https://elibrary.libedge.com` → giriş | Form açılır, giriş **başarılı** |
+| `https://$LIVE_DOMAIN` → giriş | Form açılır, giriş **başarılı** |
 | Katalog | **13 kitap** görünüyor (v136 ile aynı sayı — 021/022 eser taşımadı) |
 | Bir kitabı aç → **Düzenle** → **Yazar** alanı dolu mu | Dolu; kaydet → sayfa yenilendiğinde **korunmuş** (`updateBook` yolu, #38) |
 | PDF aç / EPUB aç | İkisi de açılıyor |
@@ -1069,21 +1246,25 @@ sözleşme 7.5'teki kodlarla karşılaştırılır.
 
 ### 8.0 En hızlı dönüş — eski web container'ı geri al (imaj rebuild yok)
 
-§6.1'de eski container `libedge-oracle-v136-web-prev-<ts>` adıyla **saklandı**; yani
-dönüş bir imaj build'i değil, iki `docker` komutudur. Container **silinmemişse**:
+§6.1'de eski container `libedge-oracle-v136-web-prev-<ts>` adıyla **saklandı** (§6.1.2 adım 1);
+yani dönüş bir imaj build'i değil, iki `docker` komutudur. Yeni container'ın adı **değişmez**
+(`libedge-oracle-v136-web`); yeni imajla kalkan container bu adı taşır, yani var olmayan bir
+`libedge-oracle-v137-web` adı **yoktur**. Container **silinmemişse**:
 
 ```bash
-sudo docker stop libedge-oracle-v137-web && sudo docker rename libedge-oracle-v137-web libedge-oracle-v137-web-bad && sudo docker rename libedge-oracle-v136-web-prev-<ts> libedge-oracle-v136-web && sudo docker start libedge-oracle-v136-web
+sudo docker stop libedge-oracle-v136-web && sudo docker rename libedge-oracle-v136-web libedge-oracle-v136-web-bad-$(date +%Y%m%d-%H%M) && sudo docker rename "$PREV_NAME" libedge-oracle-v136-web && sudo docker start libedge-oracle-v136-web && sudo docker ps --filter name=libedge-oracle-v136-web --format '{{.Names}} {{.Image}} {{.Status}}'
 ```
 
-`<ts>` yerine §9'a yazılan gerçek zaman damgası gelir. **Beklenen:** `docker ps`'te
-`libedge-oracle-v136-web` çalışıyor ve §7.1'in `/api/config` çağrısı `"version":"136"`
-döndürüyor. Bu yol container'ı **yeni env dosyasıyla** başlatmaz — eski container kendi
-`docker run` anındaki env'i taşır, yani §5.3'ün eklediği satır ona geçmez.
+`$PREV_NAME` yerine §9'a yazılan gerçek ad gelir. **Beklenen:** `docker ps`'te
+`libedge-oracle-v136-web` çalışıyor, imajı **eski imaj** (`libedge-oracle-v136:96cc270-arm64`) ve
+§7.1'in `/api/config` çağrısı `"version":"136"` döndürüyor. Bu yol container'ı **yeni env
+dosyasıyla** başlatmaz — eski container kendi `docker run` anındaki env'i taşır. §5.3'ün
+`config/admin.env` dosyası web container'ına **zaten hiç verilmediği** için burada geri alınacak
+bir env değişikliği de yoktur.
 
-> Eski container silinmişse (`docker rm`), yukarıdaki yol yoktur: §6.1'deki ölçülmüş
+> Eski container silinmişse (`docker rm`), yukarıdaki yol yoktur: §6.1.1'de ölçülmüş
 > bayraklarla `docker run … libedge-oracle-v136:96cc270-arm64` komutu kurulur. Bu yüzden
-> §6.1'in `docker inspect` çıktısı **§9'a yazılmadan** eski container **silinmez**.
+> §6.1.1'in `docker inspect` çıktısı **§9'a yazılmadan** eski container **silinmez**.
 
 ### 8.0a Sonra ne geri alınır
 
@@ -1091,7 +1272,7 @@ döndürüyor. Bu yol container'ı **yeni env dosyasıyla** başlatmaz — eski 
 | --- | --- |
 | **Web container** (en hızlı) | §6.1'de saklanan eski container'a dön: yeni container'ı durdur, eskisini eski adına geri adlandır (§8.0) |
 | **İmaj** | Geri dönüş imajı **`libedge-oracle-v136:96cc270-arm64`** (rebuild yok, `docker run` ile aynı bayraklar + bu imaj) |
-| **Env** | `config/web-runtime.env.bak-pre-v137`. **`LIBEDGE_BRIDGE_MEASURE_RESET` prod'da tanımlanmaz** (aşağıya bak) |
+| **Env** | `config/web-runtime.env` **değiştirilmedi** (yedek gerekmez). Katalog parolası zaten web container'ına verilmedi (§5.3). **`LIBEDGE_BRIDGE_MEASURE_RESET` prod'da tanımlanmaz** (aşağıya bak) |
 | **Migration 021/022** | **Geri alınmaz** (aşağıya bak) |
 | **Migration 025** | **Geri alınmaz**: `create or replace function` + grant. v136 kodu bu iki fonksiyonu hiç çağırmaz; durmaları zarar vermez |
 | **Migration 026** | **Down migration'ı yok.** Tek yol §3'teki `pg_dump` (aşağıya bak) |
@@ -1176,7 +1357,9 @@ kullanılır (`db/026-release-flag.test.mjs`).
 - Varsayılanı çevirmek ayrı bir iş: `docs/TODO.md` §3. Sıra **önce 026 prod'da ve
   doğrulanmış olmalı**, sonra varsayılan çevrilir, sonra bu env dalı koddan çıkarılır.
 - `config/web-runtime.env` içine bu satırı **elle de ekleme** — ölçüm kolu prod'a `git pull`
-  ile değil, ortam değişkeniyle sızar; tek koruma bu nottur.
+  ile değil, ortam değişkeniyle sızar; tek koruma bu nottur. Canlı dizinde `git pull` zaten
+  **yoktur** (§2); dosyayı değiştiren tek yol §6.1'deki `--env-file`'dır ve o dosya bu runbook'ta
+  **değiştirilmez**.
 
 ## 9. Deploy kaydı
 
@@ -1192,8 +1375,12 @@ kullanılır (`db/026-release-flag.test.mjs`).
   `POSTGRES_PASSWORD` anahtar sayımı (`1`)
 - §6.1'in `docker inspect` çıktıları (network/ports/restart/mounts, env **anahtar** listesi,
   cmd/entrypoint) — §8.0'ın dönüşü bunlara dayanır
-- Saklanan eski container'ın adı (`libedge-oracle-v136-web-prev-<ts>`) ve silindiği/zamanı
-- `uname -m` ve `docker inspect libedge-v137 … .Architecture` (mimari eşleşmesi)
+- Saklanan eski container'ın adı (`$PREV_NAME` = `libedge-oracle-v136-web-prev-<ts>`) ve silindiği/zamanı
+- §6.0'ın `$NEW_IMAGE` etiketi ve `$RELEASE_SHA` (§2.1'deki release klonunun SHA'sı)
+- §4.0a'nın **ölçülen üçlüsü**: `$CONTAINER_PORT`, `$HOST_ADDR:$HOST_PORT`, `$TUNNEL_PORT`, `$LIVE_DOMAIN`
+  (bunlar sabit değil; kayda **ölçülen değer** yazılır)
+- §5.3'ün `sudo ls -l config/admin.env` satırı (`-rw------- root root`) ve `DATABASE_CATALOG_URL` **anahtar sayımı** (`1`, değer basılmaz)
+- `uname -m` ve `docker inspect $NEW_IMAGE … .Architecture` (mimari eşleşmesi)
 - `--status` çıktısı (§4.1 ve §4.4)
 - §4.2'nin `would apply:` satırı (**altı** dosya) ve §4.2b'nin `cannot run` listesi (**yalnız 013–017**)
 - §4.3'ün `6 migration(s) applied` satırı ve dosya başına `ms`
@@ -1206,7 +1393,7 @@ kullanılır (`db/026-release-flag.test.mjs`).
 - §7.4'ün `UPDATE 0` / `DELETE 0` satırları (ya da "global eser yok" notu)
 - §7.1'in `/api/config` sürümü; `LIBEDGE_BRIDGE_MEASURE_RESET`'in **tanımlı olmadığının** teyidi
 
-- Rollback imajı (`libedge-oracle-v136:96cc270-arm64`) ve `config/web-runtime.env.bak-pre-v137` yedek adı
+- Rollback imajı (`libedge-oracle-v136:96cc270-arm64`), saklanan eski container adı (`$PREV_NAME`) ve yeni imaj etiketi (`$NEW_IMAGE`)
 - **§3 yedeğinin tam yolu ve zaman damgası** — 026/027'nin tek geri dönüş yolu bu (§8.1)
 - **Ortam notu:** bu deploy Oracle sunucusunda (`92.5.157.233`) koştu; EC2 tarihseldir
   (`docs/deployments/2026-10-30-oracle-cutover.md`)
@@ -1291,33 +1478,35 @@ Bu runbook **çalıştırılmadı**. Komutlar çalıştırılmadan önce **Claud
 > tanımlanırsa köprü `42883` benzeri bir hatayla düşer; bu yüzden sıra: önce 025, sonra
 > token.
 
-> **Not (2026-10-31b):** Oracle ortamına göre yeniden yazıldı. AWS EC2 kurulumu
-> 2026-10-30'da devre dışı bırakıldı (`docs/deployments/2026-10-30-oracle-cutover.md`);
-> **canlı ortam Oracle'dır**. Değişenler:
+> **Not (2026-10-31c):** İnceleme geri bildirimi uygulandı. Oracle ortamına göre yeniden
+> yazılmış metin üzerinde düzeltilen **beş** nokta:
 >
-> - **Yol ve isimler:** `/home/ubuntu/akademik-platform` → **`/home/ubuntu/libedge-oracle-v136`**;
->   `akademik-platform-prod-db-1` / `-web-1` → **`libedge-oracle-v136-db` / `-web`**; ağ
->   `akademik-platform-prod_default` → **`libedge-oracle-v136`**; volume
->   `akademik-platform-prod_pgdata` → **`libedge-oracle-v136-pgdata`**; imaj `libedge-v136` →
->   **`libedge-oracle-v136:96cc270-arm64`**; tünel `libedge-elibrary` (host servisi) →
->   **`libedge-oracle-live-tunnel`** (container), giriş **Cloudflare Tunnel → `127.0.0.1:3001`**.
-> - **Compose kaldırıldı.** Sunucu `docker run` ile çalışıyor (Compose yok). §6 eski
->   `docker compose config` / `up -d --no-deps web` adımlarının yerine **§6.1: mevcut
->   container'ın `docker inspect` çıktısını ölç → aynı bayraklarla yeniden yarat** akışını
->   kullanır. Yeniden yaratma komutu **tahmin edilmedi**: bayraklar ölçümden gelir.
-> - **Env dosyaları:** repo kökündeki `.env.production` / `.env.r2` → host'taki
->   **`/home/ubuntu/libedge-oracle-v136/config/web-runtime.env`**. `--env-file` ile okunur.
-> - **Yeni §4.0a / §4.0b:** ortamı **salt okunur** komutlarla doğrulama (container, ağ,
->   volume, port eşlemesi, `POSTGRES_DB`/`POSTGRES_USER`, `POSTGRES_PASSWORD` anahtar sayımı)
->   ve ölçüm uyuşmazsa **DUR** tablosu.
-> - **Yeni §8.0:** imaj rebuild'i yerine **eski container'ı geri alma** (en hızlı dönüş),
->   çünkü §6.1'de eski container `libedge-oracle-v136-web-prev-<ts>` adıyla saklanıyor.
-> - **Bilinmeyen bırakılanlar:** web container'ının tam `docker run` argümanları,
->   `config/web-runtime.env` içeriği, disk doluluğu ve sunucu mimarisi (`uname -m`) bu
->   runbook yazılırken **ölçülmedi** (sunucuya bağlanılmadı). Bunlar tahminle doldurulmadı;
->   §4.0a ve §6.1 operatöre ölçtürüyor.
-> - **Prod'a dokunulmadı:** Oracle'a **bağlanılmadı**, deploy/migration koşulmadı, SSH
->   kullanılmadı. Eski AWS kayıtları (v103–v136, `docs/DEPLOY.md`) **silinmedi**; tarihsel
+> 1. **Env anahtarı:** `CATALOG_DATABASE_URL` → **`DATABASE_CATALOG_URL`**. "v136/v137 kodu bu
+>    anahtarı okumuyor" gerekçesi **kaldırıldı** — anahtar adı doğru olanla yazılır.
+> 2. **Tek imaj etiketi:** §6.0 `$NEW_IMAGE`'ı **bir kez** üretir
+>    (`libedge-oracle-v137:137-<sha>-<arch>`) ve hem `docker build -t` hem `docker run` bunu
+>    kullanır. Container portu **tahmin edilmez**: §4.0a `$CONTAINER_PORT`/`$HOST_ADDR`/`$HOST_PORT`
+>    değerlerini `docker inspect`'ten okur, §6.1.2 ve §7 `-p "$HOST_ADDR:$HOST_PORT:$CONTAINER_PORT"`
+>    kullanır. Sabit `3001` kaldırıldı.
+> 3. **Dizin ve parola kaynağı:** canlı dizin `/home/ubuntu/libedge-oracle-v136` **Git checkout
+>    değildir** (§2'de `git fetch/checkout/pull` **yasak**). v137 kodu yeni **release dizinine**
+>    klonlanır (§2.1). Katalog parolası artık runtime env dosyasına değil **korumalı admin env
+>    dosyasına** yazılır (`$RELEASE_DIR/config/admin.env`, `0600 root`, §5.3) ve **kabukta
+>    `source` edilmez**.
+> 4. **Geçiş sırası:** §6.1.2 = **durdur → sakla (`rename`) → yeniyle başlat → sağlık (healthcheck
+>    + HTTP) → başarısızsa eskiyi geri aç**. DB container'ı ve tünel hiçbir adımda geçmez.
+> 5. **"Eski isim" uyarısı:** uyarı yalnız **AWS/Compose kalıntılarına** daraltıldı; `libedge-oracle-v136`
+>    ağı, `libedge-oracle-v136-pgdata` volume'ü ve container adları gerçek adlar olarak kapsam **dışına**
+>    alındı. Canlı domain ve tünel portu **sabit yazılmaz**, §4.0a'da ölçülür (`$LIVE_DOMAIN`, `$TUNNEL_PORT`).
+>
+> **Bilinmeyen bırakılanlar:** web container'ının tam `docker run` argümanları, `config/web-runtime.env`
+> içeriği, disk doluluğu, sunucu mimarisi, canlı domain ve tünel portu bu runbook yazılırken
+> **ölçülmedi** (sunucuya bağlanılmadı). Tahminle doldurulmadı; §4.0a, §2.1 ve §6.1 operatöre
+> **salt okunur** ölçtürüyor.
+>
+> **Prod'a dokunulmadı:** Oracle'a **bağlanılmadı**, deploy/migration koşulmadı, SSH
+> kullanılmadı. Eski AWS kayıtları (v103–v136, `docs/DEPLOY.md`) **silinmedi**; tarihsel
+> olarak işaretlendi.
 >   olarak duruyor.
 >
 > **Not (2026-10-31):** Bu tarihte runbook **027** için genişletildi:
