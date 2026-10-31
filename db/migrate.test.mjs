@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { promisify } from 'node:util';
 import {
-  expectRunnable, loadFiles, refuseUnbaselined, TRANSACTION_CONTROL,
+  expectRunnable, loadFiles, psqlTransactionControl, refuseUnbaselined, TRANSACTION_CONTROL,
 } from './migrate.mjs';
 
 // The migration runner, against a throwaway PostgreSQL.
@@ -184,6 +184,98 @@ test('transaction control is caught wherever it starts a statement, and a DO blo
   for (const [sql, expected] of Object.entries(cases)) {
     const caught = TRANSACTION_CONTROL.test(sql);
     assert.equal(caught, expected, `${JSON.stringify(sql)} -> ${caught}, expected ${expected}`);
+  }
+});
+
+// Regression: a `begin`/`end;` that belongs to a function body is not the file's
+// own transaction.
+//
+// The rule this protects is real - a file that opens or commits a transaction
+// breaks the registry - but a line-anchored regex cannot tell a body from a
+// statement. 025 and 027 were refused for months because of it: their only
+// `end;` is the tail of a plpgsql body, so `--dry-run` dropped them from the
+// apply list and a deploy would have believed there was nothing to do. Nothing
+// failed; the files were simply never applied. That is why this case is here and
+// why the checker below still has to reject a real `commit;` outside a body -
+// `psqlTransactionControl` is that outside-the-body view, and the second test
+// runs `TRANSACTION_CONTROL` itself against the shapes a body must not hide.
+test('transaction control inside a dollar-quoted body is not the file\'s own transaction', () => {
+  const cases = {
+    // The shapes 025 and 027 actually contain: a plpgsql body whose last
+    // statement is `end;` on a line of its own.
+    'create function f() returns void as $$\nbegin\n  perform 1;\nend;\n$$ language plpgsql;': [],
+    'create function f() returns void as $$ begin perform 1; end; $$ language plpgsql;': [],
+    'create function f() returns void as $body$\ndeclare\n  n int;\nbegin\n  n := 1;\n  if n = 1 then\n    perform 1;\n  end if;\nend;\n$body$ language plpgsql;': [],
+    'do $$\nbegin\n  commit;\n  rollback;\n  savepoint a;\nend;\n$$;': [],
+    // A `commit;` inside a body is dead SQL - plpgsql has no COMMIT - but it is
+    // still not the file's transaction, and refusing the file for it would be
+    // wrong for the same reason.
+    "do $$ begin raise notice 'commit;'; end $$;": [],
+    // Tagged quotes, nested quotes of a different tag, and a body that contains
+    // the literal text another body uses as its tag.
+    'do $outer$ begin execute $inner$ select 1 $inner$; end $outer$;': [],
+    'do $a$ begin perform 1; end $a$;\ndo $b$ begin perform 1; end $b$;': [],
+    // A comment inside the body, and a body that ends without a semicolon before
+    // the closing quote (022 and 025 both do this).
+    'do $$\nbegin\n  -- commit; here is only a comment\n  perform 1;\nend\n$$;': [],
+    // Unquoted text that looks like the inside of a body is still a statement.
+    'create function f() returns void as $$ begin perform 1; end $$ language plpgsql;\ncommit;': ['commit;'],
+    'create function f() returns void as $$ begin perform 1; end $$ language plpgsql;\nbegin;': ['begin;'],
+    // Real top-level control around bodies - the case the rule exists for.
+    'begin;\nselect 1;\ncommit;': ['begin;', 'commit;'],
+    'do $$ begin perform 1; end $$;\nend;': ['end;'],
+    'end$$;\nstart transaction;': ['start transaction'],
+    // The trailing `end` touches the closing quote and is not a statement; the
+    // `end;` after it is.
+    'do $body$ begin perform 1; end$body$;\nend;': ['end;'],
+  };
+  for (const [sql, expected] of Object.entries(cases)) {
+    assert.deepEqual(psqlTransactionControl(sql), expected, JSON.stringify(sql));
+  }
+});
+
+test('real transaction control is still refused, dollar-quoted blocks or not', () => {
+  // The message names every statement it found, so the assertion is on the
+  // command, not on the phrasing.
+  const refused = {
+    'begin;\nselect 1;\ncommit;': ['begin;', 'commit;'],
+    'create function f() returns void as $$ begin perform 1; end $$ language plpgsql;\ncommit;': ['commit;'],
+    'do $$ begin perform 1; end $$;\nend;': ['end;'],
+    'do $body$ begin perform 1; end$body$;\nsavepoint a;': ['savepoint'],
+    'do $body$ begin perform 1; end$body$;\nstart transaction;': ['start transaction'],
+    'select 1;\nrollback;': ['rollback;'],
+    'select 1;\n\\begin': ['\\begin'],
+    // An unbalanced quote must not be able to hide the rest of the file: if a
+    // body never closes, everything after it is still checked as SQL.
+    'do $$\nbegin\n  perform 1;\n$$;\ncommit;': ['commit;'],
+    'create function f() returns void as $odd$ begin perform 1; $body$\ncommit;': ['commit;'],
+  };
+  for (const [sql, expected] of Object.entries(refused)) {
+    const reason = expectRunnable(sql);
+    assert.ok(reason, `${JSON.stringify(sql)} was not refused`);
+    assert.ok(reason.startsWith('manages its own transaction'), `${JSON.stringify(sql)} -> ${reason}`);
+    assert.ok(reason.includes(`(${expected.join(', ')})`), `${JSON.stringify(sql)} -> ${reason}, expected ${expected.join(', ')}`);
+  }
+});
+
+test('every migration the runner may execute carries no top-level transaction control', async () => {
+  // The whole point of the fix: the shipped files, not invented ones. 025 and
+  // 027 used to be reported here as `manages its own transaction (end;)`.
+  const files = await loadFiles();
+  const byPrefix = new Map(files.map((file) => [file.name.slice(0, 3), file]));
+  for (const version of ['025', '027']) {
+    const file = byPrefix.get(version);
+    assert.ok(file, `${version} is missing from db/migrations`);
+    assert.deepEqual(psqlTransactionControl(file.sql), [], `${version} has no top-level transaction control of its own`);
+    assert.equal(expectRunnable(file.sql), null, `${file.name}: ${expectRunnable(file.sql)}`);
+  }
+  for (const file of files) {
+    const control = psqlTransactionControl(file.sql);
+    if (control.length) {
+      // Only the historical files may be refused, and only for a reason that is
+      // in the SQL rather than in a misread body.
+      assert.ok(Number(file.name.slice(0, 3)) <= 17, `${file.name} has top-level transaction control: ${control.join(', ')}`);
+    }
   }
 });
 
