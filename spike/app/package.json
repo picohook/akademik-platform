@@ -13,7 +13,10 @@
     "test:security-headers": "node test/security-headers.test.mjs",
     "test:tenant-access": "node test/tenant-access.integration.mjs",
     "test:watermarks": "node test/social-watermark.test.mjs",
-    "test:social-drm": "node test/social-drm.integration.mjs"
+    "test:social-drm": "node test/social-drm.integration.mjs",
+    "test:sso": "node --test test/sso-token.test.mjs test/sso-state.test.mjs test/sso-jti.test.mjs test/sso-production-gate.test.mjs",
+    "test:sso-integration": "node test/sso-callback.integration.mjs && node test/sso-http.integration.mjs",
+    "vectors:sso": "node sso/vectors.mjs"
   },
   "engines": {
     "node": ">=22"

@@ -1,0 +1,50 @@
+{
+  "note": "Signed with the test key above. `now` is the instant the expected verdicts were computed at.",
+  "issuer": "libedge",
+  "audience": "elibrary.libedge.com",
+  "now": 1793523600,
+  "valid": {
+    "token": "eyJhbGciOiJFZERTQSIsImtpZCI6InRlc3QtMjAyNi0xMSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJsaWJlZGdlIiwiYXVkIjoiZWxpYnJhcnkubGliZWRnZS5jb20iLCJzdWIiOiJsdV83ZjNjMWE5ZTRiMmQiLCJjdHgiOiJpbnN0aXR1dGlvbiIsImluc3QiOiI0MiIsInJvbGUiOiJyZWFkZXIiLCJpYXQiOjE3OTM1MjM2MDAsImV4cCI6MTc5MzUyMzY2MCwianRpIjoiMFRNRmp2RjZHRi05clhYVkdMem4xM1ZTeG1GU2o5OEdfSmtad2FoYzhNayIsIm5vbmNlIjoia1ozbTBRZDJyOFhiMXlONHRWNndBOWNFNWdIN2pMMHBCMmNENGVGNmdIIiwiZW1haWwiOiJheXNlQGV4YW1wbGUuZWR1LnRyIn0.ojX3RGbJLHkkwIax5DZ92a1mMctVRuZ0Azcw0pC3LYAYjrr6HwlmKVnRiqKU3JB3NikQkXj_-Dgts9X6TeWIAA",
+    "expect": "accepted",
+    "claims": {
+      "iss": "libedge",
+      "aud": "elibrary.libedge.com",
+      "sub": "lu_7f3c1a9e4b2d",
+      "ctx": "institution",
+      "inst": "42",
+      "role": "reader",
+      "iat": 1793523600,
+      "exp": 1793523660,
+      "jti": "0TMFjvF6GF-9rXXVGLzn13VSxmFSj98G_JkZwahc8Mk",
+      "nonce": "kZ3m0Qd2r8Xb1yN4tV6wA9cE5gH7jL0pB2cD4eF6gH",
+      "email": "ayse@example.edu.tr"
+    }
+  },
+  "invalid": [
+    {
+      "name": "expired",
+      "expect": "expired",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6InRlc3QtMjAyNi0xMSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJsaWJlZGdlIiwiYXVkIjoiZWxpYnJhcnkubGliZWRnZS5jb20iLCJzdWIiOiJsdV83ZjNjMWE5ZTRiMmQiLCJjdHgiOiJpbnN0aXR1dGlvbiIsImluc3QiOiI0MiIsInJvbGUiOiJyZWFkZXIiLCJpYXQiOjE3OTM1MjM0ODAsImV4cCI6MTc5MzUyMzU0MCwianRpIjoiMFRNRmp2RjZHRi05clhYVkdMem4xM1ZTeG1GU2o5OEdfSmtad2FoYzhNayIsIm5vbmNlIjoia1ozbTBRZDJyOFhiMXlONHRWNndBOWNFNWdIN2pMMHBCMmNENGVGNmdIIiwiZW1haWwiOiJheXNlQGV4YW1wbGUuZWR1LnRyIn0.In5cxycExAHxD6sWSCfDg-Xf3d96Zc5olUlCZVh98jY9gYPQY5P75y9FDwxDUuVb_iTwCrhe0oM0Zfew1A7OCg"
+    },
+    {
+      "name": "lifetime-too-long",
+      "expect": "bad_claims",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6InRlc3QtMjAyNi0xMSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJsaWJlZGdlIiwiYXVkIjoiZWxpYnJhcnkubGliZWRnZS5jb20iLCJzdWIiOiJsdV83ZjNjMWE5ZTRiMmQiLCJjdHgiOiJpbnN0aXR1dGlvbiIsImluc3QiOiI0MiIsInJvbGUiOiJyZWFkZXIiLCJpYXQiOjE3OTM1MjM2MDAsImV4cCI6MTc5MzUyNzIwMCwianRpIjoiMFRNRmp2RjZHRi05clhYVkdMem4xM1ZTeG1GU2o5OEdfSmtad2FoYzhNayIsIm5vbmNlIjoia1ozbTBRZDJyOFhiMXlONHRWNndBOWNFNWdIN2pMMHBCMmNENGVGNmdIIiwiZW1haWwiOiJheXNlQGV4YW1wbGUuZWR1LnRyIn0.zaJCC-EhWSE2AkTXIYHPLxySZdfFyCKr7_V-2h29H48FS1CZFo7qOIiTRLcM4Pg8WrKIz-jq3fDUpOzmBRbVBQ"
+    },
+    {
+      "name": "wrong-audience",
+      "expect": "bad_audience",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6InRlc3QtMjAyNi0xMSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJsaWJlZGdlIiwiYXVkIjoiZWxpYnJhcnkuZXhhbXBsZS5jb20iLCJzdWIiOiJsdV83ZjNjMWE5ZTRiMmQiLCJjdHgiOiJpbnN0aXR1dGlvbiIsImluc3QiOiI0MiIsInJvbGUiOiJyZWFkZXIiLCJpYXQiOjE3OTM1MjM2MDAsImV4cCI6MTc5MzUyMzY2MCwianRpIjoiMFRNRmp2RjZHRi05clhYVkdMem4xM1ZTeG1GU2o5OEdfSmtad2FoYzhNayIsIm5vbmNlIjoia1ozbTBRZDJyOFhiMXlONHRWNndBOWNFNWdIN2pMMHBCMmNENGVGNmdIIiwiZW1haWwiOiJheXNlQGV4YW1wbGUuZWR1LnRyIn0.QnaOhiteWp1Af10siJSEfuTcWhX42ADyFv7U4z0qJbQWvbkXH9Hrr0UpNDWBU5LlKnJ7aHB6tmFf246D6vRfDg"
+    },
+    {
+      "name": "individual-admin",
+      "expect": "bad_role",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6InRlc3QtMjAyNi0xMSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJsaWJlZGdlIiwiYXVkIjoiZWxpYnJhcnkubGliZWRnZS5jb20iLCJzdWIiOiJsdV83ZjNjMWE5ZTRiMmQiLCJjdHgiOiJpbmRpdmlkdWFsIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzkzNTIzNjAwLCJleHAiOjE3OTM1MjM2NjAsImp0aSI6IjBUTUZqdkY2R0YtOXJYWFZHTHpuMTNWU3htRlNqOThHX0prWndhaGM4TWsiLCJub25jZSI6ImtaM20wUWQycjhYYjF5TjR0VjZ3QTljRTVnSDdqTDBwQjJjRDRlRjZnSCIsImVtYWlsIjoiYXlzZUBleGFtcGxlLmVkdS50ciJ9.TBOxfXcSrojGDlqT1qmn3-uqA1WC8XtePsIM_d-RogJTP_QDLMMBDVUiZ8tT6LVB0sX1NaQ8w07ckak4mraaCQ"
+    },
+    {
+      "name": "institution-without-inst",
+      "expect": "bad_context",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6InRlc3QtMjAyNi0xMSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJsaWJlZGdlIiwiYXVkIjoiZWxpYnJhcnkubGliZWRnZS5jb20iLCJzdWIiOiJsdV83ZjNjMWE5ZTRiMmQiLCJjdHgiOiJpbnN0aXR1dGlvbiIsInJvbGUiOiJyZWFkZXIiLCJpYXQiOjE3OTM1MjM2MDAsImV4cCI6MTc5MzUyMzY2MCwianRpIjoiMFRNRmp2RjZHRi05clhYVkdMem4xM1ZTeG1GU2o5OEdfSmtad2FoYzhNayIsIm5vbmNlIjoia1ozbTBRZDJyOFhiMXlONHRWNndBOWNFNWdIN2pMMHBCMmNENGVGNmdIIiwiZW1haWwiOiJheXNlQGV4YW1wbGUuZWR1LnRyIn0.TGBJA_-7VBqDOHECJw8tQ0pvl0anzYIzhYHjP670PZVt_n39shrvi5kADDrb3zVeMrXxRs2W9GGRUxNIR5r4DQ"
+    }
+  ]
+}

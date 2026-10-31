@@ -1,0 +1,16 @@
+{
+  "note": "TEST KEY ONLY. The private half is in this repository, so any token signed with it is worthless. Production keys live in the Worker secret and in the deployment environment; see docs/contracts/vectors/README.md.",
+  "kid": "test-2026-11",
+  "alg": "EdDSA",
+  "publicJwk": {
+    "crv": "Ed25519",
+    "x": "WaNuzNMnC8la4kgv5fqQOf7dZwyQVUh_5SDbc9WuTGw",
+    "kty": "OKP"
+  },
+  "privateJwk": {
+    "crv": "Ed25519",
+    "d": "j7YFNW3lhsyv4P2VcA2e2oEid8KYKj2LjY_Xme7stG0",
+    "x": "WaNuzNMnC8la4kgv5fqQOf7dZwyQVUh_5SDbc9WuTGw",
+    "kty": "OKP"
+  }
+}
