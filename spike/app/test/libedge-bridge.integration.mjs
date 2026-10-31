@@ -191,6 +191,7 @@ async function main() {
     await authSection();
     await tenantSection();
     await provisioningSection();
+    await firstSubscriptionSection();
   } finally {
     await pool?.end().catch(() => {});
     await admin?.end().catch(() => {});
@@ -413,6 +414,104 @@ async function provisioningSection() {
   const { rows: notCreated } = await admin.query(
     "select count(*)::int as n from users where libedge_user_id = '1002'");
   check(notCreated[0].n === 0, 'a refused pre-provisioning must not have created a user row');
+}
+
+// === An active subscription opened for the first time (5.4, 3.3) =============
+//
+// This is the order regression, and it only shows up on a FIRST open, so it needs a
+// source_id nothing has written before.
+//
+// 021 adds `grants.subscription_source_id text references
+// libedge_subscription_sync(source_id)`. A foreign key is checked when the row is
+// written, not at commit: the UPDATE/INSERT into `grants` therefore has to happen after
+// the sync row exists. When the sync row was written at the end, every scope insert hit
+// grants_subscription_source_id_fkey and the whole request failed with a 500 - on the
+// first subscription a tenant ever received, and on every one after it, because
+// `select ... from libedge_subscription_sync where source_id = $1` at the top of
+// applySubscriptionSync also sees no row and takes the create path again.
+//
+// The database here is the real one: db/schema.sql and the real migration files, run as
+// a superuser so RLS is bypassed for the fixture and enforced for the bridge pool. That
+// is what makes this a test of the schema rather than of a mock agreeing with itself.
+async function firstSubscriptionSection() {
+  const source = `institution:${INSTITUTION}`;
+  // A fresh source id per run: rows are per database, but the id is cheap and an
+  // accidental reuse would hide the very path this test exists for.
+  const sourceId = `${source}:first-${Date.now()}`;
+
+  const { rows: before } = await admin.query(
+    'select count(*)::int as n from libedge_subscription_sync where source_id = $1', [sourceId]);
+  check(before[0].n === 0, 'the first-open fixture must start with no sync row for its source_id');
+
+  const opened = await call('PUT', `/subscriptions/${sourceId}`, {
+    body: {
+      revision: 1,
+      tenant: { kind: 'institution', ref: INSTITUTION },
+      subject: { type: 'tenant' },
+      status: 'active',
+      valid_from: '2026-11-01T00:00:00Z',
+      valid_to: '2027-11-01T00:00:00Z',
+      lease_until: '2026-11-02T00:00:00Z',
+      scopes: [{ type: 'collection', id: SHARED_COLLECTION }],
+    },
+  });
+  check(opened.status === 201,
+    `the first active subscription for a source_id must open with 201, got ${opened.status} `
+    + `${JSON.stringify(opened.body)}`);
+  check(opened.body.replayed === false, 'the first open must not be a replay');
+  check(opened.body.applied_revision === 1, 'the first open must report revision 1');
+
+  // Two rows prove the order and the transaction: the sync row the FK points at, and the
+  // grant that points at it. Both in one commit, or neither.
+  const { rows: syncRows } = await admin.query(
+    'select revision, status, tenant_id from libedge_subscription_sync where source_id = $1',
+    [sourceId]);
+  check(syncRows.length === 1, `exactly one sync row must exist for a first open, saw ${syncRows.length}`);
+  check(syncRows[0].status === 'active' && Number(syncRows[0].revision) === 1,
+    'the sync row must record the applied revision and status');
+
+  const { rows: grantRows } = await admin.query(
+    `select status, subscription_source_id, scope_type, scope_id
+       from grants where tenant_id = $1 and subscription_source_id = $2`,
+    ['4a4a4a4a-4a4a-4a4a-8a4a-4a4a4a4a4a4a', sourceId]);
+  check(grantRows.length === 1,
+    `the first open must create exactly one grant, saw ${grantRows.length}`);
+  check(grantRows[0].status === 'active' && grantRows[0].scope_id === SHARED_COLLECTION,
+    'the grant must be active and name the requested collection');
+
+  // The foreign key is what was violated, so assert it is the real one rather than trust
+  // the file: a schema change that dropped it would make this test pass for no reason.
+  const { rows: fkRows } = await admin.query(
+    `select count(*)::int as n from pg_constraint
+      where conname = 'grants_subscription_source_id_fkey' and contype = 'f'`);
+  check(fkRows[0].n === 1,
+    'grants_subscription_source_id_fkey must exist for this test to mean anything');
+
+  // A second active revision over the same source_id takes the update path, and must also
+  // succeed: the fix may not repair the insert while breaking the update. The 200 (rather
+  // than 201) is what tells the two paths apart - the body carries no `created` field.
+  const extended = await call('PUT', `/subscriptions/${sourceId}`, {
+    body: {
+      revision: 2,
+      tenant: { kind: 'institution', ref: INSTITUTION },
+      subject: { type: 'tenant' },
+      status: 'active',
+      valid_from: '2026-11-01T00:00:00Z',
+      valid_to: '2028-11-01T00:00:00Z',
+      lease_until: '2026-11-02T00:00:00Z',
+      scopes: [{ type: 'collection', id: SHARED_COLLECTION }, { type: 'title', id: SHARED_TITLE }],
+    },
+  });
+  check(extended.status === 200,
+    `an updated active subscription must be 200, got ${extended.status} ${JSON.stringify(extended.body)}`);
+  check(extended.body.replayed === false && extended.body.applied_revision === 2,
+    'the second revision must be applied, not replayed');
+  const { rows: afterGrants } = await admin.query(
+    `select count(*)::int as n from grants
+      where tenant_id = $1 and subscription_source_id = $2 and status = 'active'`,
+    ['4a4a4a4a-4a4a-4a4a-8a4a-4a4a4a4a4a4a', sourceId]);
+  check(afterGrants[0].n === 2,
+    `the second revision must leave two active grants, saw ${afterGrants[0].n}`);
 }
 
 main().then(() => process.exit(0)).catch((error) => {
