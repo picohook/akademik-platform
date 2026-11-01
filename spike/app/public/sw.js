@@ -18,7 +18,9 @@
 // v32: the library shelf (library.mjs, library-model.mjs, library.css, the catalogue controls in index.html and
 // app.js) and read aloud (read-aloud.mjs, read-aloud-sources.mjs, the player): a cached v31 shell would pair the
 // old markup with the new scripts.
-const CACHE = 'akademik-shell-v32';
+// v33: read aloud follows the spoken word and skips page furniture (read-aloud.mjs, read-aloud-sources.mjs,
+// the player markup in index.html, styles.css): a cached v32 shell would pair the old markup with the new scripts.
+const CACHE = 'akademik-shell-v33';
 const SHELL = [
   '/',
   '/styles.css',
