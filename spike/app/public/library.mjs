@@ -4,9 +4,13 @@ export function createLibrary({ state, renderBooks, makeCard, t, toast, libraryT
   const $ = id => document.getElementById(id);
   let owner = '', generation = 0, favorites = new Set(), progress = new Map(), allBooks = [];
   let favoritesOnly = false;
+  let historyOnly = false;
+  let layout = 'grid';
   const pending = new Set();
   const facets = { language: '', publisher: '', from: '', to: '' };
-  const root = document.createElement('section');
+  // The controls are built here but placed where the library design puts them: the sort select among the
+  // catalogue tools, the filters panel in the chip row, the status line under it.
+  const root = document.createElement('div');
   root.className = 'library-controls';
   root.innerHTML = `<label class="library-sort"><span></span><select id="librarySort"></select></label>
     <details id="libraryFilters"><summary></summary><div class="library-facets">
@@ -16,11 +20,18 @@ export function createLibrary({ state, renderBooks, makeCard, t, toast, libraryT
       <label><span></span><input id="libraryYearTo" type="number" min="1" max="9999" inputmode="numeric"></label>
     </div></details><p id="libraryStatus" role="status" aria-live="polite"></p>`;
   const toolbar = document.querySelector('#filters').closest('.toolbar');
-  toolbar.before(root);
+  const sortLabel = root.querySelector('.library-sort');
+  const filtersPanel = root.querySelector('#libraryFilters');
+  const statusLine = root.querySelector('#libraryStatus');
+  $('lrCatalogueTools').prepend(sortLabel);
+  toolbar.insertBefore(filtersPanel, $('openUpload'));
+  toolbar.after(statusLine);
   const labels = ['Katalog sıralaması', 'Katalog dili', 'Katalog yayıncısı', 'Başlangıç yayın yılı', 'Bitiş yayın yılı'];
-  root.querySelectorAll('label > span').forEach((span, index) => { span.textContent = t(labels[index]); });
-  root.querySelector('summary').textContent = t('Katalog filtreleri');
+  [sortLabel, ...filtersPanel.querySelectorAll('label')].forEach((label, index) => { label.querySelector('span').textContent = t(labels[index]); });
+  filtersPanel.querySelector('summary').textContent = t('Katalog filtreleri');
   const sort = $('librarySort');
+  // sort and view choices are remembered per reader
+  const gridEl = $('grid');
   const sortLabels = ['İlgi / eklenme sırası', 'Kitap adı A–Z', 'Kitap adı Z–A', 'En yeni yayınlar', 'Yazar adı A–Z'];
   SORTS.forEach((value, index) => sort.add(new Option(t(sortLabels[index]), value)));
   sort.addEventListener('change', () => {
@@ -33,7 +44,19 @@ export function createLibrary({ state, renderBooks, makeCard, t, toast, libraryT
   shelf.setAttribute('aria-labelledby', 'continueReadingTitle');
   shelf.innerHTML = '<h2 id="continueReadingTitle"></h2><div class="library-shelf"></div>';
   shelf.querySelector('h2').textContent = t('Okumaya devam et');
-  root.before(shelf);
+  $('lrCatalogue').before(shelf);
+  const layoutButtons = [...document.querySelectorAll('[data-layout]')];
+  function setLayout(next, remember = true) {
+    layout = next === 'list' ? 'list' : 'grid';
+    gridEl.classList.toggle('list', layout === 'list');
+    layoutButtons.forEach((button) => {
+      const on = button.dataset.layout === layout;
+      button.classList.toggle('active', on);
+      button.setAttribute('aria-pressed', String(on));
+    });
+    if (remember) { try { if (owner) localStorage.setItem(`libraryLayout:${owner}`, layout); } catch { /* storage disabled */ } }
+  }
+  layoutButtons.forEach((button) => button.addEventListener('click', () => setLayout(button.dataset.layout)));
   $('count').setAttribute('role', 'status');
   $('count').setAttribute('aria-live', 'polite');
   $('count').setAttribute('aria-atomic', 'true');
@@ -60,6 +83,25 @@ export function createLibrary({ state, renderBooks, makeCard, t, toast, libraryT
     let saved = '';
     try { saved = localStorage.getItem(`librarySort:${owner}`) || ''; } catch { /* storage disabled */ }
     sort.value = SORTS.includes(saved) ? saved : '';
+    let savedLayout = '';
+    try { savedLayout = localStorage.getItem(`libraryLayout:${owner}`) || ''; } catch { /* storage disabled */ }
+    setLayout(savedLayout, false);
+    historyOnly = false;
+    announce();
+  }
+
+  // The three ways to look at the library: everything, only favourites, only what was started.
+  const getView = () => (favoritesOnly ? 'favorites' : (historyOnly ? 'history' : 'all'));
+  function announce() {
+    const chip = $('libraryFavorites');
+    if (chip) { chip.classList.toggle('active', favoritesOnly); chip.setAttribute('aria-pressed', String(favoritesOnly)); }
+    document.dispatchEvent(new CustomEvent('library-view', { detail: { view: getView(), favorites: favorites.size, history: progress.size, signedIn: Boolean(owner) } }));
+  }
+  function setView(next) {
+    favoritesOnly = next === 'favorites';
+    historyOnly = next === 'history';
+    announce();
+    renderBooks();
   }
 
   function setBooks(books, query) {
@@ -88,6 +130,7 @@ export function createLibrary({ state, renderBooks, makeCard, t, toast, libraryT
       $('libraryStatus').textContent = '';
       renderBooks();
       renderShelf();
+      announce();
     } catch {
       if (epoch === generation) $('libraryStatus').textContent = t('Kişisel kitaplık yüklenemedi. Yeniden denemek için sayfayı yenileyin.');
     }
@@ -113,12 +156,7 @@ export function createLibrary({ state, renderBooks, makeCard, t, toast, libraryT
     button.textContent = libraryText('favorites');
     button.setAttribute('aria-pressed', String(favoritesOnly));
     button.disabled = !owner || state.offlineLibrary;
-    button.addEventListener('click', () => {
-      favoritesOnly = !favoritesOnly;
-      button.classList.toggle('active', favoritesOnly);
-      button.setAttribute('aria-pressed', String(favoritesOnly));
-      renderBooks();
-    });
+    button.addEventListener('click', () => setView(favoritesOnly ? 'all' : 'favorites'));
     container.prepend(button);
   }
 
@@ -157,7 +195,8 @@ export function createLibrary({ state, renderBooks, makeCard, t, toast, libraryT
             star.setAttribute('aria-pressed', String(!selected));
           }
         });
-        if (favoritesOnly) { renderBooks(); $('libraryFavorites').focus(); }
+        announce();
+        if (favoritesOnly) { renderBooks(); ($('libraryFavorites')?.offsetParent ? $('libraryFavorites') : document.querySelector('.lr-nav-item[data-view="favorites"]'))?.focus(); }
         toast(t(selected ? 'Kitap favorilerden çıkarıldı.' : 'Kitap favorilere eklendi.'));
       } catch {
         if (epoch === generation) toast(t('Kitap favorisi kaydedilemedi. Yeniden deneyin.'));
@@ -177,15 +216,29 @@ export function createLibrary({ state, renderBooks, makeCard, t, toast, libraryT
       bar.value = Math.max(0, Math.min(100, Number(row.percent) || 0));
       bar.setAttribute('aria-label', `${t('Kitap okuma ilerlemesi')}: ${book.title}`);
       card.appendChild(bar);
+      const percent = document.createElement('span');
+      percent.className = 'library-percent';
+      percent.setAttribute('aria-hidden', 'true');
+      percent.textContent = `${Math.round(bar.value)}%`;
+      card.appendChild(percent);
     }
   }
 
   return {
-    setUser, setBooks, refresh, addFavoriteFilter, decorateCard,
-    visible: books => filterBooks(books, facets).filter(book => !favoritesOnly || favorites.has(book.id)),
+    setUser, setBooks, refresh, addFavoriteFilter, decorateCard, setView, getView, setLayout,
+    counts: () => ({ favorites: favorites.size, history: progress.size }),
+    visible: books => filterBooks(books, facets)
+      .filter(book => !favoritesOnly || favorites.has(book.id))
+      .filter(book => !historyOnly || progress.has(book.asset_id)),
     order: groups => {
       const byBook = new Map(groups.map(group => [group.book, group]));
-      return sortBooks([...byBook.keys()], sort.value).map(book => byBook.get(book));
+      const ordered = sortBooks([...byBook.keys()], sort.value);
+      // "Okuma geçmişi" with the default order: the most recently read first
+      if (historyOnly && !sort.value) {
+        const when = book => String(progress.get(book.asset_id)?.updated_at || '');
+        ordered.sort((a, b) => when(b).localeCompare(when(a)));
+      }
+      return ordered.map(book => byBook.get(book));
     },
   };
 }

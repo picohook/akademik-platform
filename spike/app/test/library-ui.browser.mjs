@@ -70,14 +70,15 @@ try {
   check(Boolean(mutations[0].csrf),'star sends CSRF header');
   same(mutations[0].method,'PUT','star sends PUT');
   same(await page.locator(`#continueReading [data-work-id="${books[0].id}"] .library-star`).getAttribute('aria-pressed'),'true','shelf star stays consistent');
-  await page.locator('#libraryFavorites').click(); await waitTitles(['Zaman Studies']);
-  same(await page.locator('#libraryFavorites').getAttribute('aria-pressed'),'true','favourites chip pressed');
+  const favNav=page.locator('.lr-nav-item[data-view="favorites"]');
+  await favNav.click(); await waitTitles(['Zaman Studies']);
+  same(await favNav.getAttribute('aria-current'),'page','favourites view current in sidebar');
   await page.fill('#search','Işık'); await waitTitles([]);
   await page.fill('#search',''); await waitTitles(['Zaman Studies']);
   await page.locator('#grid .library-star').click(); await waitTitles([]);
   same(mutations.at(-1).method,'DELETE','toggle sends DELETE');
-  same(await page.locator('#libraryFavorites').evaluate(e=>e===document.activeElement),true,'removed star returns focus to favourites chip');
-  await page.locator('#libraryFavorites').click(); await waitTitles(['Çalışma Kitabı','Işık Bilimi','İstanbul Tarihi','Added Recently','Zaman Studies']);
+  same(await favNav.evaluate(e=>e===document.activeElement),true,'removed star returns focus to the favourites item');
+  await page.locator('.lr-nav-item[data-view="all"]').click(); await waitTitles(['Çalışma Kitabı','Işık Bilimi','İstanbul Tarihi','Added Recently','Zaman Studies']);
   failFavorite=true;
   await page.locator('#grid .library-star').first().click();
   await page.waitForFunction(()=>document.querySelector('#toast').textContent.includes('kaydedilemedi'));
@@ -109,7 +110,9 @@ try {
   await page.evaluate(()=>localStorage.setItem('uiLang','en')); await page.reload();
   await page.locator('#continueReadingTitle').waitFor();
   same(await page.locator('#continueReadingTitle').textContent(),'Continue reading','English shelf');
-  same(await page.locator('#libraryFavorites').textContent(),'Favourites','English chip');
+  await page.setViewportSize({width:1280,height:900});
+  same((await page.locator('.lr-nav-item[data-view="favorites"] [data-lr="favorites"]').textContent()).trim(),'Favourites','English sidebar');
+  await page.setViewportSize({width:390,height:844});
   same(await page.locator('#libraryFilters summary').textContent(),'Catalogue filters','English filters');
   same(await page.locator('#librarySort option[value="title-asc"]').textContent(),'Book title A–Z','English sorting');
   // Content that coincides with a short English/Turkish UI word must stay content.

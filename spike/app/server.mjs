@@ -2158,7 +2158,7 @@ async function serveStatic(req, res, pathname) {
   // escape an allowed prefix into uploads/ or ocr/.
   const relative = '/' + path.relative(PUBLIC_DIR, filePath).split(path.sep).join('/');
   const allowedFiles = new Set([
-    '/book-variants.mjs', '/book-links.mjs', '/library.mjs', '/library-model.mjs', '/library.css',
+    '/book-variants.mjs', '/book-links.mjs', '/library.mjs', '/library-model.mjs', '/library.css', '/library-designs.mjs', '/library-designs.css', '/design-init.js',
     '/index.html', '/app.js', '/styles.css', '/i18n.mjs', '/citations.mjs', '/pdf-structure.mjs',
     '/search.mjs', '/epub-engine.mjs', '/offline.mjs', '/downloads.mjs', '/ocr-layer.mjs', '/read-aloud.mjs', '/read-aloud-sources.mjs', '/sw.js', '/manifest.webmanifest',
     // Browsers request /favicon.ico on their own when a page declares no icon,
