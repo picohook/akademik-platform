@@ -405,9 +405,20 @@
     <input id="hlNote" type="text" placeholder="Not (opsiyonel)" aria-label="Vurgu notu" maxlength="280" />
     <button class="copy-btn" id="hlCopy" type="button">Kopyala</button>
     <button class="copy-btn" id="hlCopyCite" type="button">Atıfla kopyala</button>
+    <button class="copy-btn" id="hlExplain" type="button" hidden>Açıkla</button>
+    <button class="copy-btn" id="hlSummarize" type="button" hidden>Özetle</button>
     <button class="primary" id="hlSave">Vurgula</button>
     <button class="icon-btn" id="hlCancel" aria-label="İptal">✕</button>
   </div>
+
+  <aside class="ai-panel" id="aiPanel" role="region" aria-label="Yapay zekâ yanıtı" hidden>
+    <div class="ai-panel-head">
+      <strong id="aiPanelTitle"></strong>
+      <button class="icon-btn" id="aiPanelClose" type="button" aria-label="Kapat">✕</button>
+    </div>
+    <p class="ai-panel-text" id="aiPanelText" aria-live="polite"></p>
+    <p class="ai-panel-note">Yapay zekâ tarafından üretildi; yanılabilir. Kaynak metinle karşılaştırın.</p>
+  </aside>
 
   </div>
 
