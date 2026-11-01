@@ -156,8 +156,26 @@ kapatılır.
 | `/home/ubuntu/libedge-oracle-v137/releases/oa-9775ef7-20261101T041647Z/backup/pre-live-20261101T041956Z` | OA migration öncesi (023 öncesi) |
 | `/home/ubuntu/libedge-migration/cutover-20261030T003845Z-7dff6f78` | Eski AWS final paketi; PC'de checksum doğrulamalı kopya var |
 
-OA öncesi yedek, sonrasındaki JIT kullanıcı/yazmaları **içermez**. Yeni yedeklerin
-PC/R2'ye aktarımı henüz doğrulanmadı.
+OA öncesi yedek, sonrasındaki JIT kullanıcı/yazmaları **içermez**.
+
+### 5.1 Otomatik yedek (2026-11-01)
+
+Runbook: `docs/runbooks/oracle-backup-restore.md`. Sunucuda: `age` ve `rclone` kuruldu,
+script `/usr/local/lib/libread-backup/backup-oracle.sh`, birimler `libread-backup.service` /
+`.timer`, yapılandırma `/home/ubuntu/libedge-oracle-v137/config/backup/backup.env` (`0600`).
+Zamanlayıcı **etkin**: her gün 03:15 UTC (+ en çok 10 dk rastgele gecikme).
+
+| Adım | Sonuç |
+| --- | --- |
+| Salt okunur ön ölçüm | registry 27 / `027-reader-sso.sql`; `akademik` superuser; `sudo -n docker` çalışıyor; disk 38 GB boş |
+| İlk deneme | **Başarısız (güvenli):** `web-release.env`, `admin.env` `root:root 0600`; arşiv ve `last-success` oluşmadı. R2 yüklemesi `403` (bucket kapsamlı token + rclone bucket oluşturmayı denemesi). PR #57 ile `sudo -n tar` ve `no_check_bucket` |
+| İlk başarılı yedek | `libread-oracle-20261101T080816Z.tar.gz.age`, 88 437 bayt; R2'ye yüklendi, geri indirilip SHA-256 eşleşti |
+| Restore provası | PC'de, R2'den indirilen kopyayla, geçici Postgres'e: `RESULT: PASS` (registry 27, 12 global eser, OA koleksiyonu 12 üye, individual grant `collection` ve `all` yok, uygulama rolleri superuser/BYPASSRLS değil, `seed/sample.pdf` ve üç env dosyası arşivde) |
+
+`uploads/` ve `ocr/` sunucuda boş; kitaplar R2'de. Sınırlar: dış alarm yok (journal ve
+`last-success`), RPO ≈ 24 saat, dosya/DB arası tam tutarlılık garantisi yok, R2'deki
+yedeklerin silinmeye karşı koruması kurulmadı. Private key PC'de ve ayrı bir kopyada; sunucuda
+yalnız public key var.
 
 Korunan eski web container'ları (silme):
 
