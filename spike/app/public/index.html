@@ -338,7 +338,7 @@
           <label><input type="checkbox" id="readerFocus"> Odak modu</label>
           <button class="ghost-btn" id="rotateBtn" type="button" aria-label="Döndür" title="Döndür">⟳</button><button class="ghost-btn" id="fullscreenBtn" type="button" aria-label="Tam ekran" title="Tam ekran">⛶</button><button class="ghost-btn" id="spreadBtn" type="button" aria-label="Çift sayfa" title="Çift sayfa" aria-pressed="false">▥</button><button class="ghost-btn" id="scrollBtn" type="button" aria-label="Sürekli kaydırma" title="Sürekli kaydırma" aria-pressed="false">≣</button>
         </div></details>
-        <div class="reader-control-group" aria-label="Araçlar"><button class="ghost-btn" id="bookmarkBtn" type="button" title="Yer imi" aria-label="Yer imi" aria-pressed="false">☆</button><button class="ghost-btn" id="toggleNotes" aria-controls="notesPanel" aria-expanded="false">Notlar <span id="noteCount">0</span></button></div>
+        <div class="reader-control-group" aria-label="Araçlar"><button class="ghost-btn" id="bookmarkBtn" type="button" title="Yer imi" aria-label="Yer imi" aria-pressed="false">☆</button><button class="ghost-btn" id="toggleNotes" aria-controls="notesPanel" aria-expanded="false">Notlar <span id="noteCount">0</span></button><button class="ghost-btn" id="raBtn" type="button" aria-pressed="false" aria-controls="raPlayer" aria-keyshortcuts="Alt+Shift+L" hidden></button></div>
         <details class="reader-menu"><summary>Araçlar</summary><div class="reader-menu-panel"><button class="ghost-btn" id="selectionTools" type="button" title="Seçim araçları (Alt+Shift+H)" aria-keyshortcuts="Alt+Shift+H">Seçim</button><label class="shortcut-setting"><input type="checkbox" data-single-key-shortcuts checked /><span>Tek tuş kısayolları</span></label></div></details>
         <details class="reader-menu"><summary>Dışa aktar</summary><div class="reader-menu-panel"><button class="ghost-btn" id="citeBook" type="button" title="Atıf">Atıf</button><button class="ghost-btn" id="downloadBtn" type="button" title="PDF indir" hidden>İndir</button></div></details>
       </div>
@@ -447,8 +447,26 @@
     <button class="copy-btn" id="hlCopyCite" type="button">Atıfla kopyala</button>
     <button class="copy-btn" id="hlExplain" type="button" hidden>Açıkla</button>
     <button class="copy-btn" id="hlSummarize" type="button" hidden>Özetle</button>
+    <button class="copy-btn" id="hlListen" type="button" hidden></button>
     <button class="primary" id="hlSave">Vurgula</button>
     <button class="icon-btn" id="hlCancel" aria-label="İptal">✕</button>
+  </div>
+
+  <div class="ra-player" id="raPlayer" role="region" hidden>
+    <div class="ra-row">
+      <button class="icon-btn" id="raPrev" type="button">⏮</button>
+      <button class="icon-btn ra-play" id="raPlay" type="button">▶</button>
+      <button class="icon-btn" id="raNext" type="button">⏭</button>
+      <span class="ra-status" id="raStatus" aria-live="polite"></span>
+      <label class="ra-field"><span id="raRateLabel"></span><select id="raRate"></select></label>
+      <button class="icon-btn" id="raClose" type="button">✕</button>
+    </div>
+    <details class="ra-more">
+      <summary id="raMoreLabel"></summary>
+      <label class="ra-field"><span id="raVoiceLabel"></span><select id="raVoice"></select></label>
+      <label class="ra-field"><span id="raSleepLabel"></span><select id="raSleep"></select></label>
+      <p class="ra-hint" id="raHint"></p>
+    </details>
   </div>
 
   <aside class="ai-panel" id="aiPanel" role="region" aria-label="Yapay zekâ yanıtı" hidden>

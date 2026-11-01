@@ -22,6 +22,8 @@ const SHELL = [
   '/app.js',
   '/i18n.mjs',
   '/citations.mjs',
+  '/read-aloud.mjs',
+  '/read-aloud-sources.mjs',
   '/pdf-structure.mjs',
   '/ocr-layer.mjs',
   '/search.mjs',
