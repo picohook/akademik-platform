@@ -16,6 +16,8 @@
 // handle() is called. This module adds the AI-specific gates on top: the book must be
 // in an allowed collection and must allow copying.
 
+import { applySettings } from './ai-settings.mjs';
+
 const OA_COLLECTION = '74149e93-39dd-50ba-b120-a75415d9b0ca';
 const MODES = new Set(['explain', 'summarize']);
 const LANGS = { tr: 'Turkish', en: 'English' };
@@ -101,11 +103,11 @@ export function createLimiter({ perMinute, now = Date.now }) {
   const hits = new Map();
   const busy = new Set();
   return {
-    take(userId) {
+    take(userId, limit = perMinute) {
       const t = now();
       if (busy.has(userId)) return { ok: false, code: 'busy', retryAfter: 2 };
       const recent = (hits.get(userId) || []).filter((stamp) => t - stamp < 60_000);
-      if (recent.length >= perMinute) {
+      if (recent.length >= limit) {
         return { ok: false, code: 'rate_limited', retryAfter: Math.max(1, Math.ceil((60_000 - (t - recent[0])) / 1000)) };
       }
       recent.push(t);
@@ -188,9 +190,17 @@ const STATUS = {
   ai_disabled: 503, provider_error: 502, provider_timeout: 504,
 };
 
-export function createAiSelection({ env = process.env, withDb, fetchImpl = fetch, now = Date.now, log = console.log } = {}) {
+export function createAiSelection({ env = process.env, withDb, settings = null, fetchImpl = fetch, now = Date.now, log = console.log } = {}) {
   const config = readAiConfig(env);
+  // `enabled` is what the environment allows; the admin panel can only narrow it (see ai-settings.mjs).
   const enabled = Boolean(withDb) && aiConfigured(config);
+
+  // The config one request runs with: environment + panel settings, read through a short cache.
+  async function current() {
+    const cfg = applySettings(config, settings ? await settings.get() : null);
+    return { cfg, active: Boolean(withDb) && aiConfigured(cfg) };
+  }
+  const isEnabled = async () => enabled && (await current()).active;
   const limiter = createLimiter({ perMinute: config.perMinute, now });
 
   const fail = (code, extra = {}) => ({ status: STATUS[code] || 500, body: { error: code }, ...extra });
@@ -201,13 +211,14 @@ export function createAiSelection({ env = process.env, withDb, fetchImpl = fetch
     let chars = 0;
     let held = false;
     try {
-      if (!enabled) { outcome = 'ai_disabled'; return fail('ai_disabled'); }
-      const parsed = validateRequest(body, config);
+      const { cfg: live, active } = await current();
+      if (!active) { outcome = 'ai_disabled'; return fail('ai_disabled'); }
+      const parsed = validateRequest(body, live);
       if (parsed.error) { outcome = parsed.error; return fail(parsed.error); }
       chars = parsed.text.length;
-      if (!isAllowedBook(book, config)) { outcome = 'not_available_for_book'; return fail('not_available_for_book'); }
+      if (!isAllowedBook(book, live)) { outcome = 'not_available_for_book'; return fail('not_available_for_book'); }
 
-      const slot = limiter.take(userId);
+      const slot = limiter.take(userId, live.perMinute);
       if (!slot.ok) {
         outcome = slot.code;
         return { ...fail(slot.code), retryAfter: slot.retryAfter };
@@ -215,13 +226,13 @@ export function createAiSelection({ env = process.env, withDb, fetchImpl = fetch
       held = true;
 
       let budget;
-      try { budget = await reserveBudget(withDb, userId, config); } catch {
+      try { budget = await reserveBudget(withDb, userId, live); } catch {
         outcome = 'ai_disabled';
         return fail('ai_disabled'); // counter unavailable: refuse, never run unmetered
       }
       if (!budget.ok) { outcome = budget.code; return fail(budget.code); }
 
-      const result = await callWorkersAi(config, buildMessages(parsed), fetchImpl);
+      const result = await callWorkersAi(live, buildMessages(parsed), fetchImpl);
       if (!result.ok) { outcome = result.code; return fail(result.code); }
       return { status: 200, body: { answer: result.answer, mode: parsed.mode, lang: parsed.lang } };
     } finally {
@@ -230,5 +241,5 @@ export function createAiSelection({ env = process.env, withDb, fetchImpl = fetch
     }
   }
 
-  return { enabled, handle, config };
+  return { enabled, isEnabled, current, handle, config };
 }

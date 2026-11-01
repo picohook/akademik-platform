@@ -78,6 +78,15 @@ try {
     same('answer' in payload, false, 'no answer in a refusal');
     same(disabled.headers.get('cache-control'), 'no-store', 'not cacheable');
   }
+  // The admin panel's endpoints: the gates in front of them, on the shipped server. (Reading and
+  // saving settings needs a database and is covered by test/ai-settings.test.mjs and db/029.test.mjs.)
+  for (const [method, path] of [['GET', '/api/admin/ai'], ['PUT', '/api/admin/ai'], ['GET', '/api/admin/audit']]) {
+    same((await fetch(base + path, { method })).status, 401, method + ' ' + path + ' without a session');
+    const asReader = await fetch(base + path, { method, headers: { cookie, 'x-csrf-token': csrf, 'content-type': 'application/json' }, body: method === 'PUT' ? '{}' : undefined });
+    same(asReader.status, 403, method + ' ' + path + ' as a plain reader');
+    same((await asReader.json()).error, 'yetkiniz yok', 'refusal says nothing about the settings');
+  }
+  same((await fetch(base + '/api/admin/ai', { method: 'PUT', headers: { cookie, 'content-type': 'application/json' }, body: '{}' })).status, 403, 'PUT without the CSRF header');
   console.log(JSON.stringify({ passed: true, checks, knownBookCase: Boolean(first) }));
 } catch (error) {
   console.error(error);

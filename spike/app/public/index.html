@@ -52,6 +52,7 @@
     <button class="ghost-btn" data-lang-toggle type="button">EN</button>
     <button class="ghost-btn" id="offlineBtn" type="button">Çevrimdışı</button>
     <button class="ghost-btn" id="grantsBtn" type="button" hidden>Erişim</button>
+    <button class="ghost-btn" id="adminBtn" type="button" hidden>Yönetim</button>
     <button class="ghost-btn" id="passwordBtn" type="button" hidden>Parola</button>
     <button class="ghost-btn" id="logoutBtn" type="button" hidden>Çıkış</button>
   </header>
@@ -266,6 +267,41 @@
       </form>
       <p class="login-hint">Son grant işlemleri</p>
       <div class="grant-list" id="grantAudit" role="region" aria-label="Grant geçmişi" tabindex="0"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="adminModal" hidden>
+    <div class="modal-card admin-card" role="dialog" aria-modal="true" aria-labelledby="adminHeading">
+      <div class="modal-head">
+        <strong id="adminHeading">Yönetim · Yapay zekâ</strong>
+        <button class="icon-btn" id="closeAdmin" type="button" aria-label="Kapat">✕</button>
+      </div>
+      <div class="login-hint" id="adminStatus" role="status"></div>
+      <form id="adminAiForm">
+        <label class="check-label"><input type="checkbox" id="adminAiEnabled" /> <span>Açıklama ve özet özelliği açık</span></label>
+        <div class="form-row admin-limits">
+          <label><span id="adminPerMinuteLabel">Kullanıcı / dakika</span><input id="adminPerMinute" type="number" min="1" step="1" required /></label>
+          <label><span id="adminPerUserDayLabel">Kullanıcı / gün</span><input id="adminPerUserDay" type="number" min="1" step="1" required /></label>
+          <label><span id="adminPerGlobalDayLabel">Toplam / gün</span><input id="adminPerGlobalDay" type="number" min="1" step="1" required /></label>
+        </div>
+        <fieldset class="admin-collections">
+          <legend>İzinli koleksiyonlar</legend>
+          <div id="adminCollections"></div>
+        </fieldset>
+        <p class="login-hint" id="adminSecretNote">Hesap numarası, erişim anahtarı ve model adı sunucuda tutulur; burada gösterilmez ve değiştirilemez.</p>
+        <div class="login-error" id="adminError" hidden></div>
+        <div class="modal-actions">
+          <button class="ghost-btn" id="cancelAdmin" type="button">Kapat</button>
+          <button class="primary" id="saveAdmin" type="submit">Kaydet</button>
+        </div>
+      </form>
+      <p class="login-hint">Bugünkü kullanım</p>
+      <progress id="adminUsageBar" max="1" value="0" aria-label="Günlük toplam kullanım"></progress>
+      <div class="grant-list" id="adminUsage" role="region" aria-label="Son 30 gün kullanım" tabindex="0"></div>
+      <p class="login-hint">Bugün en çok kullananlar</p>
+      <div class="grant-list" id="adminTop" role="region" aria-label="Bugün en çok kullananlar" tabindex="0"></div>
+      <p class="login-hint">Son değişiklikler</p>
+      <div class="grant-list" id="adminAudit" role="region" aria-label="Ayar değişiklik geçmişi" tabindex="0"></div>
     </div>
   </div>
 

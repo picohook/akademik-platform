@@ -12,7 +12,9 @@
 // would show the old form next to the new script.
 // v29: the same files gain the AI buttons and panel; a cached v28 shell would pair the
 // old markup with the new script.
-const CACHE = 'akademik-shell-v29';
+// v30: the Yönetim button and panel were added to index.html, app.js and styles.css; a cached v29
+// shell would pair the old markup with the new script.
+const CACHE = 'akademik-shell-v30';
 const SHELL = [
   '/',
   '/styles.css',
