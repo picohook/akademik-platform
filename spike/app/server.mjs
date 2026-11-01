@@ -2184,6 +2184,15 @@ async function serveStatic(req, res, pathname) {
   }
   const ext = path.extname(filePath).toLowerCase();
   const noCache = ['.html', '.js', '.mjs', '.css', '.hocr'].includes(ext);
+  // Cloudflare may keep a response for hours whatever the origin says. Two things must never be kept there:
+  // the page itself and the service worker (they name the build), and a script or style requested under a
+  // build token that is not the running one: this server answers it with the CURRENT file, so an edge that
+  // stored it would pair the old page with new code under the old URL. The CDN-specific header is the one
+  // Cloudflare documents for overriding its own caching of an origin response.
+  const requestedToken = new URL(req.url, 'http://localhost').searchParams.get('v');
+  const wrongToken = Boolean(ASSET_VERSION && requestedToken && requestedToken !== ASSET_VERSION && ['.js', '.mjs', '.css'].includes(ext));
+  const edgeNever = ext === '.html' || relative === '/sw.js' || wrongToken;
+  const edgeHeaders = edgeNever ? { 'cloudflare-cdn-cache-control': 'no-store', 'cdn-cache-control': 'no-store' } : {};
   // index.html is the one file served with a mutable body: the asset version
   // token is stamped in at response time so it always matches the running build.
   if (ext === '.html' && ASSET_VERSION) {
@@ -2199,6 +2208,7 @@ async function serveStatic(req, res, pathname) {
       'content-type': MIME[ext],
       'content-length': body.length,
       'cache-control': 'no-cache',
+      ...edgeHeaders,
     });
     res.end(body);
     return;
@@ -2206,7 +2216,8 @@ async function serveStatic(req, res, pathname) {
   res.writeHead(200, {
     'content-type': MIME[ext] || 'application/octet-stream',
     'content-length': info.size,
-    'cache-control': ext === '.pdf' ? 'private, max-age=0' : (noCache ? 'no-cache' : 'public, max-age=3600'),
+    'cache-control': ext === '.pdf' ? 'private, max-age=0' : (wrongToken ? 'no-store' : (noCache ? 'no-cache' : 'public, max-age=3600')),
+    ...edgeHeaders,
   });
   createReadStream(filePath).pipe(res);
 }

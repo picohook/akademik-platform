@@ -11,6 +11,28 @@ import { fetchDownloadBlob, saveOfflineDownload } from '/downloads.mjs';
 import { RATES, createBrowserSpeech, createReadAloud, voicesFor } from '/read-aloud.mjs';
 import { createEpubSource, createPdfSource } from '/read-aloud-sources.mjs';
 
+// A page whose HTML is older than its scripts heals itself once. The HTML names its build in the script URL
+// (?v=<sha>); the server says which build is running. If the edge cached the HTML from an earlier release the
+// two differ, and the page is fetched again under a unique URL so no cache can answer it.
+(async () => {
+  try {
+    const here = new URL(location.href);
+    if (here.searchParams.has('fresh')) {
+      here.searchParams.delete('fresh');
+      history.replaceState(history.state, '', here.pathname + here.search + here.hash);
+    }
+    const mine = new URL(import.meta.url).searchParams.get('v');
+    if (!mine) return;
+    const config = await (await fetch('/api/config', { cache: 'no-store' })).json();
+    if (!config.buildSha || config.buildSha === mine) { sessionStorage.removeItem('staleReload'); return; }
+    if (sessionStorage.getItem('staleReload')) return;
+    sessionStorage.setItem('staleReload', '1');
+    const next = new URL(location.href);
+    next.searchParams.set('fresh', String(Date.now()));
+    location.replace(next.href);
+  } catch { /* offline, or storage disabled: carry on with the page as it is */ }
+})();
+
 // Sesli oku state (declared up here: goToPage and friends call raNoteNavigation before the block below runs)
 let readAloud = null;
 let raSelfNavUntil = 0;
@@ -1497,6 +1519,7 @@ function raMedia(status) {
 // While it reads, the controls fade after a few quiet seconds so they do not cover the page; the
 // pointer, a touch or a key brings them back, and they never fade while a keyboard user is on them.
 function raActivity(force = false) {
+  if (!raPlayer) return;
   const now = Date.now();
   if (!force && now - raLastActivity < 250) return;
   raLastActivity = now;
@@ -1560,6 +1583,7 @@ async function raStart(origin = { type: 'view' }) {
 }
 
 function raReset() {
+  if (!raPlayer) return;
   raPrevStatus = 'idle';
   clearTimeout(raQuietTimer);
   raQuietTimer = null;
@@ -1573,26 +1597,32 @@ function raReset() {
   raMedia('idle');
 }
 
-raLabels();
-raSpeech.onVoicesChanged(raFillVoices);
-raBtn.addEventListener('click', () => { if (raPlayer.hidden) raStart({ type: 'view' }); else raReset(); });
-hlListen.addEventListener('click', () => {
-  const text = (state.epubMode ? state.epubSelection : state.pending)?.text || '';
-  raStart({ type: 'selection', text });
-  cancelSelection();
-});
-raPlay.addEventListener('click', () => { if (readAloud) readAloud.toggle(); else raStart({ type: 'view' }); });
-$('raPrev').addEventListener('click', () => readAloud?.prev());
-$('raNext').addEventListener('click', () => readAloud?.next());
-$('raClose').addEventListener('click', () => { raReset(); raBtn.focus(); });
-raRate.addEventListener('change', () => { const rate = Number(raRate.value); raSavePrefs({ rate }); readAloud?.setRate(rate); });
-raVoice.addEventListener('change', () => {
-  const lang = raLang();
-  raSavePrefs({ voices: { ...(raPrefs().voices || {}), [lang]: raVoice.value } });
-  readAloud?.setVoice(raVoice.value);
-});
-$('raSkip').addEventListener('change', () => raSavePrefs({ skipChrome: $('raSkip').checked }));
-raSleep.addEventListener('change', () => readAloud?.setSleep(Number(raSleep.value)));
+const raMarkup = ['raPlayer', 'raBtn', 'raPlay', 'raPrev', 'raNext', 'raClose', 'raStatus', 'raRate', 'raRateLabel', 'raVoice', 'raVoiceLabel', 'raSleep', 'raSleepLabel', 'raSkip', 'raSkipLabel', 'raHint', 'raMoreLabel', 'hlListen']
+  .every((id) => document.getElementById(id));
+if (raMarkup) {
+  raLabels();
+  raSpeech.onVoicesChanged(raFillVoices);
+}
+if (raMarkup) {
+  raBtn.addEventListener('click', () => { if (raPlayer.hidden) raStart({ type: 'view' }); else raReset(); });
+  hlListen.addEventListener('click', () => {
+    const text = (state.epubMode ? state.epubSelection : state.pending)?.text || '';
+    raStart({ type: 'selection', text });
+    cancelSelection();
+  });
+  raPlay.addEventListener('click', () => { if (readAloud) readAloud.toggle(); else raStart({ type: 'view' }); });
+  $('raPrev').addEventListener('click', () => readAloud?.prev());
+  $('raNext').addEventListener('click', () => readAloud?.next());
+  $('raClose').addEventListener('click', () => { raReset(); raBtn.focus(); });
+  raRate.addEventListener('change', () => { const rate = Number(raRate.value); raSavePrefs({ rate }); readAloud?.setRate(rate); });
+  raVoice.addEventListener('change', () => {
+    const lang = raLang();
+    raSavePrefs({ voices: { ...(raPrefs().voices || {}), [lang]: raVoice.value } });
+    readAloud?.setVoice(raVoice.value);
+  });
+  $('raSkip').addEventListener('change', () => raSavePrefs({ skipChrome: $('raSkip').checked }));
+  raSleep.addEventListener('change', () => readAloud?.setSleep(Number(raSleep.value)));
+}
 for (const type of ['pointermove', 'pointerdown', 'touchstart', 'keydown']) document.addEventListener(type, () => raActivity(), { passive: true });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && readAloud?.state().status === 'playing') raWake(true); });
 window.addEventListener('pagehide', () => raSpeech.cancel());
@@ -4618,7 +4648,7 @@ document.addEventListener('keydown', (event) => {
     return;
   }
   if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey
-      && (event.code === 'KeyL' || event.key?.toLowerCase() === 'l') && !reader.hidden && raSpeech.supported) {
+      && (event.code === 'KeyL' || event.key?.toLowerCase() === 'l') && !reader.hidden && raMarkup && raSpeech.supported) {
     event.preventDefault();
     if (raPlayer.hidden) raStart({ type: 'view' }); else raReset();
     return;
