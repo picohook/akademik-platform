@@ -1,5 +1,6 @@
 import { createLibrary } from '/library.mjs';
 import { createDesigns } from '/library-designs.mjs';
+import { coverFor } from '/library-covers.mjs';
 import { normalizeBookVariant, bookRequestId, offlineBookKey, groupBookVariants, variantLabel, locationMatchesBook, bookFromLocation, findOfflineVariant } from '/book-variants.mjs';
 import { renderPdfLinks, destinationPage } from '/book-links.mjs';
 import * as pdfjsLib from '/vendor/pdfjs/pdf.mjs';
@@ -614,6 +615,26 @@ function makeCard(book, variants = [book]) {
     meta.appendChild(edit);
   }
 
+  const art = coverFor(book);
+  if (art) {
+    // a real cover: shown whole (never cropped), in its own proportions; the typographic text stays for search and screen readers
+    cover.classList.add('has-image');
+    cover.style.aspectRatio = String(art.ratio);
+    const img = document.createElement('img');
+    img.className = 'cover-img';
+    img.src = art.src;
+    img.alt = '';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    cover.prepend(img);
+    if (art.note) {
+      const note = document.createElement('span');
+      note.className = 'cover-note';
+      note.lang = getLang() === 'en' ? 'en' : 'tr';
+      note.textContent = art.note[getLang() === 'en' ? 1 : 0];
+      cover.appendChild(note);
+    }
+  }
   // the stage is the shelf behind the book; library-designs.css gives it the page edge and spine
   const stage = document.createElement('div');
   stage.className = 'lr-stage';

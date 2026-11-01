@@ -152,6 +152,21 @@ try {
   check(await page.locator('#lrSidebar').evaluate(e=>!e.classList.contains('open')&&e.inert),'Escape closes the drawer');
   same(await page.locator('#lrOpenNav').evaluate(e=>e===document.activeElement),true,'focus returns to the menu button');
 
+  // real local covers: shown whole, from /covers/, with the English-edition label on the Turkish D2L card
+  books.push({...books[0],id:'a0000000-0000-4000-8000-0000000000a1',asset_id:'b0000000-0000-4000-8000-0000000000a1',title:'Linear Algebra'},
+    {...books[1],id:'a0000000-0000-4000-8000-0000000000a2',asset_id:'b0000000-0000-4000-8000-0000000000a2',title:'Derin Öğrenmeye Dalış'});
+  await page.setViewportSize({width:1440,height:900});
+  await page.evaluate(()=>localStorage.setItem('uiLang','tr'));
+  await page.reload(); await page.waitForFunction(()=>document.querySelectorAll('#grid .card').length===6);
+  await page.waitForFunction(()=>[...document.querySelectorAll('#grid .cover-img')].length===2&&[...document.querySelectorAll('#grid .cover-img')].every(i=>i.complete&&i.naturalWidth>0));
+  checks++;
+  const srcs=await page.locator('#grid .cover-img').evaluateAll(list=>list.map(i=>new URL(i.src).pathname));
+  same(srcs.every(s=>s.startsWith('/covers/')),true,'covers are local');
+  same(await page.locator('#grid .cover-note').allTextContents(),['İngilizce baskı kapağı'],'English edition label on the Turkish D2L card');
+  same(await page.locator('#grid .cover-img').evaluateAll(list=>list.every(i=>getComputedStyle(i).objectFit==='contain')),true,'covers are not cropped');
+  if(process.env.SHOTS_DIR){ await page.locator('#grid .cover-img').first().scrollIntoViewIfNeeded(); await page.evaluate(()=>window.scrollBy(0,150)); await page.waitForTimeout(600); await page.screenshot({path:path.join(process.env.SHOTS_DIR,'library-covers.png')}); }
+  books.length=4;
+
   // a browser that cannot store anything still renders and switches
   await context.addInitScript(()=>{Storage.prototype.getItem=()=>{throw Error('disabled');};Storage.prototype.setItem=()=>{throw Error('disabled');};});
   await page.reload(); await page.waitForFunction(()=>document.querySelectorAll('#grid .card').length>0);

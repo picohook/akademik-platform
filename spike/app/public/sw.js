@@ -34,6 +34,7 @@ const SHELL = [
   '/library-model.mjs',
   '/library-designs.css',
   '/library-designs.mjs',
+  '/library-covers.mjs',
   '/design-init.js',
   '/app.js',
   '/i18n.mjs',
