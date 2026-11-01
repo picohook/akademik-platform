@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  aiConfigured, buildMessages, callWorkersAi, createAiSelection, createLimiter,
+  aiConfigured, buildMessages, callWorkersAi, tidyAnswer, createAiSelection, createLimiter,
   isAllowedBook, readAiConfig, reserveBudget, validateRequest,
 } from '../ai-selection.mjs';
 
@@ -252,4 +252,35 @@ test('callWorkersAi never sends anything but the bearer token to the provider', 
   const { impl, calls } = okFetch();
   await callWorkersAi(readAiConfig(goodEnv), buildMessages({ mode: 'explain', lang: 'en', text: passage }), impl);
   assert.deepEqual(Object.keys(calls[0].init.headers).sort(), ['authorization', 'content-type']);
+});
+
+test('markdown the model adds is removed; a list marker or heading never reaches the panel', () => {
+  assert.equal(
+    tidyAnswer('**Green Open Access**: free copy.\n\n- one\n* two\n## Title\nend'),
+    'Green Open Access: free copy.\n\none\ntwo\nTitle\nend',
+  );
+});
+
+test('an answer that hit the token limit ends at the last whole sentence', () => {
+  const full = 'First sentence is complete. Second sentence is complete too. Third one is cut off mid';
+  assert.equal(tidyAnswer(full, true), 'First sentence is complete. Second sentence is complete too.');
+  assert.equal(tidyAnswer(full, false), full, 'not cut -> untouched');
+  assert.equal(tidyAnswer('No sentence end at all here', true), 'No sentence end at all here');
+});
+
+test('callWorkersAi asks for 600 tokens and trims when the provider reports hitting the limit', async () => {
+  let sent;
+  const impl = async (url, init) => {
+    sent = JSON.parse(init.body);
+    return { ok: true, status: 200, json: async () => ({ success: true, result: { response: 'Done sentence one. Done sentence two. Cut mid', usage: { completion_tokens: 600 } } }) };
+  };
+  const result = await callWorkersAi(readAiConfig(goodEnv), buildMessages({ mode: 'explain', lang: 'tr', text: passage }), impl);
+  assert.equal(sent.max_tokens, 600);
+  assert.equal(result.answer, 'Done sentence one. Done sentence two.');
+});
+
+test('the prompt forbids translating and markdown', () => {
+  const system = buildMessages({ mode: 'explain', lang: 'tr', text: passage })[0].content;
+  assert.match(system, /Do not translate or repeat/);
+  assert.match(system, /no markdown/);
 });
