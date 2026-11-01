@@ -602,10 +602,10 @@ async function tenantForLogin(email) {
     const { rows } = await client.query('select app.tenant_for_login($1) as tenant_id', [email]);
     return rows[0]?.tenant_id || null;
   } catch (error) {
-    // Before 018 is applied the function does not exist. Falling back to the
-    // env tenant keeps single-tenant deployments working and is no worse than
-    // the previous behaviour.
-    if (error.code === '42883') {
+    // Before 018 is applied the function does not exist (42883), and on a database that never had
+    // it the "app" schema does not exist either (3F000). Falling back to the env tenant keeps
+    // single-tenant deployments working and is no worse than the previous behaviour.
+    if (error.code === '42883' || error.code === '3F000') {
       console.warn('[auth] app.tenant_for_login missing; falling back to DEMO_TENANT_ID');
       return TENANT_ID;
     }
