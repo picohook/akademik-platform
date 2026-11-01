@@ -18,6 +18,7 @@ import { indexAsset } from './indexer.mjs';
 import { createDownloadService, startDownloadMaintenance } from './download-tickets.mjs';
 import { watermarkDownload, inspectWatermarkable } from './social-watermark.mjs';
 import { createAiSelection } from './ai-selection.mjs';
+import { CEILINGS as AI_CEILINGS, createSettingsStore, validateSettings } from './ai-settings.mjs';
 import {
   buildSnippet,
   catalogMatches,
@@ -1472,7 +1473,14 @@ async function getBook(id, dbClient = null) {
 
 // Explain / summarise a selected passage. Off unless LIBREAD_AI_ENABLED=1 and fully
 // configured; without a database there is no budget counter, so it stays off then too.
-const aiSelection = createAiSelection({ withDb: pool ? withTenant : null });
+// The admin panel can narrow it and tune its limits (ai-settings.mjs); the token and model stay in
+// the environment. get() needs no tenant because /api/config is public.
+async function withPlainClient(fn) {
+  const client = await pool.connect();
+  try { return await fn(client); } finally { client.release(); }
+}
+const aiSettings = pool ? createSettingsStore({ withDb: withTenant, withPlain: withPlainClient }) : null;
+const aiSelection = createAiSelection({ withDb: pool ? withTenant : null, settings: aiSettings });
 
 const downloadService = createDownloadService({
   // A callback, not TENANT_ID: the service is built once at startup but every call
@@ -2622,7 +2630,7 @@ async function handleRequest(req, res) {
         buildDate: BUILD_DATE,
         environment: APP_ENV,
         supportEmail: SUPPORT_EMAIL,
-        aiSelection: aiSelection.enabled,
+        aiSelection: await aiSelection.isEnabled(),
       });
       return;
     }
@@ -3280,6 +3288,57 @@ async function handleRequest(req, res) {
     }
     if (pathname === '/api/progress' && req.method === 'POST') {
       json(res, 200, await saveProgress(await readJson(req), auth.userId));
+      return;
+    }
+    // Platform settings: administrators of the deployment's own tenant only. A librarian, a
+    // publisher, or an admin of some other tenant cannot see or change them.
+    if (pathname === '/api/admin/ai' || pathname === '/api/admin/audit') {
+      if (!aiSettings || auth.role !== 'admin' || auth.tenantId !== TENANT_ID) {
+        json(res, 403, { error: 'yetkiniz yok' });
+        return;
+      }
+      res.setHeader('cache-control', 'no-store');
+      if (pathname === '/api/admin/ai' && req.method === 'GET') {
+        const [stored, status, usage, collections] = await Promise.all([
+          aiSettings.get(), aiSelection.current(), aiSettings.usage(30),
+          withTenant(async (client) => (await client.query('select id, title from collections order by title')).rows),
+        ]);
+        // Counts and settings only. The token, account id and model name stay on the server.
+        json(res, 200, {
+          envEnabled: aiSelection.enabled,
+          active: status.active,
+          ceilings: AI_CEILINGS,
+          stored,
+          effective: {
+            enabled: status.cfg.switchedOn, perMinute: status.cfg.perMinute, perUserDay: status.cfg.perUserDay,
+            perGlobalDay: status.cfg.perGlobalDay, collectionIds: status.cfg.allowedCollections,
+          },
+          collections,
+          usage,
+        });
+        return;
+      }
+      if (pathname === '/api/admin/ai' && req.method === 'PUT') {
+        const checked = validateSettings(await readJson(req, 10_000));
+        if (!checked.ok) {
+          json(res, 400, checked);
+          return;
+        }
+        const known = new Set((await withTenant(async (client) => (await client.query('select id from collections')).rows)).map((row) => String(row.id).toLowerCase()));
+        const unknown = checked.value.collectionIds.find((id) => !known.has(id));
+        if (unknown) {
+          json(res, 400, { ok: false, error: 'invalid_field', field: 'collectionIds' });
+          return;
+        }
+        await aiSettings.save(auth.userId, checked.value);
+        json(res, 200, { ok: true, stored: checked.value });
+        return;
+      }
+      if (pathname === '/api/admin/audit' && req.method === 'GET') {
+        json(res, 200, await aiSettings.audit(50));
+        return;
+      }
+      json(res, 405, { error: 'method not allowed' });
       return;
     }
     if (pathname === '/api/ai/selection' && req.method === 'POST') {

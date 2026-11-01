@@ -254,6 +254,7 @@ const editAllowPrint = $('editAllowPrint');
 const editWatermark = $('editWatermark');
 const deleteBookBtn = $('deleteBook');
 const grantsModal = $('grantsModal');
+const adminModal = $('adminModal');
 const grantsList = $('grantsList');
 const grantForm = $('grantForm');
 const grantError = $('grantError');
@@ -819,6 +820,173 @@ function closeGrants() {
   closeModal(grantsModal);
 }
 
+// ---- Yönetim: the AI feature's switch, limits, collections, usage and change history ----
+// Everything shown here is counts and settings. The token, account id and model name are
+// never sent to the browser. Only the deployment's own administrator gets data back (403 else).
+const ADMIN_ERRORS = {
+  invalid_field: 'Geçersiz değer. Sınırları ve koleksiyon seçimini kontrol edin.',
+  unknown_field: 'Geçersiz değer. Sınırları ve koleksiyon seçimini kontrol edin.',
+  invalid_settings: 'Geçersiz değer. Sınırları ve koleksiyon seçimini kontrol edin.',
+};
+const ADMIN_WORDS = {
+  users: ['kullanıcı', 'users'], requests: ['istek', 'requests'], max: ['en çok', 'max'], yes: ['evet', 'yes'], no: ['hayır', 'no'],
+  noChange: ['değişiklik yok', 'no change'],
+  enabled: ['açık', 'on'], perMinute: ['dakika', 'per minute'], perUserDay: ['kullanıcı/gün', 'per user/day'],
+  perGlobalDay: ['toplam/gün', 'total/day'], collectionIds: ['koleksiyon', 'collections'],
+};
+const adminWord = (key) => ADMIN_WORDS[key][getLang() === 'en' ? 1 : 0];
+const ADMIN_LIMIT_LABELS = { perMinute: 'Kullanıcı / dakika', perUserDay: 'Kullanıcı / gün', perGlobalDay: 'Toplam / gün' };
+
+function adminChange(entry) {
+  const before = entry.detail?.before || {};
+  const after = entry.detail?.after || {};
+  const yesNo = (value) => (value === undefined ? '—' : adminWord(value ? 'yes' : 'no'));
+  const parts = ['enabled', 'perMinute', 'perUserDay', 'perGlobalDay', 'collectionIds']
+    .filter((key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]))
+    .map((key) => {
+      const name = adminWord(key);
+      if (key === 'collectionIds') return name + ': ' + (before[key] || []).length + ' → ' + (after[key] || []).length;
+      if (key === 'enabled') return name + ': ' + yesNo(before[key]) + ' → ' + yesNo(after[key]);
+      return name + ': ' + (before[key] ?? '—') + ' → ' + after[key];
+    });
+  return parts.length ? parts.join(' · ') : adminWord('noChange');
+}
+
+function adminRow(list, text, number) {
+  const row = document.createElement('div');
+  row.className = 'grant-row';
+  const label = document.createElement('span');
+  label.textContent = text;
+  row.appendChild(label);
+  if (number !== undefined) {
+    const value = document.createElement('span');
+    value.className = 'admin-num';
+    value.textContent = number;
+    row.appendChild(value);
+  }
+  list.appendChild(row);
+}
+
+function renderAdmin(data) {
+  const { effective, ceilings, collections, usage, envEnabled, active, stored } = data;
+  const form = stored || effective;
+  $('adminAiEnabled').checked = form.enabled !== false;
+  $('adminAiEnabled').disabled = !envEnabled;
+  for (const [id, key] of [['adminPerMinute', 'perMinute'], ['adminPerUserDay', 'perUserDay'], ['adminPerGlobalDay', 'perGlobalDay']]) {
+    $(id).value = form[key] ?? effective[key];
+    $(id).max = ceilings[key];
+    $(id + 'Label').textContent = t(ADMIN_LIMIT_LABELS[key]) + ' (' + adminWord('max') + ' ' + ceilings[key] + ')';
+  }
+  const chosen = new Set((form.collectionIds || effective.collectionIds).map((id) => String(id).toLowerCase()));
+  const box = $('adminCollections');
+  box.replaceChildren();
+  for (const collection of collections) {
+    const label = document.createElement('label');
+    label.className = 'check-label';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.value = collection.id;
+    input.checked = chosen.has(String(collection.id).toLowerCase());
+    const text = document.createElement('span');
+    text.textContent = collection.title;
+    label.append(input, text);
+    box.appendChild(label);
+  }
+  $('adminStatus').textContent = !envEnabled
+    ? t('Sunucuda kapalı: yapılandırma eksik ya da LIBREAD_AI_ENABLED açık değil. Panelden açılamaz.')
+    : (active ? t('Şu anda açık ve çalışıyor.') : t('Panelden kapatılmış.'));
+
+  const today = usage.days[0] && usage.days[0].day === new Date().toISOString().slice(0, 10) ? usage.days[0] : null;
+  $('adminUsageBar').max = effective.perGlobalDay;
+  $('adminUsageBar').value = today ? Math.min(today.total, effective.perGlobalDay) : 0;
+  const usageList = $('adminUsage');
+  usageList.replaceChildren();
+  if (!usage.days.length) adminRow(usageList, t('Henüz kullanım yok.'));
+  usage.days.forEach((day) => adminRow(usageList, day.day + ' · ' + day.users + ' ' + adminWord('users'), day.total + ' ' + adminWord('requests')));
+  const top = $('adminTop');
+  top.replaceChildren();
+  if (!usage.topToday.length) adminRow(top, t('Bugün kullanım yok.'));
+  usage.topToday.forEach((row) => adminRow(top, row.email || String(row.user_id).slice(0, 8), row.used + ' ' + adminWord('requests')));
+}
+
+async function loadAdminAudit() {
+  const list = $('adminAudit');
+  list.replaceChildren();
+  try {
+    const response = await fetch('/api/admin/audit', { cache: 'no-store' });
+    if (!response.ok) throw new Error('audit failed');
+    const rows = await response.json();
+    if (!rows.length) adminRow(list, t('Henüz değişiklik yok.'));
+    rows.forEach((row) => adminRow(list, row.at.replace('T', ' ').replace('Z', ' UTC') + ' · ' + (row.actor_email || String(row.actor_id).slice(0, 8)) + ' · ' + adminChange(row)));
+  } catch { adminRow(list, t('Geçmiş yüklenemedi.')); }
+}
+
+async function loadAdmin() {
+  $('adminError').hidden = true;
+  const response = await fetch('/api/admin/ai', { cache: 'no-store' });
+  if (response.status === 403) {
+    $('adminStatus').textContent = t('Bu ayarlar yalnızca platform yöneticisine açık.');
+    $('adminAiForm').hidden = true;
+    return;
+  }
+  if (!response.ok) throw new Error('admin load failed');
+  $('adminAiForm').hidden = false;
+  renderAdmin(await response.json());
+  await loadAdminAudit();
+}
+
+async function openAdmin() {
+  $('adminStatus').textContent = t('Yükleniyor…');
+  openModal(adminModal, $('closeAdmin'));
+  try { await loadAdmin(); } catch (error) {
+    console.error(error);
+    $('adminStatus').textContent = t('Yönetim verisi yüklenemedi.');
+  }
+}
+
+function closeAdmin() {
+  closeModal(adminModal);
+}
+
+async function saveAdmin(event) {
+  event.preventDefault();
+  const error = $('adminError');
+  error.hidden = true;
+  const payload = {
+    enabled: $('adminAiEnabled').checked,
+    perMinute: Number($('adminPerMinute').value),
+    perUserDay: Number($('adminPerUserDay').value),
+    perGlobalDay: Number($('adminPerGlobalDay').value),
+    collectionIds: [...$('adminCollections').querySelectorAll('input:checked')].map((input) => input.value),
+  };
+  $('saveAdmin').disabled = true;
+  try {
+    const response = await fetch('/api/admin/ai', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      error.textContent = t(ADMIN_ERRORS[result.error] || 'Kaydedilemedi. Biraz sonra tekrar deneyin.');
+      error.hidden = false;
+      return;
+    }
+    toast(t('Kaydedildi'));
+    await loadAdmin();
+    // the reader's own buttons follow the switch without a reload
+    try {
+      state.aiSelection = (await (await fetch('/api/config', { cache: 'no-store' })).json()).aiSelection === true;
+      updateCopyControls();
+    } catch { /* the next page load picks it up */ }
+  } catch {
+    error.textContent = t('Kaydedilemedi. Biraz sonra tekrar deneyin.');
+    error.hidden = false;
+  } finally {
+    $('saveAdmin').disabled = false;
+  }
+}
+
 function grantSubjectTypeChanged() {
   const type = $('grantSubjectType').value;
   $('grantEmailLabel').hidden = type === 'group';
@@ -1348,6 +1516,7 @@ function canEditBook(book) {
 function applyRoleUi() {
   $('openUpload').hidden = !canManage();
   $('grantsBtn').hidden = !canManageAccess();
+  $('adminBtn').hidden = state.user?.role !== 'admin' || state.offlineLibrary;
 }
 
 function setAppInert(inert) {
@@ -1388,6 +1557,7 @@ async function showOfflineLibrary(entries) {
   logoutBtn.hidden = true;
   passwordBtn.hidden = true;
   $('grantsBtn').hidden = true;
+  $('adminBtn').hidden = true;
   $('openUpload').hidden = true;
   mode.textContent = t('Çevrimdışı');
   state.offlineMode = true;
@@ -4117,6 +4287,10 @@ document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') closeGrants();
     return;
   }
+  if (!adminModal.hidden) {
+    if (event.key === 'Escape') closeAdmin();
+    return;
+  }
   if (!offlineModal.hidden) {
     if (event.key === 'Escape') closeOffline();
     return;
@@ -4218,6 +4392,13 @@ $('offlineBtn').addEventListener('click', openOfflineModal);
 $('closeOffline').addEventListener('click', closeOffline);
 offlineModal.addEventListener('click', (event) => {
   if (event.target === offlineModal) closeOffline();
+});
+$('adminBtn').addEventListener('click', openAdmin);
+$('closeAdmin').addEventListener('click', closeAdmin);
+$('cancelAdmin').addEventListener('click', closeAdmin);
+$('adminAiForm').addEventListener('submit', saveAdmin);
+adminModal.addEventListener('click', (event) => {
+  if (event.target === adminModal) closeAdmin();
 });
 $('grantsBtn').addEventListener('click', openGrants);
 $('closeGrants').addEventListener('click', closeGrants);
