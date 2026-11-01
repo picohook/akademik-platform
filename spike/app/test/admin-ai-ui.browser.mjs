@@ -46,7 +46,11 @@ const panelData = (over = {}) => ({
   collections: [{ id: OA, title: 'Açık Erişim' }, { id: PRIVATE, title: 'Özel Koleksiyon' }],
   usage: {
     days: [{ day: today, total: 42, users: 6 }, { day: '2026-10-31', total: 17, users: 3 }],
-    topToday: [{ user_id: 'aaaaaaaa-0000-0000-0000-000000000000', used: 11, email: 'ayse@example.edu' }],
+    topToday: [
+      { user_id: 'aaaaaaaa-0000-0000-0000-000000000000', used: 11, email: 'ayse@example.edu', display_name: 'Ayşe Yılmaz', tenant_slug: 'libedge-individual' },
+      { user_id: 'bbbbbbbb-0000-0000-0000-000000000000', used: 4, email: 'same@example.edu', display_name: 'same@example.edu', tenant_slug: 'libedge' },
+      { user_id: 'cccccccc-1111-0000-0000-000000000000', used: 1, email: null, display_name: null, tenant_slug: null },
+    ],
   },
   ...over,
 });
@@ -148,7 +152,10 @@ try {
   check((await page.locator('#adminStatus').innerText()).includes('açık'), 'status says it is on');
   same(await page.locator('#adminUsageBar').evaluate((el) => [el.max, el.value]), [100, 42], 'today bar: 42 of the 100 daily cap');
   check((await page.locator('#adminUsage').innerText()).includes('42 istek'), 'usage list shows requests');
-  check((await page.locator('#adminTop').innerText()).includes('ayse@example.edu'), 'heaviest users show the e-mail');
+  const topText = await page.locator('#adminTop').innerText();
+  check(topText.includes('Ayşe Yılmaz · ayse@example.edu · libedge-individual'), 'a person is shown by name, e-mail and tenant: ' + topText);
+  check(topText.includes('same@example.edu · libedge') && !topText.includes('same@example.edu · same@example.edu'), 'the name is left out when it is only the address again');
+  check(topText.includes('cccccccc'), 'a user the server could not name falls back to the start of the id');
   const auditText = await page.locator('#adminAudit').innerText();
   check(auditText.includes('boss@libedge.com') && auditText.includes('açık: evet → hayır') && auditText.includes('toplam/gün: 100 → 60') && auditText.includes('koleksiyon: 1 → 2'), 'history shows who and what changed: ' + auditText);
   const html = await page.locator('#adminModal').innerHTML();
@@ -167,6 +174,8 @@ try {
   await page.waitForFunction(() => document.querySelector('#toast, .toast')?.textContent.includes('Kaydedildi'));
   same(state.puts.length, 1, 'one PUT');
   same(state.puts[0], { enabled: false, perMinute: 3, perUserDay: 12, perGlobalDay: 80, collectionIds: [OA, PRIVATE] }, 'payload is exactly the five settings');
+  // the toast appears while the panel reloads; Save is disabled only for that moment
+  await page.waitForFunction(() => !document.querySelector('#saveAdmin').disabled);
   same(await page.locator('#saveAdmin').isDisabled(), false, 'Save is usable again');
 
   // a refusal is shown

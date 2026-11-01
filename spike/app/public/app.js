@@ -852,6 +852,13 @@ function adminChange(entry) {
   return parts.length ? parts.join(' · ') : adminWord('noChange');
 }
 
+// "Ayşe Yılmaz · ayse@uni.edu · tenant"; the name is left out when it is only the address again, and a
+// user the server could not name is shown by the start of the id.
+function adminPerson(row) {
+  if (!row.email) return String(row.user_id).slice(0, 8);
+  return [row.display_name && row.display_name !== row.email ? row.display_name : null, row.email, row.tenant_slug].filter(Boolean).join(' · ');
+}
+
 function adminRow(list, text, number) {
   const row = document.createElement('div');
   row.className = 'grant-row';
@@ -906,7 +913,7 @@ function renderAdmin(data) {
   const top = $('adminTop');
   top.replaceChildren();
   if (!usage.topToday.length) adminRow(top, t('Bugün kullanım yok.'));
-  usage.topToday.forEach((row) => adminRow(top, row.email || String(row.user_id).slice(0, 8), row.used + ' ' + adminWord('requests')));
+  usage.topToday.forEach((row) => adminRow(top, adminPerson(row), row.used + ' ' + adminWord('requests')));
 }
 
 async function loadAdminAudit() {

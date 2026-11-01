@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 import { promisify } from 'node:util';
 
-// 029: runtime settings and the audit trail, on the real tables as the app role.
+// 029 + 030: runtime settings, the audit trail and the usage name lookup, on the real tables as the app role.
 //
 // The unit tests of spike/app/ai-settings.mjs use an in-memory fake. This runs the shipped
 // store against a real postgres as akademik_app (not the owner):
@@ -19,7 +19,9 @@ import { promisify } from 'node:util';
 //   * the app role can append to admin_audit_log but cannot update or delete a row of it;
 //   * a failed save leaves neither a changed setting nor an audit row;
 //   * usage() and audit() run with the users join (email resolved where the user exists);
-//   * the key constraint rejects a malformed key.
+//   * the key constraint rejects a malformed key;
+//   * 030: app.ai_usage_user_labels() names a user of ANOTHER tenant who used the feature (users is
+//     under row level security, so a plain join cannot), and returns nobody who never used it.
 //
 //   node db/029.test.mjs
 
@@ -94,9 +96,12 @@ async function main() {
   await setup();
   const { createSettingsStore } = await import(pathToFileURL(path.join(appDir, 'ai-settings.mjs')).href);
   await admin.query(await readFile(path.join(dbDir, 'migrations', '028-ai-usage.sql'), 'utf8')); // the usage table 029's panel reads
+  const label030 = await readFile(path.join(dbDir, 'migrations', '030-ai-usage-labels.sql'), 'utf8');
   const sql = await readFile(path.join(dbDir, 'migrations', '029-admin-settings.sql'), 'utf8');
   await admin.query(sql);
   await admin.query(sql); // idempotent
+  await admin.query(label030);
+  await admin.query(label030); // idempotent
   checks += 1;
 
   const tenant = randomUUID();
@@ -152,9 +157,25 @@ async function main() {
   check(JSON.stringify(await store.get()) === before, 'the setting did not change when its audit row failed');
   check((await store.audit(10)).length === 2, 'no partial audit row');
 
+  // 030: a reader of another tenant used the feature, a second reader never did
+  const otherTenant = randomUUID();
+  const otherUser = randomUUID();
+  const idleUser = randomUUID();
+  await admin.query("insert into tenants (id, name, slug) values ($1, 'Individuals', 'libedge-individual')", [otherTenant]);
+  await admin.query("insert into users (id, tenant_id, email, display_name, role) values ($1, $3, 'reader@example.org', 'Ayşe Yılmaz', 'reader'), ($2, $3, 'idle@example.org', 'Idle', 'reader')", [otherUser, idleUser, otherTenant]);
+  await admin.query("insert into ai_usage_daily (day, scope, subject, used) values ((now() at time zone 'utc')::date, 'user', $1, 9), ((now() at time zone 'utc')::date, 'user', 'not-a-uuid', 1)", [otherUser]);
+  const labels = (await run((client) => client.query('select * from app.ai_usage_user_labels() order by email'), false)).rows;
+  check(labels.some((r) => r.email === 'reader@example.org' && r.display_name === 'Ayşe Yılmaz' && r.tenant_slug === 'libedge-individual'), 'a user of another tenant is named, with no tenant bound');
+  check(!labels.some((r) => r.email === 'idle@example.org'), 'a user who never used the feature is not exposed');
+  check(labels.every((r) => Object.keys(r).sort().join() === 'display_name,email,tenant_slug,user_id'), 'only id, e-mail, name and tenant slug come back');
+  const visible = (await run((client) => client.query("select email from users where email = 'reader@example.org'"), true)).rowCount;
+  check(visible === 0, 'row level security still hides the other tenant from a plain read (' + visible + ' rows): only the function can name them');
   const usage = await store.usage(30);
-  check(usage.days.length === 1 && usage.days[0].total === 7 && usage.days[0].users === 1, 'per-day totals and distinct users');
-  check(usage.topToday.length === 1 && usage.topToday[0].used === 7 && usage.topToday[0].email === 'boss@example.edu', 'top users resolve to an email');
+  check(usage.days.length === 1 && usage.days[0].total === 7 && usage.days[0].users === 3, 'per-day totals and distinct user rows (boss, the other-tenant user, one with a malformed subject)');
+  check(usage.topToday.length === 3, 'every user row is listed');
+  check(usage.topToday[0].email === 'reader@example.org' && usage.topToday[0].used === 9 && usage.topToday[0].display_name === 'Ayşe Yılmaz' && usage.topToday[0].tenant_slug === 'libedge-individual', 'the other-tenant user is named in the usage list');
+  check(usage.topToday[1].email === 'boss@example.edu' && usage.topToday[1].used === 7, 'the same-tenant user is named too');
+  check(usage.topToday[2].email === null && usage.topToday[2].used === 1, 'a malformed subject does not break the query and stays unnamed');
 
   let badKey = false;
   try { await admin.query("insert into app_settings (key, value) values ('Bad Key', '{}')"); } catch (error) { badKey = error.code === '23514'; }
