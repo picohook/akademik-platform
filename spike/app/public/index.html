@@ -11,7 +11,7 @@
   <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/icons/icon-180.png" />
-  <title>E-Kütüphane</title>
+  <title>LibRead</title>
   <!-- ?v= is a placeholder: server.mjs rewrites it to the running build's
        identity (BUILD_SHA, falling back to APP_VERSION) when serving this file.
        Do not hand-edit it; a stale literal is what served a new app.js behind an
@@ -23,13 +23,17 @@
   <a class="skip-link" href="#mainContent">İçeriğe atla</a>
   <div class="login-screen" id="loginScreen" hidden>
     <form class="login-card" id="loginForm">
-      <span class="brand-mark">L</span>
-      <h2 id="loginBrand">LibEdge</h2>
+      <img class="login-logo" src="/icons/libread-logo.png" alt="LibRead" width="180" height="89" />
+      <h2 id="loginBrand">LibRead</h2>
       <button class="lang-link" data-lang-toggle type="button">EN</button>
-      <label>E-posta<input id="loginEmail" type="email" autocomplete="username" placeholder="E-posta" required /></label>
-      <label>Parola<input id="loginPassword" type="password" autocomplete="current-password" placeholder="Parola" required /></label>
+      <a class="primary sso-btn" id="ssoLogin" href="/auth/libedge/start?ctx=individual">LibEdge hesabınla giriş yap</a>
       <div class="login-error" id="loginError" role="alert" hidden></div>
-      <button class="primary" type="submit">Giriş yap</button>
+      <details class="admin-login" id="adminLogin">
+        <summary>Yönetici girişi</summary>
+        <label>E-posta<input id="loginEmail" type="email" autocomplete="username" placeholder="E-posta" required /></label>
+        <label>Parola<input id="loginPassword" type="password" autocomplete="current-password" placeholder="Parola" required /></label>
+        <button class="primary" type="submit">Giriş yap</button>
+      </details>
       <button class="footer-link" type="button" data-open-messages aria-haspopup="dialog" aria-controls="messagesModal">Bildirimler</button>
     </form>
   </div>
@@ -54,18 +58,18 @@
 
   <main id="mainContent">
     <section class="hero">
-      <p class="eyebrow" data-i18n="heroEyebrow">E-Kütüphane · Akademik koleksiyon</p>
-      <h1 data-i18n="heroTitle">Kataloğu keşfedin.<br />Okuyun, not alın.</h1>
+      <p class="eyebrow" data-i18n="heroEyebrow">LibRead · Açık erişimli akademik kitaplar</p>
+      <h1 data-i18n="heroTitle">Açık erişimli akademik kitapları keşfedin.<br />Okuyun, not alın.</h1>
       <p class="lede" data-i18n="heroLede">
-        Kurumunuzun akademik e-kitaplarına tek yerden erişin; PDF ve EPUB okuyun,
-        notlarınızı ve alıntılarınızı birlikte yönetin.
+        LibEdge hesabınızla giriş yapın; kitapları PDF ve EPUB olarak okuyun,
+        metinleri işaretleyin ve notlarınızı tek yerde toplayın.
       </p>
     </section>
 
     <section class="toolbar">
       <div class="chips" id="filters"></div>
       <span class="count" id="count"></span>
-      <button class="primary upload-btn" id="openUpload" type="button">+ Kitap ekle</button>
+      <button class="primary upload-btn" id="openUpload" type="button" hidden>+ Kitap ekle</button>
     </section>
 
     <section class="grid" id="grid" aria-live="polite"></section>

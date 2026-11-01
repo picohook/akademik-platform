@@ -33,6 +33,8 @@ const DICT = {
   'Yapay zekâ özelliği şu anda kullanılamıyor.': 'The AI feature is not available right now.',
   'Yapay zekâ yanıt veremedi. Biraz sonra tekrar deneyin.': 'The AI could not answer. Try again in a moment.',
   'Yapay zekâ zamanında yanıt vermedi. Biraz sonra tekrar deneyin.': 'The AI did not answer in time. Try again in a moment.',
+  'LibEdge hesabınla giriş yap': 'Sign in with your LibEdge account',
+  'Yönetici girişi': 'Administrator sign-in',
   'Seçim': 'Selection',
   'Önce metin seçin': 'Select text first',
   'Seçim araçları (Alt+Shift+H)': 'Selection tools (Alt+Shift+H)',
@@ -367,16 +369,16 @@ const SKIP = 'script, style, code, .book-title, .book-meta, .note-text, .cite-ou
 
 const HTML_STRINGS = {
   heroEyebrow: {
-    tr: 'E-Kütüphane · Akademik koleksiyon',
-    en: 'E-Library · Academic collection',
+    tr: 'LibRead · Açık erişimli akademik kitaplar',
+    en: 'LibRead · Open-access academic books',
   },
   heroTitle: {
-    tr: 'Kataloğu keşfedin.<br />Okuyun, not alın.',
-    en: 'Explore the catalog.<br />Read and take notes.',
+    tr: 'Açık erişimli akademik kitapları keşfedin.<br />Okuyun, not alın.',
+    en: 'Discover open-access academic books.<br />Read and take notes.',
   },
   heroLede: {
-    tr: 'Kurumunuzun akademik e-kitaplarına tek yerden erişin; PDF ve EPUB okuyun, notlarınızı ve alıntılarınızı birlikte yönetin.',
-    en: 'Access your institution’s academic e-books in one place; read PDF and EPUB, and keep your notes and citations together.',
+    tr: 'LibEdge hesabınızla giriş yapın; kitapları PDF ve EPUB olarak okuyun, metinleri işaretleyin ve notlarınızı tek yerde toplayın.',
+    en: 'Sign in with your LibEdge account to read books as PDF and EPUB, highlight passages and keep your notes in one place.',
   },
 };
 

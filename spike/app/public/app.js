@@ -1302,14 +1302,18 @@ async function submitUpload(event) {
   }
 }
 
+const PRODUCT_NAME = 'LibRead';
+
 function applyBrand(name, tagline) {
   const title = String(name || 'Akademik Platform').trim();
   const tag = String(tagline || '').trim();
   brandName.textContent = title;
   brandTag.textContent = tag;
   brandTag.hidden = !tag;
-  loginBrand.textContent = title;
-  document.title = `${title} — Katalog`;
+  // The sign-in box and the page title carry the product name, not the deployment's
+  // BRAND_NAME (which is still "LibEdge" in production); the top bar and footer keep it.
+  loginBrand.textContent = PRODUCT_NAME;
+  document.title = `${PRODUCT_NAME} — Katalog`;
 }
 
 function applyFooter(config) {
@@ -1401,7 +1405,14 @@ function showLogin(message = '') {
   loginError.hidden = !message;
   loginError.textContent = t(message);
   loginPassword.value = '';
-  setTimeout(() => loginPassword.focus(), 0);
+  // A failed password attempt keeps the administrator section open; a plain visit
+  // leaves it folded so the LibEdge sign-in is the one obvious action.
+  if (message) {
+    $('adminLogin').open = true;
+    setTimeout(() => loginPassword.focus(), 0);
+  } else {
+    setTimeout(() => $('ssoLogin').focus(), 0);
+  }
 }
 
 async function bootData() {
