@@ -19,6 +19,9 @@ const CACHE = 'akademik-shell-v31';
 const SHELL = [
   '/',
   '/styles.css',
+  '/library.css',
+  '/library.mjs',
+  '/library-model.mjs',
   '/app.js',
   '/i18n.mjs',
   '/citations.mjs',

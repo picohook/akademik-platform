@@ -2,6 +2,26 @@
 // Static DOM is translated on load; dynamic renderers call translateDom()/t().
 
 const DICT = {
+  "Katalog sıralaması": "Catalogue order",
+  "Katalog dili": "Catalogue language",
+  "Katalog yayıncısı": "Catalogue publisher",
+  "Başlangıç yayın yılı": "Publication year from",
+  "Bitiş yayın yılı": "Publication year to",
+  "Katalog filtreleri": "Catalogue filters",
+  "İlgi / eklenme sırası": "Relevance / date added",
+  "Kitap adı A–Z": "Book title A–Z",
+  "Kitap adı Z–A": "Book title Z–A",
+  "En yeni yayınlar": "Newest publications",
+  "Yazar adı A–Z": "Author name A–Z",
+  "Okumaya devam et": "Continue reading",
+  "Tüm katalog dilleri": "All catalogue languages",
+  "Tüm katalog yayıncıları": "All catalogue publishers",
+  "Kitap favorisi": "Favourite book",
+  "Kitap okuma ilerlemesi": "Book reading progress",
+  "Kişisel kitaplık yüklenemedi. Yeniden denemek için sayfayı yenileyin.": "Could not load your library. Refresh the page to try again.",
+  "Kitap favorilerden çıkarıldı.": "Book removed from favourites.",
+  "Kitap favorilere eklendi.": "Book added to favourites.",
+  "Kitap favorisi kaydedilemedi. Yeniden deneyin.": "Could not save this favourite. Try again.",
   'Sayfa bağlantıları': 'Page links',
   'Bağlantıyı yeni sekmede aç': 'Open link in a new tab',
   'Kitap içi bağlantıyı aç': 'Open internal book link',
@@ -406,6 +426,12 @@ const HTML_STRINGS = {
 };
 
 let lang = 'tr';
+
+// A local label avoids translating book content that equals the short word.
+export function libraryText(key) {
+  const labels = { favorites: { tr: 'Favoriler', en: 'Favourites' } };
+  return labels[key]?.[lang] || key;
+}
 
 export function getLang() {
   return lang;

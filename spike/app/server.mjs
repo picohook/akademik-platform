@@ -1,3 +1,5 @@
+import { createLibraryApi } from './library-api.mjs';
+import { sortBooks } from './public/library-model.mjs';
 import { createStorage, serveStoredAsset } from './storage.mjs';
 import { APP_CSP } from './security-headers.mjs';
 import { assetVersionToken, versionShellAssets } from './asset-version.mjs';
@@ -1427,7 +1429,7 @@ async function listBooks(auth) {
   }
   const books = await withTenant(async (client) => {
     const { rows } = await client.query(
-      `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
+      `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata, w.created_at,
               e.id as edition_id, e.edition, e.publisher, e.publication_year,
               (select array_agg(ci.collection_id::text)
                  from collection_items ci
@@ -1451,7 +1453,7 @@ async function getBook(id, dbClient = null) {
   if (!pool) { const book = findBook(id); return book ? normalizeBookVariant(book) : null; }
   const load = async (client) => {
     const { rows } = await client.query(
-      `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
+      `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata, w.created_at,
               e.id as edition_id, e.edition, e.publisher, e.publication_year,
               (select array_agg(ci.collection_id::text)
                  from collection_items ci
@@ -1479,6 +1481,7 @@ async function withPlainClient(fn) {
   const client = await pool.connect();
   try { return await fn(client); } finally { client.release(); }
 }
+const libraryApi = createLibraryApi({ withDb: pool ? withTenant : null, listBooks, getBook, canAccessBook, demoProgress });
 const aiSettings = pool ? createSettingsStore({ withDb: withTenant, withPlain: withPlainClient }) : null;
 const aiSelection = createAiSelection({ withDb: pool ? withTenant : null, settings: aiSettings });
 
@@ -1668,7 +1671,7 @@ async function updateBook(id, body) {
     }
 
     const { rows } = await client.query(
-      `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
+      `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata, w.created_at,
               e.publisher, e.publication_year,
               (select array_agg(ci.collection_id::text)
                  from collection_items ci
@@ -1695,14 +1698,14 @@ async function searchBooks(query, auth) {
     const grants = await activeGrants(auth);
     return demoBooks.filter((book) =>
       grantAllows(book, grants)
-      && catalogMatches([book.title, book.subtitle, book.abstract, ...(book.subjects || [])], q),
+      && catalogMatches([book.title, book.subtitle, book.abstract, ...(book.subjects || []), JSON.stringify(book.metadata?.authors || []), book.publisher, book.publication_year], q),
     );
   }
   const books = await withTenant(async (client) => {
     // Language-aware: use the work's own FTS dictionary, fold Turkish
     // diacritics for substring and trigram matching, and rank stem hits first.
     const { rows } = await client.query(
-      `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata,
+      `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata, w.created_at,
               e.id as edition_id, e.edition, e.publisher, e.publication_year,
               (select array_agg(ci.collection_id::text)
                  from collection_items ci
@@ -1724,11 +1727,20 @@ async function searchBooks(query, auth) {
                             array_to_string(w.subjects, ' ')) as document
          ) lang
          cross join lateral (
-           select to_tsvector(lang.cfg, lang.document) as vector,
+           select concat_ws(' ', e.publisher, e.publication_year::text,
+             (select string_agg(case when jsonb_typeof(author) = 'string' then author #>> '{}'
+               else concat_ws(' ', author->>'given', author->>'family') end, ' ')
+              from jsonb_array_elements(case when jsonb_typeof(w.metadata->'authors') = 'array'
+                then w.metadata->'authors' else '[]'::jsonb end) author)) as document
+         ) extra
+         cross join lateral (
+           select to_tsvector(lang.cfg, extra.document) as extra_vector,
+                  to_tsvector(lang.cfg, lang.document) as vector,
                   websearch_to_tsquery(lang.cfg, $2) as query
          ) ts
          cross join lateral (
-           select translate(lower(lang.document), 'çğıöşü', 'cgiosu') as folded_text,
+           select translate(lower(extra.document), 'çğıöşü', 'cgiosu') as extra_text,
+                  translate(lower(lang.document), 'çğıöşü', 'cgiosu') as folded_text,
                   translate(lower(coalesce(w.title, '')), 'çğıöşü', 'cgiosu') as folded_title
          ) folded
          cross join lateral (
@@ -1739,8 +1751,14 @@ async function searchBooks(query, auth) {
             folded.folded_text like '%' || q.folded || '%'
             or ts.vector @@ ts.query
             or word_similarity(q.folded, folded.folded_title) >= 0.55
+            or folded.extra_text like '%' || q.folded || '%'
+            or (ts.vector || ts.extra_vector) @@ ts.query
+            or (q.folded !~ '^[0-9]+$' and word_similarity(q.folded, folded.extra_text) >= 0.55)
           )
-        order by phrase_hit desc,
+        order by (folded.folded_text like '%' || q.folded || '%'
+                    or ts.vector @@ ts.query
+                    or word_similarity(q.folded, folded.folded_title) >= 0.55) desc,
+                 phrase_hit desc,
                  greatest(ts_rank(ts.vector, ts.query),
                           word_similarity(q.folded, folded.folded_title)) desc,
                  w.created_at desc
@@ -1786,7 +1804,7 @@ async function annotationMutation(method, id, body, userId) {
 }
 
 async function getProgress(assetId, userId) {
-  if (!pool) return demoProgress.get(assetId) || null;
+  if (!pool) return demoProgress.get(`${userId}:${assetId}`) || null;
   return withTenant(async (client) => {
     const { rows } = await client.query(
       `select asset_id, anchor, percent, updated_at
@@ -1807,7 +1825,8 @@ async function saveProgress(body, userId) {
     updated_at: new Date().toISOString(),
   };
   if (!pool) {
-    demoProgress.set(body.assetId, row);
+    row.user_id = userId;
+    demoProgress.set(`${userId}:${body.assetId}`, row);
     return row;
   }
   return withTenant(async (client) => {
@@ -2139,7 +2158,7 @@ async function serveStatic(req, res, pathname) {
   // escape an allowed prefix into uploads/ or ocr/.
   const relative = '/' + path.relative(PUBLIC_DIR, filePath).split(path.sep).join('/');
   const allowedFiles = new Set([
-    '/book-variants.mjs', '/book-links.mjs',
+    '/book-variants.mjs', '/book-links.mjs', '/library.mjs', '/library-model.mjs', '/library.css',
     '/index.html', '/app.js', '/styles.css', '/i18n.mjs', '/citations.mjs', '/pdf-structure.mjs',
     '/search.mjs', '/epub-engine.mjs', '/offline.mjs', '/downloads.mjs', '/ocr-layer.mjs', '/sw.js', '/manifest.webmanifest',
     // Browsers request /favicon.ico on their own when a page declares no icon,
@@ -2727,6 +2746,8 @@ async function handleRequest(req, res) {
       json(res, 403, { error: 'csrf token missing or invalid' });
       return;
     }
+    const libraryResult = await libraryApi(pathname, req.method, auth);
+    if (libraryResult) { json(res, libraryResult.status, libraryResult.body); return; }
     if (pathname.startsWith('/api/ocr/') && req.method === 'GET') {
       const assetId = pathname.slice('/api/ocr/'.length);
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(assetId)) {
@@ -3145,7 +3166,7 @@ async function handleRequest(req, res) {
       return;
     }
     if (pathname === '/api/books' && req.method === 'GET') {
-      json(res, 200, await listBooks(auth));
+      json(res, 200, sortBooks(await listBooks(auth), url.searchParams.get('sort')));
       return;
     }
     if (pathname.startsWith('/api/books/') && req.method === 'PATCH') {
@@ -3194,7 +3215,7 @@ async function handleRequest(req, res) {
       return;
     }
     if (pathname === '/api/search' && req.method === 'GET') {
-      json(res, 200, await searchBooks(url.searchParams.get('q'), auth));
+      json(res, 200, sortBooks(await searchBooks(url.searchParams.get('q'), auth), url.searchParams.get('sort')));
       return;
     }
     const marcMatch = pathname.match(/^\/api\/books\/([^/]+)\/marc$/);

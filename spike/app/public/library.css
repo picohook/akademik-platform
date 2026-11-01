@@ -1,0 +1,26 @@
+.library-controls { display: flex; flex-wrap: wrap; align-items: start; gap: 16px; margin-block: 24px 12px; }
+.library-controls label { display: flex; flex-direction: column; gap: 6px; min-width: 0; font-size: 13px; color: var(--muted); }
+.library-controls select, .library-controls input { font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 9px; min-width: 0; width: 100%; max-width: 100%; }
+.library-sort { width: 210px; }
+#libraryFilters { flex: 1 1 360px; min-width: 0; }
+#libraryFilters summary { cursor: pointer; padding: 8px 2px; color: var(--ink); }
+.library-facets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding-block: 8px; }
+#libraryStatus { flex-basis: 100%; margin: 0; color: var(--muted); font-size: 13px; }
+.card { position: relative; min-width: 0; overflow-wrap: anywhere; }
+.library-star { min-width: 36px; min-height: 36px; margin: 8px 0 0 8px; padding: 3px 8px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); background: var(--paper); font-size: 23px; cursor: pointer; vertical-align: middle; }
+.library-star[aria-pressed="true"] { color: var(--accent); border-color: currentColor; }
+.library-star:disabled { opacity: .6; cursor: default; }
+.library-progress { display: block; width: 100%; height: 5px; margin-top: 10px; accent-color: var(--accent); }
+.library-shelf { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; }
+#continueReading h2 { font-size: 22px; margin-block: 28px 18px; }
+@media (max-width: 640px) {
+  .library-shelf { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 12px; }
+  .library-shelf .cover { padding: 10px; }
+  .library-shelf .cover .title { font-size: 16px; }
+  .library-controls, .library-sort { width: 100%; }
+  #libraryFilters { flex-basis: 100%; }
+  #filters, #filters .chip { max-width: 100%; overflow-wrap: anywhere; }
+}
+@media (forced-colors: active) {
+  .library-star[aria-pressed="true"] { border: 3px solid ButtonText; }
+}
