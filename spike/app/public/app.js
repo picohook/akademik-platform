@@ -1346,6 +1346,7 @@ const RA_WORDS = {
   prev: ['Önceki cümle', 'Previous sentence'], next: ['Sonraki cümle', 'Next sentence'],
   play: ['Oynat', 'Play'], pause: ['Duraklat', 'Pause'], close: ['Kapat', 'Close'],
   speed: ['Hız', 'Speed'], voice: ['Ses', 'Voice'], sleep: ['Uyku zamanlayıcısı', 'Sleep timer'], more: ['Ses ve zamanlayıcı', 'Voice and timer'],
+  skip: ['Üst/alt bilgi, sayfa numarası ve dipnotları atla', 'Skip headers, footers, page numbers and footnotes'],
   auto: ['Otomatik (en iyi ses)', 'Automatic (best voice)'], off: ['Kapalı', 'Off'], min: ['dk', 'min'],
   reading: ['Okunuyor', 'Reading'], paused: ['Duraklatıldı', 'Paused'], loading: ['Hazırlanıyor…', 'Preparing…'],
   done: ['Okuma bitti.', 'Finished reading.'], ready: ['Hazır', 'Ready'],
@@ -1369,6 +1370,21 @@ function raSavePrefs(patch) {
     const next = { ...raPrefs(), ...patch };
     localStorage.setItem(RA_PREFS_KEY, JSON.stringify(next));
   } catch { /* storage may be disabled */ }
+}
+const raSkipChrome = () => raPrefs().skipChrome !== false;
+// The text items in the top and bottom tenth of a PDF page, read from the file itself (the page need not be drawn).
+async function raBandTexts(page) {
+  try {
+    const pdfPage = await state.pdf.getPage(page);
+    if (pdfPage.rotate % 180 !== 0) return [];
+    const [, y0, , y1] = pdfPage.view;
+    const height = y1 - y0;
+    const content = await pdfPage.getTextContent();
+    return content.items.filter((item) => item.str && item.str.trim() && item.transform).filter((item) => {
+      const fraction = (item.transform[5] - y0) / height;
+      return fraction > 0.9 || fraction < 0.1;
+    }).map((item) => item.str);
+  } catch { return []; }
 }
 const raLang = () => String(state.book?.language || getLang() || 'tr').toLowerCase().split('-')[0];
 
@@ -1404,7 +1420,7 @@ async function raLayersFor(page) {
 }
 
 function raSource() {
-  if (state.epubMode) return createEpubSource({ getEngine: () => state.epubEngine, lang: raLang, guard: raGuard });
+  if (state.epubMode) return createEpubSource({ getEngine: () => state.epubEngine, lang: raLang, guard: raGuard, skipChrome: raSkipChrome });
   return createPdfSource({
     lang: raLang,
     getPage: () => state.page,
@@ -1413,6 +1429,8 @@ function raSource() {
     showPage: (page) => raGuard(() => goToPage(page)),
     step: () => (state.twoPage && state.secondPage ? 2 : 1),
     getSelectionText: () => state.pending?.text || '',
+    skipChrome: raSkipChrome,
+    getBandTexts: raBandTexts,
     reveal: (el) => { try { el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch { /* noop */ } },
   });
 }
@@ -1444,6 +1462,8 @@ function raLabels() {
   $('raVoiceLabel').textContent = raWord('voice');
   $('raSleepLabel').textContent = raWord('sleep');
   $('raMoreLabel').textContent = raWord('more');
+  $('raSkipLabel').textContent = raWord('skip');
+  $('raSkip').checked = raSkipChrome();
   raRate.replaceChildren(...RATES.map((rate) => new Option(rate + '×', String(rate))));
   raRate.value = String(raPrefs().rate && RATES.includes(raPrefs().rate) ? raPrefs().rate : 1);
   raSleep.replaceChildren(new Option(raWord('off'), '0'), ...[15, 30, 60].map((m) => new Option(m + ' ' + raWord('min'), String(m))));
@@ -1571,6 +1591,7 @@ raVoice.addEventListener('change', () => {
   raSavePrefs({ voices: { ...(raPrefs().voices || {}), [lang]: raVoice.value } });
   readAloud?.setVoice(raVoice.value);
 });
+$('raSkip').addEventListener('change', () => raSavePrefs({ skipChrome: $('raSkip').checked }));
 raSleep.addEventListener('change', () => readAloud?.setSleep(Number(raSleep.value)));
 for (const type of ['pointermove', 'pointerdown', 'touchstart', 'keydown']) document.addEventListener(type, () => raActivity(), { passive: true });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && readAloud?.state().status === 'playing') raWake(true); });

@@ -34,15 +34,23 @@ const freePort = () => new Promise((resolve, reject) => {
 const PDF_PAGES = [
   ['The first page opens with this sentence.', 'It continues with a second sentence here.', 'A third sentence ends the first page.'],
   ['The second page begins with its own line.', 'Then one more sentence follows on page two.'],
-  ['The final page has a single closing sentence.'],
+  ['Short one. Then a sentence that wraps', 'onto the second line.'],
 ];
+const PDF_SENTENCES = [...PDF_PAGES[0], ...PDF_PAGES[1], 'Short one.', 'Then a sentence that wraps onto the second line.'];
+const inOrder = (haystack, needles) => { let at = 0; for (const word of needles) { at = haystack.indexOf(word, at); if (at < 0) return false; at += 1; } return true; };
+const RUNNING_HEAD = 'Running Title of the Test Book';
+const RUNNING_FOOT = 'Annual Review of Testing 2026';
 async function makePdf() {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
-  for (const sentences of PDF_PAGES) {
+  PDF_PAGES.forEach((sentences, index) => {
     const page = pdf.addPage([595, 842]);
-    sentences.forEach((line, i) => page.drawText(line, { x: 50, y: 760 - i * 40, size: 14, font }));
-  }
+    page.drawText(RUNNING_HEAD, { x: 50, y: 812, size: 9, font });
+    if (index === 0) page.drawText('Opening Title.', { x: 50, y: 790, size: 12, font });
+    sentences.forEach((line, i) => page.drawText(line, { x: 50, y: 700 - i * 40, size: 14, font }));
+    page.drawText(RUNNING_FOOT, { x: 50, y: 34, size: 9, font });
+    page.drawText(String(index + 1), { x: 290, y: 20, size: 10, font });
+  });
   return Buffer.from(await pdf.save());
 }
 
@@ -54,8 +62,8 @@ async function makeEpub() {
   zip.file('META-INF/container.xml', '<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>');
   zip.file('OEBPS/content.opf', '<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="id"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="id">ra-test</dc:identifier><dc:title>Read aloud EPUB</dc:title><dc:language>en</dc:language></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="c1" href="c1.xhtml" media-type="application/xhtml+xml"/><item id="c2" href="c2.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="c1"/><itemref idref="c2"/></spine></package>');
   zip.file('OEBPS/nav.xhtml', '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><body><nav epub:type="toc"><ol><li><a href="c1.xhtml">One</a></li><li><a href="c2.xhtml">Two</a></li></ol></nav></body></html>');
-  zip.file('OEBPS/c1.xhtml', `<html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><title>One</title></head><body><h1>Chapter One Heading</h1>${EPUB_CH1.map((s) => `<p>${s}</p>`).join('')}<script>window.hidden='NEVER READ THIS SCRIPT'</script></body></html>`);
-  zip.file('OEBPS/c2.xhtml', `<html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><title>Two</title></head><body><h1>Chapter Two Heading</h1>${EPUB_CH2.map((s) => `<p>${s}</p>`).join('')}</body></html>`);
+  zip.file('OEBPS/c1.xhtml', `<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en"><head><title>One</title></head><body><header><h1>Chapter One Heading</h1></header>${EPUB_CH1.map((s, i) => `<p>${s}</p>${i === 2 ? '<span epub:type="pagebreak" role="doc-pagebreak" id="pb12">12</span>' : ''}`).join('')}<script>window.hidden='NEVER READ THIS SCRIPT'</script></body></html>`);
+  zip.file('OEBPS/c2.xhtml', `<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en"><head><title>Two</title></head><body><h1>Chapter Two Heading</h1>${EPUB_CH2.map((s) => `<p>${s}</p>`).join('')}<p>A reference<a epub:type="noteref" href="#fn1">7</a> sits in a sentence.</p><aside epub:type="footnote" id="fn1"><p>The footnote text must not be read.</p></aside></body></html>`);
   return zip.generateAsync({ type: 'nodebuffer' });
 }
 
@@ -77,6 +85,10 @@ const FAKE_SPEECH = () => {
       setTimeout(() => {
         if (current !== u) return;
         u.onstart?.({});
+        if (window.__boundaries !== false) {
+          const words = [...u.text.matchAll(/[\p{L}\p{N}]+/gu)];
+          words.forEach((word, i) => setTimeout(() => { if (current === u) u.onboundary?.({ name: 'word', charIndex: word.index, charLength: word[0].length }); }, (i / words.length) * window.__speechMs));
+        }
         setTimeout(() => { if (current === u) { current = null; u.onend?.({}); } }, window.__speechMs);
       }, 5);
     },
@@ -85,6 +97,18 @@ const FAKE_SPEECH = () => {
   };
   Object.defineProperty(window, 'speechSynthesis', { value: synth, configurable: true });
   window.SpeechSynthesisUtterance = Utterance;
+};
+
+// runs in every frame, the EPUB iframe included: remembers what each highlight was set to
+const RECORD_HIGHLIGHTS = () => {
+  window.__hl = [];
+  const registry = window.CSS && window.CSS.highlights;
+  if (!registry) return;
+  const set = registry.set.bind(registry);
+  registry.set = (name, highlight) => {
+    try { window.__hl.push([name, [...highlight].map((range) => range.toString()).join('|')]); } catch { /* noop */ }
+    return set(name, highlight);
+  };
 };
 
 const port = await freePort();
@@ -116,6 +140,7 @@ try {
     const page = await context.newPage();
     await page.setViewportSize({ width, height });
     await page.addInitScript(FAKE_SPEECH);
+    await page.addInitScript(RECORD_HIGHLIGHTS);
     if (lang) await page.addInitScript((value) => { try { localStorage.setItem('akademikLang', value); } catch { /* noop */ } }, lang);
     const errors = [];
     page.on('pageerror', (error) => errors.push(String(error)));
@@ -157,18 +182,23 @@ try {
   await page.locator('#raBtn').click();
   await page.locator('#raPlayer').waitFor({ state: 'visible' });
   await waitSpoken(page, 1);
-  same((await spoken(page))[0], PDF_PAGES[0][0], 'it starts with the first sentence of the page, not a half sentence');
-  await page.waitForFunction(() => document.querySelectorAll('#textLayer .ra-active').length > 0);
-  const lit = await page.locator('#textLayer .ra-active').allInnerTexts();
-  check(lit.join(' ').includes('first page opens'), 'the sentence being read is highlighted in the page: ' + lit.join('|'));
+  same((await spoken(page))[0], 'Opening Title.', 'it starts with the title of the page: the running header above it is skipped');
+  await waitSpoken(page, 2);
+  same((await spoken(page))[1], PDF_PAGES[0][0], 'then the first sentence of the page, whole');
+  const lastMark = (name) => page.evaluate((n) => { const hit = window.__hl.filter(([k]) => k === n); return hit.length ? hit[hit.length - 1][1] : null; }, name);
+  await page.waitForFunction(() => window.__hl.some(([name, text]) => name === 'ra-sentence' && text.includes('first page opens')));
+  same(await page.evaluate(() => CSS.highlights.has('ra-sentence')), true, 'the sentence being read is marked in the page');
+  same(await page.locator('#textLayer .ra-active').count(), 0, 'the Highlight API is used, so no class was put on the PDF text layer');
   same(await page.locator('#raPlay').getAttribute('aria-label'), 'Duraklat', 'play button offers Pause while reading');
   same(await page.locator('#raBtn').getAttribute('aria-pressed'), 'true', 'toolbar button reflects the open player');
   await shoot(page, 'pdf-reading');
 
   // one sentence at a time is lit, the next one takes over
-  await waitSpoken(page, 2);
-  const litNow = await page.locator('#textLayer .ra-active').allInnerTexts();
-  check(litNow.join(' ').includes('second sentence') && !litNow.join(' ').includes('first page opens'), 'the highlight moved on with the voice: ' + litNow.join('|'));
+  await waitSpoken(page, 3);
+  await shoot(page, 'pdf-word');
+  await page.waitForFunction(() => window.__hl.some(([name, text]) => name === 'ra-sentence' && text.includes('second sentence')));
+  const nowMarked = await lastMark('ra-sentence');
+  check(nowMarked && nowMarked.includes('second sentence') && !nowMarked.includes('first page opens'), 'the mark moved on with the voice: ' + nowMarked);
 
   // pause / resume repeats the same sentence
   await page.locator('#raPlay').click();
@@ -200,12 +230,53 @@ try {
   await page.waitForFunction(() => document.querySelector('#pageInput').value === '2');
   same(await page.locator('#pageInput').inputValue(), '2', 'the reader turned to page 2 on its own');
   check(await page.locator('#raPlayer').isVisible(), 'the player stays open across the page turn');
-  await waitText(page, PDF_PAGES[2][0]);
+  await waitText(page, 'Short one.');
   await page.waitForFunction(() => document.querySelector('#raStatus').textContent === 'Okuma bitti.', null, { timeout: 15000 });
   same(await page.locator('#pageInput').inputValue(), '3', 'it stopped on the last page');
-  same(await page.locator('#textLayer .ra-active').count(), 0, 'no highlight is left after the last sentence');
+  same(await page.evaluate(() => [CSS.highlights.has('ra-sentence'), CSS.highlights.has('ra-word')]), [false, false], 'no mark is left after the last sentence');
   const all = await spoken(page);
-  for (const sentence of PDF_PAGES.flat()) check(all.includes(sentence), 'was read: ' + sentence);
+  for (const sentence of PDF_SENTENCES) check(all.includes(sentence), 'was read: ' + sentence);
+
+  // sentence and word highlights, from what the page was told to mark
+  const marks = await page.evaluate(() => window.__hl);
+  const sentenceMarks = marks.filter(([name]) => name === 'ra-sentence').map(([, text]) => text);
+  const wordMarks = marks.filter(([name]) => name === 'ra-word').map(([, text]) => text);
+  // the two lines are separate boxes with no space between them in the page's own text (the space is added for the voice only)
+  check(sentenceMarks.includes('Then a sentence that wrapsonto the second line.'), 'the sentence mark covers exactly the sentence, across two lines: ' + JSON.stringify(sentenceMarks.slice(-6)));
+  check(!sentenceMarks.some((text) => text.includes('Short one.') && text.includes('Then a sentence')), 'the sentence before it on the same line is not swept in');
+  check(sentenceMarks.every((text) => !/^\s|\s$/.test(text)), 'a sentence mark has no stray space at its ends');
+  check(inOrder(wordMarks, ['Then', 'a', 'sentence', 'that', 'wraps', 'onto', 'the', 'second', 'line']), 'the words were followed one by one, onto the second line: ' + JSON.stringify(wordMarks.slice(-14)));
+  check(inOrder(wordMarks, ['It', 'continues', 'with', 'a', 'second', 'sentence', 'here']), 'and on the first page too');
+  check(wordMarks.every((text) => /^[\p{L}\p{N}'’-]+$/u.test(text)), 'every word mark is a single word: ' + JSON.stringify(wordMarks.filter((text) => !/^[\p{L}\p{N}'’-]+$/u.test(text))));
+
+  // page furniture: a running header, a running footer and page numbers are left out; a title that
+  // appears once in the top band is not; the switch brings them back
+  const skipped = await spoken(page);
+  check(!skipped.some((s) => s.includes(RUNNING_HEAD) || s.includes('Annual Review')), 'the running header and footer were not read');
+  check(!skipped.some((s) => /^\s*\d+\s*$/.test(s)), 'page numbers were not read: ' + JSON.stringify(skipped.filter((s) => /^\s*\d+\s*$/.test(s))));
+  check(skipped.includes('Opening Title.'), 'a title that appears only once in the top band is still read');
+  await page.evaluate(() => { document.querySelector('.ra-more').open = true; });
+  same(await page.locator('#raSkip').isChecked(), true, 'skipping is on by default');
+  await page.locator('#raSkip').uncheck();
+  await page.locator('#pageInput').fill('1');
+  await page.locator('#pageInput').press('Enter');
+  await page.waitForFunction(() => document.querySelector('#pageInput').value === '1');
+  await page.evaluate(() => { window.__spoken.length = 0; window.__speechMs = 40; });
+  await page.locator('#raPlay').click();
+  await waitText(page, RUNNING_FOOT);
+  const unskipped = await spoken(page);
+  check(unskipped.some((s) => s.includes(RUNNING_HEAD)) && unskipped.some((s) => s.includes('Annual Review')) && unskipped.some((s) => /Annual Review of Testing 2026 1$/.test(s)), 'with the switch off the header, footer and page number are read: ' + JSON.stringify(unskipped.slice(0, 6)));
+  await page.locator('#raSkip').check();
+  await page.locator('#raPlay').click();
+
+  // a voice that reports no word boundaries: the words are paced from the speed of speech instead
+  await page.evaluate(() => { window.__boundaries = false; window.__speechMs = 2600; window.__hl.length = 0; });
+  await page.locator('#raPlay').click();
+  await page.waitForFunction(() => new Set(window.__hl.filter(([name]) => name === 'ra-word').map(([, text]) => text)).size >= 3, null, { timeout: 12000 });
+  const paced = await page.evaluate(() => window.__hl.filter(([name]) => name === 'ra-word').map(([, text]) => text));
+  check(new Set(paced).size >= 3, 'with no boundary events the words still advance: ' + JSON.stringify(paced));
+  await page.locator('#raPlay').click();
+  await page.evaluate(() => { window.__boundaries = true; window.__speechMs = 300; });
 
   // starting from a selection
   await page.locator('#pageInput').fill('1');
@@ -278,15 +349,24 @@ try {
   same(first[0], 'Chapter One Heading', 'the EPUB heading is its own sentence, read first');
   same(first[1], EPUB_CH1[0], 'then the first paragraph');
   check(!first.some((s) => s.includes('NEVER READ')), 'script content is never read');
-  await ep.waitForFunction(() => document.querySelectorAll('.epub-container g.ra-sentence, g.ra-sentence').length > 0, null, { timeout: 8000 });
-  check(await ep.locator('g.ra-sentence').count() >= 1, 'the sentence being read is highlighted in the EPUB');
+  await ep.waitForFunction(() => document.querySelector('#epubView iframe') && true);
+  const epubLit = await Promise.all(ep.frames().map((frame) => frame.evaluate(() => (window.CSS && CSS.highlights && CSS.highlights.has('ra-sentence')) || false).catch(() => false)));
+  check(epubLit.some(Boolean), 'the sentence being read is highlighted in the EPUB');
   await shoot(ep, 'epub-reading');
 
+  // every chapter is a new iframe, so what was marked is read while chapter 1 is still the one on screen
+  await waitText(ep, 'sentence number 5');
+  const early = (await Promise.all(ep.frames().map((frame) => frame.evaluate(() => window.__hl || []).catch(() => [])))).flat();
+  const epubSentenceMarks = early.filter(([name]) => name === 'ra-sentence').map(([, text]) => text);
+  const epubWordMarks = early.filter(([name]) => name === 'ra-word').map(([, text]) => text);
+  check(epubSentenceMarks.includes(EPUB_CH1[1]) && epubSentenceMarks.includes(EPUB_CH1[2]), 'the EPUB sentence mark is exactly the sentence: ' + JSON.stringify(epubSentenceMarks.slice(0, 4)));
+  check(inOrder(epubWordMarks, ['Chapter', 'one', 'sentence', 'number', '2', 'fills', 'the', 'page']), 'EPUB words were followed one by one: ' + JSON.stringify(epubWordMarks.slice(0, 12)));
+  same((await ep.locator('g.ra-sentence').count()), 0, 'no page-overlay highlight is used when the Highlight API is there');
   const labelAtStart = await ep.locator('#pageLabel').innerText();
   await waitText(ep, 'sentence number 30', 30000);
   const labelLater = await ep.locator('#pageLabel').innerText();
   check(labelLater !== labelAtStart, `it turned EPUB pages while reading (${labelAtStart} -> ${labelLater})`);
-  check(await ep.locator('g.ra-sentence').count() >= 1, 'the highlight follows onto the new page');
+  check((await Promise.all(ep.frames().map((frame) => frame.evaluate(() => (window.CSS && CSS.highlights && CSS.highlights.has('ra-sentence')) || false).catch(() => false)))).some(Boolean), 'the highlight follows onto the new page');
 
   await waitText(ep, EPUB_CH2[0], 40000);
   const body = await ep.locator('#epubView iframe').first().contentFrame().locator('body').innerText();
@@ -294,7 +374,17 @@ try {
   await ep.waitForFunction(() => document.querySelector('#raStatus').textContent === 'Okuma bitti.', null, { timeout: 20000 });
   const epubAll = await spoken(ep);
   check(epubAll.includes(EPUB_CH2[1]) && epubAll.includes('Chapter Two Heading'), 'the last chapter was read to its end');
-  same(await ep.locator('g.ra-sentence').count(), 0, 'no EPUB highlight is left at the end');
+  same((await Promise.all(ep.frames().map((frame) => frame.evaluate(() => (window.CSS && CSS.highlights && CSS.highlights.has('ra-sentence')) || false).catch(() => false)))).some(Boolean), false, 'no EPUB highlight is left at the end');
+  check(!epubAll.some((s) => s.includes('footnote text')), 'the footnote was not read');
+  check(!epubAll.some((s) => s.trim() === '12' || s.trim() === '7'), 'the page-break marker and the note reference were not read');
+  check(epubAll.includes('A reference sits in a sentence.'), 'the sentence around the note reference reads cleanly');
+  check(epubAll.includes('Chapter One Heading'), 'a chapter title in a plain <header> is still read');
+  await ep.locator('#raMoreLabel').click();
+  await ep.locator('#raSkip').uncheck();
+  await ep.evaluate(() => { window.__spoken.length = 0; });
+  await ep.locator('#raPlay').click();
+  await waitText(ep, 'footnote text', 20000);
+  check((await spoken(ep)).some((s) => s.includes('The footnote text must not be read.')), 'with the switch off the footnote is read');
   same(epub.errors, [], 'no page errors on the EPUB path');
   await ectx.close();
 
