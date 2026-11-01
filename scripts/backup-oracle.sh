@@ -80,7 +80,11 @@ log "config: env directories (secrets - stays inside the encrypted archive)"
 cfg_dirs=("$LIVE_ROOT/config" "$V137_ROOT/config")
 for d in "$V137_ROOT"/releases/*/config; do [ -d "$d" ] && cfg_dirs+=("$d"); done
 for d in "${cfg_dirs[@]}"; do [ -r "$d" ] || die "cannot read $d"; done
-tar -C / -cf "$stage/config/config.tar" "${cfg_dirs[@]#/}"
+# Some release files (web-release.env, admin.env) are root-owned 0600, so read with
+# `sudo -n` (same model as docker). The redirect runs as this user, so the archive stays ours.
+read -r -a SUDO <<<"${SUDO_CMD:-sudo -n}"
+"${SUDO[@]}" tar -C / -cf - "${cfg_dirs[@]#/}" >"$stage/config/config.tar"
+[ -s "$stage/config/config.tar" ] || die "config.tar is empty"
 
 log "database: pg_dump -Fc $DB_NAME"
 "${DOCKER[@]}" exec "$DB_CONTAINER" pg_dump -U "$DB_SUPERUSER" -d "$DB_NAME" -Fc >"$stage/db/akademik.dump"

@@ -112,7 +112,13 @@ RCLONE_CONFIG_R2BACKUP_ACCESS_KEY_ID=...
 RCLONE_CONFIG_R2BACKUP_SECRET_ACCESS_KEY=...
 RCLONE_CONFIG_R2BACKUP_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
 RCLONE_CONFIG_R2BACKUP_ACL=private
+RCLONE_CONFIG_R2BACKUP_NO_CHECK_BUCKET=true
 ```
+
+`NO_CHECK_BUCKET` gerekir: bucket kapsamlı token bucket oluşturamaz, rclone ise yüklemeden
+önce bunu dener ve `403 AccessDenied` alır (2026-11-01'de sunucuda ölçüldü). Config dizinlerinde
+`root` sahipli `0600` dosyalar var (`web-release.env`, `admin.env`); script bunları
+`sudo -n tar` ile okur, izinler değiştirilmez.
 
 (`BACKUP_ROLES_FLAGS`, `KEEP_LOCAL`, `DB_CONTAINER` vb. gerekirse eklenir; varsayılanlar
 script başındadır.)
