@@ -63,7 +63,7 @@ and edits, without touching the server:
 | Allowed collections | Chosen from the tenant's own collections; an id the tenant does not have is refused. |
 
 It also shows today's usage against the total cap, the last 30 days (requests and distinct users),
-today's heaviest users (e-mail), and a change history (who, when, old and new value).
+today's heaviest users (name, e-mail, tenant), and a change history (who, when, old and new value).
 
 What it deliberately does **not** do: show or edit the Cloudflare token, account id or model name.
 No endpoint returns them (a test plants distinctive values and fails if any appears in an admin
@@ -79,6 +79,14 @@ failed audit row also rolls the setting back. Settings are read through a 5-seco
 takes effect at once in the process that handled it. Values are re-clamped at read time, so a row
 edited by hand in the database cannot exceed a ceiling. If the settings cannot be read, the last
 known value (or the environment) stands.
+
+Naming users (migration 030): the people who use the feature mostly sign in through the LibEdge button and
+belong to the `libedge-individual` tenant, while the administrator is bound to the platform tenant, and
+`users` is under row level security. A plain join therefore showed a bare id. `app.ai_usage_user_labels()`
+(SECURITY DEFINER, same shape as `app.tenant_for_login`) takes no argument and returns id, e-mail, display
+name and tenant slug **only for users who appear in `ai_usage_daily`**; no role, hash or session data. The
+usage query is the only caller and sits behind the platform administrator check. A user the function cannot
+name (for example a deleted account) is shown by the start of the id.
 
 Endpoints: `GET/PUT /api/admin/ai`, `GET /api/admin/audit`.
 
@@ -98,7 +106,7 @@ Rollback of the panel itself: the feature behaves exactly as before when `app_se
   `spike/app/test/ai-settings.test.mjs` (validation, ceilings, environment as outer boundary, store),
   `spike/app/test/ai-http.test.mjs` (HTTP gates, demo mode), `db/028.test.mjs`
   (real Postgres, concurrent reservations; fails if the cap is removed from the SQL),
-  `db/029.test.mjs` (real Postgres, append-only audit, atomic save),
+  `db/029.test.mjs` (real Postgres, append-only audit, atomic save; also 030: a user of another tenant is named, one who never used the feature is not exposed),
   `spike/app/test/admin-ai.integration.mjs` (real Postgres and server: roles, tenants, validation,
   no secret in responses, audit, public config follows the switch) and
   `spike/app/test/admin-ai-ui.browser.mjs` (Chromium: button visibility, save payload, errors,

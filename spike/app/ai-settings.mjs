@@ -107,7 +107,8 @@ export function createSettingsStore({ withDb, withPlain = withDb, now = Date.now
   }
 
   // Counts only: per UTC day the global total and the number of distinct users, plus today's
-  // heaviest users. User ids are resolved to an email where the user is visible to the tenant.
+  // heaviest users. Ids are resolved to a name through app.ai_usage_user_labels() (migration 030): `users`
+  // is under row level security, and the people who use the feature mostly belong to another tenant.
   async function usage(days = 30) {
     const span = Math.min(Math.max(Number(days) || 30, 1), 90);
     return withDb(async (client) => {
@@ -120,9 +121,9 @@ export function createSettingsStore({ withDb, withPlain = withDb, now = Date.now
         [span],
       )).rows;
       const top = (await client.query(
-        `select u.subject as user_id, u.used, x.email
+        `select u.subject as user_id, u.used, x.email, x.display_name, x.tenant_slug
            from ai_usage_daily u
-           left join users x on x.id::text = u.subject
+           left join app.ai_usage_user_labels() x on x.user_id::text = u.subject
           where u.scope = 'user' and u.day = (now() at time zone 'utc')::date
           order by u.used desc, u.subject limit 10`,
       )).rows;

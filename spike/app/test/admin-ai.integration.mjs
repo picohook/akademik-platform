@@ -118,7 +118,7 @@ async function setup() {
   await admin.connect();
   await admin.query(await readFile(path.join(repoDir, 'db/schema.sql'), 'utf8'));
   await admin.query(`alter role akademik_app password '${appPassword}'`);
-  for (const file of ['018-tenant-for-login.sql', '028-ai-usage.sql', '029-admin-settings.sql']) {
+  for (const file of ['018-tenant-for-login.sql', '028-ai-usage.sql', '029-admin-settings.sql', '030-ai-usage-labels.sql']) {
     await admin.query(await readFile(path.join(repoDir, 'db/migrations', file), 'utf8'));
   }
 
@@ -197,6 +197,12 @@ async function main() {
   }
   same((await request(base, '/api/config')).data.aiSelection, true, 'nothing the refused callers sent had any effect');
   same((await admin.query('select count(*)::int as n from app_settings')).rows[0].n, 0, 'no row was written by a refused call');
+
+  // the usage list names people, including those of another tenant, and only those who used the feature
+  await admin.query("insert into ai_usage_daily (day, scope, subject, used) values ((now() at time zone 'utc')::date, 'user', $1, 4), ((now() at time zone 'utc')::date, 'user', $2, 2), ((now() at time zone 'utc')::date, 'global', '-', 6)", [users.otherAdmin.id, users.boss.id]);
+  const named = (await request(base, '/api/admin/ai', boss)).data.usage.topToday;
+  same(named.map((r) => [r.email, r.tenant_slug, r.used]), [['admin@other.edu', 'other', 4], ['boss@libedge.com', 'libedge', 2]], 'users of both tenants are named, heaviest first');
+  check(!named.some((r) => r.email === users.reader.email || r.email === users.librarian.email), 'people who never used the feature are not listed');
 
   // 2. CSRF and validation
   same((await request(base, '/api/admin/ai', boss, { method: 'PUT', body: good, csrf: false })).status, 403, 'PUT without CSRF header');
