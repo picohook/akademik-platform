@@ -327,3 +327,70 @@ not just `42883` - Postgres resolves the schema before the function, so the code
 missing migration actually produces is `invalid_schema_name`. `42883` is the other
 half: a schema that exists with no function in it. Both were measured; the first is
 what a database without 024 gives you today.
+
+## Migration 023, measured through the server: `db/023-app.test.mjs`
+
+`db/023.test.mjs` asks the tables whether 023 moved the right rows. That is necessary
+and not sufficient: a collection grant that is written correctly and then ignored by
+`grantAllows()`, or a server that refuses everything, both pass a count over `works`.
+`db/023-app.test.mjs` asks the same question over HTTP, as a signed-in reader of the
+individual tenant 023 creates.
+
+It starts the shipped `spike/app/server.mjs` in a temporary sandbox (its own
+`postgres:16-alpine`, `db/schema.sql`, `db/seed.sql`, the chain through 017, then 023),
+so nothing in the working tree is used as a fixture except the migration itself. It
+takes a couple of minutes and needs Docker:
+
+```
+node db/023-app.test.mjs
+```
+
+The fixture carries four look-alikes, and only the first two are decided by the
+collection:
+
+| work | shape | what it measures |
+| --- | --- | --- |
+| the twelve | global works, members of the OA collection | served: catalogue, `/file`, ticket, download |
+| `GLOBAL_OUTSIDE` | global work, edition, asset, own publisher - **not** a member | refused by the grant: 403 ticket (`grant_denied`), 404 file, absent from the catalogue |
+| `OUTSIDE_WORK` | staff-owned, not a member | refused by RLS (`book_unavailable`) |
+| `OTHER_WORK`, demo | another institution's, the seed's demo tenant | refused by RLS (`book_unavailable`) |
+
+`GLOBAL_OUTSIDE` is the case a hand-written fixture of "the twelve" cannot express: the
+reader's RLS lets a tenant-free row through, so nothing but the grant refuses it. And a
+refusal on its own proves nothing - a server that refuses everything looks the same - so
+the same grant row is rewritten to scope `all` mid-run and the outsider is then **served**
+(catalogue, file, ticket, download). Serving it under `all` and refusing it under
+`collection` is what makes the refusal mean "the collection decided".
+
+The sabotage is measured in the server, not in the migration text:
+
+```
+LIBEDGE_023_SABOTAGE_COLLECTION=1 node db/023-app.test.mjs   # must fail
+```
+
+That run applies 023 with the grant's scope set to `all` and 023's own "did I write an
+all grant" guard neutralised. It fails on the first catalogue request - *"catalogue must
+be exactly the OA collection, got 13 works"* - which is the point: a run that went red on
+`grant.scope_type === 'all'` would be checking the migration's own SQL, not access. The
+green run prints:
+
+```
+{"passed":true,"catalogue":12,"bridgeCatalogue":13,...,"denyRows":18,"checks":95}
+```
+
+`LIBEDGE_023_SQL=<path>` reads 023 from another file (a PR checkout) instead of the
+working tree; the sabotage switch rewrites that file in place and restores it.
+
+Two limits, stated rather than discovered later:
+
+- The individual tenant holds exactly one grant, so its reader sees the whole **global**
+  catalogue, not only the collection. In this fixture that is the same twelve works,
+  which is why the run cannot tell the two apart; whether a collection-scoped grant
+  should narrow the *listing* is a separate question, not a defect this file certifies.
+- The bridge publishes **global** works, so its catalogue lists thirteen - the twelve
+  and the outsider. What the bridge must not do is publish a staff work that never
+  reached the global catalogue, and that is what it checks (`OUTSIDE_WORK` → 404).
+
+Both `db/023.test.mjs` and `db/023-app.test.mjs` start their own container and clean it
+up; neither touches a running database.
+
