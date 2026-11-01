@@ -1,6 +1,14 @@
 # v137 deploy runbook — 021/022/024/025/026/**027** migration'ları + `akademik_catalog` LOGIN
 
-> **Durum: ÇALIŞTIRILMADI.** Bu dosya bir **plan**dır; hiçbir komut prod'da koşulmadı.
+> **Durum (2026-11-01): UYGULANDI — TARİHSEL KAYIT.** v137, 021/022/024/025/026/027 ve
+> (sonradan) 023 production'da (Oracle) çalışıyor. **Aşağıdaki komutları tekrar
+> çalıştırma**: baseline, migration, parola ve `akademik_catalog` adımları bir kez yapıldı.
+> Canlı ortamın gerçek değerleri (üç env dosyası, mount'lar, portlar, roller, registry,
+> yedek ve rollback yolları): **`docs/deployments/2026-11-01-libread-production.md`**.
+> Yedek/geri yükleme: `docs/runbooks/oracle-backup-restore.md`. Belgenin geri kalanı
+> deploy öncesi yazılmış plan olarak korunur; "çalıştırılmadı" ifadeleri o ana aittir.
+>
+> Özgün not (tarihsel): bu dosya bir **plan**dı; hiçbir komut prod'da koşulmamıştı.
 > Değerler `docs/DEPLOY.md` ve v136 kaydından türetildi, tahmin edilmedi. Gerçek çıktılar
 > deploy sırasında **bu dosyaya** yazılır (WORKFLOW.md §Deploy kuralları).
 >

@@ -1,6 +1,13 @@
 # Deploy prosedürü
 
-Production kaynağı: `akademik-platform-prod` compose projesi, web servisi
+> **Güncel durum (2026-11-01):** canlı ortam **Oracle**'dır ve **`docker run`** ile
+> başlatılır (Compose değil). Aşağıdaki `docker-compose.prod.yml` / `docker-compose.libedge.yml`
+> varyantları ve `54.87.37.7` (AWS EC2, şu an stopped) **tarihsel**dir. Gerçek canlı
+> değerler (container, imaj, üç env dosyası, mount, port, DB `akademik`, yedek ve
+> rollback yolları): `docs/deployments/2026-11-01-libread-production.md`.
+> Bu belgedeki Compose komutlarını canlıda çalıştırma.
+
+Production kaynağı (tarihsel, AWS): `akademik-platform-prod` compose projesi, web servisi
 `spike/app` build context'i. Bu belge **hangi komutun gerçekten çalıştığını**
 tek yerde tutar; sürüm geçmişi `docs/deployments/` altında, özet `PROJECT-STATE.md`'de.
 

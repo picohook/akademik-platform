@@ -91,6 +91,15 @@ into a live database. An empty registry on a database with a schema means "not
 baselined yet", never "fresh database"; a genuinely fresh database has no
 `users` table and is unaffected.
 
+### Production registry state (2026-11-01, Oracle)
+
+The Oracle production database (`akademik`) reports **27** migrations; the highest
+filename is `027-reader-sso.sql`. Application order was not filename order: 021, 022, 024,
+025, 026 and 027 went in with the v137 deploy, and **023 was applied afterwards**
+(OA catalogue, PR #55). Applied SQL, checksums and registry rows are never edited, the
+baseline is never repeated, and 023/025/027 are never run again. Record:
+`docs/deployments/2026-11-01-libread-production.md`.
+
 ### Running it on the EC2 host
 
 The host has no `node` and no `spike/app/node_modules`, and the disk is tight,
@@ -381,12 +390,14 @@ green run prints:
 `LIBEDGE_023_SQL=<path>` reads 023 from another file (a PR checkout) instead of the
 working tree; the sabotage switch rewrites that file in place and restores it.
 
-Two limits, stated rather than discovered later:
+Two points, stated rather than discovered later:
 
-- The individual tenant holds exactly one grant, so its reader sees the whole **global**
-  catalogue, not only the collection. In this fixture that is the same twelve works,
-  which is why the run cannot tell the two apart; whether a collection-scoped grant
-  should narrow the *listing* is a separate question, not a defect this file certifies.
+- The individual tenant holds exactly one grant, and it is scoped to the **collection**,
+  not to `all`. The earlier note here (the reader sees the whole global catalogue) was
+  superseded by the `GLOBAL_OUTSIDE` fixture above: a 13th global book outside the
+  collection is absent from the catalogue (404 on `/file`, 403 on the ticket) and opens
+  only while the grant is rewritten to `all`. There is no `all` grant for individual
+  readers in production.
 - The bridge publishes **global** works, so its catalogue lists thirteen - the twelve
   and the outsider. What the bridge must not do is publish a staff work that never
   reached the global catalogue, and that is what it checks (`OUTSIDE_WORK` → 404).
