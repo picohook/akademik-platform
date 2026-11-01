@@ -10,7 +10,9 @@
 // stylesheet, so the card would render unstyled.
 // v28: the sign-in box (index.html, app.js, styles.css) changed shape; a cached v27 shell
 // would show the old form next to the new script.
-const CACHE = 'akademik-shell-v28';
+// v29: the same files gain the AI buttons and panel; a cached v28 shell would pair the
+// old markup with the new script.
+const CACHE = 'akademik-shell-v29';
 const SHELL = [
   '/',
   '/styles.css',

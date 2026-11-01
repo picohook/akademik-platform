@@ -222,6 +222,11 @@ const hlColors = $('hlColors');
 const hlNote = $('hlNote');
 const hlCopy = $('hlCopy');
 const hlCopyCite = $('hlCopyCite');
+const hlExplain = $('hlExplain');
+const hlSummarize = $('hlSummarize');
+const aiPanel = $('aiPanel');
+const aiPanelTitle = $('aiPanelTitle');
+const aiPanelText = $('aiPanelText');
 const toastEl = $('toast');
 const readerStatus = $('readerStatus');
 const messagesModal = $('messagesModal');
@@ -1085,6 +1090,63 @@ function updateCopyControls() {
     button.disabled = blocked;
     button.title = blocked ? t('Bu kitapta kopyalama kapalı') : button.textContent;
   }
+  // The AI buttons exist only when the server says the feature is on, and follow the
+  // same copy policy: a passage the reader may not copy is not sent anywhere either.
+  for (const button of [hlExplain, hlSummarize]) {
+    button.hidden = !state.aiSelection;
+    button.disabled = blocked || state.aiBusy;
+    button.title = blocked ? t('Bu kitapta kopyalama kapalı') : button.textContent;
+  }
+}
+
+const AI_MESSAGES = {
+  selection_too_short: 'Açıklamak için en az bir cümle seçin.',
+  selection_too_long: 'Seçim çok uzun; daha kısa bir bölüm seçin.',
+  not_available_for_book: 'Bu özellik yalnızca açık erişimli kitaplarda kullanılabilir.',
+  rate_limited: 'Çok hızlı istek gönderdiniz; biraz bekleyin.',
+  busy: 'Önceki istek sürüyor; bitmesini bekleyin.',
+  daily_user_limit: 'Bugünkü yapay zekâ hakkınız doldu. Yarın tekrar deneyin.',
+  daily_budget_exhausted: 'Yapay zekâ özelliği bugün için kullanım sınırına ulaştı. Yarın tekrar deneyin.',
+  ai_disabled: 'Yapay zekâ özelliği şu anda kullanılamıyor.',
+  provider_error: 'Yapay zekâ yanıt veremedi. Biraz sonra tekrar deneyin.',
+  provider_timeout: 'Yapay zekâ zamanında yanıt vermedi. Biraz sonra tekrar deneyin.',
+};
+
+function closeAiPanel() {
+  state.aiSeq = (state.aiSeq || 0) + 1; // a late answer must not reopen it
+  aiPanel.hidden = true;
+}
+
+async function askAi(mode) {
+  if (!state.book || !state.aiSelection || state.aiBusy) return;
+  if (state.book.allow_copy === false) { toast('Bu kitapta kopyalama kapalı'); return; }
+  const selected = state.epubMode ? state.epubSelection : state.pending;
+  const text = String(selected?.text || '').trim();
+  if (!text) { toast('Önce metin seçin'); return; }
+  const seq = (state.aiSeq = (state.aiSeq || 0) + 1);
+  state.aiBusy = true;
+  updateCopyControls();
+  aiPanelTitle.textContent = t(mode === 'summarize' ? 'Özet' : 'Açıklama');
+  aiPanelText.textContent = t('Yanıt hazırlanıyor…');
+  aiPanel.hidden = false;
+  try {
+    const response = await fetch('/api/ai/selection', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ bookId: state.book.id, mode, lang: getLang(), text }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (seq !== state.aiSeq) return;
+    // textContent, never innerHTML: the answer is model output about untrusted text.
+    aiPanelText.textContent = response.ok && payload.answer
+      ? payload.answer
+      : t(AI_MESSAGES[payload.error] || 'Yapay zekâ yanıt veremedi. Biraz sonra tekrar deneyin.');
+  } catch {
+    if (seq === state.aiSeq) aiPanelText.textContent = t(AI_MESSAGES.provider_error);
+  } finally {
+    state.aiBusy = false;
+    updateCopyControls();
+  }
 }
 
 async function copySelectedText(withCitation = false) {
@@ -1336,6 +1398,7 @@ async function showOfflineLibrary(entries) {
 }
 
 function showLogin(message = '') {
+  closeAiPanel();
   clearMessageHistory();
   setAppInert(true);
   loginScreen.hidden = false;
@@ -3623,6 +3686,7 @@ async function openBook(book, options = {}) {
 }
 
 async function closeReader() {
+  closeAiPanel();
   readerVariants.hidden = true;
   readerVariants.replaceChildren();
   resetReaderStatus();
@@ -4456,6 +4520,9 @@ $('closeNotes').addEventListener('click', () => {
 $('hlSave').addEventListener('click', saveHighlight);
 hlCopy.addEventListener('click', () => copySelectedText(false));
 hlCopyCite.addEventListener('click', () => copySelectedText(true));
+hlExplain.addEventListener('click', () => askAi('explain'));
+hlSummarize.addEventListener('click', () => askAi('summarize'));
+$('aiPanelClose').addEventListener('click', closeAiPanel);
 hlColors.addEventListener('click', (event) => {
   const button = event.target.closest('.hl-color');
   if (button) setHighlightColor(button.dataset.color);
@@ -4659,6 +4726,7 @@ window.__readerStress = stressPages;
     if (config) {
       applyBrand(config.brandName, config.brandTagline);
       applyFooter(config);
+      state.aiSelection = config.aiSelection === true;
       mode.textContent = t(config.mode === 'db' ? 'DB modu' : 'Demo modu');
       mode.classList.toggle('db', config.mode === 'db');
     } else {

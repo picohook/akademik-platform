@@ -17,6 +17,7 @@ import { PDFDocument } from 'pdf-lib';
 import { indexAsset } from './indexer.mjs';
 import { createDownloadService, startDownloadMaintenance } from './download-tickets.mjs';
 import { watermarkDownload, inspectWatermarkable } from './social-watermark.mjs';
+import { createAiSelection } from './ai-selection.mjs';
 import {
   buildSnippet,
   catalogMatches,
@@ -1469,6 +1470,10 @@ async function getBook(id, dbClient = null) {
   return dbClient ? load(dbClient) : withTenant(load);
 }
 
+// Explain / summarise a selected passage. Off unless LIBREAD_AI_ENABLED=1 and fully
+// configured; without a database there is no budget counter, so it stays off then too.
+const aiSelection = createAiSelection({ withDb: pool ? withTenant : null });
+
 const downloadService = createDownloadService({
   // A callback, not TENANT_ID: the service is built once at startup but every call
   // runs inside a request, and a request's tenant is bound by runWithTenant().
@@ -2617,6 +2622,7 @@ async function handleRequest(req, res) {
         buildDate: BUILD_DATE,
         environment: APP_ENV,
         supportEmail: SUPPORT_EMAIL,
+        aiSelection: aiSelection.enabled,
       });
       return;
     }
@@ -3274,6 +3280,21 @@ async function handleRequest(req, res) {
     }
     if (pathname === '/api/progress' && req.method === 'POST') {
       json(res, 200, await saveProgress(await readJson(req), auth.userId));
+      return;
+    }
+    if (pathname === '/api/ai/selection' && req.method === 'POST') {
+      // Session and CSRF were checked above. The book must pass the same access decision
+      // as /file; the AI module then adds its own gates (collection, copy policy, budget).
+      const body = await readJson(req, 20_000);
+      const book = typeof body?.bookId === 'string' ? await getBook(body.bookId) : null;
+      if (!book || !await canAccessBook(book, auth)) {
+        json(res, 404, { error: 'book not found' });
+        return;
+      }
+      const result = await aiSelection.handle({ userId: auth.userId, book, body });
+      if (result.retryAfter) res.setHeader('retry-after', String(result.retryAfter));
+      res.setHeader('cache-control', 'no-store');
+      json(res, result.status, result.body);
       return;
     }
     if (pathname.startsWith('/api/')) {
