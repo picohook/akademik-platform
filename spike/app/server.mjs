@@ -106,6 +106,7 @@ const MIME = {
   '.epub': 'application/epub+zip',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.webp': 'image/webp',
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
   '.ttf': 'font/ttf',
