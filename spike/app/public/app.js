@@ -8,6 +8,18 @@ import { formatCitation, normalizePdfPageLabels, pdfPageLabel, pdfPageDescriptio
 import { EpubEngine } from '/epub-engine.mjs';
 import { initializeLanguage, toggleLanguage, t, translateDom, getLang, libraryText } from '/i18n.mjs?v=23';
 import { fetchDownloadBlob, saveOfflineDownload } from '/downloads.mjs';
+import { RATES, createBrowserSpeech, createReadAloud, voicesFor } from '/read-aloud.mjs';
+import { createEpubSource, createPdfSource } from '/read-aloud-sources.mjs';
+
+// Sesli oku state (declared up here: goToPage and friends call raNoteNavigation before the block below runs)
+let readAloud = null;
+let raSelfNavUntil = 0;
+let raWakeLock = null;
+let raLastPage = 0;
+let raStatusKey = '';
+let raQuietTimer = null;
+let raLastActivity = 0;
+let raPrevStatus = 'idle';
 import {
   listOfflineBooks,
   getOfflineBook,
@@ -1328,6 +1340,250 @@ async function askAi(mode) {
   }
 }
 
+// ---- Sesli oku: the book read aloud with the device's own voices (nothing leaves the device) ----
+const RA_WORDS = {
+  listen: ['Sesli oku', 'Read aloud'], listenFromHere: ['Dinle', 'Listen'], region: ['Sesli okuma', 'Read aloud'],
+  prev: ['Önceki cümle', 'Previous sentence'], next: ['Sonraki cümle', 'Next sentence'],
+  play: ['Oynat', 'Play'], pause: ['Duraklat', 'Pause'], close: ['Kapat', 'Close'],
+  speed: ['Hız', 'Speed'], voice: ['Ses', 'Voice'], sleep: ['Uyku zamanlayıcısı', 'Sleep timer'], more: ['Ses ve zamanlayıcı', 'Voice and timer'],
+  auto: ['Otomatik (en iyi ses)', 'Automatic (best voice)'], off: ['Kapalı', 'Off'], min: ['dk', 'min'],
+  reading: ['Okunuyor', 'Reading'], paused: ['Duraklatıldı', 'Paused'], loading: ['Hazırlanıyor…', 'Preparing…'],
+  done: ['Okuma bitti.', 'Finished reading.'], ready: ['Hazır', 'Ready'],
+};
+const raWord = (key) => RA_WORDS[key][getLang() === 'en' ? 1 : 0];
+const raSpeech = createBrowserSpeech(window);
+const raPlayer = $('raPlayer');
+const raBtn = $('raBtn');
+const raPlay = $('raPlay');
+const raVoice = $('raVoice');
+const raRate = $('raRate');
+const raSleep = $('raSleep');
+const hlListen = $('hlListen');
+const RA_PREFS_KEY = 'readAloudPrefs';
+
+function raPrefs() {
+  try { return JSON.parse(localStorage.getItem(RA_PREFS_KEY) || '{}') || {}; } catch { return {}; }
+}
+function raSavePrefs(patch) {
+  try {
+    const next = { ...raPrefs(), ...patch };
+    localStorage.setItem(RA_PREFS_KEY, JSON.stringify(next));
+  } catch { /* storage may be disabled */ }
+}
+const raLang = () => String(state.book?.language || getLang() || 'tr').toLowerCase().split('-')[0];
+
+// Our own page turns (next page of the book) must not look like the reader turning the page.
+async function raGuard(fn) {
+  raSelfNavUntil = Date.now() + 2500;
+  try { return await fn(); } finally { raSelfNavUntil = Date.now() + 1500; }
+}
+// The reader turned the page or jumped while we were reading: stop talking over them, keep the place.
+function raNoteNavigation() {
+  if (!readAloud || Date.now() < raSelfNavUntil) return;
+  const status = readAloud.state().status;
+  if (status === 'playing' || status === 'loading') readAloud.pause();
+}
+
+const raSleepMs = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+// The text layer element(s) showing a PDF page, once drawn. [] when the page is not (or will not be) available.
+async function raLayersFor(page) {
+  if (state.scrollMode) {
+    const deadline = Date.now() + 8000;
+    while (Date.now() < deadline) {
+      const pane = state.scrollPanes[page - 1];
+      if (pane?.rendered) return [pane.textLayer];
+      await raSleepMs(120);
+    }
+    return [];
+  }
+  if (state.page !== page) return [];
+  const layers = state.twoPage && state.secondPage ? [textLayerEl, textLayer2] : [textLayerEl];
+  // goToPage has finished drawing when we get here; only a book that was just opened may still be drawing.
+  for (let waited = 0; waited < 1200 && !layers.some((layer) => layer.querySelector('span')); waited += 100) await raSleepMs(100);
+  return layers;
+}
+
+function raSource() {
+  if (state.epubMode) return createEpubSource({ getEngine: () => state.epubEngine, lang: raLang, guard: raGuard });
+  return createPdfSource({
+    lang: raLang,
+    getPage: () => state.page,
+    getNumPages: () => state.numPages,
+    getLayers: raLayersFor,
+    showPage: (page) => raGuard(() => goToPage(page)),
+    step: () => (state.twoPage && state.secondPage ? 2 : 1),
+    getSelectionText: () => state.pending?.text || '',
+    reveal: (el) => { try { el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch { /* noop */ } },
+  });
+}
+
+function raFillVoices() {
+  const lang = raLang();
+  const voices = voicesFor(raSpeech.getVoices(), lang);
+  const saved = raPrefs().voices?.[lang] || '';
+  raVoice.replaceChildren(new Option(raWord('auto'), ''));
+  for (const voice of voices) raVoice.append(new Option(voice.name, voice.voiceURI));
+  raVoice.value = voices.some((voice) => voice.voiceURI === saved) ? saved : '';
+  $('raHint').textContent = voices.length ? '' : t('Bu cihazda bu dil için ses yok; varsayılan ses kullanılacak.');
+}
+
+function raLabels() {
+  raBtn.textContent = raWord('listen');
+  raBtn.title = raWord('listen');
+  raBtn.hidden = !raSpeech.supported;
+  hlListen.textContent = raWord('listenFromHere');
+  hlListen.hidden = !raSpeech.supported;
+  raPlayer.setAttribute('aria-label', raWord('region'));
+  $('raPrev').setAttribute('aria-label', raWord('prev'));
+  $('raPrev').title = raWord('prev');
+  $('raNext').setAttribute('aria-label', raWord('next'));
+  $('raNext').title = raWord('next');
+  $('raClose').setAttribute('aria-label', raWord('close'));
+  $('raClose').title = raWord('close');
+  $('raRateLabel').textContent = raWord('speed');
+  $('raVoiceLabel').textContent = raWord('voice');
+  $('raSleepLabel').textContent = raWord('sleep');
+  $('raMoreLabel').textContent = raWord('more');
+  raRate.replaceChildren(...RATES.map((rate) => new Option(rate + '×', String(rate))));
+  raRate.value = String(raPrefs().rate && RATES.includes(raPrefs().rate) ? raPrefs().rate : 1);
+  raSleep.replaceChildren(new Option(raWord('off'), '0'), ...[15, 30, 60].map((m) => new Option(m + ' ' + raWord('min'), String(m))));
+  raFillVoices();
+}
+
+async function raWake(on) {
+  try {
+    if (on) {
+      if (!raWakeLock && navigator.wakeLock) {
+        raWakeLock = await navigator.wakeLock.request('screen');
+        raWakeLock.addEventListener('release', () => { raWakeLock = null; });
+      }
+    } else if (raWakeLock) {
+      await raWakeLock.release();
+      raWakeLock = null;
+    }
+  } catch { raWakeLock = null; }
+}
+
+function raMedia(status) {
+  if (!('mediaSession' in navigator)) return;
+  try {
+    if (status !== 'idle' && typeof MediaMetadata === 'function') {
+      navigator.mediaSession.metadata = new MediaMetadata({ title: state.book?.title || 'LibRead', artist: state.book?.publisher || '', album: 'LibRead' });
+    }
+    navigator.mediaSession.playbackState = status === 'playing' ? 'playing' : (status === 'paused' ? 'paused' : 'none');
+  } catch { /* optional */ }
+}
+
+// While it reads, the controls fade after a few quiet seconds so they do not cover the page; the
+// pointer, a touch or a key brings them back, and they never fade while a keyboard user is on them.
+function raActivity(force = false) {
+  const now = Date.now();
+  if (!force && now - raLastActivity < 250) return;
+  raLastActivity = now;
+  raPlayer.classList.remove('ra-quiet');
+  clearTimeout(raQuietTimer);
+  raQuietTimer = null;
+  if (raPlayer.hidden || readAloud?.state().status !== 'playing') return;
+  raQuietTimer = setTimeout(() => {
+    if (raPlayer.querySelector(':focus-visible')) { raActivity(true); return; }
+    raPlayer.classList.add('ra-quiet');
+  }, 4000);
+}
+
+function raRender(s) {
+  const active = s.status === 'playing' || s.status === 'loading';
+  raPlay.textContent = active ? '⏸' : '▶';
+  raPlay.setAttribute('aria-label', raWord(active ? 'pause' : 'play'));
+  raPlay.title = raWord(active ? 'pause' : 'play');
+  $('raPrev').disabled = s.status === 'idle';
+  $('raNext').disabled = s.status === 'idle';
+  const key = s.status + '|' + s.error + '|' + s.finished;
+  if (key !== raStatusKey) {
+    raStatusKey = key;
+    const errors = { no_text: 'Burada okunabilir metin bulunamadı.', speech_failed: 'Ses motoru yanıt vermedi. Tarayıcının ses ayarlarını kontrol edin.', speech_stalled: 'Ses motoru yanıt vermedi. Tarayıcının ses ayarlarını kontrol edin.' };
+    $('raStatus').textContent = s.error ? t(errors[s.error] || errors.speech_failed)
+      : (s.finished ? raWord('done') : raWord(s.status === 'playing' ? 'reading' : (s.status === 'paused' ? 'paused' : (s.status === 'loading' ? 'loading' : 'ready'))));
+  }
+  if (s.sleepAt === 0 && raSleep.value !== '0') raSleep.value = '0';
+  raBtn.setAttribute('aria-pressed', String(!raPlayer.hidden));
+  raWake(s.status === 'playing');
+  raMedia(s.status);
+  // only a change between playing / paused / idle counts: the controller also reports every new sentence
+  if (s.status !== raPrevStatus) { raPrevStatus = s.status; raActivity(true); }
+}
+
+function raEnsure() {
+  if (readAloud) return readAloud;
+  const prefs = raPrefs();
+  readAloud = createReadAloud({
+    speech: raSpeech, source: raSource(), onChange: raRender,
+    initial: { rate: RATES.includes(prefs.rate) ? prefs.rate : 1, voiceURI: prefs.voices?.[raLang()] || '' },
+  });
+  return readAloud;
+}
+
+function raShow(visible) {
+  raPlayer.hidden = !visible;
+  document.body.classList.toggle('ra-open', visible);
+  raBtn.setAttribute('aria-pressed', String(visible));
+}
+
+async function raStart(origin = { type: 'view' }) {
+  if (!raSpeech.supported || reader.hidden) return;
+  raFillVoices();
+  raShow(true);
+  raLastPage = state.page;
+  const player = raEnsure();
+  const started = player.start(origin);
+  raPlay.focus();
+  await started;
+}
+
+function raReset() {
+  raPrevStatus = 'idle';
+  clearTimeout(raQuietTimer);
+  raQuietTimer = null;
+  if (readAloud) {
+    readAloud.dispose();
+    readAloud = null;
+  }
+  raStatusKey = '';
+  if (raPlayer) raShow(false);
+  raWake(false);
+  raMedia('idle');
+}
+
+raLabels();
+raSpeech.onVoicesChanged(raFillVoices);
+raBtn.addEventListener('click', () => { if (raPlayer.hidden) raStart({ type: 'view' }); else raReset(); });
+hlListen.addEventListener('click', () => {
+  const text = (state.epubMode ? state.epubSelection : state.pending)?.text || '';
+  raStart({ type: 'selection', text });
+  cancelSelection();
+});
+raPlay.addEventListener('click', () => { if (readAloud) readAloud.toggle(); else raStart({ type: 'view' }); });
+$('raPrev').addEventListener('click', () => readAloud?.prev());
+$('raNext').addEventListener('click', () => readAloud?.next());
+$('raClose').addEventListener('click', () => { raReset(); raBtn.focus(); });
+raRate.addEventListener('change', () => { const rate = Number(raRate.value); raSavePrefs({ rate }); readAloud?.setRate(rate); });
+raVoice.addEventListener('change', () => {
+  const lang = raLang();
+  raSavePrefs({ voices: { ...(raPrefs().voices || {}), [lang]: raVoice.value } });
+  readAloud?.setVoice(raVoice.value);
+});
+raSleep.addEventListener('change', () => readAloud?.setSleep(Number(raSleep.value)));
+for (const type of ['pointermove', 'pointerdown', 'touchstart', 'keydown']) document.addEventListener(type, () => raActivity(), { passive: true });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && readAloud?.state().status === 'playing') raWake(true); });
+window.addEventListener('pagehide', () => raSpeech.cancel());
+if ('mediaSession' in navigator) {
+  const bind = (action, fn) => { try { navigator.mediaSession.setActionHandler(action, fn); } catch { /* unsupported action */ } };
+  bind('play', () => readAloud?.resume());
+  bind('pause', () => readAloud?.pause());
+  bind('previoustrack', () => readAloud?.prev());
+  bind('nexttrack', () => readAloud?.next());
+  bind('stop', () => raReset());
+}
+
 async function copySelectedText(withCitation = false) {
   if (!state.book || reader.hidden || hlBar.hidden) return;
   if (state.book.allow_copy === false) {
@@ -1590,6 +1846,7 @@ async function showOfflineLibrary(entries) {
 
 function showLogin(message = '') {
   closeAiPanel();
+  raReset();
   clearMessageHistory();
   setAppInert(true);
   loginScreen.hidden = false;
@@ -2145,6 +2402,7 @@ function updateBookmarkUi() {
 }
 
 async function goToPage(value) {
+  raNoteNavigation();
   if (!state.pdf) return;
   const requested = Number(value);
   if (!Number.isFinite(requested) || requested < 1) {
@@ -3560,6 +3818,7 @@ function labelEpubFrames() {
 }
 
 async function openEpubBook(book, options = {}) {
+  raReset();
   book = normalizeBookVariant(book);
   const offlineBlob = options.offlineBlob || null;
   renderReaderVariants(book, true);
@@ -3632,6 +3891,7 @@ async function openEpubBook(book, options = {}) {
       canCopy: () => state.book?.allow_copy !== false,
       onCopyBlocked: () => toast('Bu kitapta kopyalama kapalı'),
       onRelocated: (next) => {
+        raNoteNavigation();
         state.epubProgress = next;
         updateEpubLocation(next);
         labelEpubFrames();
@@ -3707,6 +3967,7 @@ async function openEpubBook(book, options = {}) {
 }
 
 async function openBook(book, options = {}) {
+  raReset();
   book = normalizeBookVariant(book);
   if (book.format === 'epub') {
     await openEpubBook(book, options);
@@ -3880,6 +4141,7 @@ async function openBook(book, options = {}) {
 
 async function closeReader() {
   closeAiPanel();
+  raReset();
   readerVariants.hidden = true;
   readerVariants.replaceChildren();
   resetReaderStatus();
@@ -4242,6 +4504,7 @@ async function deleteAnnotation(id, options = {}) {
 }
 
 function changePage(delta) {
+  raNoteNavigation();
   if (state.epubMode) {
     state.epubSelection = null;
     hlBar.hidden = true;
@@ -4331,6 +4594,12 @@ document.addEventListener('keydown', (event) => {
       && (event.code === 'KeyH' || event.key?.toLowerCase() === 'h') && !reader.hidden) {
     event.preventDefault();
     openSelectionTools();
+    return;
+  }
+  if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey
+      && (event.code === 'KeyL' || event.key?.toLowerCase() === 'l') && !reader.hidden && raSpeech.supported) {
+    event.preventDefault();
+    if (raPlayer.hidden) raStart({ type: 'view' }); else raReset();
     return;
   }
   if (event.ctrlKey || event.altKey || event.metaKey) return;

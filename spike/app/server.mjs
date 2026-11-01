@@ -2160,7 +2160,7 @@ async function serveStatic(req, res, pathname) {
   const allowedFiles = new Set([
     '/book-variants.mjs', '/book-links.mjs', '/library.mjs', '/library-model.mjs', '/library.css',
     '/index.html', '/app.js', '/styles.css', '/i18n.mjs', '/citations.mjs', '/pdf-structure.mjs',
-    '/search.mjs', '/epub-engine.mjs', '/offline.mjs', '/downloads.mjs', '/ocr-layer.mjs', '/sw.js', '/manifest.webmanifest',
+    '/search.mjs', '/epub-engine.mjs', '/offline.mjs', '/downloads.mjs', '/ocr-layer.mjs', '/read-aloud.mjs', '/read-aloud-sources.mjs', '/sw.js', '/manifest.webmanifest',
     // Browsers request /favicon.ico on their own when a page declares no icon,
     // and Safari still prefers it over <link rel="icon">. It is the only file at
     // the root that is not a module, so it is listed explicitly.
