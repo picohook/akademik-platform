@@ -437,20 +437,25 @@
     </div>
 
   <div class="hl-bar" id="hlBar" role="toolbar" aria-label="Vurgu araçları" hidden>
-    <div class="hl-colors" id="hlColors" role="group" aria-label="Vurgu rengi">
-      <button class="hl-color yellow active" data-color="yellow" type="button" aria-label="Sarı"></button>
-      <button class="hl-color green" data-color="green" type="button" aria-label="Yeşil"></button>
-      <button class="hl-color blue" data-color="blue" type="button" aria-label="Mavi"></button>
-      <button class="hl-color pink" data-color="pink" type="button" aria-label="Pembe"></button>
+    <div class="hl-row">
+      <div class="hl-colors" id="hlColors" role="group" aria-label="Vurgu rengi">
+        <button class="hl-color yellow active" data-color="yellow" type="button" aria-label="Sarı"></button>
+        <button class="hl-color green" data-color="green" type="button" aria-label="Yeşil"></button>
+        <button class="hl-color blue" data-color="blue" type="button" aria-label="Mavi"></button>
+        <button class="hl-color pink" data-color="pink" type="button" aria-label="Pembe"></button>
+      </div>
+      <button class="copy-btn" id="hlCopy" type="button">Kopyala</button>
+      <button class="copy-btn" id="hlCopyCite" type="button">Atıfla kopyala</button>
+      <button class="copy-btn" id="hlExplain" type="button" hidden>Açıkla</button>
+      <button class="copy-btn" id="hlSummarize" type="button" hidden>Özetle</button>
+      <button class="copy-btn" id="hlListen" type="button" hidden></button>
+      <button class="icon-btn" id="hlCancel" aria-label="İptal">✕</button>
     </div>
-    <input id="hlNote" type="text" placeholder="Not (opsiyonel)" aria-label="Vurgu notu" maxlength="280" />
-    <button class="copy-btn" id="hlCopy" type="button">Kopyala</button>
-    <button class="copy-btn" id="hlCopyCite" type="button">Atıfla kopyala</button>
-    <button class="copy-btn" id="hlExplain" type="button" hidden>Açıkla</button>
-    <button class="copy-btn" id="hlSummarize" type="button" hidden>Özetle</button>
-    <button class="copy-btn" id="hlListen" type="button" hidden></button>
-    <button class="primary" id="hlSave">Vurgula</button>
-    <button class="icon-btn" id="hlCancel" aria-label="İptal">✕</button>
+    <blockquote class="hl-quote" id="hlQuote" aria-label="Seçilen metin"></blockquote>
+    <div class="hl-note-row">
+      <textarea id="hlNote" rows="2" placeholder="Not (opsiyonel)" aria-label="Vurgu notu" aria-describedby="hlQuote" maxlength="280"></textarea>
+      <button class="primary" id="hlSave">Vurgula</button>
+    </div>
   </div>
 
   <div class="ra-player" id="raPlayer" role="region" hidden>
