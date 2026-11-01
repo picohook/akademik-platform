@@ -1,3 +1,4 @@
+import { createLibrary } from '/library.mjs';
 import { normalizeBookVariant, bookRequestId, offlineBookKey, groupBookVariants, variantLabel, locationMatchesBook, bookFromLocation, findOfflineVariant } from '/book-variants.mjs';
 import { renderPdfLinks, destinationPage } from '/book-links.mjs';
 import * as pdfjsLib from '/vendor/pdfjs/pdf.mjs';
@@ -5,7 +6,7 @@ import { buildPdfStructure } from '/pdf-structure.mjs';
 import { renderHocrText } from '/ocr-layer.mjs';
 import { formatCitation, normalizePdfPageLabels, pdfPageLabel, pdfPageDescription, pdfCitationPage, formatCopiedSelection } from '/citations.mjs';
 import { EpubEngine } from '/epub-engine.mjs';
-import { initializeLanguage, toggleLanguage, t, translateDom, getLang } from '/i18n.mjs?v=23';
+import { initializeLanguage, toggleLanguage, t, translateDom, getLang, libraryText } from '/i18n.mjs?v=23';
 import { fetchDownloadBlob, saveOfflineDownload } from '/downloads.mjs';
 import {
   listOfflineBooks,
@@ -461,6 +462,8 @@ async function loadOfflineProgress(book) {
   return JSON.parse(saved || 'null');
 }
 
+const library = createLibrary({ state, renderBooks, makeCard, t, toast, libraryText });
+
 function makeCard(book, variants = [book]) {
   const card = document.createElement('div');
   card.className = 'card';
@@ -576,6 +579,7 @@ function makeCard(book, variants = [book]) {
 
   card.appendChild(cover);
   card.appendChild(meta);
+  library.decorateCard(card, book);
   return card;
 }
 
@@ -585,7 +589,7 @@ function renderBooks() {
     if (state.filter === 'all') return true;
     return (book.subjects || []).includes(state.filter);
   });
-  const groups = groupBookVariants(visible, getLang(), variantSelections);
+  const groups = library.order(groupBookVariants(library.visible(visible), getLang(), variantSelections));
   groups.forEach(({ book, variants }) => grid.appendChild(makeCard(book, variants)));
   count.textContent = `${groups.length} başlık`;
   empty.hidden = groups.length !== 0;
@@ -1411,14 +1415,22 @@ function renderFilters() {
   filters.replaceChildren();
   const all = document.createElement('button');
   all.className = `chip${state.filter === 'all' ? ' active' : ''}`;
+  all.dataset.subject = 'all';
   all.textContent = t('Tümü');
-  all.addEventListener('click', () => { state.filter = 'all'; renderFilters(); renderBooks(); });
+  all.setAttribute('aria-pressed', String(state.filter === 'all'));
+  all.addEventListener('click', () => { state.filter = 'all'; renderFilters(); renderBooks(); filters.querySelector('[data-subject="all"]')?.focus(); });
   filters.appendChild(all);
+  library.addFavoriteFilter(filters);
   [...subjects].sort((a, b) => a.localeCompare(b, 'tr')).forEach((subject) => {
     const chip = document.createElement('button');
     chip.className = `chip${state.filter === subject ? ' active' : ''}`;
     chip.textContent = subject;
-    chip.addEventListener('click', () => { state.filter = subject; renderFilters(); renderBooks(); });
+    chip.dataset.subject = subject;
+    chip.setAttribute('aria-pressed', String(state.filter === subject));
+    chip.addEventListener('click', () => {
+      state.filter = subject; renderFilters(); renderBooks();
+      [...filters.querySelectorAll('[data-subject]')].find(button => button.dataset.subject === subject)?.focus();
+    });
     filters.appendChild(chip);
   });
 }
@@ -1543,6 +1555,7 @@ function setUser(user) {
   }
   state.authEpoch = (state.authEpoch || 0) + 1;
   state.user = user;
+  library.setUser(user);
   syncShortcutControls();
   try {
     if (user?.id) localStorage.setItem('offlineAnnotationUser', user.id);
@@ -1570,6 +1583,7 @@ async function showOfflineLibrary(entries) {
   state.offlineMode = true;
   state.offlineLibrary = true;
   state.books = entries.map((entry) => normalizeBookVariant(entry.book));
+  library.setBooks(state.books, '');
   renderFilters();
   renderBooks();
 }
@@ -1708,6 +1722,8 @@ async function loadBooks(query = '') {
   }
   if (!response.ok) throw new Error('Katalog yüklenemedi');
   state.books = (await response.json()).map(normalizeBookVariant);
+  library.setBooks(state.books, query);
+  await library.refresh();
   renderFilters();
   renderBooks();
 }
@@ -4851,6 +4867,7 @@ window.addEventListener('storage', event => {
   if (!state.user?.id || event.newValue === state.user.id) return;
   // Another tab changed accounts. Do not clear the new account's shared key.
   state.user = null;
+  library.setUser(null);
   clearMessageHistory();
   state.annotations = [];
   userChip.textContent = ''; userChip.hidden = true; logoutBtn.hidden = true; passwordBtn.hidden = true;
