@@ -299,6 +299,51 @@ test above, and switching the default is a deploy-order decision - 026 has to be
 the same deploy, before the app that assumes it - not an improvement to slip in ahead of
 that.
 
+## Migration 023, measured through the server
+
+`023-oa-global-catalog.sql` has two test files, because it makes two different claims
+and one kind of test cannot check both.
+
+`db/023.test.mjs` measures the SQL: which rows moved, whose tenant they lost, what the
+grant row says. It counts `select count(*) from works where tenant_id is null` and
+compares it with 12, which answers "did the migration move the right rows" and nothing
+else - a catalogue that lists the wrong books would pass it.
+
+`db/023-app.test.mjs` measures the reader: it starts the shipped `spike/app/server.mjs`
+in a sandbox against its own throwaway postgres, logs in as a reader of the individual
+tenant 023 creates, and asks the server, not the tables:
+
+- `/api/books` lists exactly the twelve OA works, and none of the demo work, another
+  institution's work, or the staff work that is **not** in the OA collection;
+- `/api/books/{id}/file` and `/api/books/{id}/download-ticket` + `/download` serve the
+  OA work - real bytes, a 64-hex ticket, a second use of the same ticket refused - and
+  answer 404/403 for the other three, with a `download.ticket.deny` row recorded against
+  the reader's own tenant;
+- the bridge catalogue (`/api/libedge/v1/catalog`, read through `akademik_catalog`)
+  returns the same twelve and 404s the work outside the collection;
+- with the collection grant revoked, the same reader's catalogue is empty and the file
+  and ticket are refused - so what the reader sees is the grant, not an accident of
+  visibility.
+
+That last check is the part the SQL test cannot reach: it removes exactly the row 023
+wrote and re-asks every endpoint. Run with `LIBEDGE_023_SABOTAGE_COLLECTION=1` and 023
+is applied with the grant's scope set to `all` instead of `collection`; that run must
+fail, and if it passes, this file is not measuring the grant. `LIBEDGE_023_SQL=<path>`
+points the test at a 023 from a PR checkout without touching the working tree.
+
+One limit, stated rather than implied: the individual tenant is created by 023, so the
+first catalogue grant gives its reader the *global* catalogue - every global work, not
+only the OA collection. The reader's empty catalogue after the withdrawal is what shows
+the grant is load-bearing; a per-collection listing is 023's next question, not this
+file's claim.
+
+Both files are run by hand, both start their own postgres:
+
+```
+node db/023.test.mjs
+node db/023-app.test.mjs
+```
+
 ## Migration 024, and `app.maintenance_tenants()`
 
 `024-maintenance-tenants.sql` depends on nothing: it creates the `app` schema, one
