@@ -20,7 +20,9 @@
 // old markup with the new scripts.
 // v33: read aloud follows the spoken word and skips page furniture (read-aloud.mjs, read-aloud-sources.mjs,
 // the player markup in index.html, styles.css): a cached v32 shell would pair the old markup with the new scripts.
-const CACHE = 'akademik-shell-v33';
+// v34: app.js heals a page whose HTML is older than its scripts and no longer dies on missing read-aloud markup;
+// the service worker itself is now marked never-keep-at-the-edge. A cached v33 shell would keep the old script.
+const CACHE = 'akademik-shell-v34';
 const SHELL = [
   '/',
   '/styles.css',
