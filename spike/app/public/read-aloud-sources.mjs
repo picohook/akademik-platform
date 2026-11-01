@@ -30,6 +30,26 @@ function findSelectionOffset(text, selected) {
   try { return text.search(new RegExp(escaped.join('\\s+'), 'u')); } catch { return -1; }
 }
 
+// ---- page furniture: page numbers, running headers and footers ----------------------------
+
+const ROMAN = /^[ivxlcdm]{1,8}$/i;
+// "12", "- 12 -", "Page 12", "Sayfa 12", "12 / 300", "xiv": a page number on its own.
+export function isPageNumberText(text) {
+  const t = String(text || '').trim().replace(/^[-–—·•\s]+|[-–—·•\s]+$/g, '');
+  if (!t || t.length > 24) return false;
+  if (/^\d{1,5}$/.test(t)) return true;
+  if (/^(?:page|pg|p|sayfa|s)\.?\s*\d{1,5}(?:\s*(?:\/|of|\|)\s*\d{1,5})?$/i.test(t)) return true;
+  if (/^\d{1,5}\s*(?:\/|of)\s*\d{1,5}$/i.test(t)) return true;
+  return ROMAN.test(t);
+}
+
+// The same running title with a different page number must compare equal: digits become "#".
+export function normalizeBandText(text) {
+  const t = String(text || '').toLocaleLowerCase('tr').replace(/\d+/g, '#').replace(/\s+/g, ' ').trim();
+  if (!t || t.length > 100 || !/[\p{L}#]/u.test(t)) return '';
+  return t;
+}
+
 // ---- PDF ---------------------------------------------------------------------------------
 
 // Leaf text spans of a pdf.js / OCR text layer, in reading order.
@@ -62,9 +82,45 @@ export function textFromSpans(spans) {
 
 // getLayers(page): the text layer element(s) showing that page, once rendered ([] if none).
 // showPage(page): navigate there. step(): pages shown together (1, or 2 in the two-page view).
-export function createPdfSource({ lang, getPage, getNumPages, getLayers, showPage, step = () => 1, getSelectionText = () => '', reveal = () => {} }) {
-  function build(page, layers, selectedText) {
-    const spans = layers.flatMap(leafSpans);
+// skipChrome(): leave out page numbers and running headers/footers. getBandTexts(page): the text items in the top
+// and bottom tenth of a page (used to find what repeats from page to page without drawing those pages).
+const BAND = 0.1;
+export function createPdfSource({ lang, getPage, getNumPages, getLayers, showPage, step = () => 1, getSelectionText = () => '', reveal = () => {}, skipChrome = () => false, getBandTexts = async () => [] }) {
+  const bands = new Map();
+  async function bandSet(page) {
+    if (!bands.has(page)) {
+      let items = [];
+      try { items = await getBandTexts(page); } catch { items = []; }
+      bands.set(page, new Set(items.map(normalizeBandText).filter(Boolean)));
+    }
+    return bands.get(page);
+  }
+  // Short texts that sit in a page edge band on at least two of the pages around this one.
+  async function repeatedAround(page) {
+    const counts = new Map();
+    for (const other of [page - 2, page - 1, page + 1, page + 2]) {
+      if (other < 1 || other > getNumPages()) continue;
+      for (const text of await bandSet(other)) counts.set(text, (counts.get(text) || 0) + 1);
+    }
+    return new Set([...counts].filter(([, n]) => n >= 2).map(([text]) => text));
+  }
+  function withoutFurniture(layer, spans, repeated) {
+    const box = layer.getBoundingClientRect();
+    if (!box.height) return spans;
+    return spans.filter((el) => {
+      const rect = el.getBoundingClientRect();
+      const inBand = rect.bottom <= box.top + box.height * BAND || rect.top >= box.top + box.height * (1 - BAND);
+      if (!inBand) return true;
+      const text = el.textContent || '';
+      return !(isPageNumberText(text) || repeated.has(normalizeBandText(text)));
+    });
+  }
+
+  function build(page, layers, selectedText, repeated) {
+    const spans = layers.flatMap((layer) => {
+      const own = leafSpans(layer);
+      return skipChrome() ? withoutFurniture(layer, own, repeated) : own;
+    });
     const { text, map } = textFromSpans(spans);
     const sentences = splitSentences(text, lang());
     if (!sentences.length) return null;
@@ -87,7 +143,8 @@ export function createPdfSource({ lang, getPage, getNumPages, getLayers, showPag
     let current = page;
     for (let tries = 0; tries < MAX_EMPTY_PAGES && current <= getNumPages(); tries += 1) {
       const layers = await getLayers(current);
-      const segment = layers.length ? build(current, layers, tries === 0 ? selectedText : '') : null;
+      const repeated = layers.length && skipChrome() ? await repeatedAround(current) : new Set();
+      const segment = layers.length ? build(current, layers, tries === 0 ? selectedText : '', repeated) : null;
       if (segment) return segment;
       current += Math.max(1, step());
       if (current <= getNumPages()) await showPage(current);
@@ -115,7 +172,17 @@ const SKIP = 'script,style,noscript,svg,math,head,[hidden],[aria-hidden="true"]'
 
 // Text of a chapter document as one string, with a newline between blocks, and the text nodes
 // with their offsets so a sentence can be turned back into a DOM Range.
-export function chapterText(doc) {
+// With skipFurniture, page-break markers, page headers/footers, footnotes, note references and in-chapter
+// navigation (all marked up by the publisher) are left out. A plain <header> is NOT left out: it usually holds the title.
+// epub:type is a namespaced attribute when the chapter is parsed as XHTML (matched by [*|type]) and a plain
+// attribute literally named "epub:type" when it is parsed as HTML (matched by [epub\:type]); both occur.
+const FURNITURE = [
+  ...['pagebreak', 'footnote', 'endnote', 'noteref'].flatMap((kind) => [`[*|type~="${kind}"]`, `[epub\\:type~="${kind}"]`]),
+  '[role="doc-pagebreak"]', '[role="doc-pageheader"]', '[role="doc-pagefooter"]',
+  '[role="doc-footnote"]', '[role="doc-endnote"]', '[role="doc-noteref"]',
+  'nav',
+].join(',');
+export function chapterText(doc, skipFurniture = false) {
   const walker = doc.createTreeWalker(doc.body, 4);
   const nodes = [];
   let text = '';
@@ -124,7 +191,7 @@ export function chapterText(doc) {
   while (node) {
     const parent = node.parentElement;
     const value = node.nodeValue || '';
-    if (value.trim() && parent && !parent.closest(SKIP)) {
+    if (value.trim() && parent && !parent.closest(SKIP) && !(skipFurniture && parent.closest(FURNITURE))) {
       const block = parent.closest(BLOCK);
       if (text && block !== lastBlock) text += '\n';
       lastBlock = block;
@@ -147,7 +214,7 @@ function locate(nodes, offset, preferEnd) {
 
 // engine: the EpubEngine. guard(fn): runs fn marked as "our own navigation" so the reader does not
 // mistake it for the user turning the page.
-export function createEpubSource({ getEngine, lang, guard = (fn) => fn() }) {
+export function createEpubSource({ getEngine, lang, guard = (fn) => fn(), skipChrome = () => false }) {
   const highlightStyle = { fill: '#ffc400', 'fill-opacity': '0.38' };
 
   function contentsFor(engine, sectionIndex) {
@@ -172,7 +239,7 @@ export function createEpubSource({ getEngine, lang, guard = (fn) => fn() }) {
   function buildSegment(engine, contents, origin) {
     const doc = contents?.document;
     if (!doc?.body) return null;
-    const { text, nodes } = chapterText(doc);
+    const { text, nodes } = chapterText(doc, skipChrome());
     const docLang = (doc.documentElement.getAttribute('lang') || doc.documentElement.getAttribute('xml:lang') || '').toLowerCase().split('-')[0];
     const sentences = splitSentences(text, docLang || lang());
     if (!sentences.length) return null;

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { MAX_SENTENCE_CHARS, RATES, createReadAloud, pickVoice, splitSentences, voicesFor } from '../public/read-aloud.mjs';
+import { isPageNumberText, normalizeBandText } from '../public/read-aloud-sources.mjs';
 
 // Read aloud: segmentation, voice choice and the playback controller, against a fake speech engine
 // and a fake source. The DOM-bound parts (PDF text layer, EPUB iframes) are covered in
@@ -339,4 +340,21 @@ test('dispose stops and releases the source', async () => {
   player.dispose();
   assert.equal(player.state().status, 'idle');
   assert.ok(source.log.includes('dispose'));
+});
+
+// ---- page furniture ----------------------------------------------------------------------
+
+test('page numbers on their own are recognised, sentences and years in text are not', () => {
+  for (const yes of ['12', ' 12 ', '- 12 -', '— 12 —', 'Page 12', 'page 12', 'Sayfa 12', 's. 12', 'p. 3', '12 / 300', '12 of 300', 'xiv', 'IV']) assert.equal(isPageNumberText(yes), true, yes);
+  for (const no of ['', 'Chapter 12', '1999 was a good year', 'Table 3', 'Fig. 2', 'Introduction', 'A very long running header that is plainly not a page number at all']) assert.equal(isPageNumberText(no), false, no);
+});
+
+test('the same running title on different pages compares equal, different titles do not', () => {
+  assert.equal(normalizeBandText('Annual Review 2026 - 12'), normalizeBandText('Annual Review 2026 - 13'));
+  assert.equal(normalizeBandText('  Annual   Review '), 'annual review');
+  assert.notEqual(normalizeBandText('Chapter One'), normalizeBandText('Chapter Two'));
+  assert.equal(normalizeBandText(''), '');
+  assert.equal(normalizeBandText('•'), '');
+  assert.equal(normalizeBandText('x'.repeat(101)), '', 'a long text is a sentence, not furniture');
+  assert.equal(normalizeBandText('12'), '#', 'a bare page number is just "#"');
 });
