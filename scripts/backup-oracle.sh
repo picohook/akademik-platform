@@ -66,13 +66,15 @@ stage="$(mktemp -d "$BACKUP_DIR/.stage-${stamp}-XXXXXX")"
 trap 'rm -rf "$stage"' EXIT
 mkdir -p "$stage/db" "$stage/files" "$stage/config"
 
-# Files first, database second: a row that points at an upload then always finds the
-# file. (An upload landing between the two steps is simply in the next archive.)
-log "files: uploads + ocr"
+# Files are taken before the database. This order gives NO consistency guarantee (see the
+# CONSISTENCY LIMIT above); concurrent uploads/deletes can still leave them out of step.
+log "files: uploads + ocr + seed"
 [ -d "$LIVE_ROOT/data/uploads" ] || die "$LIVE_ROOT/data/uploads missing"
 [ -d "$LIVE_ROOT/data/ocr" ]     || die "$LIVE_ROOT/data/ocr missing"
 tar -C "$LIVE_ROOT/data" -cf "$stage/files/data.tar" uploads ocr
-[ -d "$LIVE_ROOT/seed" ] && tar -C "$LIVE_ROOT" -cf "$stage/files/seed.tar" seed
+# The live reader uses seed/sample.pdf, so it is mandatory in the archive.
+[ -f "$LIVE_ROOT/seed/sample.pdf" ] || die "$LIVE_ROOT/seed/sample.pdf missing"
+tar -C "$LIVE_ROOT" -cf "$stage/files/seed.tar" seed
 
 log "config: env directories (secrets - stays inside the encrypted archive)"
 cfg_dirs=("$LIVE_ROOT/config" "$V137_ROOT/config")
@@ -128,7 +130,7 @@ if [ -n "$BACKUP_RCLONE_REMOTE" ]; then
 fi
 
 # Retention. Local: keep the newest $KEEP_LOCAL archives. Remote retention is a bucket
-# lifecycle rule (7 days), so the backup credential never needs delete permission.
+# lifecycle rule (7 days) on the backup bucket/prefix only.
 mapfile -t old < <(cd "$BACKUP_DIR" && ls -1t libread-oracle-*.tar.gz.age 2>/dev/null | tail -n +"$((KEEP_LOCAL + 1))")
 for f in "${old[@]}"; do
   [ -n "$f" ] || continue

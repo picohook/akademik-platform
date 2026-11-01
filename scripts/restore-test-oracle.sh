@@ -38,7 +38,9 @@ cname="libread-restore-test-$suffix"
 net="libread-restore-test-$suffix"
 work="$(mktemp -d)"
 cleanup() {
-  docker rm -f "$cname" >/dev/null 2>&1 || true
+  # -v also removes the throwaway postgres' anonymous volume (docker keeps it otherwise).
+  # Applied to this test container only.
+  docker rm -fv "$cname" >/dev/null 2>&1 || true
   docker network rm "$net" >/dev/null 2>&1 || true
   if [ "${KEEP_WORKDIR:-0}" = "1" ]; then log "workdir kept: $work (contains secrets)"; else rm -rf "$work"; fi
 }
@@ -54,7 +56,7 @@ fi
 
 log "decrypt + unpack"
 age -d -i "$identity" <"$archive" | tar -xz -C "$work"
-for f in db/akademik.dump db/roles.sql files/data.tar config/config.tar manifest.txt; do
+for f in db/akademik.dump db/roles.sql files/data.tar files/seed.tar config/config.tar manifest.txt; do
   [ -s "$work/$f" ] || { log "FAIL  archive is missing $f"; exit 1; }
 done
 log "manifest:"; grep -E '^(created_utc|db_image|db_name|schema_migrations)=' "$work/manifest.txt" | sed 's/^/    /'
@@ -110,8 +112,12 @@ log "files + config inside the archive"
 uploads="$(tar -tf "$work/files/data.tar" | grep -c '^uploads/.*[^/]$' || true)"
 ocr="$(tar -tf "$work/files/data.tar" | grep -c '^ocr/.*[^/]$' || true)"
 log "      uploads files: $uploads, ocr files: $ocr"
-if [ "${RESTORE_SKIP_PROD_CHECKS:-0}" != "1" ] && [ "$uploads" -eq 0 ]; then
-  log "FAIL  no files under uploads/ in the archive"; fail=1
+# An empty uploads/ is not a failure on its own: the books may live only in R2.
+[ "$uploads" -eq 0 ] && log "NOTE  uploads/ is empty in the archive (books may be R2-only)"
+if tar -tf "$work/files/seed.tar" 2>/dev/null | grep -qx 'seed/sample.pdf'; then
+  log "PASS  seed/sample.pdf present"
+else
+  log "FAIL  seed/sample.pdf missing from files/seed.tar"; fail=1
 fi
 cfg_list="$(tar -tf "$work/config/config.tar")"
 for env_name in web-runtime.env web-release.env reader-integration.env; do

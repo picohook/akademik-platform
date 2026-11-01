@@ -14,7 +14,7 @@ Ortam değerleri: `docs/deployments/2026-11-01-libread-production.md`.
 | --- | --- |
 | `akademik` DB (`pg_dump -Fc`) | Web durmadan, tutarlı anlık görüntü (MVCC) |
 | Roller (`pg_dumpall --roles-only`) | Parola hash'i içerir |
-| `data/uploads`, `data/ocr`, `seed` | Önce dosyalar, sonra DB: satır her zaman var olan dosyaya işaret eder |
+| `data/uploads`, `data/ocr`, `seed` | `seed/sample.pdf` zorunludur (yoksa yedek başarısız olur). Dosyalar DB'den önce alınır ama bu **tutarlılık garantisi vermez** (§1 sınırı) |
 | Üç env dosyasının dizinleri (`config/`, v137 `config/`, `releases/*/config`) | **Sır içerir** (token, private key) — yalnız şifreli arşivde |
 
 Yedeklenmez: kitap içeriğinin kendisi (reader R2 `libedge-content` / `libedge`; R2 tek
@@ -31,8 +31,10 @@ bir önceki günün yazmaları kaybolur (RPO ≈ 24 saat). Daha sıkısı gereki
   Anahtar kaybedilirse yedekler okunamaz — bir kopyasını ayrı yerde sakla.
 - **Aktarım doğrulaması:** yükleme sonrası boyut karşılaştırılır, ardından nesne R2'den geri indirilip SHA-256 yerel değerle eşleştirilir.
 - **Sunucu dışı kopya: R2, ayrı bucket.** Yalnız bu bucket'a yazabilen bir API token'ı.
-  Token'ın **silme izni yoktur**; 7 günlük saklama bucket **lifecycle kuralı** ile (expire
-  7 gün) yapılır. Sunucu ele geçirilirse saldırgan yedekleri silemez.
+  7 günlük saklama yedek bucket'ında **lifecycle kuralı** ile yapılır. Object Read & Write
+  yetkisi ve lifecycle kuralı silmeye veya üzerine yazmaya karşı koruma **kanıtlamaz**:
+  sunucu ele geçirilirse token ile yedeklerin silinebileceği/bozulabileceği varsayılmalı.
+  Böyle bir koruma (bucket kilidi, ayrı hesap vb.) kurulmadı.
 - **Yerel saklama:** son 7 arşiv (`KEEP_LOCAL`). Hata varsa hiçbir şey silinmez.
 - **Zamanlama: yalnız systemd timer.** Cron **kurulmaz**; ikisi birlikte çift yedek alır.
 - **Hata görünürlüğü:** script `set -euo pipefail` ile ilk hatada **sıfırdan farklı kodla**
@@ -89,7 +91,7 @@ yere koy.
 1. Yeni bucket, örn. `libedge-backups` (reader içerik bucket'ı `libedge-content` **değil**).
 2. Yalnız bu **yedek bucket'ına** (ve yalnız `oracle/` önekine) lifecycle: *Delete objects* after **7 days**. Reader içerik bucket'ına (`libedge-content`) lifecycle kuralı UYGULANMAZ.
 3. API token: *Object Read & Write*, yalnız bu bucket. (Restore'u PC'den yapacağın için
-   okuma de gerekir; silme izni gerekmez.)
+   okuma da gerekir.)
 
 ### 3.3 Yapılandırma dosyası (sır — sohbete yapıştırma)
 
@@ -165,7 +167,7 @@ scripts/restore-test-oracle.sh libread-oracle-<damga>.tar.gz.age /güvenli/yol/l
 Betik: sha256 → çözme → manifest → throwaway Postgres → roller → `pg_restore --exit-on-error`
 → kontroller (registry **27** / `027-reader-sso.sql`, 12 global eser, OA koleksiyonunda
 12 üye, individual grant `collection`, individual için `all` grant yok, uygulama
-rollerinde superuser/BYPASSRLS yok, arşivde uploads/ocr ve `web-runtime.env`). Son satır
+rollerinde superuser/BYPASSRLS yok, arşivde zorunlu `seed/sample.pdf` ve üç env dosyası; boş `uploads/` tek başına hata sayılmaz, kitaplar R2'de olabilir). Son satır
 `RESULT: PASS` olmalı; aksi halde çıkış kodu 1.
 
 Kayıt: tarih, arşiv adı, boyut ve `RESULT` satırını `docs/deployments/2026-11-01-libread-production.md`
