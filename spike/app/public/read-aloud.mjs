@@ -92,6 +92,23 @@ export function splitSentences(input, lang = 'en') {
   return out;
 }
 
+// ---- words -------------------------------------------------------------------------------
+
+const WORD = /[\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*/gu;
+export function wordRanges(text) {
+  const out = [];
+  for (const match of String(text ?? '').matchAll(WORD)) out.push({ start: match.index, end: match.index + match[0].length });
+  return out;
+}
+
+// The word a speech boundary event points at: the one that contains charIndex, else the next one.
+export function wordAt(text, charIndex) {
+  const index = Number(charIndex);
+  if (!Number.isFinite(index) || index < 0) return null;
+  const words = wordRanges(text);
+  return words.find((w) => index >= w.start && index < w.end) || words.find((w) => w.start >= index) || null;
+}
+
 // ---- voices ------------------------------------------------------------------------------
 
 const baseLang = (value) => String(value || '').toLowerCase().replace('_', '-').split('-')[0];
@@ -146,7 +163,7 @@ export function createBrowserSpeech(win = globalThis) {
       utterance.onstart = () => handlers.onstart?.();
       utterance.onend = () => { done(); handlers.onend?.(); };
       utterance.onerror = (event) => { done(); handlers.onerror?.(event?.error || 'error'); };
-      utterance.onboundary = (event) => handlers.onboundary?.(event);
+      utterance.onboundary = (event) => handlers.onboundary?.({ name: event?.name, charIndex: event?.charIndex, charLength: event?.charLength });
       synth.speak(utterance);
       return { cancel: () => { done(); synth.cancel(); } };
     },
@@ -180,6 +197,12 @@ export function createReadAloud({
   let retried = false;
   let sleepTimer = null;
   let stopAfterCurrent = false;
+  // Word following. Engines that report word boundaries drive it exactly; for the rest the words are
+  // paced from how long a character takes this voice at this speed, learned from the sentences already read.
+  let wordTimers = [];
+  let boundarySeen = false;
+  let startedAt = 0;
+  let msPerChar = Number(initial.msPerChar) > 0 ? Number(initial.msPerChar) : 62;
   const state = {
     status: 'idle', // idle | loading | playing | paused
     index: 0, count: 0, label: '',
@@ -198,8 +221,10 @@ export function createReadAloud({
     lit = null;
     try { current?.deactivate?.(); } catch { /* the page may be gone */ }
   };
+  const clearWordTimers = () => { for (const timer of wordTimers) clearTimer(timer); wordTimers = []; };
   const silence = () => {
     clearWatchdog();
+    clearWordTimers();
     const current = handle;
     handle = null;
     try { current?.cancel(); } catch { /* engine already stopped */ }
@@ -230,9 +255,48 @@ export function createReadAloud({
       if (!retried && failures < MAX_CONSECUTIVE_FAILURES) { retried = true; speakCurrent(token); return; }
       halt({ status: 'paused', error: 'speech_stalled' });
     }, budget);
+    boundarySeen = false;
+    startedAt = 0;
+    try { current.word?.(null); } catch { /* noop */ }
+    const estimateWords = () => {
+      if (token !== generation || boundarySeen || !current.word) return;
+      const words = wordRanges(current.text);
+      const total = (current.text.length * msPerChar) / state.rate;
+      const elapsed = now() - startedAt;
+      const dueAt = (word) => (word.start / current.text.length) * total;
+      // words whose time has already passed are not flashed one after the other: only the current one is shown
+      let first = 0;
+      words.forEach((word, i) => { if (dueAt(word) <= elapsed) first = i; });
+      for (const word of words.slice(first)) {
+        wordTimers.push(setTimer(() => { if (token === generation && !boundarySeen) { try { current.word(word); } catch { /* noop */ } } }, Math.max(0, dueAt(word) - elapsed)));
+      }
+    };
     handle = speech.speak(current.text, { lang, rate: state.rate, voice }, {
-      onstart: () => { if (token === generation) { clearWatchdog(); } },
-      onend: () => { if (token === generation) { clearWatchdog(); failures = 0; retried = false; advance(token); } },
+      onstart: () => {
+        if (token !== generation) return;
+        clearWatchdog();
+        startedAt = now();
+        if (current.word) wordTimers.push(setTimer(estimateWords, 500)); // no boundary event by then: estimate
+      },
+      onboundary: (event) => {
+        if (token !== generation || !current.word) return;
+        if (event?.name && event.name !== 'word') return;
+        boundarySeen = true;
+        clearWordTimers();
+        const word = wordAt(current.text, event?.charIndex);
+        if (word) { try { current.word(word); } catch { /* noop */ } }
+      },
+      onend: () => {
+        if (token !== generation) return;
+        clearWatchdog();
+        if (!boundarySeen && startedAt) {
+          const spent = now() - startedAt;
+          if (spent > 300 && current.text.length > 10) msPerChar = Math.min(200, Math.max(20, Math.round((msPerChar + (spent * state.rate) / current.text.length) / 2)));
+        }
+        clearWordTimers();
+        failures = 0; retried = false;
+        advance(token);
+      },
       onerror: (code) => {
         if (token !== generation || SILENT_ERRORS.has(String(code))) return;
         clearWatchdog();

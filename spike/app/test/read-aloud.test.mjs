@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { MAX_SENTENCE_CHARS, RATES, createReadAloud, pickVoice, splitSentences, voicesFor } from '../public/read-aloud.mjs';
-import { isPageNumberText, normalizeBandText } from '../public/read-aloud-sources.mjs';
+import { MAX_SENTENCE_CHARS, RATES, createReadAloud, pickVoice, splitSentences, voicesFor, wordAt, wordRanges } from '../public/read-aloud.mjs';
+import { domPoint, isPageNumberText, normalizeBandText, spokenWithMap } from '../public/read-aloud-sources.mjs';
 
 // Read aloud: segmentation, voice choice and the playback controller, against a fake speech engine
 // and a fake source. The DOM-bound parts (PDF text layer, EPUB iframes) are covered in
@@ -85,6 +85,9 @@ function fakeSpeech() {
       return { cancel: () => { record.cancelled = true; engine.cancelled += 1; } };
     },
     finish(i = spoken.length - 1) { spoken[i].handlers.onstart?.(); spoken[i].handlers.onend?.(); },
+    begin(i = spoken.length - 1) { spoken[i].handlers.onstart?.(); },
+    boundary(i, charIndex, name = 'word') { spoken[i].handlers.onboundary?.({ name, charIndex }); },
+    end(i = spoken.length - 1) { spoken[i].handlers.onend?.(); },
     fail(i = spoken.length - 1, code = 'synthesis-failed') { spoken[i].handlers.onerror?.(code); },
   };
   return engine;
@@ -98,6 +101,7 @@ function fakeSource(segments, { lang = 'en' } = {}) {
       text,
       activate() { log.push(`on:${label}:${i}`); },
       deactivate() { log.push(`off:${label}:${i}`); },
+      word(range) { log.push(range ? `word:${text.slice(range.start, range.end)}` : 'word:none'); },
     })),
   });
   let cursor = 0;
@@ -121,6 +125,14 @@ function manualTimers() {
     clearTimer: (handle) => timers.delete(handle),
     fire(match) { for (const [key, timer] of [...timers]) if (!match || match(timer)) { timers.delete(key); timer.fn(); } },
     pending: () => [...timers.values()],
+    fireByDelay(limit = Infinity) {
+      for (;;) {
+        const next = [...timers].filter(([, t]) => t.ms <= limit).sort((a, b) => a[1].ms - b[1].ms)[0];
+        if (!next) return;
+        timers.delete(next[0]);
+        next[1].fn();
+      }
+    },
   };
 }
 
@@ -357,4 +369,120 @@ test('the same running title on different pages compares equal, different titles
   assert.equal(normalizeBandText('•'), '');
   assert.equal(normalizeBandText('x'.repeat(101)), '', 'a long text is a sentence, not furniture');
   assert.equal(normalizeBandText('12'), '#', 'a bare page number is just "#"');
+});
+
+// ---- following words ---------------------------------------------------------------------
+
+test('words are found with apostrophes and hyphens kept inside, digits included', () => {
+  const text = "It's a well-known 2026 fact.";
+  assert.deepEqual(wordRanges(text).map((w) => text.slice(w.start, w.end)), ["It's", 'a', 'well-known', '2026', 'fact']);
+  assert.deepEqual(wordRanges(''), []);
+});
+
+test('a boundary index inside a word or at its first letter points at that word; between words at the next', () => {
+  const text = 'Hello brave new world.';
+  assert.deepEqual(wordAt(text, 0), { start: 0, end: 5 });
+  assert.deepEqual(wordAt(text, 8), { start: 6, end: 11 });
+  assert.deepEqual(wordAt(text, 5), { start: 6, end: 11 }, 'a space points at the next word');
+  assert.equal(wordAt(text, 40), null);
+  assert.equal(wordAt(text, -1), null);
+  assert.equal(wordAt(text, undefined), null);
+});
+
+test('spoken text maps back to the raw text, collapsed whitespace and all', () => {
+  const raw = '  Hello \n  brave   world. ';
+  const { text, map } = spokenWithMap(raw);
+  assert.equal(text, 'Hello brave world.');
+  assert.equal(map.length, text.length);
+  for (let i = 0; i < text.length; i += 1) if (text[i] !== ' ') assert.equal(raw[map[i]], text[i], 'char ' + i);
+  assert.equal(raw[map[0]], 'H');
+  assert.equal(raw[map[map.length - 1]], '.');
+  assert.deepEqual(spokenWithMap('   '), { text: '', map: [] });
+});
+
+test('a DOM point is found in the right span, gaps move forward for a start and back for an end', () => {
+  const span = (value, start, raw = null) => ({ el: { childNodes: [{ nodeType: 3, nodeValue: raw ?? value }] }, start, end: start + value.length, raw });
+  const map = [span('Hello', 0), span('world', 6)]; // "Hello world": a joining space at 5
+  assert.equal(domPoint(map, 2, false).offset, 2);
+  assert.equal(domPoint(map, 8, false).offset, 2);
+  assert.equal(domPoint(map, 5, false).offset, 0, 'a start in the gap moves to the next span');
+  assert.equal(domPoint(map, 5, true).offset, 5, 'an end in the gap moves back to the end of the previous span');
+  assert.equal(domPoint(map, 11, true).offset, 5);
+  assert.equal(domPoint(map, 99, false), null);
+  const soft = [span('programme', 0, 'pro\u00adgramme')]; // a soft hyphen in the DOM text, not in the joined text
+  assert.equal(domPoint(soft, 3, false).offset, 4, 'offsets skip the soft hyphen');
+  assert.equal(domPoint(soft, 9, true).offset, 10);
+});
+
+test('the voice\'s word boundaries drive the word, and nothing is guessed while they arrive', async () => {
+  const speech = fakeSpeech();
+  const source = fakeSource([['Hello brave new world.']]);
+  const timers = manualTimers();
+  const player = createReadAloud({ speech, source, setTimer: timers.setTimer, clearTimer: timers.clearTimer });
+  await player.start(); await settle();
+  speech.begin(0);
+  speech.boundary(0, 0);
+  speech.boundary(0, 6);
+  speech.boundary(0, 12);
+  timers.fireByDelay(); await settle(); // the 500 ms "no boundary yet?" timer must have been cancelled by the first boundary
+  speech.boundary(0, 16);
+  const words = source.log.filter((e) => e.startsWith('word:')).map((e) => e.slice(5));
+  assert.deepEqual(words, ['none', 'Hello', 'brave', 'new', 'world']);
+  speech.boundary(0, 5, 'sentence');
+  assert.equal(source.log.filter((e) => e.startsWith('word:')).length, words.length, 'a sentence boundary is not a word');
+});
+
+test('a voice that sends no boundaries gets words paced from the speed of speech', async () => {
+  const speech = fakeSpeech();
+  const source = fakeSource([['aaaa bbbb cccc dddd.']]);
+  const timers = manualTimers();
+  let clock = 0;
+  const player = createReadAloud({ speech, source, setTimer: timers.setTimer, clearTimer: timers.clearTimer, now: () => clock, initial: { msPerChar: 50 } });
+  await player.start(); await settle();
+  speech.begin(0);
+  const words = () => source.log.filter((e) => e.startsWith('word:')).map((e) => e.slice(5));
+  clock = 500;
+  timers.fire((t) => t.ms === 500); // nothing arrived after half a second: estimate. 20 chars x 50 ms = 1000 ms in all
+  timers.fire((t) => t.ms === 0);
+  assert.deepEqual(words(), ['none', 'cccc'], 'at 500 ms the third word (due at 10/20 of 1000 ms) is current; earlier ones are not flashed');
+  timers.fire((t) => t.ms === 250);
+  assert.deepEqual(words(), ['none', 'cccc', 'dddd'], 'the last word 250 ms later (due at 15/20 of 1000 ms)');
+});
+
+test('the pace is learned: after one sentence the next is estimated from how long that took', async () => {
+  const speech = fakeSpeech();
+  const source = fakeSource([['aaaa bbbb cccc dddd.', 'eeee ffff gggg hhhh.']]);
+  const timers = manualTimers();
+  let clock = 0;
+  const player = createReadAloud({ speech, source, setTimer: timers.setTimer, clearTimer: timers.clearTimer, now: () => clock, initial: { msPerChar: 100 } });
+  await player.start(); await settle();
+  clock = 10; speech.begin(0); // (a real clock is never 0)
+  clock = 410; // 20 chars in 400 ms = 20 ms a char; the default of 100 was far too slow
+  speech.end(0); await settle();
+  clock = 1000; speech.begin(1);
+  clock = 1700; // 700 ms into the second sentence
+  timers.fire((t) => t.ms === 500);
+  timers.fire((t) => t.ms === 0);
+  const words = source.log.filter((e) => e.startsWith('word:')).map((e) => e.slice(5));
+  // learned pace (100 + 20) / 2 = 60 ms a char, 20 chars = 1200 ms: "gggg" is due at 10/20 x 1200 = 600 ms, so it is the
+  // current word at 700 ms. On the unlearned 100 ms a char it would still be "ffff" (due at 500 ms, gggg at 1000 ms).
+  assert.equal(words[words.length - 1], 'gggg', 'the pace of the first sentence was used: ' + words.join(','));
+});
+
+test('after pause or stop no late boundary or timer moves the highlight', async () => {
+  const speech = fakeSpeech();
+  const source = fakeSource([['Hello brave new world.']]);
+  const timers = manualTimers();
+  const player = createReadAloud({ speech, source, setTimer: timers.setTimer, clearTimer: timers.clearTimer });
+  await player.start(); await settle();
+  speech.begin(0);
+  speech.boundary(0, 0);
+  player.pause(); await settle();
+  const before = source.log.length;
+  speech.boundary(0, 6);
+  timers.fireByDelay();
+  assert.equal(source.log.length, before, 'nothing after pause');
+  player.stop(); await settle();
+  speech.boundary(0, 12);
+  assert.equal(source.log.filter((e) => e === 'word:brave').length, 0);
 });

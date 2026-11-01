@@ -30,6 +30,46 @@ function findSelectionOffset(text, selected) {
   try { return text.search(new RegExp(escaped.join('\\s+'), 'u')); } catch { return -1; }
 }
 
+// The text as it is spoken (whitespace collapsed, trimmed) and, for each spoken character, its index in the raw
+// stretch. A word the voice reports (by spoken index) can then be turned back into a place on the page.
+export function spokenWithMap(raw) {
+  const map = [];
+  let text = '';
+  let gap = -1;
+  const source = String(raw ?? '');
+  for (let i = 0; i < source.length; i += 1) {
+    if (/\s/.test(source[i])) { if (text && gap < 0) gap = i; continue; }
+    if (gap >= 0) { text += ' '; map.push(gap); gap = -1; }
+    text += source[i];
+    map.push(i);
+  }
+  return { text, map };
+}
+
+// The CSS Custom Highlight API: a marker over a Range that does not touch the page's DOM (no spans added to
+// the PDF text layer, no wrapping inside the book). One highlight for the sentence, a stronger one for the word.
+// Where it is not available (older Safari and Firefox) the reader keeps the coarser highlight of whole text
+// fragments and does not follow words.
+export function createHighlighter(win, doc) {
+  const registry = win?.CSS?.highlights;
+  const supported = Boolean(registry && typeof win.Highlight === 'function' && doc);
+  const put = (name, range) => {
+    if (!supported) return;
+    if (!range) registry.delete(name);
+    else registry.set(name, new win.Highlight(range));
+  };
+  return { supported, sentence: (range) => put('ra-sentence', range), word: (range) => put('ra-word', range) };
+}
+
+export const HIGHLIGHT_CSS = '::highlight(ra-sentence){background-color:rgba(255,196,0,0.30)}::highlight(ra-word){background-color:rgba(255,140,0,0.65)}';
+function ensureHighlightStyle(doc) {
+  if (doc.querySelector('style[data-ra]')) return;
+  const style = doc.createElement('style');
+  style.setAttribute('data-ra', '');
+  style.textContent = HIGHLIGHT_CSS;
+  (doc.head || doc.documentElement).appendChild(style);
+}
+
 // ---- page furniture: page numbers, running headers and footers ----------------------------
 
 const ROMAN = /^[ivxlcdm]{1,8}$/i;
@@ -63,7 +103,8 @@ export function textFromSpans(spans) {
   let text = '';
   const map = [];
   for (const el of spans) {
-    const piece = (el.textContent || '').replace(/­/g, '');
+    const raw = el.textContent || '';
+    const piece = raw.replace(/\u00ad/g, '');
     if (!piece.trim()) continue;
     if (text) {
       if (/\p{L}[-‐‑]$/u.test(text) && isLower(piece)) {
@@ -75,9 +116,40 @@ export function textFromSpans(spans) {
     }
     const start = text.length;
     text += piece;
-    map.push({ el, start, end: text.length });
+    map.push({ el, start, end: text.length, raw: raw === piece ? null : raw });
   }
   return { text, map };
+}
+
+function textNodeOf(el) {
+  for (const child of el.childNodes) if (child.nodeType === 3) return child;
+  return null;
+}
+// Index in the span's raw text of its k-th kept character (soft hyphens were taken out of the joined text).
+function rawIndex(entry, k) {
+  if (!entry.raw) return k;
+  let seen = 0;
+  for (let i = 0; i < entry.raw.length; i += 1) {
+    if (entry.raw[i] === '\u00ad') continue;
+    if (seen === k) return i;
+    seen += 1;
+  }
+  return entry.raw.length;
+}
+// A DOM point for an offset in the joined page text. A start in the gap between two spans moves to the next
+// span, an end to the previous one.
+export function domPoint(map, offset, isEnd) {
+  let entry = null;
+  if (isEnd) {
+    for (let i = map.length - 1; i >= 0; i -= 1) if (map[i].start < offset) { entry = map[i]; break; }
+  } else {
+    entry = map.find((candidate) => candidate.end > offset) || null;
+  }
+  if (!entry) return null;
+  const node = textNodeOf(entry.el);
+  if (!node) return null;
+  const inside = Math.min(Math.max(offset - entry.start, 0), entry.end - entry.start);
+  return { node, offset: Math.min(rawIndex(entry, inside), node.nodeValue.length) };
 }
 
 // getLayers(page): the text layer element(s) showing that page, once rendered ([] if none).
@@ -85,7 +157,7 @@ export function textFromSpans(spans) {
 // skipChrome(): leave out page numbers and running headers/footers. getBandTexts(page): the text items in the top
 // and bottom tenth of a page (used to find what repeats from page to page without drawing those pages).
 const BAND = 0.1;
-export function createPdfSource({ lang, getPage, getNumPages, getLayers, showPage, step = () => 1, getSelectionText = () => '', reveal = () => {}, skipChrome = () => false, getBandTexts = async () => [] }) {
+export function createPdfSource({ lang, getPage, getNumPages, getLayers, showPage, step = () => 1, getSelectionText = () => '', reveal = () => {}, skipChrome = () => false, getBandTexts = async () => [], highlighter = createHighlighter(globalThis, globalThis.document) }) {
   const bands = new Map();
   async function bandSet(page) {
     if (!bands.has(page)) {
@@ -124,16 +196,36 @@ export function createPdfSource({ lang, getPage, getNumPages, getLayers, showPag
     const { text, map } = textFromSpans(spans);
     const sentences = splitSentences(text, lang());
     if (!sentences.length) return null;
+    const doc = map[0]?.el.ownerDocument;
     const units = sentences.map((sentence) => {
       const touched = map.filter((m) => m.start < sentence.end && m.end > sentence.start).map((m) => m.el);
-      return {
+      const spoken = spokenWithMap(text.slice(sentence.start, sentence.end));
+      const exact = highlighter.supported && Boolean(doc) && spoken.text === sentence.text && spoken.map.length > 0;
+      const abs = (i) => sentence.start + spoken.map[i];
+      const rangeOf = (from, to) => {
+        const a = domPoint(map, from, false);
+        const b = domPoint(map, to, true);
+        if (!a || !b) return null;
+        const range = doc.createRange();
+        range.setStart(a.node, a.offset);
+        range.setEnd(b.node, b.offset);
+        return range;
+      };
+      const unit = {
         text: sentence.text,
         activate() {
-          for (const el of touched) el.classList.add(ACTIVE_CLASS);
+          const range = exact ? rangeOf(abs(0), abs(spoken.map.length - 1) + 1) : null;
+          if (range) highlighter.sentence(range);
+          else for (const el of touched) el.classList.add(ACTIVE_CLASS);
           if (touched[0]) reveal(touched[0]);
         },
-        deactivate() { for (const el of touched) el.classList.remove(ACTIVE_CLASS); },
+        deactivate() {
+          if (exact) { highlighter.sentence(null); highlighter.word(null); }
+          for (const el of touched) el.classList.remove(ACTIVE_CLASS);
+        },
       };
+      if (exact) unit.word = (word) => highlighter.word(word ? rangeOf(abs(word.start), abs(word.end - 1) + 1) : null);
+      return unit;
     });
     const offset = selectedText ? findSelectionOffset(text, selectedText) : -1;
     return { label: `p. ${page}`, page, units, startIndex: offset >= 0 ? sentenceIndexAt(sentences, offset) : 0 };
@@ -244,33 +336,46 @@ export function createEpubSource({ getEngine, lang, guard = (fn) => fn(), skipCh
     const sentences = splitSentences(text, docLang || lang());
     if (!sentences.length) return null;
     const section = engine.book.spine.spineItems[contents.sectionIndex];
+    const highlighter = createHighlighter(contents.window, doc);
+    if (highlighter.supported) ensureHighlightStyle(doc);
     const units = sentences.map((sentence) => {
-      let from = sentence.start;
-      let to = sentence.end;
-      while (from < to && /\s/.test(text[from])) from += 1;
-      while (to > from && /\s/.test(text[to - 1])) to -= 1;
-      let cfi = null;
-      return {
+      const spoken = spokenWithMap(text.slice(sentence.start, sentence.end));
+      const exact = spoken.text === sentence.text && spoken.map.length > 0;
+      const abs = (i) => sentence.start + spoken.map[i];
+      const from = exact ? abs(0) : sentence.start;
+      const to = exact ? abs(spoken.map.length - 1) + 1 : sentence.end;
+      const rangeOf = (a0, b0) => {
+        const a = locate(nodes, a0, false);
+        const b = locate(nodes, b0, true);
+        if (!a || !b) return null;
+        const range = doc.createRange();
+        range.setStart(a.node, a.offset);
+        range.setEnd(b.node, b.offset);
+        return range;
+      };
+      let cfi = null; // the page-overlay highlight, used only where the Highlight API is not available
+      const unit = {
         text: sentence.text,
         lang: docLang || undefined,
         async activate() {
-          const a = locate(nodes, from, false);
-          const b = locate(nodes, to, true);
-          if (!a || !b) return;
-          const range = doc.createRange();
-          range.setStart(a.node, a.offset);
-          range.setEnd(b.node, b.offset);
-          cfi = section.cfiFromRange(range);
-          if (!isVisible(engine, cfi)) await guard(() => engine.rendition.display(cfi));
+          const range = rangeOf(from, to);
+          if (!range) return;
+          const where = section.cfiFromRange(range);
+          if (!isVisible(engine, where)) await guard(() => engine.rendition.display(where));
+          if (highlighter.supported) { highlighter.sentence(range); return; }
+          cfi = where;
           engine.rendition.annotations.highlight(cfi, {}, null, 'ra-sentence', highlightStyle);
         },
         deactivate() {
+          if (highlighter.supported) { highlighter.sentence(null); highlighter.word(null); return; }
           if (!cfi) return;
           const mark = cfi;
           cfi = null;
           try { engine.rendition.annotations.remove(mark, 'highlight'); } catch { /* the chapter was replaced */ }
         },
       };
+      if (highlighter.supported && exact) unit.word = (word) => highlighter.word(word ? rangeOf(abs(word.start), abs(word.end - 1) + 1) : null);
+      return unit;
     });
 
     let startIndex = 0;
