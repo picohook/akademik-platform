@@ -15,7 +15,10 @@
 // v30: the Yönetim button and panel were added to index.html, app.js and styles.css; a cached v29
 // shell would pair the old markup with the new script.
 // v31: app.js names the users in the admin usage list; a cached v30 shell would keep the old script.
-const CACHE = 'akademik-shell-v31';
+// v32: the library shelf (library.mjs, library-model.mjs, library.css, the catalogue controls in index.html and
+// app.js) and read aloud (read-aloud.mjs, read-aloud-sources.mjs, the player): a cached v31 shell would pair the
+// old markup with the new scripts.
+const CACHE = 'akademik-shell-v32';
 const SHELL = [
   '/',
   '/styles.css',
