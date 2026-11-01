@@ -1,0 +1,12 @@
+[Unit]
+Description=Daily LibRead backup
+
+[Timer]
+# 03:15 UTC (06:15 Istanbul). Persistent: a run missed while the host was down happens at boot.
+OnCalendar=*-*-* 03:15:00 UTC
+RandomizedDelaySec=10min
+Persistent=true
+Unit=libread-backup.service
+
+[Install]
+WantedBy=timers.target

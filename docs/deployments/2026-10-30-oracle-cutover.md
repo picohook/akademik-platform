@@ -1,5 +1,9 @@
 # 2026-10-30 — Oracle canlıya alma devri (v136)
 
+> **Sonraki kayıt (2026-11-01):** v137, SSO, bridge, OA koleksiyonu ve LibRead ürün
+> kartı sonrası güncel canlı durum `2026-11-01-libread-production.md` içindedir. Bu kayıt
+> tarihsel olarak korunur.
+
 > **Bu kayıt, canlı ortamın hangisi olduğunun tek dayanağıdır.** Öncesindeki tüm
 > kayıtlar (v103–v136, `docs/deployments/2026-10-28-v136.md` dahil) **AWS EC2**
 > kurulumuna aittir ve **tarihsel**dir. Silinmediler; ama canlı ortamın güncel kanıtı

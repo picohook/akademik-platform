@@ -3,6 +3,27 @@
 Son güncelleme: 2026-10-28. Canlı: elibrary.libedge.com **v136** (`96cc270`), mode `db`, tenant LibEdge `5799f2a5-…`. Trafik: **cloudflared tunnel → `127.0.0.1:3001`**, nginx kapalı.
 Önce `docs/HANDOFF-2026-10-27.md` ve `docs/DEPLOY.md` okunmalı. Bir madde bitince buradan silinir veya "tamamlandı" altına taşınır.
 
+> **Güncel durum (2026-11-01):** canlı ortam **Oracle**, v137 (`d85e3fb`); aşağıdaki
+> 2026-10-27/28 maddeleri AWS dönemine aittir. Güncel kayıt:
+> `docs/deployments/2026-11-01-libread-production.md`. Aşağıdaki §3 (migration 024/025/026
+> "henüz uygulanmadı") ve §4 (SSO) maddeleri bu tarihte **tamamlanmıştır**.
+
+## Tamamlandı (2026-11-01)
+
+- **Oracle'a taşıma + v137 canlı:** 021/022/024/025/026/027 uygulandı, 023 (OA) sonradan; registry toplamı 27.
+- **Okuyucu SSO** (#50) ve **LibEdge bridge** production'da; LibEdge ürün kartından LibRead'e geçiş tarayıcıda doğrulandı.
+- **İndirme yetkisi** (#51): issue/consume `/file` ile aynı `canAccessBook` kararını kullanır; staging'de gerçek abonelik/outbox zinciriyle PASS.
+- **Abonelik senkron sırası** (#53), **runner dollar-quote düzeltmesi** (#54), **OA migration** (#55) merge edildi.
+- **OA koleksiyonu:** 12 global eser, individual tenant yalnız collection grant'i; 13. global kitap testiyle daraltma kanıtlandı.
+- **Ürün kartı:** LibRead, `ctx=individual` erişim linki.
+
+## Açık işler (2026-11-01 sonrası, ayrı ayrı)
+
+- [ ] **Otomatik yedek** (operasyon): `scripts/backup-oracle.sh` + `docs/runbooks/oracle-backup-restore.md`; günlük, şifreli, sunucu dışı (R2). Henüz kurulmadı; ilk restore testi bekliyor.
+- [ ] **Ürün geliştirmesi:** seçili metni açıklama/özetleme (izin denetimi, maliyet/rate sınırı, açık hata davranışı); sonra sayfa kaynaklı soru-cevap.
+- [ ] OA eser ekleme / koleksiyon yönetimini kolaylaştırmak.
+- [ ] Rollback dönemi sonunda (en erken 6 Kasım) kullanım dışı AWS kaynaklarının doğrulanarak temizlenmesi. Staging ve Research korunur.
+
 ## Tamamlandı (2026-10-29)
 
 - **026 — tenant bağlaması çözülebilir hale geldi (`db/migrations/026-tenant-binding-nullif.sql`).** Her tenant politikası `current_setting('app.tenant_id', true)::uuid` diyordu; `reset` sonrası değer `''` kaldığı için `''::uuid` **22P02** veriyordu ve tek çözüm bağlantıyı yok etmekti. Migration politikaları `pg_policies`'ten okuyup `nullif(..., '')` biçimine çeviriyor (isim/komut/permissive/rol listesi korunur, yalnız `qual`/`with_check` değişir); ikinci kez uygulanırsa **`0A000`** ile reddediyor. `db/026.test.mjs` **19 kontrol**: 026 öncesi 22P02, sonrası **0 satır** (önceki tenant'ın satırları değil), bağlı okuma değişmedi, bağsız `INSERT` hâlâ **42501**, ikinci uygulama `0A000`. `db/026-release.test.mjs` **11 kontrol**: aynı akış `withBridgeTenant` içinde — 026 yokken `22P02`, 026 varken `reset` + `release()` ile bağlantı havuza dönüyor ve bağsız okuma boş. Varsayılan hâlâ `release(true)`; çevirmek dağıtım sırası işi (madde 3).
