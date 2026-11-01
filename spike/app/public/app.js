@@ -4299,9 +4299,16 @@ function handleEpubSelection({ cfiRange, text, contents }) {
     /* selection geometry is best-effort */
   }
   hlNote.value = '';
+  showSelectionQuote();
   hlBar.hidden = false;
   updateCopyControls();
   updateSelectionBar(rect || { left: window.innerWidth / 2, top: 100, width: 0 });
+}
+
+// The selected passage is shown in the bar, above the note field, so the note is written with it in view.
+function showSelectionQuote() {
+  const text = (state.epubSelection || state.pending)?.text || '';
+  $('hlQuote').textContent = String(text).replace(/\s+/g, ' ').trim();
 }
 
 function updateSelectionBar(rect) {
@@ -4331,11 +4338,21 @@ function buildSelection(selection, pane = {}) {
   if (!state.book || !selection || selection.isCollapsed || !selection.rangeCount) return null;
   const textLayer = pane.textLayer || textLayerEl;
   const pageWrapEl = pane.pageWrap || pageWrap;
-  const range = selection.getRangeAt(0);
-  if (!textLayer.contains(range.commonAncestorContainer)) return null;
+  let range = selection.getRangeAt(0);
+  if (!textLayer.contains(range.commonAncestorContainer)) {
+    // A triple click, or a drag past the last line, can run on into the overlay that follows the text layer
+    // (the empty highlights layer): the range then ends outside the layer and its common ancestor is the page.
+    // The part inside the layer is what was selected, so keep that instead of dropping the selection.
+    const startsInside = textLayer.contains(range.startContainer);
+    const endsInside = textLayer.contains(range.endContainer);
+    if (!startsInside && !endsInside) return null;
+    range = range.cloneRange();
+    if (!startsInside) range.setStart(textLayer, 0);
+    if (!endsInside) range.setEnd(textLayer, textLayer.childNodes.length);
+  }
 
   const ocrSpans = selectedOcrSpans(selection, textLayer);
-  const text = ocrSelectionText(selection, textLayer);
+  const text = ocrSelectionText(selection, textLayer) || String(range).trim();
   if (!text) return null;
 
   const pageRect = pageWrapEl.getBoundingClientRect();
@@ -4396,6 +4413,7 @@ function onSelection(pane = {}) {
     },
   };
   hlNote.value = '';
+  showSelectionQuote();
   hlBar.hidden = false;
   updateCopyControls();
   updateSelectionBar(built.last);
@@ -5064,7 +5082,8 @@ function cancelSelection() {
 }
 $('hlCancel').addEventListener('click', cancelSelection);
 hlNote.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter') saveHighlight();
+  // Enter saves, Shift+Enter starts a new line (the note field is a textarea now)
+  if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); saveHighlight(); }
   if (event.key === 'Escape') {
     event.preventDefault();
     event.stopPropagation();

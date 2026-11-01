@@ -62,6 +62,7 @@ const DICT = {
   'Burada okunabilir metin bulunamadı.': 'No readable text found here.',
   'Ses motoru yanıt vermedi. Tarayıcının ses ayarlarını kontrol edin.': 'The speech engine did not respond. Check your browser voice settings.',
   'Bu cihazda bu dil için ses yok; varsayılan ses kullanılacak.': 'No voice for this language on this device; the default voice will be used.',
+  'Seçilen metin': 'Selected text',
   'Açıkla': 'Explain',
   'Özetle': 'Summarize',
   'Açıklama': 'Explanation',
