@@ -16,6 +16,8 @@ const DICT = {
   'Son 200 bildirim bu oturumda saklanır; çıkışta temizlenir.': 'The last 200 notifications are kept for this session and cleared on sign-out.',
   'Bu not ve vurgusu silinsin mi?': 'Delete this note and its highlight?',
   'j/k veya ←/→ sayfa · / kitapta ara · n notlar · b yer imi · ? yardım · Esc kapat · Alt+Shift+H seçim araçları': 'j/k or ←/→ page · / search in book · n notes · b bookmark · ? help · Esc close · Alt+Shift+H selection tools',
+  'LibEdge hesabınla giriş yap': 'Sign in with your LibEdge account',
+  'Yönetici girişi': 'Administrator sign-in',
   'Seçim': 'Selection',
   'Önce metin seçin': 'Select text first',
   'Seçim araçları (Alt+Shift+H)': 'Selection tools (Alt+Shift+H)',
@@ -350,16 +352,16 @@ const SKIP = 'script, style, code, .book-title, .book-meta, .note-text, .cite-ou
 
 const HTML_STRINGS = {
   heroEyebrow: {
-    tr: 'E-Kütüphane · Akademik koleksiyon',
-    en: 'E-Library · Academic collection',
+    tr: 'LibRead · Açık erişimli akademik kitaplar',
+    en: 'LibRead · Open-access academic books',
   },
   heroTitle: {
-    tr: 'Kataloğu keşfedin.<br />Okuyun, not alın.',
-    en: 'Explore the catalog.<br />Read and take notes.',
+    tr: 'Açık erişimli akademik kitapları keşfedin.<br />Okuyun, not alın.',
+    en: 'Discover open-access academic books.<br />Read and take notes.',
   },
   heroLede: {
-    tr: 'Kurumunuzun akademik e-kitaplarına tek yerden erişin; PDF ve EPUB okuyun, notlarınızı ve alıntılarınızı birlikte yönetin.',
-    en: 'Access your institution’s academic e-books in one place; read PDF and EPUB, and keep your notes and citations together.',
+    tr: 'LibEdge hesabınızla giriş yapın; kitapları PDF ve EPUB olarak okuyun, metinleri işaretleyin ve notlarınızı tek yerde toplayın.',
+    en: 'Sign in with your LibEdge account to read books as PDF and EPUB, highlight passages and keep your notes in one place.',
   },
 };
 

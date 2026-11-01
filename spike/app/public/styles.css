@@ -107,6 +107,18 @@ a { color: inherit; text-decoration: none; }
 }
 .login-card input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(31, 92, 74, 0.12); }
 .login-card .primary { margin-top: 4px; padding: 10px; }
+.login-logo { display: block; width: 180px; max-width: 70%; height: auto; margin: 0 auto 2px; }
+.login-card h2 { text-align: center; }
+.login-card .sso-btn {
+  display: block; box-sizing: border-box; text-align: center; text-decoration: none;
+  padding: 12px; font-weight: 600; margin-top: 2px;
+}
+.admin-login { border-top: 1px solid var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 10px; }
+.admin-login[open] { gap: 10px; }
+.admin-login > summary { cursor: pointer; color: var(--muted); font-size: 12.5px; padding: 4px 0; }
+.admin-login > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.admin-login > label, .admin-login > .primary { margin-top: 10px; }
+.admin-login > .primary { width: 100%; }
 .login-hint { margin: 0; color: var(--muted); font-size: 11.5px; line-height: 1.5; }
 .login-hint code { background: #f1ebdd; padding: 1px 4px; border-radius: 4px; }
 .login-error { color: #a33; font-size: 12px; }

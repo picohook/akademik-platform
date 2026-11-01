@@ -8,7 +8,9 @@
 // v27: epub-engine.mjs rewrites a chapter's external embed into a link card and
 // styles.css styles it; a cached v26 shell would pair the new engine with the old
 // stylesheet, so the card would render unstyled.
-const CACHE = 'akademik-shell-v27';
+// v28: the sign-in box (index.html, app.js, styles.css) changed shape; a cached v27 shell
+// would show the old form next to the new script.
+const CACHE = 'akademik-shell-v28';
 const SHELL = [
   '/',
   '/styles.css',
