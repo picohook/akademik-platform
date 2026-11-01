@@ -37,9 +37,9 @@ import { promisify } from 'node:util';
 //   node db/023-app.test.mjs
 //
 // Two switches exist for reviewing that claim rather than taking it:
-//   LIBEDGE_023_SQL=<path>                  read 023 from another file (a PR checkout)
-//   LIBEDGE_023_SABOTAGE_COLLECTION=1       write the grant with scope 'all' instead of
-//                                           'collection' - the check that must fail
+//   LIBEDGE_023_SQL=<path>             read 023 from another file (a PR checkout)
+//   LIBEDGE_023_SABOTAGE_COLLECTION=1  apply 023 with the grant's scope set to 'all'
+//                                      instead of 'collection' - the run that must fail
 // The sabotage run fails on purpose; a green run with it set would mean this file is not
 // measuring the collection grant at all.
 
