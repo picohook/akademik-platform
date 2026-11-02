@@ -15,5 +15,4 @@ Covers are stored locally; the browser never fetches them from the source sites.
 | real-book-10.webp | Discrete Mathematics: An Open Introduction | first PDF page | https://discrete.openmathbooks.org/dmoi3.html |
 | real-book-11.webp | forall x: Calgary | first PDF page | https://forallx.openlogicproject.org/ |
 
-Open question before release: the licence of the Cambridge cover design is separate from the book's content licence and is not
-verified. The Turkish card carries the label "İngilizce baskı kapağı" / "English edition cover".
+The Cambridge cover (publisher-book-07-en.webp) is approved for use by the product owner (2026-11-02). The Turkish card carries the label "İngilizce baskı kapağı" / "English edition cover".
