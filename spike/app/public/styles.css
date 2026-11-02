@@ -286,11 +286,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
   flex: 1; min-width: 0; display: flex; align-items: flex-start; justify-content: safe center;
   gap: 10px; padding: 16px; overflow: auto; position: relative;
 }
-.nav-btn {
-  position: sticky; top: 50%; left: 0; right: 0; flex-shrink: 0; z-index: 3;
-  width: 40px; height: 56px; font-size: 26px; line-height: 1;
-  opacity: 0.75;
-}
+.nav-btn { flex-shrink: 0; width: 40px; height: 36px; font-size: 22px; line-height: 1; padding: 0; }
 .page-wrap {
   position: relative; background: #fff; box-shadow: 0 18px 50px rgba(30, 25, 15, 0.18);
   flex: 0 0 auto; align-self: flex-start;
@@ -312,14 +308,45 @@ main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
 .reader.epub-mode #rotateBtn,
 .reader.epub-mode #spreadBtn,
 .reader.epub-mode #scrollBtn,
-.reader.epub-mode .page-jump { display: none; }
-.reader.epub-mode .nav-btn {
-  position: absolute; top: 50%; transform: translateY(-50%); z-index: 3;
-  background: rgba(255, 253, 248, 0.92);
-}
-.reader.epub-mode #prevPage { left: 8px; right: auto; }
-.reader.epub-mode #nextPage { right: 8px; left: auto; }
+.reader.epub-mode .page-jump,
+.reader.epub-mode #railPages { display: none; }
+.reader:not(.epub-mode) .footer-location { display: none; }
 .reader.scroll-mode .nav-btn { display: none; }
+
+/* the reader shell: a quiet top bar, a rail of book tools on the left, page controls at the bottom */
+.back-btn { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; white-space: nowrap; }
+.reader-top .reader-title { border-left: 1px solid var(--line); padding-left: 12px; }
+.tool-rail {
+  flex: 0 0 auto; width: 64px; display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 8px 4px;
+  border-right: 1px solid var(--line); background: var(--paper);
+}
+.rail-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px; min-height: 48px;
+  border: 0; border-radius: 8px; background: transparent; color: var(--muted); font: inherit; font-size: 16px; line-height: 1; cursor: pointer;
+}
+.rail-btn span { font-size: 10px; line-height: 1.1; text-align: center; overflow-wrap: anywhere; }
+.rail-btn:hover { background: var(--bg); color: var(--ink); }
+.rail-btn.active { background: var(--bg); color: var(--ink); box-shadow: inset 3px 0 0 var(--accent); }
+.rail-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.reader-footer {
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px;
+  padding: 6px 16px; border-top: 1px solid var(--line); background: var(--paper);
+}
+.footer-left, .footer-view, .footer-pager { display: flex; align-items: center; gap: 6px; }
+.footer-left, .footer-view { flex: 1 1 0; min-width: 0; }
+.footer-view { justify-content: flex-end; flex-wrap: wrap; }
+.footer-location { min-width: 56px; text-align: center; font-size: 12px; color: var(--muted); }
+.reader-footer .ghost-btn, .reader-footer .icon-btn { min-height: 36px; min-width: 36px; }
+.reader.reading-focus .reader-footer, .reader.reading-focus .tool-rail { display: none; }
+@media (max-width: 720px) {
+  .tool-rail { width: 44px; padding: 6px 2px; }
+  .rail-btn { min-height: 44px; }
+  .rail-btn span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .reader-footer { padding: 6px 8px; }
+  .footer-left { flex: 0 0 auto; }
+  .footer-view { flex: 1 1 100%; justify-content: center; order: 3; }
+  .back-btn .back-label { display: none; }
+}
 .page-wrap canvas { display: block; }
 .page-loading {
   position: absolute; inset: 0; z-index: 4;
@@ -759,6 +786,35 @@ a.app-external-embed:focus-visible { outline: 3px solid currentColor; outline-of
 }
 
 .hl-bar .copy-btn[hidden] { display: none; }
+/* the selection bar: one row of actions; the palette and the note editor open on request, the passage shows two lines */
+.hl-bar { width: min(540px, calc(100vw - 24px)); }
+.hl-bar [hidden] { display: none !important; }
+.hl-row { gap: 6px; }
+.hl-row .copy-btn, .hl-row .icon-btn { min-height: 36px; }
+.hl-split { display: inline-flex; }
+.hl-split .hl-main { display: inline-flex; align-items: center; gap: 6px; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.hl-split .hl-caret { min-width: 28px; padding: 6px 4px; border-left: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.hl-dot { width: 12px; height: 12px; border-radius: 50%; background: #ffc700; box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
+.hl-bar[data-color="green"] .hl-dot { background: #4caf78; }
+.hl-bar[data-color="blue"] .hl-dot { background: #5a8fd8; }
+.hl-bar[data-color="pink"] .hl-dot { background: #d64c8c; }
+.hl-row #hlAddNote[aria-expanded="true"] { background: var(--bg); border-color: var(--accent); }
+.hl-colors { padding: 2px 0; }
+.hl-meta { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.hl-meta span:last-child { text-transform: none; letter-spacing: 0; text-align: right; overflow-wrap: anywhere; }
+.hl-quote { max-height: 2.9em; overflow: hidden; }
+.hl-quote.expanded { max-height: 9em; overflow-y: auto; }
+.hl-expand { margin-top: 4px; padding: 2px 0; border: 0; background: none; color: var(--accent); font: inherit; font-size: 12px; cursor: pointer; text-decoration: underline; }
+.hl-expand:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hl-composer { display: flex; flex-direction: column; gap: 6px; }
+.hl-composer label { font-size: 12px; color: var(--muted); }
+.hl-composer-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.hl-composer-actions .copy-btn, .hl-composer-actions .primary { min-height: 36px; padding: 6px 12px; border-radius: 6px; font: inherit; cursor: pointer; }
+.hl-composer-actions .primary:disabled { opacity: .6; cursor: default; }
+@media (max-width: 480px) {
+  .hl-row { gap: 4px; }
+  .hl-row .copy-btn, .hl-row .icon-btn { padding: 6px 7px; font-size: 12.5px; }
+}
 .ai-panel {
   position: fixed; z-index: 61; right: 16px; bottom: 16px; width: min(420px, calc(100vw - 32px));
   max-height: 50vh; overflow-y: auto; background: var(--paper); color: var(--ink);
@@ -773,25 +829,39 @@ a.app-external-embed:focus-visible { outline: 3px solid currentColor; outline-of
 ::highlight(ra-sentence) { background-color: rgba(255, 196, 0, 0.3); }
 ::highlight(ra-word) { background-color: rgba(255, 140, 0, 0.65); }
 .ra-active { background: rgba(255, 196, 0, 0.4); border-radius: 3px; box-shadow: 0 0 0 2px rgba(255, 196, 0, 0.4); }
+/* the read-aloud player is a thin strip along the bottom edge of the reading area, just above the page controls.
+   It is out of the flow, so starting it neither resizes the page nor reflows an EPUB; the page area gets bottom
+   padding while it is open, so the last lines can always be scrolled clear of it. */
 .ra-player {
-  position: fixed; z-index: 62; left: 16px; bottom: 16px; width: min(560px, calc(100vw - 32px));
-  background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 14px;
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); box-shadow: 0 8px 30px #0002;
+  position: absolute; z-index: 16; left: 0; right: 0; bottom: 0;
+  background: var(--paper); color: var(--ink); border-top: 1px solid var(--line);
+  padding: 6px 16px; box-shadow: 0 -4px 14px #0001;
 }
+body.ra-open .reader:not(.epub-mode) .page-area { padding-bottom: 72px; }
+/* an EPUB is paginated to the height of its pane: resizing it would repaginate and move the reader, so it
+   keeps its size and the strip covers the bottom margin */
 .ra-player[hidden] { display: none; }
 .ra-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.ra-play { background: var(--accent); color: #fff; border-color: var(--accent); min-width: 40px; }
+.ra-play { background: var(--accent); color: #fff; border-color: var(--accent); width: 40px; height: 40px; border-radius: 50%; }
+.ra-row .icon-btn { min-width: 36px; min-height: 36px; }
+.ra-more { position: relative; margin: 0; display: block; }
+.ra-more > summary { list-style: none; cursor: pointer; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; min-height: 36px; display: inline-flex; align-items: center; }
+.ra-more > summary::-webkit-details-marker { display: none; }
+.ra-more > summary::after { content: ' ▴'; }
+.ra-more-panel {
+  position: absolute; right: 0; bottom: calc(100% + 8px); width: min(300px, calc(100vw - 24px)); padding: 12px; display: grid; gap: 10px; z-index: 70;
+  background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 30px #0003;
+}
+.ra-more-panel .ra-field { justify-content: space-between; }
+@media (max-width: 560px) { .ra-row { gap: 6px; } .ra-status { flex-basis: 80px; font-size: 12px; } .ra-field > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); } .ra-more-panel .ra-field > span { position: static; width: auto; height: auto; clip-path: none; } }
 .ra-status { flex: 1 1 120px; font-size: 12.5px; color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
 .ra-field { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin: 0; }
 .ra-field select { font: inherit; padding: 5px 6px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); max-width: 220px; }
-.ra-more { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; font-size: 12px; }
-.ra-more summary { cursor: pointer; color: var(--muted); }
+.ra-more { font-size: 12px; }
+.ra-more summary { color: var(--muted); }
 .ra-check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin: 0; }
 .ra-check input { width: auto; margin: 0; }
 .ra-hint { margin: 0; font-size: 11.5px; color: #9a5b00; }
 .ra-hint:empty { display: none; }
-.ra-player { transition: opacity 0.35s ease; }
-.ra-player.ra-quiet { opacity: 0; pointer-events: none; }
-@media (prefers-reduced-motion: reduce) { .ra-player { transition: none; } }
 body.ra-open .ai-panel { bottom: 108px; }
 @media (max-width: 560px) { .ra-player { left: 8px; right: 8px; width: auto; } body.ra-open .ai-panel { bottom: 150px; } }

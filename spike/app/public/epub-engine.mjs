@@ -207,8 +207,10 @@ export class EpubEngine {
     if (typeof factory !== 'function') throw new Error('epub.js is not loaded');
     this.book = factory(url);
     await this.book.ready;
-    const width = Math.max(320, Math.floor(this.container.clientWidth || this.container.parentElement?.clientWidth || window.innerWidth));
-    const height = Math.max(420, Math.floor(this.container.clientHeight || window.innerHeight - 90));
+    // The floors keep a degenerate container from rendering nothing, but stay below a phone's reading area:
+    // a 320x420 minimum was wider than a 320px screen's pane and cut the first page off.
+    const width = Math.max(240, Math.floor(this.container.clientWidth || this.container.parentElement?.clientWidth || window.innerWidth));
+    const height = Math.max(180, Math.floor(this.container.clientHeight || window.innerHeight - 90));
     this.rendition = this.book.renderTo(this.container, {
       width,
       height,
@@ -310,8 +312,8 @@ export class EpubEngine {
     // renderTo() creates its manager asynchronously; ResizeObserver can run first.
     // The display completion calls resize() again once the manager is ready.
     if (this.disposed || !this.rendition?.manager) return;
-    const width = Math.max(320, Math.floor(this.container.clientWidth || window.innerWidth));
-    const height = Math.max(420, Math.floor(this.container.clientHeight || window.innerHeight - 90));
+    const width = Math.max(240, Math.floor(this.container.clientWidth || window.innerWidth));
+    const height = Math.max(180, Math.floor(this.container.clientHeight || window.innerHeight - 90));
     if (this.lastSize && Math.abs(this.lastSize.width - width) < 2 && Math.abs(this.lastSize.height - height) < 2) return;
     this.lastSize = { width, height };
     this.rendition.resize(width, height);

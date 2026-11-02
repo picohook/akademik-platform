@@ -128,9 +128,19 @@ try {
     const selected = norm(await page.evaluate(() => window.getSelection().toString()));
     check(selected.includes('short passage'), 'a real triple click selected the line: ' + selected);
     same(norm(await quoteOf(page)), selected, 'the bar shows exactly what was selected');
+    same(await page.locator('#hlComposer').isHidden(), true, 'the note editor starts shut');
+    same(await page.locator('#hlColors').isHidden(), true, 'the colour palette starts shut');
+    check((await page.locator('#hlPageLabel').innerText()).trim().length > 0, 'the real page is named with the passage');
+    await page.locator('#hlColorToggle').click();
+    same(await page.locator('#hlColors').isVisible(), true, 'the colour toggle opens the palette');
+    await page.locator('#hlColors .hl-color.green').click();
+    same(await page.locator('#hlBar').getAttribute('data-color'), 'green', 'a colour pick is shown on the highlight button');
+    same(await page.locator('#hlColors').isHidden(), true, 'and shuts the palette');
+    await page.locator('#hlAddNote').click();
+    same(await page.evaluate(() => document.activeElement.id), 'hlNote', 'the note button opens the editor and focuses the field');
+    same(norm(await quoteOf(page)), selected, 'the passage is still shown with the editor open');
     const g = await geometry(page);
     check(g.row.bottom <= g.quote.top + 1 && g.quote.bottom <= g.note.top + 1, 'the passage sits between the action row and the note field');
-    check(g.save.left >= g.note.right - 1 || g.save.top >= g.note.bottom - 1 || Math.abs(g.save.bottom - g.note.bottom) < 40, 'the save button belongs to the note row');
     check(g.bar.left >= 0 && g.bar.right <= g.width && g.bar.top >= 0 && g.bar.bottom <= g.height, 'the whole bar is on screen');
     same(await page.locator('#hlNote').evaluate((el) => el.tagName), 'TEXTAREA', 'the note field is a text area');
     // the passage must be readable: the first version used light text on a light bar and passed every other check
@@ -152,16 +162,32 @@ try {
 
     // write the note under the passage and save it from there
     await page.locator('#hlNote').fill('Why this matters for the thesis');
-    await page.locator('#hlSave').click();
+    // Vazgeç folds the editor and keeps the draft for this passage
+    await page.locator('#hlDiscardNote').click();
+    same(await page.locator('#hlComposer').isHidden(), true, 'Vazgeç folds the editor away');
+    same(await page.locator('#hlBar').isVisible(), true, 'and keeps the bar');
+    await page.locator('#hlAddNote').click();
+    same(await page.locator('#hlNote').inputValue(), 'Why this matters for the thesis', 'the draft is still there when the editor opens again');
+    // a write that fails keeps the bar, the passage and the draft; a second try works and writes once
+    await page.evaluate(() => { const open = IDBFactory.prototype.open; window.__restoreIdb = () => { IDBFactory.prototype.open = open; }; IDBFactory.prototype.open = function () { throw new Error('idb down'); }; });
+    await page.locator('#hlSaveNote').click();
+    await page.waitForFunction(() => !document.getElementById('hlSaveNote').disabled);
+    same(await page.locator('#hlBar').isVisible(), true, 'a failed write leaves the bar open');
+    same(await page.locator('#hlNote').inputValue(), 'Why this matters for the thesis', 'with the draft');
+    same(norm(await quoteOf(page)), selected, 'and the passage');
+    await page.evaluate(() => window.__restoreIdb());
+    await page.locator('#hlSaveNote').dblclick();
     await page.locator('#hlBar').waitFor({ state: 'hidden' });
+    same(await page.evaluate(() => document.activeElement.id), 'pageArea', 'after the save the reading area has the focus');
     const notes = await notesText(page, 'Why this matters for the thesis');
     check(notes.includes('Why this matters for the thesis'), 'the note was saved and is listed: ' + notes.slice(0, 160));
     check(notes.toLowerCase().includes('short passage'), 'with its passage');
+    same(notes.split('Why this matters for the thesis').length - 1, 1, 'a double click on save wrote one note');
 
     // Enter saves; Shift+Enter is a new line
     await page.locator('#textLayer span', { hasText: 'second passage' }).first().click({ clickCount: 3, delay: 80 });
     await page.locator('#hlBar').waitFor({ state: 'visible' });
-    await page.locator('#hlNote').click();
+    await page.locator('#hlAddNote').click();
     await page.keyboard.type('first line');
     await page.keyboard.press('Shift+Enter');
     await page.keyboard.type('second line');
@@ -176,7 +202,15 @@ try {
     const before = (await page.locator('#notesList .note-item, #notesList > *').count());
     await line.click({ clickCount: 3, delay: 80 });
     await page.locator('#hlBar').waitFor({ state: 'visible' });
+    await page.locator('#hlAddNote').click();
     await page.locator('#hlNote').fill('should not be kept');
+    await page.keyboard.press('Escape');
+    await page.locator('#hlBar').waitFor({ state: 'hidden' });
+    same(await page.evaluate(() => document.activeElement.id), 'pageArea', 'Escape returns the focus to the reading area');
+    // the same passage again: the session draft is back, the editor opens with it
+    await line.click({ clickCount: 3, delay: 80 });
+    await page.locator('#hlBar').waitFor({ state: 'visible' });
+    same(await page.locator('#hlNote').inputValue(), 'should not be kept', 'the draft of the same passage survives Escape for this session');
     await page.keyboard.press('Escape');
     await page.locator('#hlBar').waitFor({ state: 'hidden' });
     check(!(await notesText(page)).includes('should not be kept'), 'Escape cancelled: the note was not saved');
@@ -195,6 +229,8 @@ try {
     const inFrame = norm(await frame.locator('body').evaluate(() => window.getSelection().toString()));
     same(norm(await quoteOf(page)), inFrame, 'the bar shows exactly what was selected in the book: ' + inFrame);
     check(inFrame.includes('short passage'), 'it is the passage that was clicked');
+    check((await page.locator('#hlPageLabel').innerText()).trim().length > 0, 'the chapter is named with the passage');
+    await page.locator('#hlAddNote').click();
     const g = await geometry(page);
     check(g.row.bottom <= g.quote.top + 1 && g.quote.bottom <= g.note.top + 1, 'the passage sits between the action row and the note field');
     check(g.bar.left >= 0 && g.bar.right <= g.width && g.bar.top >= 0 && g.bar.bottom <= g.height, 'the whole bar is on screen');
@@ -209,7 +245,10 @@ try {
     await page.locator('#hlBar').waitFor({ state: 'visible' });
     const long = await page.locator('#hlQuote').evaluate((el) => ({ scroll: el.scrollHeight, client: el.clientHeight, text: el.innerText.length }));
     check(long.text > 600, 'the whole long passage is in the quote (' + long.text + ' characters)');
-    check(long.scroll > long.client && long.client < 110, `the quote scrolls (${long.client}px visible of ${long.scroll}px)`);
+    check(long.scroll > long.client && long.client < 60, `the quote starts as two lines (${long.client}px visible of ${long.scroll}px)`);
+    await page.locator('#hlExpandQuote').click();
+    const wide = await page.locator('#hlQuote').evaluate((el) => ({ scroll: el.scrollHeight, client: el.clientHeight }));
+    check(wide.client > long.client && wide.scroll > wide.client && wide.client < 130, `the whole passage can be shown, and still scrolls (${wide.client}px of ${wide.scroll}px)`);
     const lg = await geometry(page);
     check(lg.bar.bottom <= lg.height && lg.bar.top >= 0, 'a long passage still leaves the whole bar on screen');
     await shoot(page, 'selection-bar-epub-long');
@@ -225,6 +264,7 @@ try {
     await frame.locator('#short').waitFor();
     await frame.locator('#long').click({ clickCount: 3, delay: 80 });
     await page.locator('#hlBar').waitFor({ state: 'visible' });
+    await page.locator('#hlAddNote').click();
     const g = await geometry(page);
     check(g.bar.left >= 0 && g.bar.right <= g.width, 'the bar fits a 390px screen sideways');
     check(g.bar.top >= 0 && g.bar.bottom <= g.height, 'and top to bottom, with a long passage selected');

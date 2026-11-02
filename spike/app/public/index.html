@@ -374,31 +374,37 @@
   <div class="reader" id="reader" role="dialog" aria-modal="true" aria-label="Okuyucu" hidden>
     <div id="readerStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
     <div class="reader-top">
-      <button class="icon-btn" id="closeReader" aria-label="Kapat">✕</button>
+      <button class="ghost-btn back-btn" id="closeReader" type="button" aria-label="Kütüphaneye dön" title="Kütüphaneye dön"><span aria-hidden="true">←</span> <span class="back-label">Kütüphane</span></button>
       <div class="reader-title">
         <strong id="readerTitle"></strong>
         <span id="readerMeta"></span>
         <div id="readerVariants" hidden></div>
       </div>
       <div class="reader-actions">
-        <div class="reader-control-group" aria-label="Gezinme"><button class="ghost-btn" id="toggleToc" type="button" title="İçindekiler" aria-label="İçindekiler" aria-controls="tocPanel" aria-expanded="false">☰</button><div class="page-jump">
-          <input id="pageInput" type="number" min="1" value="1" aria-label="PDF sayfa numarası" title="PDF dosyasındaki sıra numarası" />
-          <span id="pageTotal">/ 1</span>
-        </div></div>
-        <div class="reader-control-group" aria-label="Yakınlaştırma"><button class="icon-btn" id="zoomOut" aria-label="Uzaklaştır">−</button><span class="zoom" id="zoomLabel">100%</span><button class="icon-btn" id="zoomIn" aria-label="Yakınlaştır">+</button><button class="ghost-btn" id="fitToggle" type="button" aria-label="Genişliğe sığdır" title="Genişliğe sığdır" aria-pressed="false">↔</button></div>
         <details class="reader-menu"><summary id="themeBtn">Görünüm</summary><div class="reader-menu-panel">
           <label>Tema<select id="readerTheme"><option value="light">Standart</option><option value="sepia">Kâğıt</option><option value="dark">Gece</option><option value="system">Sistemi izle</option></select></label>
           <label>Çevre zemini<select id="readerWorkspace"><option value="auto">Temaya uygun</option><option value="gray">Açık gri</option><option value="cream">Sıcak krem</option><option value="slate">Koyu gri</option></select></label>
           <label><input type="checkbox" id="readerFocus"> Odak modu</label>
-          <button class="ghost-btn" id="rotateBtn" type="button" aria-label="Döndür" title="Döndür">⟳</button><button class="ghost-btn" id="fullscreenBtn" type="button" aria-label="Tam ekran" title="Tam ekran">⛶</button><button class="ghost-btn" id="spreadBtn" type="button" aria-label="Çift sayfa" title="Çift sayfa" aria-pressed="false">▥</button><button class="ghost-btn" id="scrollBtn" type="button" aria-label="Sürekli kaydırma" title="Sürekli kaydırma" aria-pressed="false">≣</button>
         </div></details>
-        <div class="reader-control-group" aria-label="Araçlar"><button class="ghost-btn" id="bookmarkBtn" type="button" title="Yer imi" aria-label="Yer imi" aria-pressed="false">☆</button><button class="ghost-btn" id="toggleNotes" aria-controls="notesPanel" aria-expanded="false">Notlar <span id="noteCount">0</span></button><button class="ghost-btn" id="raBtn" type="button" aria-pressed="false" aria-controls="raPlayer" aria-keyshortcuts="Alt+Shift+L" hidden></button></div>
-        <details class="reader-menu"><summary>Araçlar</summary><div class="reader-menu-panel"><button class="ghost-btn" id="selectionTools" type="button" title="Seçim araçları (Alt+Shift+H)" aria-keyshortcuts="Alt+Shift+H">Seçim</button><label class="shortcut-setting"><input type="checkbox" data-single-key-shortcuts checked /><span>Tek tuş kısayolları</span></label></div></details>
-        <details class="reader-menu"><summary>Dışa aktar</summary><div class="reader-menu-panel"><button class="ghost-btn" id="citeBook" type="button" title="Atıf">Atıf</button><button class="ghost-btn" id="downloadBtn" type="button" title="PDF indir" hidden>İndir</button></div></details>
+        <button class="ghost-btn" id="raBtn" type="button" aria-pressed="false" aria-controls="raPlayer" aria-keyshortcuts="Alt+Shift+L" hidden></button>
+        <button class="ghost-btn" id="toggleNotes" type="button" aria-controls="notesPanel" aria-expanded="false">Notlar <span id="noteCount">0</span></button>
+        <details class="reader-menu"><summary id="moreMenuBtn" aria-label="Diğer">Diğer</summary><div class="reader-menu-panel">
+          <button class="ghost-btn" id="citeBook" type="button" title="Atıf">Atıf</button>
+          <button class="ghost-btn" id="downloadBtn" type="button" title="PDF indir" hidden>İndir</button>
+          <button class="ghost-btn" id="selectionTools" type="button" title="Seçim araçları (Alt+Shift+H)" aria-keyshortcuts="Alt+Shift+H">Seçim araçları</button>
+          <button class="ghost-btn" id="rotateBtn" type="button" aria-label="Döndür" title="Döndür">⟳ Döndür</button>
+          <button class="ghost-btn" id="fullscreenBtn" type="button" aria-label="Tam ekran" title="Tam ekran">⛶ Tam ekran</button>
+          <label class="shortcut-setting"><input type="checkbox" data-single-key-shortcuts checked /><span>Tek tuş kısayolları</span></label>
+        </div></details>
       </div>
     </div>
     <button id="leaveFocus" class="ghost-btn" type="button">Odak modundan çık</button>
     <div class="reader-body">
+      <nav class="tool-rail" aria-label="Kitap araçları">
+        <button class="rail-btn" id="toggleToc" type="button" title="İçindekiler" aria-label="İçindekiler" aria-controls="tocPanel" aria-expanded="false">☰<span>İçindekiler</span></button>
+        <button class="rail-btn" id="railSearch" type="button" title="Kitapta ara (Ctrl+K)" aria-label="Kitapta ara" aria-controls="tocPanel">⌕<span>Ara</span></button>
+        <button class="rail-btn" id="railPages" type="button" title="Sayfalar" aria-label="Sayfalar" aria-controls="tocPanel">▤<span>Sayfalar</span></button>
+      </nav>
       <aside class="toc" id="tocPanel" aria-label="Gezinme paneli" tabindex="0" hidden>
         <div class="toc-head">
           <strong>Gezinme</strong>
@@ -444,7 +450,6 @@
       <div class="page-area" id="pageArea" role="region" aria-label="Sayfa alanı" tabindex="0">
         <div class="scroll-pages" id="scrollPages" hidden></div>
         <div class="epub-view" id="epubView" role="document" aria-label="EPUB içeriği" hidden></div>
-        <button class="nav-btn" id="prevPage" aria-label="Önceki sayfa">‹</button>
         <div class="page-wrap" id="pageWrap" role="document" aria-label="Sayfa 1">
           <canvas id="canvas" aria-hidden="true"></canvas>
           <div class="textLayer" id="textLayer"></div>
@@ -455,7 +460,6 @@
           <div class="textLayer" id="textLayer2"></div>
           <div class="highlights" id="highlights2"></div>
         </div>
-        <button class="nav-btn" id="nextPage" aria-label="Sonraki sayfa">›</button>
         <div class="page-loading" id="pageLoading" hidden>
           <span class="spinner" aria-hidden="true"></span>
           <span>Sayfa hazırlanıyor…</span>
@@ -487,46 +491,78 @@
           Metin seçip <strong>Vurgula</strong> ile başlayın.
         </div>
       </aside>
+      <div class="ra-player" id="raPlayer" role="region" hidden>
+        <div class="ra-row">
+          <button class="icon-btn" id="raPrev" type="button">⏮</button>
+          <button class="icon-btn ra-play" id="raPlay" type="button">▶</button>
+          <button class="icon-btn" id="raNext" type="button">⏭</button>
+          <span class="ra-status" id="raStatus" aria-live="polite"></span>
+          <label class="ra-field"><span id="raRateLabel"></span><select id="raRate"></select></label>
+          <details class="ra-more">
+            <summary id="raMoreLabel"></summary>
+            <div class="ra-more-panel">
+              <label class="ra-field"><span id="raVoiceLabel"></span><select id="raVoice"></select></label>
+              <label class="ra-field"><span id="raSleepLabel"></span><select id="raSleep"></select></label>
+              <label class="ra-check"><input type="checkbox" id="raSkip" /> <span id="raSkipLabel"></span></label>
+              <p class="ra-hint" id="raHint"></p>
+            </div>
+          </details>
+          <button class="icon-btn" id="raClose" type="button">✕</button>
+        </div>
+      </div>
     </div>
+    <footer class="reader-footer" id="readerFooter">
+      <div class="footer-left"><button class="ghost-btn" id="bookmarkBtn" type="button" title="Yer imi" aria-label="Yer imi" aria-pressed="false">☆</button></div>
+      <div class="footer-pager" role="group" aria-label="Sayfa gezinme">
+        <button class="ghost-btn nav-btn" id="prevPage" type="button" aria-label="Önceki sayfa">‹</button>
+        <div class="page-jump">
+          <input id="pageInput" type="number" min="1" value="1" aria-label="PDF sayfa numarası" title="PDF dosyasındaki sıra numarası" />
+          <span id="pageTotal">/ 1</span>
+        </div>
+        <span class="footer-location" id="footerLocation" aria-hidden="true"></span>
+        <button class="ghost-btn nav-btn" id="nextPage" type="button" aria-label="Sonraki sayfa">›</button>
+      </div>
+      <div class="footer-view" role="group" aria-label="Sayfa görünümü">
+        <button class="icon-btn" id="zoomOut" type="button" aria-label="Uzaklaştır">−</button><span class="zoom" id="zoomLabel">100%</span><button class="icon-btn" id="zoomIn" type="button" aria-label="Yakınlaştır">+</button>
+        <button class="ghost-btn" id="fitToggle" type="button" aria-label="Genişliğe sığdır" title="Genişliğe sığdır" aria-pressed="false">↔</button>
+        <button class="ghost-btn" id="spreadBtn" type="button" aria-label="Çift sayfa" title="Çift sayfa" aria-pressed="false">▥</button>
+        <button class="ghost-btn" id="scrollBtn" type="button" aria-label="Sürekli kaydırma" title="Sürekli kaydırma" aria-pressed="false">≣</button>
+      </div>
+    </footer>
 
   <div class="hl-bar" id="hlBar" role="toolbar" aria-label="Vurgu araçları" hidden>
     <div class="hl-row">
-      <div class="hl-colors" id="hlColors" role="group" aria-label="Vurgu rengi">
-        <button class="hl-color yellow active" data-color="yellow" type="button" aria-label="Sarı"></button>
-        <button class="hl-color green" data-color="green" type="button" aria-label="Yeşil"></button>
-        <button class="hl-color blue" data-color="blue" type="button" aria-label="Mavi"></button>
-        <button class="hl-color pink" data-color="pink" type="button" aria-label="Pembe"></button>
-      </div>
       <button class="copy-btn" id="hlCopy" type="button">Kopyala</button>
       <button class="copy-btn" id="hlCopyCite" type="button">Atıfla kopyala</button>
       <button class="copy-btn" id="hlExplain" type="button" hidden>Açıkla</button>
       <button class="copy-btn" id="hlSummarize" type="button" hidden>Özetle</button>
       <button class="copy-btn" id="hlListen" type="button" hidden></button>
-      <button class="icon-btn" id="hlCancel" aria-label="İptal">✕</button>
+      <span class="hl-split">
+        <button class="copy-btn hl-main" id="hlSave" type="button"><span class="hl-dot" aria-hidden="true"></span><span>Vurgula</span></button>
+        <button class="copy-btn hl-caret" id="hlColorToggle" type="button" aria-label="Vurgu rengini seç" aria-expanded="false" aria-controls="hlColors">▾</button>
+      </span>
+      <button class="copy-btn" id="hlAddNote" type="button" aria-expanded="false" aria-controls="hlComposer">Not</button>
+      <button class="icon-btn" id="hlCancel" type="button" aria-label="Seçim barını kapat">✕</button>
     </div>
-    <blockquote class="hl-quote" id="hlQuote" aria-label="Seçilen metin"></blockquote>
-    <div class="hl-note-row">
-      <textarea id="hlNote" rows="2" placeholder="Not (opsiyonel)" aria-label="Vurgu notu" aria-describedby="hlQuote" maxlength="280"></textarea>
-      <button class="primary" id="hlSave">Vurgula</button>
+    <div class="hl-colors" id="hlColors" role="group" aria-label="Vurgu rengi" hidden>
+      <button class="hl-color yellow active" data-color="yellow" type="button" aria-label="Sarı"></button>
+      <button class="hl-color green" data-color="green" type="button" aria-label="Yeşil"></button>
+      <button class="hl-color blue" data-color="blue" type="button" aria-label="Mavi"></button>
+      <button class="hl-color pink" data-color="pink" type="button" aria-label="Pembe"></button>
     </div>
-  </div>
-
-  <div class="ra-player" id="raPlayer" role="region" hidden>
-    <div class="ra-row">
-      <button class="icon-btn" id="raPrev" type="button">⏮</button>
-      <button class="icon-btn ra-play" id="raPlay" type="button">▶</button>
-      <button class="icon-btn" id="raNext" type="button">⏭</button>
-      <span class="ra-status" id="raStatus" aria-live="polite"></span>
-      <label class="ra-field"><span id="raRateLabel"></span><select id="raRate"></select></label>
-      <button class="icon-btn" id="raClose" type="button">✕</button>
+    <div class="hl-quote-wrap">
+      <div class="hl-meta"><span>Seçilen metin</span><span id="hlPageLabel"></span></div>
+      <blockquote class="hl-quote" id="hlQuote" aria-label="Seçilen metin" dir="auto"></blockquote>
+      <button class="hl-expand" id="hlExpandQuote" type="button" aria-expanded="false" aria-controls="hlQuote" hidden>Tamamını göster</button>
     </div>
-    <details class="ra-more">
-      <summary id="raMoreLabel"></summary>
-      <label class="ra-field"><span id="raVoiceLabel"></span><select id="raVoice"></select></label>
-      <label class="ra-field"><span id="raSleepLabel"></span><select id="raSleep"></select></label>
-      <label class="ra-check"><input type="checkbox" id="raSkip" /> <span id="raSkipLabel"></span></label>
-      <p class="ra-hint" id="raHint"></p>
-    </details>
+    <form class="hl-composer" id="hlComposer" hidden>
+      <label for="hlNote">Notunuz</label>
+      <textarea id="hlNote" rows="3" placeholder="Bu alıntıyla ilgili düşüncenizi yazın…" aria-describedby="hlQuote" maxlength="280"></textarea>
+      <div class="hl-composer-actions">
+        <button class="copy-btn" id="hlDiscardNote" type="button">Vazgeç</button>
+        <button class="primary" id="hlSaveNote" type="submit">Notu kaydet</button>
+      </div>
+    </form>
   </div>
 
   <aside class="ai-panel" id="aiPanel" role="region" aria-label="Yapay zekâ yanıtı" hidden>

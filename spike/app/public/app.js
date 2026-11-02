@@ -41,8 +41,6 @@ let raSelfNavUntil = 0;
 let raWakeLock = null;
 let raLastPage = 0;
 let raStatusKey = '';
-let raQuietTimer = null;
-let raLastActivity = 0;
 let raPrevStatus = 'idle';
 import {
   listOfflineBooks,
@@ -257,6 +255,13 @@ const searchFuzzy = $('searchFuzzy');
 const hlBar = $('hlBar');
 const hlColors = $('hlColors');
 const hlNote = $('hlNote');
+const hlComposer = $('hlComposer');
+const hlAddNote = $('hlAddNote');
+const hlColorToggle = $('hlColorToggle');
+const hlExpandQuote = $('hlExpandQuote');
+// Note drafts live for the session, keyed by the passage, so coming back to the same selection finds the text.
+const noteDrafts = new Map();
+let selectionSaving = false;
 const hlCopy = $('hlCopy');
 const hlCopyCite = $('hlCopyCite');
 const hlExplain = $('hlExplain');
@@ -1550,23 +1555,6 @@ function raMedia(status) {
   } catch { /* optional */ }
 }
 
-// While it reads, the controls fade after a few quiet seconds so they do not cover the page; the
-// pointer, a touch or a key brings them back, and they never fade while a keyboard user is on them.
-function raActivity(force = false) {
-  if (!raPlayer) return;
-  const now = Date.now();
-  if (!force && now - raLastActivity < 250) return;
-  raLastActivity = now;
-  raPlayer.classList.remove('ra-quiet');
-  clearTimeout(raQuietTimer);
-  raQuietTimer = null;
-  if (raPlayer.hidden || readAloud?.state().status !== 'playing') return;
-  raQuietTimer = setTimeout(() => {
-    if (raPlayer.querySelector(':focus-visible')) { raActivity(true); return; }
-    raPlayer.classList.add('ra-quiet');
-  }, 4000);
-}
-
 function raRender(s) {
   const active = s.status === 'playing' || s.status === 'loading';
   raPlay.textContent = active ? '⏸' : '▶';
@@ -1585,8 +1573,7 @@ function raRender(s) {
   raBtn.setAttribute('aria-pressed', String(!raPlayer.hidden));
   raWake(s.status === 'playing');
   raMedia(s.status);
-  // only a change between playing / paused / idle counts: the controller also reports every new sentence
-  if (s.status !== raPrevStatus) { raPrevStatus = s.status; raActivity(true); }
+  raPrevStatus = s.status;
 }
 
 function raEnsure() {
@@ -1619,8 +1606,6 @@ async function raStart(origin = { type: 'view' }) {
 function raReset() {
   if (!raPlayer) return;
   raPrevStatus = 'idle';
-  clearTimeout(raQuietTimer);
-  raQuietTimer = null;
   if (readAloud) {
     readAloud.dispose();
     readAloud = null;
@@ -1657,7 +1642,6 @@ if (raMarkup) {
   $('raSkip').addEventListener('change', () => raSavePrefs({ skipChrome: $('raSkip').checked }));
   raSleep.addEventListener('change', () => readAloud?.setSleep(Number(raSleep.value)));
 }
-for (const type of ['pointermove', 'pointerdown', 'touchstart', 'keydown']) document.addEventListener(type, () => raActivity(), { passive: true });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && readAloud?.state().status === 'playing') raWake(true); });
 window.addEventListener('pagehide', () => raSpeech.cancel());
 if ('mediaSession' in navigator) {
@@ -2117,13 +2101,17 @@ function initialScaleCap() {
 
 function fitScale(baseViewport, columns = 1) {
   const area = document.querySelector('.page-area');
-  const available = Math.max(320, (area.clientWidth - 120 - (columns - 1) * 10) / columns);
-  return Math.min(2, Math.max(0.6, available / baseViewport.width));
+  // On a phone the page is the width of the area, not 320px or more: a floor wider than the screen left the
+  // page cut off at the right.
+  const narrow = area.clientWidth < 600;
+  const available = Math.max(narrow ? 180 : 320, (area.clientWidth - (narrow ? 36 : 120) - (columns - 1) * 10) / columns);
+  return Math.min(2, Math.max(narrow ? 0.3 : 0.6, available / baseViewport.width));
 }
 
 function fitPageScale(baseViewport, columns = 1) {
   const area = document.querySelector('.page-area');
-  const width = Math.max(240, (area.clientWidth - 120 - (columns - 1) * 10) / columns);
+  const narrow = area.clientWidth < 600;
+  const width = Math.max(narrow ? 180 : 240, (area.clientWidth - (narrow ? 36 : 120) - (columns - 1) * 10) / columns);
   const height = Math.max(240, area.clientHeight - 80);
   return Math.min(2, Math.max(0.5, Math.min(width / baseViewport.width, height / baseViewport.height)));
 }
@@ -2361,8 +2349,25 @@ function renderThumbs() {
   thumbGrid.appendChild(fragment);
 }
 
+// The left rail: the contents, search and page buttons open the one navigation panel on their tab.
+function syncRail() {
+  const tab = tabSearch.classList.contains('active') ? 'search' : tabPages.classList.contains('active') ? 'pages' : 'toc';
+  for (const [id, name] of [['toggleToc', 'toc'], ['railSearch', 'search'], ['railPages', 'pages']]) {
+    const on = !tocPanel.hidden && tab === name;
+    $(id).setAttribute('aria-expanded', String(on));
+    $(id).classList.toggle('active', on);
+  }
+}
+
+function openRailTab(tab) {
+  const current = tabSearch.classList.contains('active') ? 'search' : tabPages.classList.contains('active') ? 'pages' : 'toc';
+  if (!tocPanel.hidden && current === tab) { toggleToc(false); $(tab === 'search' ? 'railSearch' : tab === 'pages' ? 'railPages' : 'toggleToc').focus(); return; }
+  toggleToc(true);
+  showTocTab(tab);
+}
+
 function syncPanelA11y() {
-  $('toggleToc').setAttribute('aria-expanded', tocPanel.hidden ? 'false' : 'true');
+  syncRail();
   $('toggleNotes').setAttribute('aria-expanded', notesPanel.hidden ? 'false' : 'true');
   // Narrow panels cover the document, so its controls must not take focus
   // behind them. The visible reader toolbar and panel close buttons remain.
@@ -2646,6 +2651,7 @@ function showTocTab(tab) {
   pagesView.hidden = !pages;
   if (search) setTimeout(() => bookSearch.focus(), 0);
   if (pages) renderThumbs();
+  syncRail();
 }
 
 function nextFrame() {
@@ -3482,6 +3488,7 @@ function clearPending(container = highlightsEl) {
 
 function setHighlightColor(color) {
   state.highlightColor = ['yellow', 'green', 'blue', 'pink'].includes(color) ? color : 'yellow';
+  hlBar.dataset.color = state.highlightColor;
   hlColors.querySelectorAll('.hl-color').forEach((button) => {
     button.classList.toggle('active', button.dataset.color === state.highlightColor);
   });
@@ -3909,6 +3916,8 @@ function updateEpubLocation(progress, announce = true) {
   const href = (progress?.href || '').split('#')[0];
   const chapter = epubChapterLabel(href);
   pageLabel.textContent = `${chapter ? `${chapter} · ` : ''}${progress?.percent || 0}%`;
+  $('footerLocation').textContent = `${progress?.percent || 0}%`;
+  $('footerLocation').title = chapter || '';
   if (announce && announcedEpubChapter !== null && href && href !== announcedEpubChapter && chapter) {
     announceReaderStatus(`${t('Bölüm')}: ${chapter}`);
   }
@@ -4170,7 +4179,7 @@ async function openBook(book, options = {}) {
   readerMeta.textContent = `${book.publisher || ''}${book.publication_year ? ` · ${book.publication_year}` : ''}`;
   downloadBtn.hidden = book.allow_download === false;
   document.body.classList.toggle('print-blocked', book.allow_print === false);
-  notesPanel.hidden = window.innerWidth < 820;
+  notesPanel.hidden = true; // the page comes first; Notlar opens the panel
   syncPanelA11y();
   pageLabel.textContent = '…';
 
@@ -4363,21 +4372,53 @@ function handleEpubSelection({ cfiRange, text, contents }) {
   } catch {
     /* selection geometry is best-effort */
   }
-  hlNote.value = '';
   showSelectionQuote();
   hlBar.hidden = false;
   updateCopyControls();
   updateSelectionBar(rect || { left: window.innerWidth / 2, top: 100, width: 0 });
 }
 
-// The selected passage is shown in the bar, above the note field, so the note is written with it in view.
+// The identity of the selected passage: the draft of a note follows it, not the bar.
+function selectionKey() {
+  const selected = state.epubSelection || state.pending;
+  if (!selected) return '';
+  return state.epubSelection ? `epub:${selected.cfiRange}` : `pdf:${selected.anchor?.page}:${selected.text}`;
+}
+
+function setNoteComposer(open, { focus = false } = {}) {
+  hlComposer.hidden = !open;
+  hlAddNote.setAttribute('aria-expanded', String(open));
+  if (open && focus) hlNote.focus();
+}
+
+function setPalette(open) {
+  hlColors.hidden = !open;
+  hlColorToggle.setAttribute('aria-expanded', String(open));
+}
+
+function setQuoteExpanded(expanded) {
+  $('hlQuote').classList.toggle('expanded', expanded);
+  hlExpandQuote.setAttribute('aria-expanded', String(expanded));
+  hlExpandQuote.textContent = t(expanded ? 'Daha az göster' : 'Tamamını göster');
+}
+
+// A new selection starts with the palette and the note editor shut; a passage that has a draft opens the editor again.
+// The passage is shown as two lines, with a way to read all of it.
 function showSelectionQuote() {
-  const text = (state.epubSelection || state.pending)?.text || '';
-  $('hlQuote').textContent = String(text).replace(/\s+/g, ' ').trim();
+  const selected = state.epubSelection || state.pending;
+  $('hlQuote').textContent = String(selected?.text || '').replace(/\s+/g, ' ').trim();
+  $('hlPageLabel').textContent = !selected ? ''
+    : state.epubMode ? (selected.chapter || '') : pdfPageText(selected.anchor?.page);
+  hlNote.value = noteDrafts.get(selectionKey()) || '';
+  setNoteComposer(Boolean(hlNote.value));
+  setPalette(false);
+  setQuoteExpanded(false);
 }
 
 function updateSelectionBar(rect) {
-  const barWidth = hlBar.getBoundingClientRect().width || 320;
+  const quote = $('hlQuote');
+  hlExpandQuote.hidden = quote.classList.contains('expanded') ? false : quote.scrollHeight <= quote.clientHeight + 1;
+  const barWidth =hlBar.getBoundingClientRect().width || 320;
   const barHeight = hlBar.getBoundingClientRect().height || 48;
   const left = Math.max(12, Math.min(rect.left + rect.width / 2 - barWidth / 2, window.innerWidth - barWidth - 12));
   const preferredTop = rect.top - barHeight - 8;
@@ -4455,7 +4496,7 @@ function openSelectionTools() {
     const selection = window.getSelection();
     if (selection?.anchorNode) onSelection(paneForNode(selection.anchorNode));
   }
-  if (!hlBar.hidden) hlNote.focus();
+  if (!hlBar.hidden) setNoteComposer(true, { focus: true });
   else toast('Önce metin seçin');
 }
 
@@ -4477,7 +4518,6 @@ function onSelection(pane = {}) {
       text_position: { start: 0, end: built.text.length },
     },
   };
-  hlNote.value = '';
   showSelectionQuote();
   hlBar.hidden = false;
   updateCopyControls();
@@ -4516,17 +4556,40 @@ function paneForNode(node) {
 
 async function saveEpubHighlight() {
   const selection = state.epubSelection;
-  if (!selection || !state.book) return;
-  const toolbarFocused = hlBar.contains(document.activeElement);
-  state.epubSelection = null; hlBar.hidden = true;
-  if (toolbarFocused) $('selectionTools').focus();
+  if (!selection || !state.book || selectionSaving) return;
+  const key = selectionKey();
+  let annotation;
+  setSelectionBusy(true);
   try {
-    const annotation = await saveLocalReaderAnnotation({ assetId: state.book.asset_id,
+    annotation = await saveLocalReaderAnnotation({ assetId: state.book.asset_id,
       anchor: { asset_version_id: state.book.asset_id, type: 'epub', cfi: selection.cfiRange,
         text_quote: selection.text.slice(0, 500) }, color: state.highlightColor, selectedText: selection.text });
+  } catch (error) {
+    // the bar, the passage and the draft stay, so the same note can be tried again
+    console.error(error); toast(t('Vurgu kaydedilemedi'));
+    return;
+  } finally { setSelectionBusy(false); }
+  finishSelectionSave(key);
+  // the write is done: a drawing problem from here on must not look like a failed save
+  try {
     state.epubEngine?.addAnnotation({ id: annotation.id, cfiRange: selection.cfiRange, color: annotation.color });
-    try { epubView.querySelector('iframe')?.contentWindow?.getSelection()?.removeAllRanges(); } catch { /* same origin */ }
-  } catch (error) { console.error(error); toast(t('Vurgu kaydedilemedi')); }
+    epubView.querySelector('iframe')?.contentWindow?.getSelection()?.removeAllRanges();
+  } catch (error) { console.error(error); }
+}
+
+function setSelectionBusy(busy) {
+  selectionSaving = busy;
+  for (const id of ['hlSave', 'hlSaveNote']) $(id).disabled = busy;
+  hlBar.setAttribute('aria-busy', String(busy));
+}
+
+// After a saved write: the draft is spent, the bar closes and the reading area has the focus again.
+function finishSelectionSave(key) {
+  noteDrafts.delete(key);
+  if (selectionKey() !== key) return;
+  const hadFocus = hlBar.contains(document.activeElement) || document.activeElement === document.body;
+  state.pending = null; state.epubSelection = null; hlBar.hidden = true;
+  if (hadFocus && !reader.hidden) pageArea.focus({ preventScroll: true });
 }
 
 async function syncOfflineAnnotations() {
@@ -4609,15 +4672,21 @@ async function saveLocalReaderAnnotation({ assetId, anchor, color, selectedText,
 
 async function saveHighlight() {
   if (state.epubSelection) return saveEpubHighlight();
-  if (!state.pending || !state.book) return;
-  const toolbarFocused = hlBar.contains(document.activeElement);
-  const pending = state.pending; state.pending = null; hlBar.hidden = true;
-  if (toolbarFocused) $('selectionTools').focus();
+  if (!state.pending || !state.book || selectionSaving) return;
+  const pending = state.pending;
+  const key = selectionKey();
+  setSelectionBusy(true);
   try {
     await saveLocalReaderAnnotation({ assetId: state.book.asset_id, anchor: pending.anchor,
       color: state.highlightColor, selectedText: pending.text });
-    renderHighlights(); window.getSelection()?.removeAllRanges();
-  } catch (error) { console.error(error); toast(t('Vurgu kaydedilemedi')); }
+  } catch (error) {
+    // the bar, the passage and the draft stay, so the same note can be tried again
+    console.error(error); toast(t('Vurgu kaydedilemedi'));
+    return;
+  } finally { setSelectionBusy(false); }
+  finishSelectionSave(key);
+  // the write is done: a drawing problem from here on must not look like a failed save
+  try { renderHighlights(); window.getSelection()?.removeAllRanges(); } catch (error) { console.error(error); }
 }
 
 async function deleteAnnotation(id, options = {}) {
@@ -4896,7 +4965,9 @@ editModal.addEventListener('click', (event) => {
 });
 
 $('closeReader').addEventListener('click', closeReader);
-$('toggleToc').addEventListener('click', () => toggleToc());
+$('toggleToc').addEventListener('click', () => openRailTab('toc'));
+$('railSearch').addEventListener('click', () => openRailTab('search'));
+$('railPages').addEventListener('click', () => openRailTab('pages'));
 $('closeToc').addEventListener('click', () => toggleToc(false));
 tocFilter.addEventListener('input', renderToc);
 tabToc.addEventListener('click', () => showTocTab('toc'));
@@ -5132,7 +5203,10 @@ hlSummarize.addEventListener('click', () => askAi('summarize'));
 $('aiPanelClose').addEventListener('click', closeAiPanel);
 hlColors.addEventListener('click', (event) => {
   const button = event.target.closest('.hl-color');
-  if (button) setHighlightColor(button.dataset.color);
+  if (!button) return;
+  setHighlightColor(button.dataset.color);
+  setPalette(false);
+  hlColorToggle.focus();
 });
 function cancelSelection() {
   const hadFocus = hlBar.contains(document.activeElement);
@@ -5143,9 +5217,24 @@ function cancelSelection() {
   clearPending(highlights2);
   window.getSelection()?.removeAllRanges();
   try { epubView.querySelector('iframe')?.contentWindow?.getSelection()?.removeAllRanges(); } catch { /* noop */ }
-  if (hadFocus && !reader.hidden) $('selectionTools').focus();
+  if (hadFocus && !reader.hidden) pageArea.focus({ preventScroll: true });
 }
 $('hlCancel').addEventListener('click', cancelSelection);
+hlAddNote.addEventListener('click', () => setNoteComposer(hlComposer.hidden, { focus: true }));
+hlColorToggle.addEventListener('click', () => setPalette(hlColors.hidden));
+hlExpandQuote.addEventListener('click', () => {
+  setQuoteExpanded(!$('hlQuote').classList.contains('expanded'));
+  const box = hlBar.getBoundingClientRect();
+  if (box.bottom > window.innerHeight - 12) hlBar.style.top = `${Math.max(12, window.innerHeight - box.height - 12)}px`;
+});
+// Vazgeç folds the editor away; what was typed stays with the passage for this session.
+$('hlDiscardNote').addEventListener('click', () => { setNoteComposer(false); hlAddNote.focus(); });
+hlComposer.addEventListener('submit', (event) => { event.preventDefault(); saveHighlight(); });
+hlNote.addEventListener('input', () => {
+  const key = selectionKey();
+  if (!key) return;
+  if (hlNote.value) noteDrafts.set(key, hlNote.value); else noteDrafts.delete(key);
+});
 hlNote.addEventListener('keydown', (event) => {
   // Enter saves, Shift+Enter starts a new line (the note field is a textarea now)
   if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); saveHighlight(); }
