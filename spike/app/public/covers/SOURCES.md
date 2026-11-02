@@ -16,3 +16,5 @@ Covers are stored locally; the browser never fetches them from the source sites.
 | real-book-11.webp | forall x: Calgary | first PDF page | https://forallx.openlogicproject.org/ |
 
 The Cambridge cover (publisher-book-07-en.webp) is approved for use by the product owner (2026-11-02). The Turkish card carries the label "İngilizce baskı kapağı" / "English edition cover".
+| demo-earth-at-night.jpg | Earth at Night (NASA, 2019) | book cover | https://www.nasa.gov/ebooks/earth-at-night/ (public domain; see public/demo/CREDITS.md) |
+| demo-earth-as-art.png | Earth as Art (NASA, 2012) | first PDF page | https://www.nasa.gov/ebooks/earth-as-art/ (public domain; see public/demo/CREDITS.md) |

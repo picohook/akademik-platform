@@ -8,6 +8,9 @@
 // front cover.
 
 const COVERS = [
+  // the public demo's two NASA books (public/demo)
+  { match: /^earth at night$/i, file: 'demo-earth-at-night.jpg', ratio: 0.90909 },
+  { match: /^earth as art$/i, file: 'demo-earth-as-art.png', ratio: 1 },
   { match: /go-gn research methods/i, file: 'real-book-01.webp', ratio: 0.70789 },
   { match: /guide to responsible research/i, file: 'real-book-02.webp', ratio: 0.66372 },
   { match: /research methods and statistics with jamovi/i, file: 'publisher-book-03.webp', ratio: 0.66133 },

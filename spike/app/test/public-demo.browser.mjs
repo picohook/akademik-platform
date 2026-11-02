@@ -1,0 +1,171 @@
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import net from 'node:net';
+import { fileURLToPath } from 'node:url';
+
+// The public demo (/demo/): the real reader with its API answered in the browser (public/demo/shim.js).
+//
+//   * no sign-in, two NASA books with covers; the real catalogue, the real reader;
+//   * the only /api/ requests that reach the server are the two fixed public book files;
+//   * a note written on the EPUB stays in this browser, survives a reload, and shows in the notes panel;
+//   * "Reset demo" removes the demo's notes and leaves everything else (another user's rows, other keys) alone;
+//   * the PDF opens with its 11 pages and its text;
+//   * on the server, the demo route is public and read-only, the two files support ranges, and every other book and
+//     API path still needs a session.
+//
+//   PLAYWRIGHT_MODULE=<path to playwright> node test/public-demo.browser.mjs
+
+const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const appDir = fileURLToPath(new URL('../', import.meta.url));
+let checks = 0;
+const check = (condition, message) => { assert.ok(condition, message); checks += 1; };
+const same = (actual, expected, message) => { assert.deepEqual(actual, expected, message); checks += 1; };
+
+const freePort = () => new Promise((resolve, reject) => {
+  const probe = net.createServer();
+  probe.listen(0, '127.0.0.1', () => { const { port } = probe.address(); probe.close(() => resolve(port)); });
+  probe.on('error', reject);
+});
+
+const port = await freePort();
+const base = `http://127.0.0.1:${port}`;
+const env = { ...process.env, PORT: String(port), NODE_ENV: 'development', APP_ENV: 'development' };
+delete env.DATABASE_URL;
+const server = spawn(process.execPath, ['server.mjs'], { cwd: appDir, env, stdio: ['ignore', 'pipe', 'pipe'] });
+let serverLog = '';
+server.stdout.on('data', (chunk) => { serverLog += chunk; });
+server.stderr.on('data', (chunk) => { serverLog += chunk; });
+for (let i = 0; i < 100; i += 1) {
+  try { if ((await fetch(base + '/api/health')).ok) break; } catch { /* starting */ }
+  await new Promise((resolve) => setTimeout(resolve, 100));
+}
+
+const NIGHT = 'de000000-0000-4000-8000-00000000b001/book.epub';
+const ART = 'de000000-0000-4000-8000-00000000b002/file';
+let browser;
+try {
+  // ---- the server side ------------------------------------------------------------------------------------------------
+  const page0 = await fetch(base + '/demo/');
+  const html = await page0.text();
+  same(page0.status, 200, '/demo/ is public');
+  check(html.includes('<head><script src="/demo/shim.js"></script>'), 'the shim is the first script of the page');
+  same((await fetch(base + '/demo', { redirect: 'manual' })).status, 301, '/demo goes to /demo/');
+  same((await fetch(base + '/demo/', { method: 'POST' })).status, 405, 'the demo route is read-only');
+  same((await fetch(base + '/demo/server.mjs')).status, 404, 'only the listed demo files are served');
+  same((await fetch(base + '/api/books/' + NIGHT)).status, 200, 'the demo EPUB is public');
+  const ranged = await fetch(base + '/api/books/' + ART, { headers: { range: 'bytes=0-9' } });
+  same([ranged.status, (await ranged.arrayBuffer()).byteLength], [206, 10], 'the demo PDF answers a range');
+  same((await fetch(base + '/api/books/33333333-3333-3333-3333-333333333333/file')).status, 401, 'any other book file still needs a session');
+  same((await fetch(base + '/api/books')).status, 401, 'the catalogue API still needs a session');
+  same((await fetch(base + '/api/me')).status, 401, 'and so does /api/me (the demo user exists only in the page)');
+
+  // ---- the reader ---------------------------------------------------------------------------------------------------------
+  browser = await chromium.launch();
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage();
+  const errors = [];
+  const reached = new Set();
+  page.on('pageerror', (error) => errors.push(String(error)));
+  page.on('request', (request) => { const u = new URL(request.url()); if (u.pathname.startsWith('/api/')) reached.add(u.pathname.slice('/api/books/'.length)); });
+  await page.goto(base + '/demo/');
+  await page.locator('.card').first().waitFor();
+  same(await page.locator('#loginScreen').isHidden(), true, 'no sign-in');
+  same(await page.locator('#grid .card .card-title').allInnerTexts(), ['Earth at Night', 'Earth as Art'], 'two books');
+  check(await page.locator('#grid .card .cover-img').count() === 2, 'both have their cover');
+  check(await page.locator('#openUpload, #logoutBtn, #passwordBtn').evaluateAll((list) => list.every((el) => getComputedStyle(el).display === 'none')), 'upload, password and sign-out are not offered');
+  check(await page.locator('.demo-pill').isVisible(), 'the demo notice is shown');
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
+  same(overflow, false, 'no sideways scroll in the library');
+
+  // the EPUB: the photo is on the first screen
+  await page.locator('#grid .card', { hasText: 'Earth at Night' }).locator('.open-btn').click();
+  const frame = page.locator('#epubView iframe').first().contentFrame();
+  await frame.locator('img').first().waitFor();
+  await page.waitForFunction(() => {
+    const f = document.querySelector('#epubView iframe');
+    const img = f?.contentDocument?.images?.[0];
+    return img && img.complete && img.naturalWidth > 0;
+  });
+  const photo = await page.evaluate(() => {
+    const f = document.querySelector('#epubView iframe');
+    const box = f.contentDocument.images[0].getBoundingClientRect();
+    const view = document.querySelector('#epubView').getBoundingClientRect();
+    return { left: box.left, width: box.width, height: box.height, viewWidth: view.width, viewHeight: view.height };
+  });
+  check(photo.left >= 0 && photo.left + photo.width <= photo.viewWidth + 1 && photo.height <= photo.viewHeight, 'the opening photo is on the first screen: ' + JSON.stringify(photo));
+
+  // a note: written on a real selection, kept in this browser
+  const paragraph = frame.locator('p', { hasText: 'City lights clearly delineate' }).first();
+  await paragraph.click({ clickCount: 3, delay: 80 });
+  await page.locator('#hlBar').waitFor({ state: 'visible' });
+  await page.locator('#hlAddNote').click();
+  await page.locator('#hlNote').fill('Rome and Naples from orbit');
+  await page.locator('#hlSaveNote').click();
+  await page.waitForFunction(() => document.querySelector('#toggleNotes')?.textContent.includes('1'));
+  check((await page.locator('#notesList').innerText()).includes('Rome and Naples from orbit'), 'the note is listed');
+  await page.waitForTimeout(500);
+
+  // survives a reload
+  // the reader opens the book it was on again
+  await page.reload();
+  await frame.locator('img').first().waitFor();
+  await page.waitForFunction(() => document.querySelector('#toggleNotes')?.textContent.includes('1'));
+  check((await page.locator('#notesList').innerText()).includes('Rome and Naples from orbit'), 'the note is still there after a reload');
+
+  // the PDF
+  await page.locator('#closeReader').click();
+  await page.locator('#grid .card', { hasText: 'Earth as Art' }).locator('.open-btn').click();
+  await page.waitForFunction(() => document.querySelector('#textLayer')?.textContent.includes('Akpatok'));
+  same((await page.locator('#pageTotal').innerText()).replace(/\s/g, ''), '/11', 'the PDF has its 11 pages');
+  check((await page.locator('#textLayer').textContent()).includes('Akpatok'), 'its text is real, selectable text');
+  await page.locator('#closeReader').click();
+
+  // nothing but the two files reached the server
+  same([...reached].sort(), [ART, NIGHT].sort(), 'the only /api/ requests that reached the server are the two public book files: ' + JSON.stringify([...reached]));
+
+  // reset removes the demo's rows and nothing else
+  await page.evaluate(async () => {
+    localStorage.setItem('someone-elses-setting', 'keep');
+    const db = await new Promise((resolve, reject) => { const request = indexedDB.open('akademik-offline'); request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction('annotations', 'readwrite');
+      tx.objectStore('annotations').put({ id: 'other-owner-note', asset_id: 'x', ownerId: 'another-user', note: 'not mine' });
+      tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  });
+  page.once('dialog', (dialog) => dialog.accept());
+  await Promise.all([page.waitForEvent('load'), page.locator('.demo-pill button').click()]);
+  await page.locator('#grid .card').first().waitFor();
+  const after = await page.evaluate(async () => {
+    const db = await new Promise((resolve, reject) => { const request = indexedDB.open('akademik-offline'); request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
+    const rows = await new Promise((resolve) => { const request = db.transaction('annotations').objectStore('annotations').getAll(); request.onsuccess = () => resolve(request.result); });
+    db.close();
+    return { owners: rows.map((row) => row.ownerId), other: localStorage.getItem('someone-elses-setting'), demoKeys: Object.keys(localStorage).filter((key) => key.startsWith('libread-public-demo:v1:')) };
+  });
+  same(after.owners, ['another-user'], 'reset removed the demo user\'s notes and kept another user\'s');
+  same(after.other, 'keep', 'and other settings');
+  same(after.demoKeys, [], 'and the demo\'s own state is gone (the reader writes its defaults again on the next start)');
+  await page.goto(base + '/demo/');
+  await page.locator('#grid .card', { hasText: 'Earth at Night' }).locator('.open-btn').click();
+  await frame.locator('img').first().waitFor();
+  same((await page.locator('#toggleNotes').innerText()).replace(/\D/g, ''), '0', 'the note is gone after the reset');
+
+  // a phone
+  const phone = await browser.newContext({ viewport: { width: 390, height: 800 } });
+  const small = await phone.newPage();
+  await small.goto(base + '/demo/');
+  await small.locator('.card').first().waitFor();
+  same(await small.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'no sideways scroll on a 390px screen');
+  await phone.close();
+
+  same(errors, [], 'no page errors');
+  console.log(JSON.stringify({ passed: true, checks }));
+} catch (error) {
+  console.error(error);
+  console.error(serverLog.split('\n').slice(-8).join('\n'));
+  process.exitCode = 1;
+} finally {
+  await browser?.close();
+  server.kill();
+}
