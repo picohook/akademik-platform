@@ -157,6 +157,7 @@ const DICT = {
   'Sayfa (opsiyonel, örn. 42 veya 42-45)': 'Page (optional, e.g. 42 or 42-45)',
   'Kopyala': 'Copy',
   'Atıfla kopyala': 'Copy with citation',
+  'Taşımak için sürükleyin': 'Drag to move',
   'Atıfla kopyalandı': 'Copied with citation',
   'Metin kopyalandı': 'Text copied',
   'Bu kitapta kopyalama kapalı': 'Copying is disabled for this title',

@@ -33,7 +33,9 @@
 // shell would pair the old markup with the new script.
 // v38: the selection bar is a compact row of icon buttons and sits clear of the selected words (index.html, styles.css,
 // app.js). A cached v37 shell would pair the old markup with the new script.
-const CACHE = 'akademik-shell-v38';
+// v39: catalogue cards show subject, title, author, publisher/year/language; night-mode form controls; a movable selection bar
+// (index.html, app.js, styles.css, library-designs.css). A cached v38 shell would pair the old markup with the new script.
+const CACHE = 'akademik-shell-v39';
 const SHELL = [
   '/',
   '/styles.css',

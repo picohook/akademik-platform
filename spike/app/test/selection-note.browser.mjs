@@ -145,6 +145,21 @@ try {
     same(await page.locator('#hlComposer').isHidden(), true, 'the note editor starts shut');
     const compact = await page.locator('#hlBar').boundingBox();
     check(compact.width <= 440 && compact.height < 135, `the bar is compact when it opens: ${compact.width} x ${compact.height}`);
+    // the bar can be moved: drag the grip, and it stays there while the note editor opens
+    const barBefore = await page.locator('#hlBar').boundingBox();
+    const grip = await page.locator('#hlGrip').boundingBox();
+    await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(grip.x + grip.width / 2 + 90, grip.y + grip.height / 2 + 140, { steps: 6 });
+    await page.mouse.up();
+    const moved = await page.locator('#hlBar').boundingBox();
+    check(Math.abs(moved.x - barBefore.x - 90) <= 2 && Math.abs(moved.y - barBefore.y - 140) <= 2, `dragging the grip moves the bar: ${barBefore.x},${barBefore.y} -> ${moved.x},${moved.y}`);
+    await page.locator('#hlAddNote').click();
+    const grown = await page.locator('#hlBar').boundingBox();
+    check(Math.abs(grown.x - moved.x) <= 2 && Math.abs(grown.y - moved.y) <= 2, 'opening the note editor leaves the moved bar where it was');
+    await page.locator('#hlDiscardNote').click();
+    const clamp = await page.evaluate(() => { const r = document.getElementById('hlBar').getBoundingClientRect(); return r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight; });
+    check(clamp, 'a moved bar stays on screen');
     same(await page.locator('#hlColors').isHidden(), true, 'the colour palette starts shut');
     check((await page.locator('#hlPageLabel').innerText()).trim().length > 0, 'the real page is named with the passage');
     await page.locator('#hlColorToggle').click();
