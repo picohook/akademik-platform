@@ -28,7 +28,10 @@
 // v36: the library has a sidebar, three designs, grid/list and book covers (index.html, library-designs.css/.mjs,
 // library-covers.mjs, app.js); the edit form has a cover field. A cached v35 shell would pair the old markup with
 // the new script.
-const CACHE = 'akademik-shell-v36';
+// v37: the reader has a new shell (top bar, tool rail, page controls, a docked read-aloud strip, a one-row selection
+// bar) and EPUB text settings (index.html, styles.css, app.js, reader-appearance.mjs, epub-engine.mjs). A cached v36
+// shell would pair the old markup with the new script.
+const CACHE = 'akademik-shell-v37';
 const SHELL = [
   '/',
   '/styles.css',
