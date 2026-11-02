@@ -1,6 +1,7 @@
 import { createLibrary } from '/library.mjs';
 import { createDesigns } from '/library-designs.mjs';
 import { coverFor } from '/library-covers.mjs';
+import { DEFAULT_TYPOGRAPHY, normalizeTypography, typographyRules, loadTypography, saveTypography, bookmarksExport } from '/reader-appearance.mjs';
 import { normalizeBookVariant, bookRequestId, offlineBookKey, groupBookVariants, variantLabel, locationMatchesBook, bookFromLocation, findOfflineVariant } from '/book-variants.mjs';
 import { renderPdfLinks, destinationPage } from '/book-links.mjs';
 import * as pdfjsLib from '/vendor/pdfjs/pdf.mjs';
@@ -137,6 +138,7 @@ const state = {
   epubMode: false,
   epubProgress: null,
   epubFontSize: 100,
+  typography: { ...DEFAULT_TYPOGRAPHY },
   epubSelection: null,
   activeBookmarkId: null,
   bookmarkJump: false,
@@ -2085,7 +2087,23 @@ async function loadBooks(query = '') {
   renderBooks();
 }
 
+// The reading settings of an EPUB (typeface, line spacing, width of the text) belong to the reader, not to a
+// book: one choice for every EPUB, kept per account on this device.
+const typographyKey = () => `readerEpubType:${storageUserKey()}`;
+
+function applyTypography({ persist = true } = {}) {
+  state.typography = normalizeTypography(state.typography);
+  state.epubEngine?.setTypography(typographyRules(state.typography));
+  epubView.dataset.measure = state.typography.measure;
+  $('epubFont').value = state.typography.font;
+  $('epubLine').value = state.typography.line;
+  $('epubWidth').value = state.typography.measure;
+  if (persist) saveTypography(localStorage, typographyKey(), state.typography);
+}
+
 function updateZoomLabel() {
+  $('epubSize').value = String(state.epubFontSize);
+  $('epubSizeLabel').textContent = `${state.epubFontSize}%`;
   if (state.epubMode) {
     zoomLabel.textContent = `${state.epubFontSize}%`;
     return;
@@ -2350,9 +2368,14 @@ function renderThumbs() {
 }
 
 // The left rail: the contents, search and page buttons open the one navigation panel on their tab.
+const RAIL_BUTTONS = { toc: 'toggleToc', search: 'railSearch', bookmarks: 'railBookmarks', pages: 'railPages' };
+const currentTocTab = () => (tabSearch.classList.contains('active') ? 'search'
+  : $('tabBookmarks').classList.contains('active') ? 'bookmarks'
+  : tabPages.classList.contains('active') ? 'pages' : 'toc');
+
 function syncRail() {
-  const tab = tabSearch.classList.contains('active') ? 'search' : tabPages.classList.contains('active') ? 'pages' : 'toc';
-  for (const [id, name] of [['toggleToc', 'toc'], ['railSearch', 'search'], ['railPages', 'pages']]) {
+  const tab = currentTocTab();
+  for (const [name, id] of Object.entries(RAIL_BUTTONS)) {
     const on = !tocPanel.hidden && tab === name;
     $(id).setAttribute('aria-expanded', String(on));
     $(id).classList.toggle('active', on);
@@ -2360,8 +2383,7 @@ function syncRail() {
 }
 
 function openRailTab(tab) {
-  const current = tabSearch.classList.contains('active') ? 'search' : tabPages.classList.contains('active') ? 'pages' : 'toc';
-  if (!tocPanel.hidden && current === tab) { toggleToc(false); $(tab === 'search' ? 'railSearch' : tab === 'pages' ? 'railPages' : 'toggleToc').focus(); return; }
+  if (!tocPanel.hidden && currentTocTab() === tab) { toggleToc(false); $(RAIL_BUTTONS[tab]).focus(); return; }
   toggleToc(true);
   showTocTab(tab);
 }
@@ -2635,21 +2657,21 @@ function showShortcuts() {
 
 function showTocTab(tab) {
   const search = tab === 'search';
+  const marks = tab === 'bookmarks';
   const pages = tab === 'pages';
   if (pages && state.epubMode) return;
-  tabToc.classList.toggle('active', !search && !pages);
-  tabSearch.classList.toggle('active', search);
-  tabPages.classList.toggle('active', pages);
-  tabToc.setAttribute('aria-selected', !search && !pages ? 'true' : 'false');
-  tabSearch.setAttribute('aria-selected', search ? 'true' : 'false');
-  tabPages.setAttribute('aria-selected', pages ? 'true' : 'false');
-  tabToc.tabIndex = !search && !pages ? 0 : -1;
-  tabSearch.tabIndex = search ? 0 : -1;
-  tabPages.tabIndex = pages ? 0 : -1;
-  tocView.hidden = search || pages;
+  const toc = !search && !marks && !pages;
+  for (const [button, on] of [[tabToc, toc], [tabSearch, search], [$('tabBookmarks'), marks], [tabPages, pages]]) {
+    button.classList.toggle('active', on);
+    button.setAttribute('aria-selected', on ? 'true' : 'false');
+    button.tabIndex = on ? 0 : -1;
+  }
+  tocView.hidden = !toc;
   searchView.hidden = !search;
+  $('bookmarksView').hidden = !marks;
   pagesView.hidden = !pages;
   if (search) setTimeout(() => bookSearch.focus(), 0);
+  if (marks) renderBookmarkList();
   if (pages) renderThumbs();
   syncRail();
 }
@@ -3549,13 +3571,15 @@ function downloadFile(filename, content, type) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function exportAnnotations(format) {
-  if (!state.book || !state.annotations.length) {
-    toast('Dışa aktarılacak not yok');
+// scope: 'all' (the notes panel), 'notes' (highlights and notes) or 'bookmarks'
+function exportAnnotations(format, scope = 'all') {
+  const pool = state.annotations.filter((item) => scope === 'all' || (scope === 'bookmarks') === (item.color === 'bookmark'));
+  if (!state.book || !pool.length) {
+    toast(scope === 'bookmarks' ? 'Dışa aktarılacak yer imi yok' : 'Dışa aktarılacak not yok');
     return;
   }
   const book = state.book;
-  const annotations = [...state.annotations].sort(
+  const annotations = [...pool].sort(
     (a, b) => Number(a.anchor?.page || 0) - Number(b.anchor?.page || 0),
   );
   const slug = book.title
@@ -3563,6 +3587,12 @@ function exportAnnotations(format) {
     .replace(/[^\p{L}\p{N}]+/gu, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 60) || 'kitap';
+  if (scope === 'bookmarks') {
+    const file = bookmarksExport(book, annotations, format, { place: bookmarkPlace });
+    downloadFile(`${slug}-yer-imleri.${format === 'json' ? 'json' : 'md'}`, file.body, file.type);
+    toast(format === 'json' ? 'JSON indirildi' : 'Markdown indirildi');
+    return;
+  }
 
   if (format === 'json') {
     const payload = {
@@ -3709,7 +3739,58 @@ function appendAnnotationConflict(annotation, item) {
   box.addEventListener('click', event => event.stopPropagation()); item.appendChild(box);
 }
 
+// A note, a highlight or a bookmark takes the reader back to where it was made.
+async function goToAnnotation(annotation) {
+  if (annotation.color === 'bookmark') {
+    state.activeBookmarkId = annotation.id;
+    state.bookmarkJump = true;
+  } else {
+    state.activeBookmarkId = null;
+  }
+  if (annotation.anchor?.type === 'epub' && annotation.anchor?.cfi) {
+    await state.epubEngine?.goToCfi(annotation.anchor.cfi);
+  } else {
+    await goToPage(Number(annotation.anchor?.page) || 1);
+  }
+}
+
+function bookmarkPlace(annotation) {
+  return annotation.anchor?.type === 'epub'
+    ? epubBookmarkLabel(annotation, true)
+    : `${pdfPageText(annotation.anchor?.page)} · ${t('Yer imi')}`;
+}
+
+// The bookmarks of the open book, in the navigation panel next to the contents.
+function renderBookmarkList() {
+  const list = $('bookmarkList');
+  const marks = state.annotations.filter((item) => item.color === 'bookmark');
+  list.replaceChildren();
+  $('bookmarkEmpty').hidden = marks.length > 0;
+  for (const mark of marks) {
+    const row = document.createElement('div');
+    row.className = 'bookmark-row';
+    const open = document.createElement('button');
+    open.type = 'button';
+    open.className = 'toc-item bookmark-open';
+    open.textContent = bookmarkPlace(mark);
+    open.addEventListener('click', async () => {
+      await goToAnnotation(mark);
+      if (window.innerWidth < 820) toggleToc(false);
+    });
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'mini-btn bookmark-remove';
+    remove.textContent = '×';
+    remove.title = t('Sil');
+    remove.setAttribute('aria-label', `${t('Sil')}: ${bookmarkPlace(mark)}`);
+    remove.addEventListener('click', () => deleteAnnotation(mark.id));
+    row.append(open, remove);
+    list.appendChild(row);
+  }
+}
+
 function renderNotes() {
+  renderBookmarkList();
   const previousFocus = notesList.contains(document.activeElement) ? document.activeElement : null;
   const focusedId = previousFocus?.closest('.note-item')?.dataset.annotationId;
   const focusClass = ['note-edit-btn', 'note-delete', 'note-color', 'note-tag', 'note-page'].find(name => previousFocus?.classList.contains(name));
@@ -3835,18 +3916,7 @@ function renderNotes() {
     }
 
     item.addEventListener('click', async () => {
-      if (isBookmark) {
-        state.activeBookmarkId = annotation.id;
-        state.bookmarkJump = true;
-      } else {
-        state.activeBookmarkId = null;
-      }
-      if (annotation.anchor?.type === 'epub' && annotation.anchor?.cfi) {
-        await state.epubEngine?.goToCfi(annotation.anchor.cfi);
-      } else {
-        const target = Number(annotation.anchor?.page) || 1;
-        await goToPage(target);
-      }
+      await goToAnnotation(annotation);
       if (window.innerWidth < 820) setNotesOpen(false);
     });
     notesList.appendChild(item);
@@ -4071,6 +4141,8 @@ async function openEpubBook(book, options = {}) {
     const savedTheme = storedTheme();
     applyTheme(savedTheme);
     engine.setTheme(state.theme);
+    state.typography = loadTypography(localStorage, typographyKey());
+    applyTypography({ persist: false });
     applyEpubFontSize(storedEpubFontSize(book.id), false, book.id);
     state.annotations
       .filter((annotation) => annotation.anchor?.type === 'epub' && annotation.anchor?.cfi)
@@ -4764,6 +4836,11 @@ document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') closeCite();
     return;
   }
+  for (const id of ['bookInfoModal', 'exportModal']) {
+    if ($(id).hidden) continue;
+    if (event.key === 'Escape') closeModal($(id));
+    return;
+  }
   if (!uploadModal.hidden) {
     if (event.key === 'Escape') closeUpload();
     return;
@@ -4973,11 +5050,15 @@ tocFilter.addEventListener('input', renderToc);
 tabToc.addEventListener('click', () => showTocTab('toc'));
 tabSearch.addEventListener('click', () => showTocTab('search'));
 tabPages.addEventListener('click', () => showTocTab('pages'));
-[[tabToc, 'toc'], [tabSearch, 'search'], [tabPages, 'pages']].forEach(([tab, name], index, list) => {
+$('tabBookmarks').addEventListener('click', () => showTocTab('bookmarks'));
+$('railBookmarks').addEventListener('click', () => openRailTab('bookmarks'));
+[[tabToc, 'toc'], [tabSearch, 'search'], [$('tabBookmarks'), 'bookmarks'], [tabPages, 'pages']].forEach(([tab, name], index, list) => {
   tab.addEventListener('keydown', (event) => {
     if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
     event.preventDefault();
-    const nextIndex = (index + (event.key === 'ArrowRight' ? 1 : -1) + list.length) % list.length;
+    const step = event.key === 'ArrowRight' ? 1 : -1;
+    let nextIndex = index;
+    do { nextIndex = (nextIndex + step + list.length) % list.length; } while (list[nextIndex][0].hidden);
     const [nextTab, nextName] = list[nextIndex];
     showTocTab(nextName);
     nextTab.focus();
@@ -5022,7 +5103,86 @@ pageInput.addEventListener('keydown', (event) => {
 });
 pageInput.addEventListener('change', () => goToPage(pageInput.value));
 bookmarkBtn.addEventListener('click', toggleBookmark);
-$('citeBook').addEventListener('click', openCite);
+$('citeBook').addEventListener('click', () => { closeReaderMenus(); openCite(); });
+
+// The menus are <details>: one that was used folds away before its dialog opens, so focus returns to a button
+// that is on screen.
+function closeReaderMenus() {
+  document.querySelectorAll('.reader-menu[open]').forEach((menu) => {
+    if (menu.contains(document.activeElement)) menu.querySelector('summary')?.focus();
+    menu.open = false;
+  });
+}
+
+function authorNames(book) {
+  const raw = book.metadata?.authors || book.authors || [];
+  return (Array.isArray(raw) ? raw : [raw]).map((item) => (typeof item === 'string' ? item
+    : item?.name || [item?.given, item?.family].filter(Boolean).join(' '))).filter(Boolean);
+}
+
+function openBookInfo() {
+  const book = state.book;
+  if (!book) return;
+  closeReaderMenus();
+  $('bookInfoTitle').textContent = [book.title, book.subtitle].filter(Boolean).join(' — ');
+  const allowed = (flag) => t(flag === false ? 'Kapalı' : 'İzinli');
+  const rows = [
+    ['Yazar', authorNames(book).join('; ')],
+    ['Yayıncı', book.publisher],
+    ['Yayın yılı', book.publication_year],
+    ['Dil', book.language ? book.language.toUpperCase() : ''],
+    ['Biçim', `${String(book.format || 'pdf').toUpperCase()}${state.epubMode || !state.numPages ? '' : ` · ${state.numPages} ${t('sayfa')}`}`],
+    ['Kopyalama', allowed(book.allow_copy)],
+    ['Yazdırma', allowed(book.allow_print)],
+    ['İndirme', allowed(book.allow_download)],
+  ].filter(([, value]) => value);
+  $('bookInfoList').replaceChildren(...rows.flatMap(([label, value]) => {
+    const dt = document.createElement('dt'); dt.textContent = t(label);
+    const dd = document.createElement('dd'); dd.textContent = String(value);
+    return [dt, dd];
+  }));
+  openModal($('bookInfoModal'), $('closeBookInfo'));
+}
+
+function openExport() {
+  if (!state.book) return;
+  closeReaderMenus();
+  const marks = state.annotations.filter((item) => item.color === 'bookmark').length;
+  const notes = state.annotations.length - marks;
+  $('exportBookmarkCount').textContent = String(marks);
+  $('exportNoteCount').textContent = String(notes);
+  for (const id of ['exportBookmarksMd', 'exportBookmarksJson']) $(id).disabled = !marks;
+  for (const id of ['exportNotesMd', 'exportNotesJson']) $(id).disabled = !notes;
+  openModal($('exportModal'), $('closeExport'));
+}
+
+$('bookInfoBtn').addEventListener('click', openBookInfo);
+$('closeBookInfo').addEventListener('click', () => closeModal($('bookInfoModal')));
+$('exportBtn').addEventListener('click', openExport);
+$('closeExport').addEventListener('click', () => closeModal($('exportModal')));
+$('exportCite').addEventListener('click', () => { closeModal($('exportModal')); openCite(); });
+$('exportBookmarksMd').addEventListener('click', () => exportAnnotations('md', 'bookmarks'));
+$('exportBookmarksJson').addEventListener('click', () => exportAnnotations('json', 'bookmarks'));
+$('exportNotesMd').addEventListener('click', () => exportAnnotations('md', 'notes'));
+$('exportNotesJson').addEventListener('click', () => exportAnnotations('json', 'notes'));
+$('shortcutsBtn').addEventListener('click', () => { closeReaderMenus(); showShortcuts(); });
+
+// EPUB reading settings
+$('epubFont').addEventListener('change', () => { state.typography = { ...state.typography, font: $('epubFont').value }; applyTypography(); });
+$('epubLine').addEventListener('change', () => { state.typography = { ...state.typography, line: $('epubLine').value }; applyTypography(); });
+$('epubWidth').addEventListener('change', () => { state.typography = { ...state.typography, measure: $('epubWidth').value }; applyTypography(); });
+$('epubSize').addEventListener('input', () => applyEpubFontSize($('epubSize').value));
+$('epubTypeReset').addEventListener('click', () => {
+  state.typography = { ...DEFAULT_TYPOGRAPHY };
+  applyTypography();
+  applyEpubFontSize(100);
+});
+// "Aa" in the page controls opens the same menu as Görünüm, on the text settings
+$('footerAppearance').addEventListener('click', () => {
+  const menu = themeBtn.closest('details');
+  menu.open = !menu.open;
+  if (menu.open) $('epubFont').focus();
+});
 downloadBtn.addEventListener('click', async () => {
   const book = state.book;
   if (!book) return;
