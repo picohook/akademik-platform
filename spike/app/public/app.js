@@ -1,6 +1,7 @@
 import { createLibrary } from '/library.mjs';
 import { createDesigns } from '/library-designs.mjs';
 import { coverFor } from '/library-covers.mjs';
+import { subjectGroup, subjectGroupLabel, subjectGroupKeys } from '/subject-groups.mjs';
 import { DEFAULT_TYPOGRAPHY, normalizeTypography, typographyRules, loadTypography, saveTypography, bookmarksExport } from '/reader-appearance.mjs';
 import { normalizeBookVariant, bookRequestId, offlineBookKey, groupBookVariants, variantLabel, locationMatchesBook, bookFromLocation, findOfflineVariant } from '/book-variants.mjs';
 import { renderPdfLinks, destinationPage } from '/book-links.mjs';
@@ -523,10 +524,10 @@ function makeCard(book, variants = [book]) {
 
   const kicker = document.createElement('span');
   kicker.className = 'kicker';
-  kicker.lang = book.language === 'en' ? 'en' : 'tr';
-  const subject = (book.subjects && book.subjects[0]) || 'Akademik';
-  // Locale-aware uppercase: English "Nursing" -> NURSING (I), Turkish "Diş" -> DİŞ (İ).
-  kicker.textContent = String(subject).toLocaleUpperCase(kicker.lang);
+  // the label is in the interface language, so it is upper-cased in that language: Turkish "Diş" -> DİŞ (İ), English "Machine" -> MACHINE (I)
+  const groupKey = subjectGroup(book);
+  kicker.lang = getLang() === 'en' ? 'en' : 'tr';
+  kicker.textContent = (groupKey === 'other' ? (kicker.lang === 'en' ? 'Academic' : 'Akademik') : subjectGroupLabel(groupKey, kicker.lang)).toLocaleUpperCase(kicker.lang);
   cover.appendChild(kicker);
 
   const initial = document.createElement('span');
@@ -557,7 +558,7 @@ function makeCard(book, variants = [book]) {
     return line;
   };
   // subject, title, author, then publisher / year / language: the catalogue card carries the cataloguing facts and nothing else
-  addLine('card-subject', (book.subjects && book.subjects[0]) || '');
+  addLine('card-subject', groupKey === 'other' ? '' : subjectGroupLabel(groupKey, getLang()).toLocaleUpperCase(getLang() === 'en' ? 'en' : 'tr'), getLang() === 'en' ? 'en' : 'tr');
   // a typographic cover already prints the title, so the line below it carries the subtitle; a real cover image does not
   addLine('card-title', art ? book.title : (book.subtitle || book.title));
   addLine('card-author', authorNames(book).join('; '));
@@ -657,7 +658,7 @@ function renderBooks() {
   grid.replaceChildren();
   const visible = state.books.filter((book) => {
     if (state.filter === 'all') return true;
-    return (book.subjects || []).includes(state.filter);
+    return subjectGroup(book) === state.filter;
   });
   const groups = library.order(groupBookVariants(library.visible(visible), getLang(), variantSelections));
   groups.forEach(({ book, variants }) => grid.appendChild(makeCard(book, variants)));
@@ -1763,8 +1764,8 @@ async function saveEdit(event) {
 }
 
 function renderFilters() {
-  const subjects = new Set();
-  state.books.forEach((book) => (book.subjects || []).forEach((s) => subjects.add(s)));
+  const subjects = subjectGroupKeys(state.books);
+  if (state.filter !== 'all' && !subjects.includes(state.filter)) state.filter = 'all';
   filters.replaceChildren();
   const all = document.createElement('button');
   all.className = `chip${state.filter === 'all' ? ' active' : ''}`;
@@ -1774,10 +1775,10 @@ function renderFilters() {
   all.addEventListener('click', () => { state.filter = 'all'; renderFilters(); renderBooks(); filters.querySelector('[data-subject="all"]')?.focus(); });
   filters.appendChild(all);
   library.addFavoriteFilter(filters);
-  [...subjects].sort((a, b) => a.localeCompare(b, 'tr')).forEach((subject) => {
+  subjects.forEach((subject) => {
     const chip = document.createElement('button');
     chip.className = `chip${state.filter === subject ? ' active' : ''}`;
-    chip.textContent = subject;
+    chip.textContent = subjectGroupLabel(subject, getLang());
     chip.dataset.subject = subject;
     chip.setAttribute('aria-pressed', String(state.filter === subject));
     chip.addEventListener('click', () => {
