@@ -2266,6 +2266,7 @@ async function servePdf(req, res, storageKey) {
 const DEMO_DIR = path.join(PUBLIC_DIR, 'demo');
 const DEMO_FILES = new Map([
   ['/demo/shim.js', { file: 'shim.js', type: 'text/javascript; charset=utf-8' }],
+  ['/demo/guide.js', { file: 'guide.js', type: 'text/javascript; charset=utf-8' }],
   ['/demo/CREDITS.md', { file: 'CREDITS.md', type: 'text/markdown; charset=utf-8' }],
 ]);
 const DEMO_BOOK_FILES = new Map([
@@ -2302,7 +2303,7 @@ async function serveDemo(req, res, pathname) {
     try { html = await readFile(path.join(PUBLIC_DIR, 'index.html'), 'utf8'); } catch { json(res, 404, { error: 'not found' }); return; }
     if (ASSET_VERSION) html = versionShellAssets(html, ASSET_VERSION);
     // the script goes first, so it is in place before the page's own scripts run
-    html = html.replace('<head>', '<head><script src="/demo/shim.js"></script>');
+    html = html.replace('<head>', '<head><script src="/demo/shim.js"></script><script src="/demo/guide.js" defer></script>');
     const body = Buffer.from(html, 'utf8');
     res.writeHead(200, {
       'content-type': MIME['.html'], 'content-length': body.length, 'cache-control': 'no-cache',
@@ -2313,7 +2314,7 @@ async function serveDemo(req, res, pathname) {
   }
   const entry = DEMO_FILES.get(pathname);
   if (!entry) { json(res, 404, { error: 'not found' }); return; }
-  const noStore = entry.file === 'shim.js';
+  const noStore = entry.file === 'shim.js' || entry.file === 'guide.js';
   await serveDemoFile(req, res, entry, noStore ? { cache: 'no-cache' } : undefined);
 }
 

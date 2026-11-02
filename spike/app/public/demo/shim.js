@@ -76,6 +76,7 @@
       };
       memory.annotations.push(created);
       result = reply(201, created);
+      queueMicrotask(() => window.dispatchEvent(new CustomEvent('libread-demo:annotation', { detail: { note: Boolean(created.note) } })));
     } else {
       if (!UUID.test(id || '')) return fail(400, 'invalid_annotation_id');
       if (!Number.isInteger(body.baseVersion) || body.baseVersion < 1) return fail(428, 'annotation_version_required');
@@ -200,41 +201,14 @@
       if (localStorage.getItem('offlineAnnotationUser') === USER.id) localStorage.removeItem('offlineAnnotationUser');
     } catch { /* storage closed */ }
     await clearDemoRows().catch(() => {});
-    window.location.reload();
+    window.location.assign('/demo/');
   }
 
-  // ---- the page around the reader -----------------------------------------------------------------------------------------
-  const english = (() => { try { return localStorage.getItem('uiLang') === 'en'; } catch { return false; } })();
-  const text = english
-    ? { note: 'Demo · your notes stay in this browser', reset: 'Reset demo', confirm: 'Delete the notes, favourites and progress of this demo?', account: 'Open an account' }
-    : { note: 'Demo · notlarınız yalnız bu tarayıcıda', reset: 'Demoyu sıfırla', confirm: 'Bu demodaki notlar, favoriler ve ilerleme silinsin mi?', account: 'Hesap aç' };
+  // The guide (guide.js) builds the notice and the dialog; it needs only these two things from here.
+  window.LibReadDemo = Object.freeze({ prefix: PREFIX, reset: resetDemo });
 
   const style = document.createElement('style');
-  style.textContent = `
-    #passwordBtn, #logoutBtn, #logoutAllBtn, #offlineBtn, #openUpload { display: none !important; }
-    .demo-pill { position: fixed; right: 12px; bottom: 12px; z-index: 40; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; max-width: calc(100vw - 24px);
-      padding: 6px 12px; border: 1px solid #c9d3e6; border-radius: 999px; background: #fff; color: #2e4484; font: 12px/1.4 system-ui, sans-serif; box-shadow: 0 4px 18px rgba(20, 30, 60, .12); }
-    .demo-pill button, .demo-pill a { all: unset; cursor: pointer; color: #2e4484; text-decoration: underline; text-underline-offset: 2px; font: inherit; }
-    .demo-pill button:focus-visible, .demo-pill a:focus-visible { outline: 2px solid #3b6fc4; outline-offset: 2px; }
-    body:has(#reader:not([hidden])) .demo-pill, body:has(dialog[open]) .demo-pill { display: none; }
-  `;
-  const mount = () => {
-    document.head.appendChild(style);
-    const pill = document.createElement('div');
-    pill.className = 'demo-pill';
-    pill.setAttribute('role', 'note');
-    const label = document.createElement('span');
-    label.textContent = text.note;
-    const reset = document.createElement('button');
-    reset.type = 'button';
-    reset.textContent = text.reset;
-    reset.addEventListener('click', () => { if (window.confirm(text.confirm)) resetDemo(); });
-    const account = document.createElement('a');
-    account.href = '/auth/libedge/start?ctx=individual';
-    account.textContent = text.account;
-    pill.append(label, reset, account);
-    document.body.appendChild(pill);
-  };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount, { once: true });
-  else mount();
+  style.textContent = '#passwordBtn, #logoutBtn, #logoutAllBtn, #offlineBtn, #openUpload { display: none !important; }';
+  if (document.head) document.head.appendChild(style);
+  else document.addEventListener('DOMContentLoaded', () => document.head.appendChild(style), { once: true });
 })();

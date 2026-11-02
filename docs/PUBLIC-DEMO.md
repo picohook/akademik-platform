@@ -16,6 +16,22 @@ A visitor opens https://elibrary.libedge.com/demo/ without an account and reads 
 - "Demoyu sıfırla" (the notice at the bottom right) deletes the demo's own keys and the demo user's rows; a real account's data in the
   same browser is not touched. The sign-out, password, upload and offline buttons are hidden in the demo.
 
+## The guide
+
+A visitor is not left to find the features alone. `public/demo/guide.js` (injected after the shim, `defer`) opens a short dialog on the first
+visit, once the library is on screen: what this is, three steps, and the other tools. Each step does the real thing in the real reader and is
+ticked only when the visitor really does it:
+
+1. **Open a book** (the button opens Earth at Night; ticked when the reader opens).
+2. **Keep a sentence** ("Show me" selects a real sentence so the reader's own bar appears, with a hint; ticked when a highlight or note is created).
+3. **Make it comfortable** (opens the Appearance menu; ticked when anything in it is changed).
+
+The dialog also lists search, bookmarks, notes and export, read aloud (only where the device has a voice) and the More menu, each with a
+button that opens it. A "Guide n/3" button stays on screen (above the reader, above the page controls on a phone) and reopens the dialog.
+Progress is kept in this browser (`libread-public-demo:v1:guide`) and cleared by "Reset demo", which also returns to the library
+(`/demo/`) instead of reloading the address of the open book. The guide only clicks the reader's own buttons and reads its own elements;
+it has no data of its own. Turkish and English follow the reader's language.
+
 ## The books
 
 Earth at Night (NASA, 2019): five illustrated chapters and two source sections from the original EPUB. Earth as Art (NASA, 2012):
@@ -28,7 +44,7 @@ opening photo fits on the first screen next to its heading.
 
 ## Tests
 
-`test/public-demo.browser.mjs`: no sign-in, two books with covers, only the two book files reach the server, a note survives a reload,
+`test/public-demo.browser.mjs` (43 checks): the guide on the first visit and its three steps ticking from real actions, no sign-in, two books with covers, only the two book files reach the server, a note survives a reload,
 reset removes only the demo's data, PDF pages and text, 390 px, and the server side (public, read-only, ranges, everything else still
 needs a session).
 

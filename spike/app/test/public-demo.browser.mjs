@@ -48,7 +48,8 @@ try {
   const page0 = await fetch(base + '/demo/');
   const html = await page0.text();
   same(page0.status, 200, '/demo/ is public');
-  check(html.includes('<head><script src="/demo/shim.js"></script>'), 'the shim is the first script of the page');
+  check(html.includes('<head><script src="/demo/shim.js"></script><script src="/demo/guide.js" defer></script>'), 'the shim is the first script of the page, then the guide');
+  same((await fetch(base + '/demo/guide.js')).status, 200, 'the guide script is served');
   same((await fetch(base + '/demo', { redirect: 'manual' })).status, 301, '/demo goes to /demo/');
   same((await fetch(base + '/demo/', { method: 'POST' })).status, 405, 'the demo route is read-only');
   same((await fetch(base + '/demo/server.mjs')).status, 404, 'only the listed demo files are served');
@@ -69,6 +70,9 @@ try {
   page.on('request', (request) => { const u = new URL(request.url()); if (u.pathname.startsWith('/api/')) reached.add(u.pathname.slice('/api/books/'.length)); });
   await page.goto(base + '/demo/');
   await page.locator('.card').first().waitFor();
+  await page.locator('dialog.demo-guide[open]').waitFor();
+  same(await page.locator('dialog.demo-guide li button').count() >= 4, true, 'the guide opens on the first visit, with three steps and the tools');
+  await page.keyboard.press('Escape');
   same(await page.locator('#loginScreen').isHidden(), true, 'no sign-in');
   same(await page.locator('#grid .card .card-title').allInnerTexts(), ['Earth at Night', 'Earth as Art'], 'two books');
   check(await page.locator('#grid .card .cover-img').count() === 2, 'both have their cover');
@@ -135,21 +139,62 @@ try {
     db.close();
   });
   page.once('dialog', (dialog) => dialog.accept());
-  await Promise.all([page.waitForEvent('load'), page.locator('.demo-pill button').click()]);
+  await Promise.all([page.waitForEvent('load'), page.locator('.demo-pill button:not(.demo-guide-open)').click()]);
   await page.locator('#grid .card').first().waitFor();
+  await page.locator('dialog.demo-guide[open]').waitFor();
+  check(true, 'after the reset the guide is offered again');
+  await page.keyboard.press('Escape');
   const after = await page.evaluate(async () => {
     const db = await new Promise((resolve, reject) => { const request = indexedDB.open('akademik-offline'); request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
     const rows = await new Promise((resolve) => { const request = db.transaction('annotations').objectStore('annotations').getAll(); request.onsuccess = () => resolve(request.result); });
     db.close();
-    return { owners: rows.map((row) => row.ownerId), other: localStorage.getItem('someone-elses-setting'), demoKeys: Object.keys(localStorage).filter((key) => key.startsWith('libread-public-demo:v1:')) };
+    return { owners: rows.map((row) => row.ownerId), other: localStorage.getItem('someone-elses-setting'), demoKeys: Object.keys(localStorage).filter((key) => key.startsWith('libread-public-demo:v1:')), guide: JSON.parse(localStorage.getItem('libread-public-demo:v1:guide') || 'null') };
   });
   same(after.owners, ['another-user'], 'reset removed the demo user\'s notes and kept another user\'s');
   same(after.other, 'keep', 'and other settings');
-  same(after.demoKeys, [], 'and the demo\'s own state is gone (the reader writes its defaults again on the next start)');
+  same(after.demoKeys, ['libread-public-demo:v1:guide'], 'and the demo\'s own state is gone: only the guide has written its fresh start (the reader writes its defaults again on the next start)');
+  same(after.guide, { welcomed: true, open: false, note: false, look: false }, 'with nothing ticked');
   await page.goto(base + '/demo/');
   await page.locator('#grid .card', { hasText: 'Earth at Night' }).locator('.open-btn').click();
   await frame.locator('img').first().waitFor();
   same((await page.locator('#toggleNotes').innerText()).replace(/\D/g, ''), '0', 'the note is gone after the reset');
+
+  // the guide: each step does the real thing in the real reader and is ticked when the visitor really does it
+  const fresh = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const g = await fresh.newPage();
+  await g.goto(base + '/demo/');
+  await g.locator('dialog.demo-guide[open]').waitFor();
+  same(await g.locator('.demo-pill .demo-guide-open').innerText(), 'Rehber 0/3', 'nothing is ticked yet');
+  await g.locator('dialog.demo-guide button[data-step="open"]').click();
+  await g.locator('#epubView iframe').first().waitFor();
+  await g.waitForFunction(() => document.querySelector('.demo-pill .demo-guide-open')?.textContent === 'Rehber 1/3');
+  check(true, 'opening a book ticks step 1');
+  await g.locator('.demo-pill .demo-guide-open').click();
+  check((await g.locator('dialog.demo-guide li.done').count()) === 1, 'the dialog shows the ticked step');
+  await g.locator('dialog.demo-guide button[data-step="note"]').click();
+  await g.locator('#hlBar').waitFor({ state: 'visible' });
+  check((await g.locator('#hlQuote').innerText()).trim().length > 20, 'the guide selected a real sentence and the bar shows it');
+  check((await g.locator('.demo-toast').innerText()).length > 10, 'and says what to do next');
+  await g.locator('#hlAddNote').click();
+  await g.locator('#hlNote').fill('my first note');
+  await g.locator('#hlSaveNote').click();
+  await g.waitForFunction(() => document.querySelector('.demo-pill .demo-guide-open')?.textContent === 'Rehber 2/3');
+  check(true, 'keeping the sentence ticks step 2');
+  await g.locator('.demo-pill .demo-guide-open').click();
+  await g.locator('dialog.demo-guide button[data-step="look"]').click();
+  await g.waitForFunction(() => document.querySelector('#themeBtn')?.closest('details')?.open === true);
+  check(true, 'the guide opens the Appearance menu');
+  await g.locator('#readerTheme').selectOption('dark');
+  await g.waitForFunction(() => document.querySelector('.demo-pill .demo-guide-open')?.textContent === 'Rehber 3/3');
+  check(true, 'changing the look ticks step 3');
+  await g.locator('.demo-pill .demo-guide-open').click();
+  check((await g.locator('dialog.demo-guide li.done').count()) === 3, 'all three are ticked');
+  await g.keyboard.press('Escape');
+  await g.reload();
+  await g.locator('#epubView iframe').first().waitFor();
+  same(await g.locator('.demo-pill .demo-guide-open').innerText(), 'Rehber 3/3', 'the progress is kept');
+  same(await g.locator('dialog.demo-guide[open]').count(), 0, 'and the guide does not open again by itself');
+  await fresh.close();
 
   // a phone
   const phone = await browser.newContext({ viewport: { width: 390, height: 800 } });
