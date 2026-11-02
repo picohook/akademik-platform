@@ -399,6 +399,7 @@ const DICT = {
   'Sunucuya ulaşılamadı.': 'Could not reach the server.',
   'Künye güncellendi': 'Metadata updated',
   'Künye güncellenemedi': 'Could not update metadata',
+  'Bu kitap ortak katalogda; künyesi buradan değiştirilemez': 'This book is in the shared catalogue; its record cannot be changed here',
   'Not güncellendi': 'Note updated',
   'Not güncellenemedi': 'Could not update note',
   'Not metni': 'Note text',

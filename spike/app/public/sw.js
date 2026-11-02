@@ -39,7 +39,11 @@
 // would pair the old markup with the new script.
 // v41: reading a selection aloud stops with the selection (read-aloud.mjs, read-aloud-sources.mjs); larger covers in the list layout
 // (library-designs.css). A cached v40 shell would pair the old markup with the new script.
-const CACHE = 'akademik-shell-v41';
+// v42: list-layout covers fill their frame; an EPUB selection that ends on a paragraph break is read to its end only (library-designs.css,
+// read-aloud-sources.mjs). A cached v41 shell would pair the old markup with the new script.
+// v43: the edit form reports a record of the shared catalogue that cannot be changed (app.js, i18n.mjs). A cached v42 shell would pair the old
+// script with the new server answer.
+const CACHE = 'akademik-shell-v43';
 const SHELL = [
   '/',
   '/styles.css',

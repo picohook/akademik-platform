@@ -1636,6 +1636,12 @@ async function writeCover(id, cover) {
   });
 }
 
+// A record of the global catalogue is not written from here: the database refuses it (migration 022), which shows up as an
+// update that changed no row. Say so, instead of answering "saved" for a change that was not made.
+function requireWritten(result) {
+  if (result.rowCount === 0) throw Object.assign(new Error('shared catalogue record'), { code: 'shared_record' });
+}
+
 async function updateBook(id, body) {
   if (!pool) {
     const book = findBook(id);
@@ -1681,20 +1687,21 @@ async function updateBook(id, body) {
     // the process was started with rather than the one the caller signed in to.
     if (workSets.length) {
       workValues.push(id, requestTenant());
-      await client.query(
+      const written = await client.query(
         `update works set ${workSets.join(', ')}
           where id = $${workIndex} and tenant_id = $${workIndex + 1}`,
         workValues,
       );
+      requireWritten(written);
     }
 
     if (body.authors !== undefined) {
-      await client.query(
+      requireWritten(await client.query(
         `update works
             set metadata = jsonb_set(coalesce(metadata, '{}'::jsonb), '{authors}', $1::jsonb)
           where id = $2 and tenant_id = $3`,
         [JSON.stringify(parseAuthors(body.authors)), id, requestTenant()],
-      );
+      ));
     }
 
     const editionSets = [];
@@ -1712,11 +1719,11 @@ async function updateBook(id, body) {
     }
     if (editionSets.length) {
       editionValues.push(id, requestTenant());
-      await client.query(
+      requireWritten(await client.query(
         `update editions set ${editionSets.join(', ')}
           where work_id = $${editionIndex} and tenant_id = $${editionIndex + 1}`,
         editionValues,
-      );
+      ));
     }
 
     const assetSets = [];
@@ -3311,7 +3318,13 @@ async function handleRequest(req, res) {
         json(res, 403, { error: 'yetkiniz yok' });
         return;
       }
-      const book = await updateBook(id, await readJson(req));
+      let book;
+      try { book = await updateBook(id, await readJson(req)); }
+      catch (error) {
+        if (error?.code !== 'shared_record') throw error;
+        json(res, 409, { error: 'shared_record' });
+        return;
+      }
       if (!book) {
         json(res, 404, { error: 'book not found' });
         return;

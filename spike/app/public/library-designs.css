@@ -216,7 +216,8 @@ html[data-design="salon"] .lr-stage { border: 0; border-radius: 0; padding: 20px
 .lr-stage .cover.has-image > .title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .lr-stage .cover .cover-note { position: absolute; z-index: 1; left: 6px; bottom: 6px; max-width: calc(100% - 12px); padding: 2px 7px; border-radius: 3px; background: rgba(255, 255, 255, 0.94); color: #3a3a3a; font-size: 11px; line-height: 1.4; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2); }
 .lr-stage .cover.has-image::after { background: linear-gradient(90deg, rgba(0, 0, 0, 0.2) 0%, rgba(255, 255, 255, 0.2) 1.7%, rgba(0, 0, 0, 0.08) 3%, transparent 5%); }
-#continueReading .lr-stage .cover.has-image, .lr-workspace .grid.list .lr-stage .cover.has-image { height: auto; }
+#continueReading .lr-stage .cover.has-image { height: auto; }
+.lr-workspace .grid.list .lr-stage .cover.has-image { height: 100%; width: auto; }
 #continueReading .lr-stage .cover-note, .lr-workspace .grid.list .lr-stage .cover-note { display: none; }
 .lr-stage .cover .title { font-size: 15px; }
 .lr-stage .cover .initial { font-size: 58px; }
@@ -254,14 +255,14 @@ html[data-design="salon"] .lr-workspace .card-title { font-size: 17px; }
 /* the list layout */
 .lr-workspace .grid.list { grid-template-columns: 1fr; gap: 12px; }
 .lr-workspace .grid.list .card { flex-direction: row; gap: 20px; padding: 14px; border: 1px solid var(--d-line); border-radius: 6px; background: var(--d-surface); }
-.lr-workspace .grid.list .lr-stage { width: 132px; min-width: 132px; padding: 8px 10px 10px; aspect-ratio: auto; height: 178px; }
-.lr-workspace .grid.list .lr-stage .cover { padding: 9px; }
+.lr-workspace .grid.list .lr-stage { width: 96px; min-width: 96px; padding: 6px 8px 8px; aspect-ratio: auto; height: 130px; }
+.lr-workspace .grid.list .lr-stage .cover { padding: 6px; }
 .lr-workspace .grid.list .lr-stage .cover .kicker, .lr-workspace .grid.list .lr-stage .cover .author, .lr-workspace .grid.list .lr-stage .cover .initial { display: none; }
-.lr-workspace .grid.list .lr-stage .cover .title { font-size: 12px; }
+.lr-workspace .grid.list .lr-stage .cover .title { font-size: 9px; }
 .lr-workspace .grid.list .card-meta { padding-top: 2px; }
 .lr-workspace .grid.list .card-title { min-height: 0; -webkit-line-clamp: 2; }
 .lr-workspace .grid.list .library-star { top: 8px; right: 8px; }
-.lr-workspace .grid.list .library-progress { position: absolute; left: 166px; right: 14px; bottom: 8px; margin: 0; width: auto; }
+.lr-workspace .grid.list .library-progress { position: absolute; left: 130px; right: 14px; bottom: 8px; margin: 0; width: auto; }
 
 .lr-workspace .empty { margin: 0; padding: 50px 20px; border: 1px dashed var(--d-line); border-radius: 7px; background: var(--d-soft); color: var(--d-muted); }
 .lr-catalogue-end { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 38px 0 6px; }
@@ -350,11 +351,9 @@ html[data-design="salon"] .lr-workspace .card-title { font-size: 17px; }
   .lr-mini-side { padding: 12px 5px; } .lr-mini-side > b { font-size: 7px; margin-bottom: 14px; } .lr-mini-side > i { height: 4px; margin-bottom: 6px; }
   .lr-mini-body { padding: 15px 7px; } .lr-mini-body > i { height: 4px; margin-bottom: 12px; } .lr-mini-body b { height: 36px; } .lr-mini-body b:nth-child(2) { height: 41px; } .lr-mini-body b:nth-child(3) { height: 34px; }
   .lr-design-info { flex: 1; padding: 10px 7px; } .lr-design-option small { min-height: 0; margin-top: 6px; }
-  .lr-workspace .grid.list .lr-stage { width: 96px; min-width: 96px; height: 132px; padding: 6px 8px 8px; }
-  .lr-workspace .grid.list .lr-stage .cover { padding: 7px; }
-  .lr-workspace .grid.list .lr-stage .cover .title { font-size: 10px; }
+  .lr-workspace .grid.list .lr-stage { width: 72px; min-width: 72px; height: 100px; }
   .lr-workspace .grid.list .card { gap: 14px; padding: 12px; }
-  .lr-workspace .grid.list .library-progress { left: 122px; }
+  .lr-workspace .grid.list .library-progress { left: 98px; }
   .lr-workspace .site-footer { padding: 16px; }
 }
 @media (max-width: 380px) { .lr-workspace .grid { gap: 22px 10px; } .lr-stage { padding: 10px 10px 14px; } .lr-heading h1 { font-size: 30px; } }

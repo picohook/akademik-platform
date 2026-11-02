@@ -63,7 +63,7 @@ async function makeEpub() {
   zip.file('OEBPS/content.opf', '<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="id"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="id">ra-test</dc:identifier><dc:title>Read aloud EPUB</dc:title><dc:language>en</dc:language></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="c1" href="c1.xhtml" media-type="application/xhtml+xml"/><item id="c2" href="c2.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="c1"/><itemref idref="c2"/></spine></package>');
   zip.file('OEBPS/nav.xhtml', '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><body><nav epub:type="toc"><ol><li><a href="c1.xhtml">One</a></li><li><a href="c2.xhtml">Two</a></li></ol></nav></body></html>');
   zip.file('OEBPS/c1.xhtml', `<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en"><head><title>One</title></head><body><header><h1>Chapter One Heading</h1></header>${EPUB_CH1.map((s, i) => `<p>${s}</p>${i === 2 ? '<span epub:type="pagebreak" role="doc-pagebreak" id="pb12">12</span>' : ''}`).join('')}<script>window.hidden='NEVER READ THIS SCRIPT'</script></body></html>`);
-  zip.file('OEBPS/c2.xhtml', `<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en"><head><title>Two</title></head><body><h1>Chapter Two Heading</h1>${EPUB_CH2.map((s) => `<p>${s}</p>`).join('')}<p>A reference<a epub:type="noteref" href="#fn1">7</a> sits in a sentence.</p><aside epub:type="footnote" id="fn1"><p>The footnote text must not be read.</p></aside></body></html>`);
+  zip.file('OEBPS/c2.xhtml', `<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en"><head><title>Two</title></head><body><h1>Chapter Two Heading</h1>${EPUB_CH2.map((s) => `<p>\n    ${s}\n  </p>`).join('\n  ')}<p>A reference<a epub:type="noteref" href="#fn1">7</a> sits in a sentence.</p><aside epub:type="footnote" id="fn1"><p>The footnote text must not be read.</p></aside></body></html>`);
   return zip.generateAsync({ type: 'nodebuffer' });
 }
 
@@ -292,6 +292,7 @@ try {
   await page.locator('#raClose').click();
   same(await page.locator('#raPlayer').isHidden(), true, 'closing hides the player');
   await page.evaluate(() => { window.__spoken.length = 0; window.__speechMs = 4000; });
+  await page.waitForFunction(() => [...document.querySelectorAll('#textLayer span')].some((s) => s.textContent.includes('second sentence')));
   await page.evaluate(() => {
     const spans = [...document.querySelectorAll('#textLayer span')].filter((s) => s.textContent.includes('second sentence'));
     const range = document.createRange();
@@ -396,6 +397,15 @@ try {
   await ep.locator('#raPlay').click();
   await waitText(ep, 'footnote text', 20000);
   check((await spoken(ep)).some((s) => s.includes('The footnote text must not be read.')), 'with the switch off the footnote is read');
+  // a selection in the EPUB is read to its end and then the voice stops, as in a PDF (the reading above ended in chapter two)
+  await ep.locator('#raClose').click();
+  await ep.evaluate(() => { window.__spoken.length = 0; });
+  await ep.locator('#epubView iframe').first().contentFrame().locator('p', { hasText: 'Chapter two starts here' }).click({ clickCount: 3, delay: 80 });
+  await ep.locator('#hlBar').waitFor({ state: 'visible' });
+  await ep.locator('#hlListen').click();
+  await waitSpoken(ep, 1);
+  await ep.waitForTimeout(2000);
+  same(await spoken(ep), [EPUB_CH2[0]], 'an EPUB selection is read to its end and the voice then stops');
   same(epub.errors, [], 'no page errors on the EPUB path');
   await ectx.close();
 
