@@ -43,7 +43,8 @@
 // read-aloud-sources.mjs). A cached v41 shell would pair the old markup with the new script.
 // v43: the edit form reports a record of the shared catalogue that cannot be changed (app.js, i18n.mjs). A cached v42 shell would pair the old
 // script with the new server answer.
-const CACHE = 'akademik-shell-v43';
+// v44: the first subject decides a book's group (subject-groups.mjs). A cached v43 shell would keep the old grouping.
+const CACHE = 'akademik-shell-v44';
 const SHELL = [
   '/',
   '/styles.css',
