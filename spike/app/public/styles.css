@@ -931,3 +931,13 @@ body.ra-open .ai-panel { bottom: 108px; }
   #hlBar .hl-composer textarea { font-size: 16px; }
 }
 @media (max-width: 360px) { #hlBar .hl-row .copy-btn, #hlBar .hl-row .icon-btn { padding: 4px 5px; gap: 3px; font-size: 11.5px; } }
+
+/* Form controls in the reader follow the reader theme: a white control with light night-mode ink is unreadable. */
+.reader[data-theme="dark"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea):not(#hlBar *) { background: var(--paper); color: var(--ink); border-color: var(--line); }
+.reader[data-theme="dark"] input::placeholder { color: var(--muted); opacity: 1; }
+.reader[data-theme="dark"] select option { background: var(--paper); color: var(--ink); }
+.reader[data-theme="sepia"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea):not(#hlBar *) { background: var(--paper); color: var(--ink); }
+.ra-field select { color: var(--ink); }
+#hlBar .hl-grip { height: 12px; cursor: grab; touch-action: none; border-radius: 8px 8px 0 0; background: radial-gradient(circle, var(--line) 1.1px, transparent 1.4px) center / 7px 6px repeat-x; }
+#hlBar.dragging .hl-grip { cursor: grabbing; }
+#hlBar.dragging { user-select: none; }

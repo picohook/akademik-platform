@@ -212,6 +212,13 @@ try {
   const afterResume = await spoken(page);
   same(afterResume[afterResume.length - 1], afterResume[pausedAt - 1], 'resume repeats the sentence that was interrupted');
 
+  // night mode: the speed list and the in-book search read as light ink on a dark field, not white boxes
+  await page.evaluate(() => { document.getElementById('reader').dataset.theme = 'dark'; });
+  const night = await page.evaluate(() => ['#raRate', '#bookSearch'].map((sel) => { const c = getComputedStyle(document.querySelector(sel)); return { sel, fg: c.color, bg: c.backgroundColor }; }));
+  const lum = (css) => { const [r, g, b] = css.match(/[0-9.]+/g).slice(0, 3).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  check(night.every(({ fg, bg }) => (Math.max(lum(fg), lum(bg)) + 0.05) / (Math.min(lum(fg), lum(bg)) + 0.05) >= 4.5), 'night mode controls are readable: ' + JSON.stringify(night));
+  await page.evaluate(() => { delete document.getElementById('reader').dataset.theme; });
+
   // speed change restarts the sentence at the new rate
   await page.selectOption('#raRate', '2');
   await page.waitForFunction(() => window.__spoken.at(-1).rate === 2);

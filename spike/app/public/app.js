@@ -546,29 +546,22 @@ function makeCard(book, variants = [book]) {
 
   const meta = document.createElement('div');
   meta.className = 'card-meta';
-  const cardTitle = document.createElement('p');
-  cardTitle.className = 'card-title';
-  cardTitle.textContent = book.subtitle || book.title;
-  meta.appendChild(cardTitle);
-
-  const sub = document.createElement('p');
-  sub.className = 'card-sub';
-  sub.textContent = `${book.language ? book.language.toUpperCase() : '—'} · ${book.publication_year || '—'}`;
-  meta.appendChild(sub);
-
-  const badges = document.createElement('div');
-  badges.className = 'badges';
-  const formatBadge = document.createElement('span');
-  formatBadge.className = 'badge format-badge';
-  formatBadge.textContent = String(book.format || 'pdf').toUpperCase();
-  badges.appendChild(formatBadge);
-  (book.subjects || []).slice(0, 2).forEach((subject) => {
-    const badge = document.createElement('span');
-    badge.className = 'badge';
-    badge.textContent = subject;
-    badges.appendChild(badge);
-  });
-  meta.appendChild(badges);
+  const art = coverFor(book);
+  const addLine = (className, text, lang) => {
+    if (!text) return null;
+    const line = document.createElement('p');
+    line.className = className;
+    if (lang) line.lang = lang;
+    line.textContent = text;
+    meta.appendChild(line);
+    return line;
+  };
+  // subject, title, author, then publisher / year / language: the catalogue card carries the cataloguing facts and nothing else
+  addLine('card-subject', (book.subjects && book.subjects[0]) || '');
+  // a typographic cover already prints the title, so the line below it carries the subtitle; a real cover image does not
+  addLine('card-title', art ? book.title : (book.subtitle || book.title));
+  addLine('card-author', authorNames(book).join('; '));
+  addLine('card-sub', [book.publisher, book.publication_year, book.language ? book.language.toUpperCase() : ''].filter(Boolean).join(' · '));
 
   if (variants.length > 1) {
     meta.appendChild(makeVariantPicker(variants, book, async (selected) => {
@@ -579,6 +572,9 @@ function makeCard(book, variants = [book]) {
     }));
   }
 
+  const actions = document.createElement('div');
+  actions.className = 'card-actions';
+  meta.appendChild(actions);
   const open = document.createElement('button');
   open.type = 'button';
   open.className = 'open-btn';
@@ -588,7 +584,11 @@ function makeCard(book, variants = [book]) {
     event.stopPropagation();
     openCardBook(book).catch((error) => console.error(error));
   });
-  meta.appendChild(open);
+  actions.appendChild(open);
+  const formatTag = document.createElement('span');
+  formatTag.className = 'format-tag';
+  formatTag.textContent = String(book.format || 'pdf').toUpperCase();
+  actions.appendChild(formatTag);
 
   if (book.allow_download !== false) {
     const offline = document.createElement('button');
@@ -609,7 +609,7 @@ function makeCard(book, variants = [book]) {
         toast(`${t('Çevrimdışı kaydedilemedi')}: ${detail}`);
       });
     });
-    meta.appendChild(offline);
+    actions.appendChild(offline);
   }
 
   if (canEditBook(book)) {
@@ -621,10 +621,9 @@ function makeCard(book, variants = [book]) {
       event.stopPropagation();
       openEdit(book);
     });
-    meta.appendChild(edit);
+    actions.appendChild(edit);
   }
 
-  const art = coverFor(book);
   if (art) {
     // a real cover: shown whole (never cropped), in its own proportions; the typographic text stays for search and screen readers
     cover.classList.add('has-image');
@@ -4494,6 +4493,7 @@ function showSelectionQuote() {
 function updateSelectionBar(rect) {
   const quote = $('hlQuote');
   hlExpandQuote.hidden = quote.classList.contains('expanded') ? false : quote.scrollHeight <= quote.clientHeight + 1;
+  selectionDrag = null; // a new selection puts the bar back beside its words
   selectionAnchor = {
     left: rect.left, width: rect.width || 0, top: rect.top,
     bottom: Number.isFinite(rect.bottom) ? rect.bottom : rect.top + (rect.height || 20),
@@ -4504,6 +4504,8 @@ function updateSelectionBar(rect) {
 // The bar goes above the selected passage, or below it when there is no room above, and never over it: the
 // reader is looking at those words. It is placed again whenever it changes size (the note editor opening).
 let selectionAnchor = null;
+// Where the reader dragged the bar to ({left, top}), kept until the next selection.
+let selectionDrag = null;
 function placeSelectionBar() {
   if (!selectionAnchor || hlBar.hidden) return;
   const margin = 12;
@@ -4512,6 +4514,11 @@ function placeSelectionBar() {
   const box = hlBar.getBoundingClientRect();
   const barWidth = box.width || 320;
   const barHeight = box.height || 48;
+  if (selectionDrag) {
+    hlBar.style.left = `${Math.max(margin, Math.min(selectionDrag.left, window.innerWidth - barWidth - margin))}px`;
+    hlBar.style.top = `${Math.max(margin, Math.min(selectionDrag.top, window.innerHeight - margin - Math.min(barHeight, window.innerHeight - 2 * margin)))}px`;
+    return;
+  }
   const roomAbove = selectionAnchor.top - margin - gap;
   const roomBelow = window.innerHeight - selectionAnchor.bottom - margin - gap;
   let top;
@@ -4529,6 +4536,31 @@ function placeSelectionBar() {
   const left = Math.max(margin, Math.min(selectionAnchor.left + selectionAnchor.width / 2 - barWidth / 2, window.innerWidth - barWidth - margin));
   hlBar.style.left = `${left}px`;
   hlBar.style.top = `${top}px`;
+}
+
+{
+  const grip = $('hlGrip');
+  let from = null;
+  grip.addEventListener('pointerdown', (event) => {
+    if (event.button > 0) return;
+    const box = hlBar.getBoundingClientRect();
+    from = { id: event.pointerId, x: event.clientX - box.left, y: event.clientY - box.top };
+    grip.setPointerCapture(event.pointerId);
+    hlBar.classList.add('dragging');
+    event.preventDefault();
+  });
+  grip.addEventListener('pointermove', (event) => {
+    if (!from || event.pointerId !== from.id) return;
+    selectionDrag = { left: event.clientX - from.x, top: event.clientY - from.y };
+    placeSelectionBar();
+  });
+  const drop = (event) => {
+    if (!from || event.pointerId !== from.id) return;
+    from = null;
+    hlBar.classList.remove('dragging');
+  };
+  grip.addEventListener('pointerup', drop);
+  grip.addEventListener('pointercancel', drop);
 }
 
 function selectedOcrSpans(selection, container = textLayerEl) {
