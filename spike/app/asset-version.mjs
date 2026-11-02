@@ -24,7 +24,7 @@ export function assetVersionToken(sha, version) {
 const SHELL_ASSETS = [
   'app\\.js', 'styles\\.css', 'i18n\\.mjs', 'citations\\.mjs', 'pdf-structure\\.mjs',
   'search\\.mjs', 'epub-engine\\.mjs', 'offline\\.mjs', 'downloads\\.mjs', 'ocr-layer\\.mjs',
-  'book-variants\\.mjs', 'book-links\\.mjs', 'library\\.css', 'library\\.mjs', 'library-model\\.mjs',
+  'book-variants\\.mjs', 'book-links\\.mjs', 'library\\.css', 'library\\.mjs', 'library-model\\.mjs', 'library-designs\\.css', 'library-designs\\.mjs', 'library-covers\\.mjs','design-init\\.js',
 ];
 const VERSION_PATTERN = new RegExp(`/(?:${SHELL_ASSETS.join('|')})\\?v=[^"'\\s>]*`, 'g');
 

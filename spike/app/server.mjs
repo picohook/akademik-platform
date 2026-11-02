@@ -106,6 +106,7 @@ const MIME = {
   '.epub': 'application/epub+zip',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.webp': 'image/webp',
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
   '.ttf': 'font/ttf',
@@ -2158,7 +2159,7 @@ async function serveStatic(req, res, pathname) {
   // escape an allowed prefix into uploads/ or ocr/.
   const relative = '/' + path.relative(PUBLIC_DIR, filePath).split(path.sep).join('/');
   const allowedFiles = new Set([
-    '/book-variants.mjs', '/book-links.mjs', '/library.mjs', '/library-model.mjs', '/library.css',
+    '/book-variants.mjs', '/book-links.mjs', '/library.mjs', '/library-model.mjs', '/library.css', '/library-designs.mjs', '/library-covers.mjs','/library-designs.css', '/design-init.js',
     '/index.html', '/app.js', '/styles.css', '/i18n.mjs', '/citations.mjs', '/pdf-structure.mjs',
     '/search.mjs', '/epub-engine.mjs', '/offline.mjs', '/downloads.mjs', '/ocr-layer.mjs', '/read-aloud.mjs', '/read-aloud-sources.mjs', '/sw.js', '/manifest.webmanifest',
     // Browsers request /favicon.ico on their own when a page declares no icon,
@@ -2166,7 +2167,7 @@ async function serveStatic(req, res, pathname) {
     // the root that is not a module, so it is listed explicitly.
     '/favicon.ico',
   ]);
-  const allowedPrefixes = ['/icons/', '/vendor/'];
+  const allowedPrefixes = ['/icons/', '/vendor/', '/covers/'];
   if (relative.includes('..') || (!allowedFiles.has(relative) && !allowedPrefixes.some((prefix) => relative.startsWith(prefix)))) {
     json(res, 404, { error: 'not found' });
     return;

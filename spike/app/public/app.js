@@ -1,4 +1,6 @@
 import { createLibrary } from '/library.mjs';
+import { createDesigns } from '/library-designs.mjs';
+import { coverFor } from '/library-covers.mjs';
 import { normalizeBookVariant, bookRequestId, offlineBookKey, groupBookVariants, variantLabel, locationMatchesBook, bookFromLocation, findOfflineVariant } from '/book-variants.mjs';
 import { renderPdfLinks, destinationPage } from '/book-links.mjs';
 import * as pdfjsLib from '/vendor/pdfjs/pdf.mjs';
@@ -497,6 +499,8 @@ async function loadOfflineProgress(book) {
 }
 
 const library = createLibrary({ state, renderBooks, makeCard, t, toast, libraryText });
+// The three designs and the sidebar around the catalogue. Cosmetic only: it holds no catalogue state.
+const designs = createDesigns({ library, openShortcuts: () => showShortcuts(), isOffline: () => state.offlineLibrary });
 
 function makeCard(book, variants = [book]) {
   const card = document.createElement('div');
@@ -611,7 +615,31 @@ function makeCard(book, variants = [book]) {
     meta.appendChild(edit);
   }
 
-  card.appendChild(cover);
+  const art = coverFor(book);
+  if (art) {
+    // a real cover: shown whole (never cropped), in its own proportions; the typographic text stays for search and screen readers
+    cover.classList.add('has-image');
+    cover.style.aspectRatio = String(art.ratio);
+    const img = document.createElement('img');
+    img.className = 'cover-img';
+    img.src = art.src;
+    img.alt = '';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    cover.prepend(img);
+    if (art.note) {
+      const note = document.createElement('span');
+      note.className = 'cover-note';
+      note.lang = getLang() === 'en' ? 'en' : 'tr';
+      note.textContent = art.note[getLang() === 'en' ? 1 : 0];
+      cover.appendChild(note);
+    }
+  }
+  // the stage is the shelf behind the book; library-designs.css gives it the page edge and spine
+  const stage = document.createElement('div');
+  stage.className = 'lr-stage';
+  stage.appendChild(cover);
+  card.appendChild(stage);
   card.appendChild(meta);
   library.decorateCard(card, book);
   return card;
@@ -629,6 +657,7 @@ function renderBooks() {
   empty.hidden = groups.length !== 0;
   translateDom(grid);
   translateDom(count);
+  designs.sync();
 }
 
 function authorsToText(authors) {
@@ -1854,6 +1883,9 @@ function setAppInert(inert) {
   if (skip) skip.inert = inert;
   const footer = document.getElementById('siteFooter');
   if (footer) footer.inert = inert;
+  // the sidebar: inert behind a modal, and also while it is a closed drawer on a phone
+  const side = document.getElementById('lrSidebar');
+  if (side) side.inert = inert || (window.matchMedia('(max-width: 760px)').matches && !side.classList.contains('open'));
 }
 
 function setUser(user) {
@@ -1863,6 +1895,7 @@ function setUser(user) {
   state.authEpoch = (state.authEpoch || 0) + 1;
   state.user = user;
   library.setUser(user);
+  designs.setUser(user);
   syncShortcutControls();
   try {
     if (user?.id) localStorage.setItem('offlineAnnotationUser', user.id);
@@ -5207,6 +5240,7 @@ window.addEventListener('storage', event => {
   // Another tab changed accounts. Do not clear the new account's shared key.
   state.user = null;
   library.setUser(null);
+  designs.setUser(null);
   clearMessageHistory();
   state.annotations = [];
   userChip.textContent = ''; userChip.hidden = true; logoutBtn.hidden = true; passwordBtn.hidden = true;
