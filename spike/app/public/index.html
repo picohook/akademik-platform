@@ -415,8 +415,20 @@
       </div>
       <div class="reader-actions">
         <details class="reader-menu"><summary id="themeBtn">Görünüm</summary><div class="reader-menu-panel">
-          <label>Tema<select id="readerTheme"><option value="light">Standart</option><option value="sepia">Kâğıt</option><option value="dark">Gece</option><option value="system">Sistemi izle</option></select></label>
-          <label>Çevre zemini<select id="readerWorkspace"><option value="auto">Temaya uygun</option><option value="gray">Açık gri</option><option value="cream">Sıcak krem</option><option value="slate">Koyu gri</option></select></label>
+          <div class="swatch-field">
+            <span id="themeSwatchLabel">Tema</span>
+            <div class="swatches" id="themeSwatches" role="radiogroup" aria-labelledby="themeSwatchLabel">
+              <button type="button" role="radio" aria-checked="false" data-theme-choice="light"><i class="sw sw-theme-light" aria-hidden="true"></i><span>Standart</span></button><button type="button" role="radio" aria-checked="false" data-theme-choice="sepia"><i class="sw sw-theme-sepia" aria-hidden="true"></i><span>Kâğıt</span></button><button type="button" role="radio" aria-checked="false" data-theme-choice="dark"><i class="sw sw-theme-dark" aria-hidden="true"></i><span>Gece</span></button><button type="button" role="radio" aria-checked="false" data-theme-choice="system"><i class="sw sw-theme-system" aria-hidden="true"></i><span>Sistem</span></button>
+            </div>
+            <select id="readerTheme" hidden aria-hidden="true" tabindex="-1"><option value="light">Standart</option><option value="sepia">Kâğıt</option><option value="dark">Gece</option><option value="system">Sistemi izle</option></select>
+          </div>
+          <div class="swatch-field">
+            <span id="workspaceSwatchLabel">Çevre zemini</span>
+            <div class="swatches" id="workspaceSwatches" role="radiogroup" aria-labelledby="workspaceSwatchLabel">
+              <button type="button" role="radio" aria-checked="false" data-workspace-choice="auto"><i class="sw sw-workspace-auto" aria-hidden="true"></i><span>Temaya uygun</span></button><button type="button" role="radio" aria-checked="false" data-workspace-choice="gray"><i class="sw sw-workspace-gray" aria-hidden="true"></i><span>Açık gri</span></button><button type="button" role="radio" aria-checked="false" data-workspace-choice="cream"><i class="sw sw-workspace-cream" aria-hidden="true"></i><span>Sıcak krem</span></button><button type="button" role="radio" aria-checked="false" data-workspace-choice="slate"><i class="sw sw-workspace-slate" aria-hidden="true"></i><span>Koyu gri</span></button>
+            </div>
+            <select id="readerWorkspace" hidden aria-hidden="true" tabindex="-1"><option value="auto">Temaya uygun</option><option value="gray">Açık gri</option><option value="cream">Sıcak krem</option><option value="slate">Koyu gri</option></select>
+          </div>
           <label><input type="checkbox" id="readerFocus"> Odak modu</label>
           <fieldset class="epub-type" id="epubType">
             <legend>Metin</legend>

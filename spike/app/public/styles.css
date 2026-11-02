@@ -941,3 +941,30 @@ body.ra-open .ai-panel { bottom: 108px; }
 #hlBar .hl-grip { height: 12px; cursor: grab; touch-action: none; border-radius: 8px 8px 0 0; background: radial-gradient(circle, var(--line) 1.1px, transparent 1.4px) center / 7px 6px repeat-x; }
 #hlBar.dragging .hl-grip { cursor: grabbing; }
 #hlBar.dragging { user-select: none; }
+
+/* Theme and surround: small swatches instead of two drop-downs */
+.reader-menu-panel .swatch-field { display: grid; gap: 6px; }
+.reader-menu-panel .swatch-field > span { font-size: 12px; color: var(--muted); }
+.swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.swatches [role="radio"] { all: unset; box-sizing: border-box; display: grid; justify-items: center; gap: 4px; padding: 5px 2px 4px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-size: 10.5px; line-height: 1.2; text-align: center; color: var(--ink); background: var(--paper); }
+.swatches [role="radio"][aria-checked="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.swatches [role="radio"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.swatches .sw { width: 100%; height: 26px; border-radius: 5px; border: 1px solid rgba(0, 0, 0, .18); background: var(--sw-bg); position: relative; overflow: hidden; }
+.swatches .sw::after { content: ""; position: absolute; left: 22%; right: 22%; top: 40%; height: 3px; border-radius: 2px; background: var(--sw-ink, #333); box-shadow: 0 6px 0 var(--sw-ink, #333); opacity: .7; }
+.sw-theme-light { --sw-bg: #ffffff; --sw-ink: #333; }
+.sw-theme-sepia { --sw-bg: #f4ecd8; --sw-ink: #5b4636; }
+.sw-theme-dark { --sw-bg: #1b1a17; --sw-ink: #d8d2c4; }
+.sw-theme-system { --sw-bg: linear-gradient(115deg, #ffffff 50%, #1b1a17 50%); --sw-ink: #888; }
+.sw-workspace-auto { --sw-bg: repeating-linear-gradient(45deg, #f0ece1 0 5px, #e4dfd2 5px 10px); }
+.sw-workspace-gray { --sw-bg: #e8ebef; }
+.sw-workspace-cream { --sw-bg: #eee3cd; }
+.sw-workspace-slate { --sw-bg: #272c34; }
+.sw-workspace-auto::after, .sw-workspace-gray::after, .sw-workspace-cream::after, .sw-workspace-slate::after { display: none; }
+
+/* Contents: a heading with sub-headings can be folded */
+.toc-row { position: relative; }
+.toc-row[hidden] { display: none; }
+.toc-fold { all: unset; position: absolute; top: 50%; transform: translateY(-50%); width: 18px; height: 22px; display: grid; place-items: center; cursor: pointer; font-size: 11px; color: var(--muted); border-radius: 4px; }
+.toc-fold:hover { background: rgba(0, 0, 0, .07); }
+.toc-fold:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.toc-item.active ~ .toc-fold { color: #fff; }
