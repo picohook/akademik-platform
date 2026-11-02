@@ -1,6 +1,7 @@
 import { createLibraryApi } from './library-api.mjs';
 import { sortBooks } from './public/library-model.mjs';
 import { createStorage, serveStoredAsset } from './storage.mjs';
+import { updateGlobalWork, writeGlobalCover } from './catalog-edit.mjs';
 import { APP_CSP } from './security-headers.mjs';
 import { assetVersionToken, versionShellAssets } from './asset-version.mjs';
 import { normalizeBookVariant } from './public/book-variants.mjs';
@@ -1634,6 +1635,39 @@ async function writeCover(id, cover) {
         [id, requestTenant()]);
     return result.rowCount > 0;
   });
+}
+
+// The global catalogue is LibEdge's. A staff session (contract 3.2: the staff context is given only to verified staff) whose role is
+// admin may edit it, through the catalog pool; nobody else can, and the database enforces that for the app role.
+let staffTenantId = null;
+async function isStaffTenant(tenantId) {
+  if (!pool || !tenantId) return false;
+  if (!staffTenantId) {
+    const { rows } = await pool.query("select tenant_id as id from app.libedge_tenant_by_ref('staff', 'libedge')");
+    staffTenantId = rows[0]?.id || null;
+  }
+  return staffTenantId !== null && String(staffTenantId) === String(tenantId);
+}
+
+async function canEditGlobalCatalogue(auth) {
+  return auth?.role === 'admin' && await isStaffTenant(auth.tenantId);
+}
+
+async function workIsGlobal(id) {
+  if (!pool) return false;
+  return withTenant(async (client) => (await client.query('select 1 from works where id = $1 and tenant_id is null', [id])).rowCount > 0);
+}
+
+async function auditCatalogEdit(auth, workId, action, detail) {
+  try {
+    await withTenant((client) => client.query(
+      `insert into audit_events (tenant_id, actor_id, action, object_type, object_id, payload)
+       values ($1, $2, $3, 'work', $4, $5::jsonb)`,
+      [requestTenant(), auth?.userId || null, action, workId, JSON.stringify(detail)],
+    ));
+  } catch (error) {
+    console.warn('catalogue edit audit failed', error.message);
+  }
 }
 
 // A record of the global catalogue is not written from here: the database refuses it (migration 022), which shows up as an
@@ -3281,9 +3315,12 @@ async function handleRequest(req, res) {
       }
       if (!book) { json(res, 404, { error: 'book not found' }); return; }
       if (!canEditBook(auth, book)) { json(res, 403, { error: 'yetkiniz yok' }); return; }
+      const viaCatalog = await workIsGlobal(book.id);
+      if (viaCatalog && !await canEditGlobalCatalogue(auth)) { json(res, 409, { error: 'shared_record' }); return; }
+      if (viaCatalog && !catalogPool) { json(res, 503, { error: 'catalog_unavailable' }); return; }
       const previous = await readCover(book.id);
       if (req.method === 'DELETE') {
-        if (!await writeCover(book.id, null)) { json(res, 409, { error: 'cover not changed' }); return; }
+        if (!await (viaCatalog ? writeGlobalCover({ catalogPool, id: book.id, cover: null }) : writeCover(book.id, null))) { json(res, 409, { error: 'cover not changed' }); return; }
         if (previous?.key) await assetStorage.remove(previous.key).catch(() => console.warn('[cover] old file needs cleanup'));
         json(res, 200, { ok: true });
         return;
@@ -3298,7 +3335,7 @@ async function handleRequest(req, res) {
       }
       const stored = await assetStorage.put(`book-covers/${book.id}-${randomBytes(6).toString('hex')}.webp`, bytes, 'image/webp');
       const cover = { key: stored, version: Date.now(), ratio: Number((size.width / size.height).toFixed(5)) };
-      if (!await writeCover(book.id, cover)) {
+      if (!await (viaCatalog ? writeGlobalCover({ catalogPool, id: book.id, cover }) : writeCover(book.id, cover))) {
         await assetStorage.remove(stored).catch(() => {});
         json(res, 409, { error: 'cover not changed' });
         return;
@@ -3316,6 +3353,16 @@ async function handleRequest(req, res) {
       }
       if (!canEditBook(auth, existing)) {
         json(res, 403, { error: 'yetkiniz yok' });
+        return;
+      }
+      if (await workIsGlobal(existing.id)) {
+        if (!await canEditGlobalCatalogue(auth)) { json(res, 409, { error: 'shared_record' }); return; }
+        if (!catalogPool) { json(res, 503, { error: 'catalog_unavailable' }); return; }
+        const result = await updateGlobalWork({ catalogPool, id: existing.id, body: await readJson(req), parseAuthors });
+        if (result.status === 'not_found') { json(res, 404, { error: 'book not found' }); return; }
+        if (result.status === 'not_global') { json(res, 409, { error: 'shared_record' }); return; }
+        if (result.status === 'updated') await auditCatalogEdit(auth, existing.id, 'catalog.work.update', { fields: result.fields });
+        json(res, 200, await getBook(existing.id));
         return;
       }
       let book;

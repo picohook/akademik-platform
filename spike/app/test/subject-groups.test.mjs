@@ -25,6 +25,10 @@ test('a book with no matching subject is "other"; the first matching group wins'
   assert.equal(group('Demo', 'Platform testing'), 'other');
   assert.equal(subjectGroup({}), 'other');
   assert.equal(group('Statistics for machine learning'), 'ai');
+  // the first subject decides, a later one only when the earlier ones match nothing
+  assert.equal(group('Research methods', 'Open science'), 'research');
+  assert.equal(group('Open science', 'Research methods'), 'openscience');
+  assert.equal(group('Demo', 'Research methods'), 'research');
 });
 
 test('labels follow the interface language and upper-case correctly in it', () => {

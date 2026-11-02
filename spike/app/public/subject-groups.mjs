@@ -22,9 +22,15 @@ function fold(text) {
     .replace(/ı/g, 'i').replace(/ş/g, 's').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ö/g, 'o').replace(/ç/g, 'c').replace(/â/g, 'a').replace(/î/g, 'i').replace(/û/g, 'u').replace(/\u0307/g, '');
 }
 
+// The first subject decides: the one an editor puts first is the main subject. A later subject is looked at only when the ones
+// before it match no group.
 export function subjectGroup(book) {
-  const text = fold((book && book.subjects || []).join(' ; '));
-  return (GROUPS.find((group) => group.test.test(text)) || OTHER).key;
+  for (const subject of (book && book.subjects) || []) {
+    const text = fold(subject);
+    const hit = GROUPS.find((group) => group.test.test(text));
+    if (hit) return hit.key;
+  }
+  return OTHER.key;
 }
 
 export function subjectGroupLabel(key, lang) {
