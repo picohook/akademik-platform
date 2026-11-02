@@ -25,7 +25,10 @@
 // v35: the selection bar is a panel now (index.html, styles.css, app.js: the passage under the actions, the note
 // field a text area) and buildSelection clips a range that runs past the text layer; a cached v34 shell would
 // pair the old markup with the new script.
-const CACHE = 'akademik-shell-v35';
+// v36: the library has a sidebar, three designs, grid/list and book covers (index.html, library-designs.css/.mjs,
+// library-covers.mjs, app.js); the edit form has a cover field. A cached v35 shell would pair the old markup with
+// the new script.
+const CACHE = 'akademik-shell-v36';
 const SHELL = [
   '/',
   '/styles.css',
