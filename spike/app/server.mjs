@@ -12,6 +12,7 @@ import path from 'node:path';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { mkdir, open, readFile, readdir, rename, stat, unlink } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { pipeline } from 'node:stream/promises';
 import { createHash, createHmac, randomBytes, randomUUID, scrypt, scryptSync, timingSafeEqual } from 'node:crypto';
 import Busboy from 'busboy';
 import JSZip from 'jszip';
@@ -1426,7 +1427,7 @@ async function opdsFeed(auth, req) {
 async function listBooks(auth) {
   if (!pool) {
     const grants = await activeGrants(auth);
-    return demoBooks.filter((book) => grantAllows(book, grants)).map(normalizeBookVariant);
+    return demoBooks.filter((book) => grantAllows(book, grants)).map((book) => normalizeBookVariant(exposeCover(book)));
   }
   const books = await withTenant(async (client) => {
     const { rows } = await client.query(
@@ -1447,11 +1448,11 @@ async function listBooks(auth) {
     return rows;
   });
   const grants = await activeGrants(auth);
-  return books.filter((book) => grantAllows(book, grants)).map(normalizeBookVariant);
+  return books.filter((book) => grantAllows(book, grants)).map((book) => normalizeBookVariant(exposeCover(book)));
 }
 
 async function getBook(id, dbClient = null) {
-  if (!pool) { const book = findBook(id); return book ? normalizeBookVariant(book) : null; }
+  if (!pool) { const book = findBook(id); return book ? normalizeBookVariant(exposeCover(book)) : null; }
   const load = async (client) => {
     const { rows } = await client.query(
       `select w.id, w.title, w.subtitle, w.language, w.abstract, w.subjects, w.metadata, w.created_at,
@@ -1469,7 +1470,7 @@ async function getBook(id, dbClient = null) {
         limit 1`,
       [id, requestTenant()],
     );
-    return rows[0] ? normalizeBookVariant(rows[0]) : null;
+    return rows[0] ? normalizeBookVariant(exposeCover(rows[0])) : null;
   };
   return dbClient ? load(dbClient) : withTenant(load);
 }
@@ -1564,6 +1565,76 @@ const downloadMaintenanceService = {
     return { ticketsDeleted, limitsDeleted };
   },
 };
+
+// ---- book covers ----
+// A cover is one small WebP (the editor's browser shrinks it before sending), stored next to the books under
+// book-covers/ and recorded in works.metadata.cover = { key, version, ratio }. The storage key never leaves the
+// server: clients see { version, ratio } and fetch the picture from GET /api/books/:id/cover, which applies the
+// same access check as the book itself.
+const COVER_MAX_BYTES = 400 * 1024;
+const COVER_MAX_SIDE = 1200;
+
+function webpSize(buffer) {
+  if (buffer.length < 30 || buffer.toString('latin1', 0, 4) !== 'RIFF' || buffer.toString('latin1', 8, 12) !== 'WEBP') return null;
+  const kind = buffer.toString('latin1', 12, 16);
+  let width; let height;
+  if (kind === 'VP8 ') { width = buffer.readUInt16LE(26) & 0x3fff; height = buffer.readUInt16LE(28) & 0x3fff; }
+  else if (kind === 'VP8L' && buffer[20] === 0x2f) { const bits = buffer.readUInt32LE(21); width = (bits & 0x3fff) + 1; height = ((bits >> 14) & 0x3fff) + 1; }
+  else if (kind === 'VP8X') { width = 1 + (buffer[24] | (buffer[25] << 8) | (buffer[26] << 16)); height = 1 + (buffer[27] | (buffer[28] << 8) | (buffer[29] << 16)); }
+  else return null;
+  return width > 0 && height > 0 ? { width, height } : null;
+}
+
+async function readBytes(req, limit) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > limit) throw new Error('payload too large');
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
+// The row as the browser may see it: no storage key.
+function exposeCover(row) {
+  const cover = row?.metadata?.cover;
+  if (!cover) return row;
+  const { key, ...visible } = cover; // eslint-disable-line no-unused-vars
+  return { ...row, metadata: { ...row.metadata, cover: visible } };
+}
+
+async function readCover(id) {
+  if (!pool) return findBook(id)?.metadata?.cover || null;
+  return withTenant(async (client) => {
+    const { rows } = await client.query(
+      "select metadata->'cover' as cover from works where id = $1 and (tenant_id is null or tenant_id = $2)",
+      [id, requestTenant()],
+    );
+    return rows[0]?.cover || null;
+  });
+}
+
+// cover = null removes it. Returns false when no row of this tenant was changed.
+async function writeCover(id, cover) {
+  if (!pool) {
+    const book = findBook(id);
+    if (!book) return false;
+    book.metadata = { ...(book.metadata || {}) };
+    if (cover) book.metadata.cover = cover; else delete book.metadata.cover;
+    return true;
+  }
+  return withTenant(async (client) => {
+    const result = cover
+      ? await client.query(
+        "update works set metadata = jsonb_set(coalesce(metadata, '{}'::jsonb), '{cover}', $1::jsonb) where id = $2 and tenant_id = $3",
+        [JSON.stringify(cover), id, requestTenant()])
+      : await client.query(
+        "update works set metadata = coalesce(metadata, '{}'::jsonb) - 'cover' where id = $1 and tenant_id = $2",
+        [id, requestTenant()]);
+    return result.rowCount > 0;
+  });
+}
 
 async function updateBook(id, body) {
   if (!pool) {
@@ -1769,7 +1840,7 @@ async function searchBooks(query, auth) {
     return rows;
   });
   const grants = await activeGrants(auth);
-  return books.filter((book) => grantAllows(book, grants)).map(normalizeBookVariant);
+  return books.filter((book) => grantAllows(book, grants)).map((book) => normalizeBookVariant(exposeCover(book)));
 }
 
 async function listAnnotations(assetId, userId) {
@@ -3179,6 +3250,54 @@ async function handleRequest(req, res) {
     }
     if (pathname === '/api/books' && req.method === 'GET') {
       json(res, 200, sortBooks(await listBooks(auth), url.searchParams.get('sort')));
+      return;
+    }
+    // Covers. Must stay above the generic /api/books/:id PATCH and DELETE routes below.
+    const coverMatch = /^\/api\/books\/([^/]+)\/cover$/.exec(pathname);
+    if (coverMatch && ['GET', 'PUT', 'DELETE'].includes(req.method)) {
+      const book = await getBook(decodeURIComponent(coverMatch[1]));
+      if (req.method === 'GET') {
+        const cover = book && await canAccessBook(book, auth) ? await readCover(book.id) : null;
+        if (!cover?.key) { json(res, 404, { error: 'cover not found' }); return; }
+        let opened;
+        try { opened = await assetStorage.open(cover.key); }
+        catch { json(res, 404, { error: 'cover not found' }); return; }
+        res.writeHead(200, {
+          'content-type': 'image/webp',
+          'content-length': opened.length,
+          'x-content-type-options': 'nosniff',
+          // the page asks for ?v=<version>, so a new cover is a new URL
+          'cache-control': 'private, max-age=86400',
+        });
+        try { await pipeline(opened.body, res); } catch { res.destroy(); }
+        return;
+      }
+      if (!book) { json(res, 404, { error: 'book not found' }); return; }
+      if (!canEditBook(auth, book)) { json(res, 403, { error: 'yetkiniz yok' }); return; }
+      const previous = await readCover(book.id);
+      if (req.method === 'DELETE') {
+        if (!await writeCover(book.id, null)) { json(res, 409, { error: 'cover not changed' }); return; }
+        if (previous?.key) await assetStorage.remove(previous.key).catch(() => console.warn('[cover] old file needs cleanup'));
+        json(res, 200, { ok: true });
+        return;
+      }
+      let bytes;
+      try { bytes = await readBytes(req, COVER_MAX_BYTES); }
+      catch { json(res, 413, { error: 'cover too large' }); return; }
+      const size = webpSize(bytes);
+      if (!size || size.width > COVER_MAX_SIDE || size.height > COVER_MAX_SIDE) {
+        json(res, 415, { error: 'cover must be a WebP image of at most 1200 px' });
+        return;
+      }
+      const stored = await assetStorage.put(`book-covers/${book.id}-${randomBytes(6).toString('hex')}.webp`, bytes, 'image/webp');
+      const cover = { key: stored, version: Date.now(), ratio: Number((size.width / size.height).toFixed(5)) };
+      if (!await writeCover(book.id, cover)) {
+        await assetStorage.remove(stored).catch(() => {});
+        json(res, 409, { error: 'cover not changed' });
+        return;
+      }
+      if (previous?.key) await assetStorage.remove(previous.key).catch(() => console.warn('[cover] old file needs cleanup'));
+      json(res, 200, { version: cover.version, ratio: cover.ratio });
       return;
     }
     if (pathname.startsWith('/api/books/') && req.method === 'PATCH') {

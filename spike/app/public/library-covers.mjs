@@ -1,7 +1,11 @@
-// Local cover images for the LibEdge Open Academic Collection (from the design package, see docs/library-designs.md).
-// There is no cover column in the catalogue yet, so a cover is found by the work's title; ids are never used.
-// Every file is served from /covers/ (nothing is fetched from another site). A book without an entry keeps the
-// typographic cover. `note` is shown on the cover when it is not the book's own front cover.
+// Cover pictures for the catalogue.
+//
+// 1. A cover an editor uploaded (works.metadata.cover = { version, ratio }) is fetched from the book's own cover
+//    endpoint, which applies the same access check as the book.
+// 2. Otherwise the local covers of the LibEdge Open Academic Collection (from the design package, see
+//    covers/SOURCES.md) are found by title; ids are never used. Everything is served from this site.
+// A book with neither keeps the typographic cover. `note` is shown on the cover when it is not the book's own
+// front cover.
 
 const COVERS = [
   { match: /go-gn research methods/i, file: 'real-book-01.webp', ratio: 0.70789 },
@@ -18,6 +22,11 @@ const COVERS = [
 ];
 
 export function coverFor(book) {
+  const uploaded = book?.metadata?.cover;
+  if (uploaded?.version && book.id) {
+    const ratio = Number(uploaded.ratio);
+    return { src: `/api/books/${encodeURIComponent(book.id)}/cover?v=${encodeURIComponent(uploaded.version)}`, ratio: ratio > 0.2 && ratio < 5 ? ratio : 0.706, note: null };
+  }
   const title = String(book?.title || '').trim();
   const hit = COVERS.find((entry) => entry.match.test(title));
   return hit ? { src: `/covers/${hit.file}`, ratio: hit.ratio, note: hit.note || null } : null;

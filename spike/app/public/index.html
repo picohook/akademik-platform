@@ -167,6 +167,9 @@
         </div>
         <label>Yayıncı<input id="editPublisher" maxlength="200" /></label>
         <label>Konular (; ile ayırın)<input id="editSubjects" placeholder="Diş Hekimliği;Implantoloji" /></label>
+        <label>Kapak görseli (JPG, PNG veya WebP)<input id="editCover" type="file" accept="image/jpeg,image/png,image/webp" /></label>
+        <p class="hint" id="editCoverHint">Seçilen görsel tarayıcınızda küçültülür (en çok 480 piksel genişlik).</p>
+        <label class="check-label" id="editCoverRemoveRow" hidden><input id="editCoverRemove" type="checkbox" /> Kapağı kaldır</label>
         <div class="modal-actions">
           <button class="ghost-btn danger" id="deleteBook" type="button" hidden>Sil</button>
           <span class="spacer"></span>
