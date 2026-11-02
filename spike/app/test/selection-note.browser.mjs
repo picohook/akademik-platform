@@ -110,6 +110,18 @@ try {
     return { bar: box('#hlBar'), row: box('#hlBar .hl-row'), quote: box('#hlQuote'), note: box('#hlNote'), save: box('#hlSave'), width: window.innerWidth, height: window.innerHeight };
   });
   const quoteOf = (page) => page.locator('#hlQuote').innerText();
+  // The bar must never cover the words it was opened for: its box and the selected words' box must not overlap.
+  // `frame` is the EPUB frame the selection lives in (its box is offset by the frame's place on the page).
+  const coversSelection = (page, frame) => page.evaluate(({ inFrame }) => {
+    const host = inFrame ? document.querySelector('#epubView iframe') : null;
+    const win = host ? host.contentWindow : window;
+    const range = win.getSelection().getRangeAt(0).getBoundingClientRect();
+    const off = host ? host.getBoundingClientRect() : { left: 0, top: 0 };
+    const sel = { l: range.left + off.left, r: range.right + off.left, t: range.top + off.top, b: range.bottom + off.top };
+    const bar = document.querySelector('#hlBar').getBoundingClientRect();
+    const overlap = bar.left < sel.r && bar.right > sel.l && bar.top < sel.b && bar.bottom > sel.t;
+    return { overlap, sel, bar: { l: bar.left, r: bar.right, t: bar.top, b: bar.bottom } };
+  }, { inFrame: Boolean(frame) });
   // the notes panel is open by default on a PDF and closed on an EPUB: open it only if it is shut
   const notesText = async (page, needle) => {
     if (await page.locator('#notesPanel').isHidden()) await page.locator('#toggleNotes').click();
@@ -128,7 +140,11 @@ try {
     const selected = norm(await page.evaluate(() => window.getSelection().toString()));
     check(selected.includes('short passage'), 'a real triple click selected the line: ' + selected);
     same(norm(await quoteOf(page)), selected, 'the bar shows exactly what was selected');
+    const cover = await coversSelection(page, false);
+    same(cover.overlap, false, 'the bar does not cover the selected words: ' + JSON.stringify(cover));
     same(await page.locator('#hlComposer').isHidden(), true, 'the note editor starts shut');
+    const compact = await page.locator('#hlBar').boundingBox();
+    check(compact.width <= 440 && compact.height < 135, `the bar is compact when it opens: ${compact.width} x ${compact.height}`);
     same(await page.locator('#hlColors').isHidden(), true, 'the colour palette starts shut');
     check((await page.locator('#hlPageLabel').innerText()).trim().length > 0, 'the real page is named with the passage');
     await page.locator('#hlColorToggle').click();
@@ -229,6 +245,8 @@ try {
     const inFrame = norm(await frame.locator('body').evaluate(() => window.getSelection().toString()));
     same(norm(await quoteOf(page)), inFrame, 'the bar shows exactly what was selected in the book: ' + inFrame);
     check(inFrame.includes('short passage'), 'it is the passage that was clicked');
+    const epubCover = await coversSelection(page, true);
+    same(epubCover.overlap, false, 'the bar does not cover the selected words in the book either: ' + JSON.stringify(epubCover));
     check((await page.locator('#hlPageLabel').innerText()).trim().length > 0, 'the chapter is named with the passage');
     await page.locator('#hlAddNote').click();
     const g = await geometry(page);
