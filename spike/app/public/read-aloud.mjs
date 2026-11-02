@@ -197,6 +197,8 @@ export function createReadAloud({
   let retried = false;
   let sleepTimer = null;
   let stopAfterCurrent = false;
+  // Reading a selection ends with it: the index of the sentence that holds the end of the selection, or -1 for no limit.
+  let lastIndex = -1;
   // Word following. Engines that report word boundaries drive it exactly; for the rest the words are
   // paced from how long a character takes this voice at this speed, learned from the sentences already read.
   let wordTimers = [];
@@ -311,6 +313,7 @@ export function createReadAloud({
     if (token !== generation) return;
     deactivate();
     if (stopAfterCurrent) { stopAfterCurrent = false; halt({ status: 'idle', sleepAt: 0 }); return; }
+    if (lastIndex >= 0 && index >= lastIndex) { lastIndex = -1; halt({ status: 'idle', finished: true, index: 0 }); return; }
     if (index + 1 < segment.units.length) {
       index += 1;
       speakCurrent(token);
@@ -336,6 +339,7 @@ export function createReadAloud({
     if (!first?.units?.length) { halt({ status: 'idle', error: 'no_text' }); return false; }
     segment = first;
     index = Number.isInteger(first.startIndex) && first.startIndex >= 0 && first.startIndex < first.units.length ? first.startIndex : 0;
+    lastIndex = origin?.type === 'selection' && Number.isInteger(first.endIndex) && first.endIndex >= index ? first.endIndex : -1;
     failures = 0;
     retried = false;
     set({ label: segment.label || '', count: segment.units.length });
@@ -373,6 +377,7 @@ export function createReadAloud({
   async function jump(delta) {
     if (!segment || state.status === 'idle') return;
     const resumeAfter = state.status === 'playing' || state.status === 'loading';
+    lastIndex = -1;
     generation += 1;
     const token = generation;
     silence();

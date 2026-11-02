@@ -37,7 +37,9 @@
 // (index.html, app.js, styles.css, library-designs.css). A cached v38 shell would pair the old markup with the new script.
 // v40: catalogue subjects are broad groups with translated labels (subject-groups.mjs, app.js, library-designs.css). A cached v39 shell
 // would pair the old markup with the new script.
-const CACHE = 'akademik-shell-v40';
+// v41: reading a selection aloud stops with the selection (read-aloud.mjs, read-aloud-sources.mjs); larger covers in the list layout
+// (library-designs.css). A cached v40 shell would pair the old markup with the new script.
+const CACHE = 'akademik-shell-v41';
 const SHELL = [
   '/',
   '/styles.css',

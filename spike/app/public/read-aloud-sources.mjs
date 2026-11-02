@@ -228,7 +228,11 @@ export function createPdfSource({ lang, getPage, getNumPages, getLayers, showPag
       return unit;
     });
     const offset = selectedText ? findSelectionOffset(text, selectedText) : -1;
-    return { label: `p. ${page}`, page, units, startIndex: offset >= 0 ? sentenceIndexAt(sentences, offset) : 0 };
+    const startIndex = offset >= 0 ? sentenceIndexAt(sentences, offset) : 0;
+    // the sentence holding the last character of the selection (a selection can run past the page: then the page is read to its end)
+    const endOffset = offset >= 0 ? offset + String(selectedText).trim().length - 1 : -1;
+    const endIndex = offset < 0 ? -1 : (sentences.some((sentence) => sentence.end > endOffset) ? sentenceIndexAt(sentences, endOffset) : units.length - 1);
+    return { label: `p. ${page}`, page, units, startIndex, endIndex };
   }
 
   async function from(page, selectedText) {
@@ -379,6 +383,7 @@ export function createEpubSource({ getEngine, lang, guard = (fn) => fn(), skipCh
     });
 
     let startIndex = 0;
+    let endIndex = -1;
     try {
       let probe = null;
       if (origin?.type === 'selection') {
@@ -391,9 +396,18 @@ export function createEpubSource({ getEngine, lang, guard = (fn) => fn(), skipCh
       }
       const hit = probe && nodes.find((n) => n.node === probe.node);
       if (hit) startIndex = sentenceIndexAt(sentences, hit.start + probe.offset);
-    } catch { startIndex = 0; }
+      if (hit && origin?.type === 'selection') {
+        const range = contents.window.getSelection().getRangeAt(0);
+        const inside = nodes.filter((n) => range.intersectsNode(n.node));
+        const last = inside[inside.length - 1];
+        if (last) {
+          const end = last.start + (last.node === range.endContainer ? range.endOffset : last.end - last.start);
+          endIndex = sentences.some((sentence) => sentence.end >= end) ? sentenceIndexAt(sentences, Math.max(0, end - 1)) : units.length - 1;
+        }
+      }
+    } catch { startIndex = 0; endIndex = -1; }
 
-    return { label: section?.href || '', sectionIndex: contents.sectionIndex, units, startIndex };
+    return { label: section?.href || '', sectionIndex: contents.sectionIndex, units, startIndex, endIndex };
   }
 
   return {

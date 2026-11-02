@@ -95,8 +95,8 @@ function fakeSpeech() {
 
 function fakeSource(segments, { lang = 'en' } = {}) {
   const log = [];
-  const makeSegment = (texts, label, startIndex) => ({
-    label, startIndex,
+  const makeSegment = (texts, label, startIndex, endIndex) => ({
+    label, startIndex, endIndex,
     units: texts.map((text, i) => ({
       text,
       activate() { log.push(`on:${label}:${i}`); },
@@ -108,7 +108,7 @@ function fakeSource(segments, { lang = 'en' } = {}) {
   return {
     log,
     lang: () => lang,
-    async start(origin) { cursor = 0; log.push(`start:${origin.type}`); return makeSegment(segments[0], 'S0', origin.startIndex); },
+    async start(origin) { cursor = 0; log.push(`start:${origin.type}`); return makeSegment(segments[0], 'S0', origin.startIndex, origin.endIndex); },
     async next() { cursor += 1; log.push(`next:${cursor}`); return segments[cursor] ? makeSegment(segments[cursor], `S${cursor}`) : null; },
     dispose() { log.push('dispose'); },
   };
@@ -177,6 +177,28 @@ test('start can begin in the middle of a segment (reading from a selection)', as
   await player.start({ type: 'selection', text: 'B', startIndex: 1 });
   await settle();
   assert.equal(speech.spoken[0].text, 'B.');
+});
+
+test('reading a selection stops after the sentence that holds its end, and does not go on to the next page', async () => {
+  const speech = fakeSpeech();
+  const source = fakeSource([['A.', 'B.', 'C.', 'D.'], ['E.']]);
+  const player = createReadAloud({ speech, source });
+  await player.start({ type: 'selection', text: 'B C', startIndex: 1, endIndex: 2 });
+  await settle();
+  for (let i = 0; i < 4; i += 1) { speech.finish(); await settle(); }
+  assert.deepEqual(speech.spoken.map((s) => s.text), ['B.', 'C.']);
+  assert.equal(player.state().status, 'idle');
+  assert.equal(source.log.some((line) => line.startsWith('next:')), false, 'the next page is not asked for');
+});
+
+test('reading the view, with no selection, still runs on to the following page', async () => {
+  const speech = fakeSpeech();
+  const source = fakeSource([['A.'], ['B.']]);
+  const player = createReadAloud({ speech, source });
+  await player.start({ type: 'view' });
+  await settle();
+  for (let i = 0; i < 4; i += 1) { speech.finish(); await settle(); }
+  assert.deepEqual(speech.spoken.map((s) => s.text), ['A.', 'B.']);
 });
 
 test('pause cancels speech and resume repeats the SAME sentence, not the next', async () => {
