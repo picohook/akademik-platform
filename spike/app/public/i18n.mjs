@@ -2,6 +2,7 @@
 // Static DOM is translated on load; dynamic renderers call translateDom()/t().
 
 const DICT = {
+  "Ayarlar kaydedildi; güncel yönetim verisi alınamadı. Paneli yeniden açın.": "Settings saved, but current admin data could not be refreshed. Reopen the panel.",
   "Katalog sıralaması": "Catalogue order",
   "Katalog dili": "Catalogue language",
   "Katalog yayıncısı": "Catalogue publisher",
