@@ -401,7 +401,9 @@ export function createEpubSource({ getEngine, lang, guard = (fn) => fn(), skipCh
         const inside = nodes.filter((n) => range.intersectsNode(n.node));
         const last = inside[inside.length - 1];
         if (last) {
-          const end = last.start + (last.node === range.endContainer ? range.endOffset : last.end - last.start);
+          let end = last.start + (last.node === range.endContainer ? range.endOffset : last.end - last.start);
+          // a selection that runs to the end of a paragraph also takes the indentation and line break after the sentence; those belong to no sentence
+          while (end > 0 && /\s/.test(text[end - 1])) end -= 1;
           endIndex = sentences.some((sentence) => sentence.end >= end) ? sentenceIndexAt(sentences, Math.max(0, end - 1)) : units.length - 1;
         }
       }
