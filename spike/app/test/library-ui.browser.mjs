@@ -95,7 +95,7 @@ try {
   await page.fill('#libraryYearTo','2023'); await waitTitles(['İstanbul Tarihi']);
   await page.selectOption('#libraryLanguage',''); await page.selectOption('#libraryPublisher','');
   await page.fill('#libraryYearFrom',''); await page.fill('#libraryYearTo','');
-  await page.getByRole('button',{name:'History',exact:true}).click(); await waitTitles(['Zaman Studies']);
+  await page.getByRole('button',{name:'Beşeri bilimler',exact:true}).click(); await waitTitles(['Zaman Studies']);
   await page.getByRole('button',{name:'Tümü',exact:true}).click();
   await page.setViewportSize({width:390,height:844});
   await page.locator('#libraryFilters summary').click();
