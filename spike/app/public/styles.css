@@ -891,3 +891,43 @@ body.ra-open .reader:not(.epub-mode) .page-area { padding-bottom: 72px; }
 .ra-hint:empty { display: none; }
 body.ra-open .ai-panel { bottom: 108px; }
 @media (max-width: 560px) { .ra-player { left: 8px; right: 8px; width: auto; } body.ra-open .ai-panel { bottom: 150px; } }
+
+/* The selection bar, compact: one quiet row of text buttons with small icons, the passage under it, the palette
+   and the note editor only on request. This block is last on purpose; it replaces the earlier looks of the bar. */
+#hlBar { width: min(430px, calc(100vw - 24px)); padding: 0; gap: 0; border-radius: 8px; box-shadow: 0 7px 28px rgba(20, 39, 28, .16); font-size: 12px; }
+#hlBar .hl-row { gap: 1px; padding: 4px 6px; border-bottom: 1px solid var(--line); flex-wrap: wrap; position: sticky; top: 0; z-index: 1; background: var(--paper); border-radius: 8px 8px 0 0; }
+#hlBar .hl-row .copy-btn, #hlBar .hl-row .icon-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px; width: auto; height: auto;
+  min-height: 32px; padding: 4px 8px; border: 0; border-radius: 4px; background: transparent; color: var(--ink); font: inherit; font-size: 12px;
+}
+#hlBar .hl-row .copy-btn:hover, #hlBar .hl-row .icon-btn:hover, #hlBar .hl-row #hlAddNote[aria-expanded="true"] { background: var(--bg); }
+#hlBar .hl-row .copy-btn:focus-visible, #hlBar .hl-row .icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+#hlBar .hl-icon { width: 14px; height: 14px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+#hlBar #hlCancel { margin-left: auto; min-width: 30px; padding: 4px; color: var(--muted); }
+#hlBar .hl-split { display: inline-flex; align-items: center; margin: 0 2px; padding: 0 2px; border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+#hlBar .hl-split .hl-main, #hlBar .hl-split .hl-caret { border-radius: 4px; }
+#hlBar .hl-split .hl-main { padding-right: 4px; }
+#hlBar .hl-split .hl-caret { min-width: 22px; padding: 4px 3px; font-size: 10px; }
+#hlBar .hl-dot { width: 11px; height: 11px; }
+#hlBar .hl-colors { gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+#hlBar .hl-color { width: 24px; height: 24px; }
+#hlBar .hl-quote-wrap { padding: 10px 12px 10px; }
+#hlBar .hl-meta { margin-bottom: 6px; font-size: 10px; letter-spacing: .06em; }
+#hlBar .hl-quote {
+  margin: 0; padding: 0 0 0 9px; border: 0; border-left: 2px solid var(--line); border-radius: 0; background: none;
+  font-size: 12.5px; line-height: 1.6; font-style: normal; color: var(--ink);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-height: none;
+}
+#hlBar .hl-quote.expanded { display: block; max-height: 120px; overflow-y: auto; }
+#hlBar .hl-expand { padding: 6px 0 0 11px; font-size: 11.5px; text-decoration: none; }
+#hlBar .hl-composer { gap: 7px; border-top: 1px solid var(--line); padding: 10px 12px 12px; }
+#hlBar .hl-composer label { font-size: 11.5px; font-weight: 600; color: var(--ink); }
+#hlBar .hl-composer textarea { min-height: 74px; max-height: 140px; border-radius: 4px; padding: 8px 10px; font-size: 12.5px; line-height: 1.55; }
+#hlBar .hl-composer-actions { margin-top: 2px; }
+#hlBar .hl-composer-actions .copy-btn, #hlBar .hl-composer-actions .primary { min-height: 32px; padding: 5px 12px; border-radius: 4px; border: 0; font-size: 12px; }
+#hlBar .hl-composer-actions .copy-btn { background: transparent; color: var(--muted); }
+@media (max-width: 820px) {
+  #hlBar .hl-row .copy-btn, #hlBar .hl-row .icon-btn { min-height: 38px; padding: 4px 7px; }
+  #hlBar .hl-composer textarea { font-size: 16px; }
+}
+@media (max-width: 360px) { #hlBar .hl-row .copy-btn, #hlBar .hl-row .icon-btn { padding: 4px 5px; gap: 3px; font-size: 11.5px; } }

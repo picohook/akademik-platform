@@ -1342,14 +1342,14 @@ function updateCopyControls() {
   const blocked = state.book?.allow_copy === false;
   for (const button of [hlCopy, hlCopyCite]) {
     button.disabled = blocked;
-    button.title = blocked ? t('Bu kitapta kopyalama kapalı') : button.textContent;
+    button.title = blocked ? t('Bu kitapta kopyalama kapalı') : t(button.dataset.hint || button.textContent.trim());
   }
   // The AI buttons exist only when the server says the feature is on, and follow the
   // same copy policy: a passage the reader may not copy is not sent anywhere either.
   for (const button of [hlExplain, hlSummarize]) {
     button.hidden = !state.aiSelection;
     button.disabled = blocked || state.aiBusy;
-    button.title = blocked ? t('Bu kitapta kopyalama kapalı') : button.textContent;
+    button.title = blocked ? t('Bu kitapta kopyalama kapalı') : t(button.dataset.hint || button.textContent.trim());
   }
 }
 
@@ -4438,6 +4438,7 @@ function handleEpubSelection({ cfiRange, text, contents }) {
       rect = {
         left: frameRect.left + localRect.left,
         top: frameRect.top + localRect.top,
+        bottom: frameRect.top + localRect.bottom,
         width: localRect.width,
       };
     }
@@ -4460,18 +4461,21 @@ function selectionKey() {
 function setNoteComposer(open, { focus = false } = {}) {
   hlComposer.hidden = !open;
   hlAddNote.setAttribute('aria-expanded', String(open));
+  placeSelectionBar();
   if (open && focus) hlNote.focus();
 }
 
 function setPalette(open) {
   hlColors.hidden = !open;
   hlColorToggle.setAttribute('aria-expanded', String(open));
+  placeSelectionBar();
 }
 
 function setQuoteExpanded(expanded) {
   $('hlQuote').classList.toggle('expanded', expanded);
   hlExpandQuote.setAttribute('aria-expanded', String(expanded));
   hlExpandQuote.textContent = t(expanded ? 'Daha az göster' : 'Tamamını göster');
+  placeSelectionBar();
 }
 
 // A new selection starts with the palette and the note editor shut; a passage that has a draft opens the editor again.
@@ -4490,11 +4494,39 @@ function showSelectionQuote() {
 function updateSelectionBar(rect) {
   const quote = $('hlQuote');
   hlExpandQuote.hidden = quote.classList.contains('expanded') ? false : quote.scrollHeight <= quote.clientHeight + 1;
-  const barWidth =hlBar.getBoundingClientRect().width || 320;
-  const barHeight = hlBar.getBoundingClientRect().height || 48;
-  const left = Math.max(12, Math.min(rect.left + rect.width / 2 - barWidth / 2, window.innerWidth - barWidth - 12));
-  const preferredTop = rect.top - barHeight - 8;
-  const top = Math.max(12, Math.min(preferredTop < 12 ? rect.top + 24 : preferredTop, window.innerHeight - barHeight - 12));
+  selectionAnchor = {
+    left: rect.left, width: rect.width || 0, top: rect.top,
+    bottom: Number.isFinite(rect.bottom) ? rect.bottom : rect.top + (rect.height || 20),
+  };
+  placeSelectionBar();
+}
+
+// The bar goes above the selected passage, or below it when there is no room above, and never over it: the
+// reader is looking at those words. It is placed again whenever it changes size (the note editor opening).
+let selectionAnchor = null;
+function placeSelectionBar() {
+  if (!selectionAnchor || hlBar.hidden) return;
+  const margin = 12;
+  const gap = 8;
+  hlBar.style.maxHeight = '';
+  const box = hlBar.getBoundingClientRect();
+  const barWidth = box.width || 320;
+  const barHeight = box.height || 48;
+  const roomAbove = selectionAnchor.top - margin - gap;
+  const roomBelow = window.innerHeight - selectionAnchor.bottom - margin - gap;
+  let top;
+  if (barHeight <= roomAbove) top = selectionAnchor.top - gap - barHeight;
+  else if (barHeight <= roomBelow) top = selectionAnchor.bottom + gap;
+  else {
+    // neither side holds all of it: take the larger one and let the bar scroll inside it
+    const above = roomAbove > roomBelow;
+    const room = Math.max(120, above ? roomAbove : roomBelow);
+    hlBar.style.maxHeight = `${room}px`;
+    const height = Math.min(barHeight, room);
+    top = above ? selectionAnchor.top - gap - height : selectionAnchor.bottom + gap;
+  }
+  top = Math.max(margin, Math.min(top, window.innerHeight - margin - Math.min(barHeight, window.innerHeight - 2 * margin)));
+  const left = Math.max(margin, Math.min(selectionAnchor.left + selectionAnchor.width / 2 - barWidth / 2, window.innerWidth - barWidth - margin));
   hlBar.style.left = `${left}px`;
   hlBar.style.top = `${top}px`;
 }
@@ -4593,7 +4625,7 @@ function onSelection(pane = {}) {
   showSelectionQuote();
   hlBar.hidden = false;
   updateCopyControls();
-  updateSelectionBar(built.last);
+  updateSelectionBar(built.range?.getBoundingClientRect?.() || built.last);
 }
 
 function primaryPaneRef() {
@@ -5382,11 +5414,7 @@ function cancelSelection() {
 $('hlCancel').addEventListener('click', cancelSelection);
 hlAddNote.addEventListener('click', () => setNoteComposer(hlComposer.hidden, { focus: true }));
 hlColorToggle.addEventListener('click', () => setPalette(hlColors.hidden));
-hlExpandQuote.addEventListener('click', () => {
-  setQuoteExpanded(!$('hlQuote').classList.contains('expanded'));
-  const box = hlBar.getBoundingClientRect();
-  if (box.bottom > window.innerHeight - 12) hlBar.style.top = `${Math.max(12, window.innerHeight - box.height - 12)}px`;
-});
+hlExpandQuote.addEventListener('click', () => setQuoteExpanded(!$('hlQuote').classList.contains('expanded')));
 // Vazgeç folds the editor away; what was typed stays with the passage for this session.
 $('hlDiscardNote').addEventListener('click', () => { setNoteComposer(false); hlAddNote.focus(); });
 hlComposer.addEventListener('submit', (event) => { event.preventDefault(); saveHighlight(); });

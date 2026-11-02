@@ -304,6 +304,7 @@ const DICT = {
   'Vurgu rengi': 'Highlight color',
   'Not (opsiyonel)': 'Note (optional)',
   'Not': 'Note',
+  'Atıfla': 'Cite',
   'Kütüphaneye dön': 'Back to the library',
   'Kütüphane': 'Library',
   'Diğer': 'More',
