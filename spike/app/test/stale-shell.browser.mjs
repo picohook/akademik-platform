@@ -41,7 +41,7 @@ server.stdout.on('data', (chunk) => { serverLog += chunk; });
 server.stderr.on('data', (chunk) => { serverLog += chunk; });
 
 // What an older release's HTML looked like: its own token, and none of the read-aloud markup
-const stale = (html) => html.replaceAll(`?v=${NEW}`, `?v=${OLD}`).replace(/\s*<div class="ra-player"[\s\S]*?<aside class="ai-panel"/, '\n  <aside class="ai-panel"');
+const stale = (html) => html.replaceAll(`?v=${NEW}`, `?v=${OLD}`).replace(/\s*<div class="ra-player"[\s\S]*?id="raClose"[^>]*>✕<\/button>\s*<\/div>\s*<\/div>/, '');
 
 let browser;
 try {
