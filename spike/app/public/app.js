@@ -41,8 +41,6 @@ let raSelfNavUntil = 0;
 let raWakeLock = null;
 let raLastPage = 0;
 let raStatusKey = '';
-let raQuietTimer = null;
-let raLastActivity = 0;
 let raPrevStatus = 'idle';
 import {
   listOfflineBooks,
@@ -1557,23 +1555,6 @@ function raMedia(status) {
   } catch { /* optional */ }
 }
 
-// While it reads, the controls fade after a few quiet seconds so they do not cover the page; the
-// pointer, a touch or a key brings them back, and they never fade while a keyboard user is on them.
-function raActivity(force = false) {
-  if (!raPlayer) return;
-  const now = Date.now();
-  if (!force && now - raLastActivity < 250) return;
-  raLastActivity = now;
-  raPlayer.classList.remove('ra-quiet');
-  clearTimeout(raQuietTimer);
-  raQuietTimer = null;
-  if (raPlayer.hidden || readAloud?.state().status !== 'playing') return;
-  raQuietTimer = setTimeout(() => {
-    if (raPlayer.querySelector(':focus-visible')) { raActivity(true); return; }
-    raPlayer.classList.add('ra-quiet');
-  }, 4000);
-}
-
 function raRender(s) {
   const active = s.status === 'playing' || s.status === 'loading';
   raPlay.textContent = active ? '⏸' : '▶';
@@ -1592,8 +1573,7 @@ function raRender(s) {
   raBtn.setAttribute('aria-pressed', String(!raPlayer.hidden));
   raWake(s.status === 'playing');
   raMedia(s.status);
-  // only a change between playing / paused / idle counts: the controller also reports every new sentence
-  if (s.status !== raPrevStatus) { raPrevStatus = s.status; raActivity(true); }
+  raPrevStatus = s.status;
 }
 
 function raEnsure() {
@@ -1626,8 +1606,6 @@ async function raStart(origin = { type: 'view' }) {
 function raReset() {
   if (!raPlayer) return;
   raPrevStatus = 'idle';
-  clearTimeout(raQuietTimer);
-  raQuietTimer = null;
   if (readAloud) {
     readAloud.dispose();
     readAloud = null;
@@ -1664,7 +1642,6 @@ if (raMarkup) {
   $('raSkip').addEventListener('change', () => raSavePrefs({ skipChrome: $('raSkip').checked }));
   raSleep.addEventListener('change', () => readAloud?.setSleep(Number(raSleep.value)));
 }
-for (const type of ['pointermove', 'pointerdown', 'touchstart', 'keydown']) document.addEventListener(type, () => raActivity(), { passive: true });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && readAloud?.state().status === 'playing') raWake(true); });
 window.addEventListener('pagehide', () => raSpeech.cancel());
 if ('mediaSession' in navigator) {

@@ -302,23 +302,21 @@ try {
   same((await spoken(page))[0], PDF_PAGES[0][1], 'reading starts at the selected sentence, not at the top of the page');
   same(await page.locator('#hlBar').isHidden(), true, 'the selection bar closes');
 
-  // the controls fade while it reads so they never cover the page, and come back on any movement
-  await page.locator('#raPlayer').hover();
-  await page.mouse.move(600, 400);
-  await page.waitForTimeout(100);
-  same(await page.locator('#raPlayer').evaluate((el) => el.classList.contains('ra-quiet')), false, 'controls are visible right after movement');
-  await page.locator('#raPlay').blur();
-  await page.waitForFunction(() => document.querySelector('#raPlayer').classList.contains('ra-quiet'), null, { timeout: 8000 });
-  await page.waitForFunction(() => getComputedStyle(document.querySelector('#raPlayer')).opacity === '0');
-  same(await page.locator('#raPlayer').evaluate((el) => getComputedStyle(el).opacity), '0', 'after a quiet spell the controls are transparent');
-  same(await page.locator('#raPlayer').evaluate((el) => getComputedStyle(el).pointerEvents), 'none', 'and do not block clicks on the page beneath');
-  await shoot(page, 'pdf-reading-quiet');
-  await page.mouse.move(620, 420);
-  await page.waitForFunction(() => !document.querySelector('#raPlayer').classList.contains('ra-quiet'));
-  await page.waitForFunction(() => getComputedStyle(document.querySelector('#raPlayer')).opacity === '1');
-  same(await page.locator('#raPlayer').evaluate((el) => getComputedStyle(el).opacity), '1', 'moving the pointer brings them back');
+  // the player is a thin strip on the bottom edge of the reading area, just above the page controls; the page
+  // area leaves room for it, and it stays visible while it reads
+  const dock = await page.evaluate(() => {
+    const p = document.querySelector('#raPlayer').getBoundingClientRect();
+    const a = document.querySelector('#pageArea').getBoundingClientRect();
+    const f = document.querySelector('#readerFooter').getBoundingClientRect();
+    return { playerTop: p.top, playerBottom: p.bottom, areaBottom: a.bottom, footerTop: f.top, height: p.height, opacity: getComputedStyle(document.querySelector('#raPlayer')).opacity, position: getComputedStyle(document.querySelector('#raPlayer')).position, pad: getComputedStyle(document.querySelector('#pageArea')).paddingBottom };
+  });
+  check(Math.abs(dock.playerBottom - dock.areaBottom) <= 1 && dock.playerBottom <= dock.footerTop + 1, 'the player sits on the bottom edge of the reading area, above the page controls: ' + JSON.stringify(dock));
+  check(dock.height < 100 && dock.opacity === '1' && dock.position === 'absolute' && parseFloat(dock.pad) >= dock.height, 'a thin strip that stays visible, with room left for the last lines');
+  await shoot(page, 'pdf-reading-docked');
 
-  // turning the page yourself pauses the reading (it must not talk over you)
+  // turning the page yourself pauses the reading (it must not talk over you); the page moves the reader made
+  // itself while starting are not the reader's own, so let those settle first
+  await page.waitForTimeout(4500);
   await page.locator('#nextPage').click();
   await page.waitForFunction(() => document.querySelector('#raStatus').textContent === 'Duraklatıldı');
   same(await status(page), 'Duraklatıldı', 'a page turn by the reader pauses the voice');

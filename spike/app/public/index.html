@@ -491,6 +491,25 @@
           Metin seçip <strong>Vurgula</strong> ile başlayın.
         </div>
       </aside>
+      <div class="ra-player" id="raPlayer" role="region" hidden>
+        <div class="ra-row">
+          <button class="icon-btn" id="raPrev" type="button">⏮</button>
+          <button class="icon-btn ra-play" id="raPlay" type="button">▶</button>
+          <button class="icon-btn" id="raNext" type="button">⏭</button>
+          <span class="ra-status" id="raStatus" aria-live="polite"></span>
+          <label class="ra-field"><span id="raRateLabel"></span><select id="raRate"></select></label>
+          <details class="ra-more">
+            <summary id="raMoreLabel"></summary>
+            <div class="ra-more-panel">
+              <label class="ra-field"><span id="raVoiceLabel"></span><select id="raVoice"></select></label>
+              <label class="ra-field"><span id="raSleepLabel"></span><select id="raSleep"></select></label>
+              <label class="ra-check"><input type="checkbox" id="raSkip" /> <span id="raSkipLabel"></span></label>
+              <p class="ra-hint" id="raHint"></p>
+            </div>
+          </details>
+          <button class="icon-btn" id="raClose" type="button">✕</button>
+        </div>
+      </div>
     </div>
     <footer class="reader-footer" id="readerFooter">
       <div class="footer-left"><button class="ghost-btn" id="bookmarkBtn" type="button" title="Yer imi" aria-label="Yer imi" aria-pressed="false">☆</button></div>
@@ -544,24 +563,6 @@
         <button class="primary" id="hlSaveNote" type="submit">Notu kaydet</button>
       </div>
     </form>
-  </div>
-
-  <div class="ra-player" id="raPlayer" role="region" hidden>
-    <div class="ra-row">
-      <button class="icon-btn" id="raPrev" type="button">⏮</button>
-      <button class="icon-btn ra-play" id="raPlay" type="button">▶</button>
-      <button class="icon-btn" id="raNext" type="button">⏭</button>
-      <span class="ra-status" id="raStatus" aria-live="polite"></span>
-      <label class="ra-field"><span id="raRateLabel"></span><select id="raRate"></select></label>
-      <button class="icon-btn" id="raClose" type="button">✕</button>
-    </div>
-    <details class="ra-more">
-      <summary id="raMoreLabel"></summary>
-      <label class="ra-field"><span id="raVoiceLabel"></span><select id="raVoice"></select></label>
-      <label class="ra-field"><span id="raSleepLabel"></span><select id="raSleep"></select></label>
-      <label class="ra-check"><input type="checkbox" id="raSkip" /> <span id="raSkipLabel"></span></label>
-      <p class="ra-hint" id="raHint"></p>
-    </details>
   </div>
 
   <aside class="ai-panel" id="aiPanel" role="region" aria-label="Yapay zekâ yanıtı" hidden>

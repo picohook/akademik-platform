@@ -829,25 +829,39 @@ a.app-external-embed:focus-visible { outline: 3px solid currentColor; outline-of
 ::highlight(ra-sentence) { background-color: rgba(255, 196, 0, 0.3); }
 ::highlight(ra-word) { background-color: rgba(255, 140, 0, 0.65); }
 .ra-active { background: rgba(255, 196, 0, 0.4); border-radius: 3px; box-shadow: 0 0 0 2px rgba(255, 196, 0, 0.4); }
+/* the read-aloud player is a thin strip along the bottom edge of the reading area, just above the page controls.
+   It is out of the flow, so starting it neither resizes the page nor reflows an EPUB; the page area gets bottom
+   padding while it is open, so the last lines can always be scrolled clear of it. */
 .ra-player {
-  position: fixed; z-index: 62; left: 16px; bottom: 16px; width: min(560px, calc(100vw - 32px));
-  background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 14px;
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); box-shadow: 0 8px 30px #0002;
+  position: absolute; z-index: 16; left: 0; right: 0; bottom: 0;
+  background: var(--paper); color: var(--ink); border-top: 1px solid var(--line);
+  padding: 6px 16px; box-shadow: 0 -4px 14px #0001;
 }
+body.ra-open .reader:not(.epub-mode) .page-area { padding-bottom: 72px; }
+/* an EPUB is paginated to the height of its pane: resizing it would repaginate and move the reader, so it
+   keeps its size and the strip covers the bottom margin */
 .ra-player[hidden] { display: none; }
 .ra-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.ra-play { background: var(--accent); color: #fff; border-color: var(--accent); min-width: 40px; }
+.ra-play { background: var(--accent); color: #fff; border-color: var(--accent); width: 40px; height: 40px; border-radius: 50%; }
+.ra-row .icon-btn { min-width: 36px; min-height: 36px; }
+.ra-more { position: relative; margin: 0; display: block; }
+.ra-more > summary { list-style: none; cursor: pointer; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; min-height: 36px; display: inline-flex; align-items: center; }
+.ra-more > summary::-webkit-details-marker { display: none; }
+.ra-more > summary::after { content: ' ▴'; }
+.ra-more-panel {
+  position: absolute; right: 0; bottom: calc(100% + 8px); width: min(300px, calc(100vw - 24px)); padding: 12px; display: grid; gap: 10px; z-index: 70;
+  background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 30px #0003;
+}
+.ra-more-panel .ra-field { justify-content: space-between; }
+@media (max-width: 560px) { .ra-row { gap: 6px; } .ra-status { flex-basis: 80px; font-size: 12px; } .ra-field > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); } .ra-more-panel .ra-field > span { position: static; width: auto; height: auto; clip-path: none; } }
 .ra-status { flex: 1 1 120px; font-size: 12.5px; color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
 .ra-field { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin: 0; }
 .ra-field select { font: inherit; padding: 5px 6px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); max-width: 220px; }
-.ra-more { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; font-size: 12px; }
-.ra-more summary { cursor: pointer; color: var(--muted); }
+.ra-more { font-size: 12px; }
+.ra-more summary { color: var(--muted); }
 .ra-check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin: 0; }
 .ra-check input { width: auto; margin: 0; }
 .ra-hint { margin: 0; font-size: 11.5px; color: #9a5b00; }
 .ra-hint:empty { display: none; }
-.ra-player { transition: opacity 0.35s ease; }
-.ra-player.ra-quiet { opacity: 0; pointer-events: none; }
-@media (prefers-reduced-motion: reduce) { .ra-player { transition: none; } }
 body.ra-open .ai-panel { bottom: 108px; }
 @media (max-width: 560px) { .ra-player { left: 8px; right: 8px; width: auto; } body.ra-open .ai-panel { bottom: 150px; } }
