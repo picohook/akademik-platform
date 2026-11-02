@@ -2260,6 +2260,64 @@ async function servePdf(req, res, storageKey) {
   return serveStoredAsset(assetStorage, req, res, storageKey);
 }
 
+// The public demo (/demo/): the real reader page, with a script that answers its API in the browser (public/demo/shim.js), so a
+// visitor's notes never leave their browser. The server's part is small and public by design: that page, the script, and two fixed
+// public-domain NASA files (named by fixed ids, so nothing else in the catalogue is reachable this way).
+const DEMO_DIR = path.join(PUBLIC_DIR, 'demo');
+const DEMO_FILES = new Map([
+  ['/demo/shim.js', { file: 'shim.js', type: 'text/javascript; charset=utf-8' }],
+  ['/demo/guide.js', { file: 'guide.js', type: 'text/javascript; charset=utf-8' }],
+  ['/demo/CREDITS.md', { file: 'CREDITS.md', type: 'text/markdown; charset=utf-8' }],
+]);
+const DEMO_BOOK_FILES = new Map([
+  ['de000000-0000-4000-8000-00000000b001/book.epub', { file: 'earth-at-night.epub', type: 'application/epub+zip' }],
+  ['de000000-0000-4000-8000-00000000b002/file', { file: 'earth-as-art.pdf', type: 'application/pdf' }],
+]);
+
+async function serveDemoFile(req, res, entry, { cache = 'public, max-age=3600' } = {}) {
+  const filePath = path.join(DEMO_DIR, entry.file);
+  let info;
+  try { info = await stat(filePath); } catch { json(res, 404, { error: 'not found' }); return; }
+  const headers = { 'content-type': entry.type, 'accept-ranges': 'bytes', 'cache-control': cache, 'x-content-type-options': 'nosniff' };
+  const range = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range || ''));
+  let start = 0;
+  let end = info.size - 1;
+  let status = 200;
+  if (range && (range[1] || range[2])) {
+    if (range[1]) { start = Number(range[1]); if (range[2]) end = Math.min(Number(range[2]), info.size - 1); }
+    else { start = Math.max(0, info.size - Number(range[2])); }
+    if (start > end || start >= info.size) { res.writeHead(416, { 'content-range': `bytes */${info.size}` }); res.end(); return; }
+    status = 206;
+    headers['content-range'] = `bytes ${start}-${end}/${info.size}`;
+  }
+  headers['content-length'] = end - start + 1;
+  res.writeHead(status, headers);
+  if (req.method === 'HEAD') { res.end(); return; }
+  createReadStream(filePath, { start, end }).pipe(res);
+}
+
+async function serveDemo(req, res, pathname) {
+  if (!['GET', 'HEAD'].includes(req.method)) { json(res, 405, { error: 'method not allowed' }); return; }
+  if (pathname === '/demo/') {
+    let html;
+    try { html = await readFile(path.join(PUBLIC_DIR, 'index.html'), 'utf8'); } catch { json(res, 404, { error: 'not found' }); return; }
+    if (ASSET_VERSION) html = versionShellAssets(html, ASSET_VERSION);
+    // the script goes first, so it is in place before the page's own scripts run
+    html = html.replace('<head>', '<head><script src="/demo/shim.js"></script><script src="/demo/guide.js" defer></script>');
+    const body = Buffer.from(html, 'utf8');
+    res.writeHead(200, {
+      'content-type': MIME['.html'], 'content-length': body.length, 'cache-control': 'no-cache',
+      'cloudflare-cdn-cache-control': 'no-store', 'cdn-cache-control': 'no-store',
+    });
+    res.end(req.method === 'HEAD' ? undefined : body);
+    return;
+  }
+  const entry = DEMO_FILES.get(pathname);
+  if (!entry) { json(res, 404, { error: 'not found' }); return; }
+  const noStore = entry.file === 'shim.js' || entry.file === 'guide.js';
+  await serveDemoFile(req, res, entry, noStore ? { cache: 'no-cache' } : undefined);
+}
+
 async function serveStatic(req, res, pathname) {
   const requested = pathname === '/' ? '/index.html' : pathname;
   const filePath = path.resolve(PUBLIC_DIR, '.' + requested);
@@ -2739,6 +2797,13 @@ async function handleRequest(req, res) {
     }
     if (pathname === '/api/health') {
       json(res, 200, { ok: true, mode: pool ? 'db' : 'demo', tenantId: TENANT_ID });
+      return;
+    }
+    if (pathname === '/demo') { res.writeHead(301, { location: '/demo/' }); res.end(); return; }
+    if (pathname === '/demo/' || pathname.startsWith('/demo/')) { await serveDemo(req, res, pathname); return; }
+    const demoBook = /^\/api\/books\/([0-9a-f-]{36}\/(?:file|book\.epub))$/.exec(pathname);
+    if (demoBook && DEMO_BOOK_FILES.has(demoBook[1]) && ['GET', 'HEAD'].includes(req.method)) {
+      await serveDemoFile(req, res, DEMO_BOOK_FILES.get(demoBook[1]));
       return;
     }
     // Reader-side SSO (contract 2.1). Both routes are unauthenticated by nature - the
