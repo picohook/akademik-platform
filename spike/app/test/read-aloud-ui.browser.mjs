@@ -321,6 +321,12 @@ try {
   check(dock.height < 100 && dock.opacity === '1' && dock.position === 'absolute' && parseFloat(dock.pad) >= dock.height, 'a thin strip that stays visible, with room left for the last lines');
   await shoot(page, 'pdf-reading-docked');
 
+  // a selection is read to its end and then the voice stops: it does not go on through the rest of the page
+  await page.waitForTimeout(4600);
+  same((await spoken(page)).length, 1, 'reading a selection stops when the selection is done');
+  await page.locator('#raPlay').click();
+  await waitSpoken(page, 2);
+
   // turning the page yourself pauses the reading (it must not talk over you); the page moves the reader made
   // itself while starting are not the reader's own, so let those settle first
   await page.waitForTimeout(4500);
