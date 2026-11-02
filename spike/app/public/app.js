@@ -1759,7 +1759,9 @@ async function saveEdit(event) {
     toast('Künye güncellendi');
   } catch (error) {
     console.error(error);
-    toast(error.message === 'yetkiniz yok' ? 'Bu işlem için yetkiniz yok' : 'Künye güncellenemedi');
+    toast(error.message === 'yetkiniz yok' ? 'Bu işlem için yetkiniz yok'
+      : error.message === 'shared_record' ? 'Bu kitap ortak katalogda; künyesi buradan değiştirilemez'
+        : 'Künye güncellenemedi');
   }
 }
 
