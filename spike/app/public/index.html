@@ -211,6 +211,39 @@
     </div>
   </div>
 
+  <div class="modal" id="bookInfoModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="bookInfoHeading">
+      <div class="modal-head">
+        <strong id="bookInfoHeading">Kitap bilgileri</strong>
+        <button class="icon-btn" id="closeBookInfo" type="button" aria-label="Kapat">✕</button>
+      </div>
+      <h3 id="bookInfoTitle"></h3>
+      <dl class="book-info" id="bookInfoList"></dl>
+    </div>
+  </div>
+
+  <div class="modal" id="exportModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="exportHeading">
+      <div class="modal-head">
+        <strong id="exportHeading">Dışa aktar</strong>
+        <button class="icon-btn" id="closeExport" type="button" aria-label="Kapat">✕</button>
+      </div>
+      <section class="export-group">
+        <h3>Kitap künyesi</h3>
+        <p>APA, MLA, Chicago, IEEE ve BibTeX biçimlerinde atıf.</p>
+        <div class="export-actions"><button class="ghost-btn" id="exportCite" type="button">Atıf penceresini aç</button></div>
+      </section>
+      <section class="export-group">
+        <h3>Yer imlerim <span id="exportBookmarkCount">0</span></h3>
+        <div class="export-actions"><button class="ghost-btn" id="exportBookmarksMd" type="button">Markdown</button><button class="ghost-btn" id="exportBookmarksJson" type="button">JSON</button></div>
+      </section>
+      <section class="export-group">
+        <h3>Notlar ve vurgular <span id="exportNoteCount">0</span></h3>
+        <div class="export-actions"><button class="ghost-btn" id="exportNotesMd" type="button">Markdown</button><button class="ghost-btn" id="exportNotesJson" type="button">JSON</button></div>
+      </section>
+    </div>
+  </div>
+
   <div class="modal" id="citeModal" hidden>
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="citeHeading">
       <div class="modal-head">
@@ -385,15 +418,27 @@
           <label>Tema<select id="readerTheme"><option value="light">Standart</option><option value="sepia">Kâğıt</option><option value="dark">Gece</option><option value="system">Sistemi izle</option></select></label>
           <label>Çevre zemini<select id="readerWorkspace"><option value="auto">Temaya uygun</option><option value="gray">Açık gri</option><option value="cream">Sıcak krem</option><option value="slate">Koyu gri</option></select></label>
           <label><input type="checkbox" id="readerFocus"> Odak modu</label>
+          <fieldset class="epub-type" id="epubType">
+            <legend>Metin</legend>
+            <label>Yazı tipi<select id="epubFont"><option value="default">Kitabın kendisi</option><option value="serif">Kitap · Georgia</option><option value="sans">Sade · Arial</option></select></label>
+            <label class="epub-size">Yazı boyutu <output id="epubSizeLabel">100%</output></label>
+            <input id="epubSize" type="range" min="70" max="200" step="10" value="100" aria-label="Yazı boyutu" />
+            <label>Satır aralığı<select id="epubLine"><option value="default">Kitabın kendisi</option><option value="1.5">Sık · 1,5</option><option value="1.75">Rahat · 1,75</option><option value="2">Geniş · 2</option></select></label>
+            <label>Metin genişliği<select id="epubWidth"><option value="auto">Tam</option><option value="wide">Geniş</option><option value="medium">Orta</option><option value="narrow">Dar</option></select></label>
+            <button class="ghost-btn" id="epubTypeReset" type="button">Yazı ayarlarını sıfırla</button>
+          </fieldset>
         </div></details>
         <button class="ghost-btn" id="raBtn" type="button" aria-pressed="false" aria-controls="raPlayer" aria-keyshortcuts="Alt+Shift+L" hidden></button>
         <button class="ghost-btn" id="toggleNotes" type="button" aria-controls="notesPanel" aria-expanded="false">Notlar <span id="noteCount">0</span></button>
         <details class="reader-menu"><summary id="moreMenuBtn" aria-label="Diğer">Diğer</summary><div class="reader-menu-panel">
+          <button class="ghost-btn" id="bookInfoBtn" type="button">Kitap bilgileri</button>
+          <button class="ghost-btn" id="exportBtn" type="button">Dışa aktar</button>
           <button class="ghost-btn" id="citeBook" type="button" title="Atıf">Atıf</button>
           <button class="ghost-btn" id="downloadBtn" type="button" title="PDF indir" hidden>İndir</button>
           <button class="ghost-btn" id="selectionTools" type="button" title="Seçim araçları (Alt+Shift+H)" aria-keyshortcuts="Alt+Shift+H">Seçim araçları</button>
           <button class="ghost-btn" id="rotateBtn" type="button" aria-label="Döndür" title="Döndür">⟳ Döndür</button>
           <button class="ghost-btn" id="fullscreenBtn" type="button" aria-label="Tam ekran" title="Tam ekran">⛶ Tam ekran</button>
+          <button class="ghost-btn" id="shortcutsBtn" type="button">Klavye kısayolları</button>
           <label class="shortcut-setting"><input type="checkbox" data-single-key-shortcuts checked /><span>Tek tuş kısayolları</span></label>
         </div></details>
       </div>
@@ -403,6 +448,7 @@
       <nav class="tool-rail" aria-label="Kitap araçları">
         <button class="rail-btn" id="toggleToc" type="button" title="İçindekiler" aria-label="İçindekiler" aria-controls="tocPanel" aria-expanded="false">☰<span>İçindekiler</span></button>
         <button class="rail-btn" id="railSearch" type="button" title="Kitapta ara (Ctrl+K)" aria-label="Kitapta ara" aria-controls="tocPanel">⌕<span>Ara</span></button>
+        <button class="rail-btn" id="railBookmarks" type="button" title="Yer imleri" aria-label="Yer imleri" aria-controls="tocPanel">⚑<span>Yer imleri</span></button>
         <button class="rail-btn" id="railPages" type="button" title="Sayfalar" aria-label="Sayfalar" aria-controls="tocPanel">▤<span>Sayfalar</span></button>
       </nav>
       <aside class="toc" id="tocPanel" aria-label="Gezinme paneli" tabindex="0" hidden>
@@ -413,6 +459,7 @@
         <div class="toc-tabs" role="tablist" aria-label="Okuyucu panelleri">
           <button class="toc-tab active" id="tabToc" type="button" role="tab" aria-selected="true" aria-controls="tocView">İçindekiler</button>
           <button class="toc-tab" id="tabSearch" type="button" role="tab" aria-selected="false" aria-controls="searchView">Ara</button>
+          <button class="toc-tab" id="tabBookmarks" type="button" role="tab" aria-selected="false" aria-controls="bookmarksView">Yer imleri</button>
           <button class="toc-tab" id="tabPages" type="button" role="tab" aria-selected="false" aria-controls="pagesView">Sayfalar</button>
         </div>
         <div id="tocView" role="tabpanel" aria-labelledby="tabToc">
@@ -442,6 +489,10 @@
           </div>
           <div class="toc-list" id="searchResults" role="region" aria-label="Arama sonuçları" tabindex="0"></div>
           <div class="toc-empty" id="searchEmpty" hidden></div>
+        </div>
+        <div id="bookmarksView" hidden role="tabpanel" aria-labelledby="tabBookmarks">
+          <div class="toc-list" id="bookmarkList" role="region" aria-label="Yer imleri listesi" tabindex="0"></div>
+          <div class="toc-empty" id="bookmarkEmpty">Yer imi eklemek için alttaki ☆ düğmesini kullanın.</div>
         </div>
         <div id="pagesView" hidden role="tabpanel" aria-labelledby="tabPages">
           <div class="thumb-grid" id="thumbGrid"></div>
@@ -524,6 +575,7 @@
       </div>
       <div class="footer-view" role="group" aria-label="Sayfa görünümü">
         <button class="icon-btn" id="zoomOut" type="button" aria-label="Uzaklaştır">−</button><span class="zoom" id="zoomLabel">100%</span><button class="icon-btn" id="zoomIn" type="button" aria-label="Yakınlaştır">+</button>
+        <button class="ghost-btn" id="footerAppearance" type="button" aria-label="Yazı ayarları" title="Yazı ayarları">Aa</button>
         <button class="ghost-btn" id="fitToggle" type="button" aria-label="Genişliğe sığdır" title="Genişliğe sığdır" aria-pressed="false">↔</button>
         <button class="ghost-btn" id="spreadBtn" type="button" aria-label="Çift sayfa" title="Çift sayfa" aria-pressed="false">▥</button>
         <button class="ghost-btn" id="scrollBtn" type="button" aria-label="Sürekli kaydırma" title="Sürekli kaydırma" aria-pressed="false">≣</button>

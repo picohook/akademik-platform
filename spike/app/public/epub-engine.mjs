@@ -610,9 +610,24 @@ export class EpubEngine {
   }
 
   setTheme(theme) {
+    this.themeName = theme;
+    this.applyTheme();
+  }
+
+  // Style rules of the reader's own choosing (typeface, line spacing; see reader-appearance.mjs), laid over the
+  // colours of the theme. The theme is registered again under a new name each time, as epub.js keeps the first
+  // rules it saw for a name.
+  setTypography(rules) {
+    this.typographyRules = rules && typeof rules === 'object' ? rules : {};
+    this.applyTheme();
+  }
+
+  applyTheme() {
     if (!this.rendition) return;
-    const name = `app-${theme}`;
-    this.rendition.themes.register(name, THEMES[theme] || THEMES.light);
+    const base = THEMES[this.themeName] || THEMES.light;
+    this.themeVersion = (this.themeVersion || 0) + 1;
+    const name = `app-${this.themeName || 'light'}-${this.themeVersion}`;
+    this.rendition.themes.register(name, { ...base, ...(this.typographyRules || {}) });
     this.rendition.themes.select(name);
   }
 
