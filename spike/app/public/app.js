@@ -284,6 +284,8 @@ const editLanguage = $('editLanguage');
 const editYear = $('editYear');
 const editPublisher = $('editPublisher');
 const editSubjects = $('editSubjects');
+const editCover = $('editCover');
+const editCoverRemove = $('editCoverRemove');
 const editAuthors = $('editAuthors');
 const editAllowCopy = $('editAllowCopy');
 const editAllowDownload = $('editAllowDownload');
@@ -1253,6 +1255,9 @@ function openEdit(book) {
   editAllowDownload.checked = book.allow_download !== false;
   editAllowPrint.checked = book.allow_print !== false;
   editWatermark.checked = book.watermark !== false;
+  editCover.value = '';
+  editCoverRemove.checked = false;
+  $('editCoverRemoveRow').hidden = !book.metadata?.cover;
   deleteBookBtn.hidden = !['upload', 'ingest'].includes(book.source_system);
   openModal(editModal, editTitle);
 }
@@ -1696,6 +1701,31 @@ async function copySelectedText(withCitation = false) {
   }
 }
 
+// The picture is shrunk here, so the server only ever stores a small WebP.
+async function shrinkCover(file) {
+  if (file.size > 15 * 1024 * 1024) throw new Error('Kapak dönüştürülemedi');
+  let bitmap;
+  try { bitmap = await createImageBitmap(file); } catch { throw new Error('Kapak dönüştürülemedi'); }
+  const scale = Math.min(1, 480 / bitmap.width, 800 / bitmap.height);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close?.();
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', 0.84));
+  if (!blob || blob.type !== 'image/webp') throw new Error('Kapak dönüştürülemedi');
+  return blob;
+}
+
+async function saveCover(id) {
+  const url = `/api/books/${encodeURIComponent(id)}/cover`;
+  let response;
+  if (editCoverRemove.checked) response = await fetch(url, { method: 'DELETE' });
+  else if (editCover.files?.[0]) response = await fetch(url, { method: 'PUT', headers: { 'content-type': 'image/webp' }, body: await shrinkCover(editCover.files[0]) });
+  else return;
+  if (!response.ok) throw new Error('Kapak kaydedilemedi');
+}
+
 async function saveEdit(event) {
   event.preventDefault();
   const id = editId.value;
@@ -1727,6 +1757,8 @@ async function saveEdit(event) {
       throw new Error(payload.error || 'Kaydedilemedi');
     }
     const updated = await response.json();
+    // the book is saved; a cover that fails is reported on its own
+    await saveCover(id).catch((error) => { console.warn('[cover]', error); toast(error.message === 'Kapak dönüştürülemedi' ? 'Kapak dönüştürülemedi' : 'Kapak kaydedilemedi'); });
     await loadBooks(state.query);
     if (state.book?.id === updated.id) {
       const selected = state.books.find(book => book.asset_id === state.book.asset_id);

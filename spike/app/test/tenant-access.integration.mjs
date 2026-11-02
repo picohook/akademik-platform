@@ -413,6 +413,62 @@ async function updateBookTenantTest(context) {
   console.log('PASS updateBook: edits land in the session tenant (title, authors, edition), foreign work untouched.');
 }
 
+// Scenario 3b2: book covers go through the same tenant rules as every other write to works.
+async function coverTest(context) {
+  const databaseUrl = await grant(context.port);
+  const base = await startApp(databaseUrl, DEMO_TENANT);
+  await admin.query("update grants set status = 'active' where id = $1", [SEED_GRANT]);
+  const session = await login(base, context.users.admin.email);
+  const work = WORKS[1];
+  // a 24x36 lossless-header WebP: RIFF, WEBP, VP8X with width-1 and height-1
+  const webp = Buffer.alloc(40);
+  webp.write('RIFF', 0, 'latin1'); webp.writeUInt32LE(32, 4); webp.write('WEBPVP8X', 8, 'latin1'); webp.writeUInt32LE(10, 16);
+  webp[24] = 23; webp[27] = 35;
+  const send = (route, method, body, type = 'image/webp') => fetch(base + route, {
+    method, body, headers: { cookie: session.cookie, 'x-csrf-token': session.csrf, 'content-type': type }, signal: AbortSignal.timeout(30_000),
+  });
+
+  const put = await send(`/api/books/${work.work}/cover`, 'PUT', webp);
+  check(put.status === 200, `cover PUT answered ${put.status}: ${await put.text()}`);
+  const stored = await admin.query("select metadata->'cover' as cover from works where id = $1", [work.work]);
+  const cover = stored.rows[0].cover;
+  check(cover?.key?.startsWith('book-covers/') && cover.version > 0 && Math.abs(cover.ratio - 24 / 36) < 0.001, `cover not recorded: ${JSON.stringify(cover)}`);
+
+  const got = await send(`/api/books/${work.work}/cover`, 'GET');
+  const bytes = Buffer.from(await got.arrayBuffer());
+  check(got.status === 200 && got.headers.get('content-type') === 'image/webp' && bytes.equals(webp), `cover GET answered ${got.status}`);
+
+  const listed = await request(base, '/api/books', session);
+  const listedWork = listed.data.find((book) => book.id === work.work);
+  check(listedWork?.metadata?.cover?.version === cover.version, 'catalogue lacks the cover version');
+  check(!listed.text.includes('book-covers/'), 'the storage key reached the browser');
+
+  const bad = await send(`/api/books/${work.work}/cover`, 'PUT', Buffer.from('<svg onload=alert(1)>'), 'image/svg+xml');
+  check(bad.status === 415, `non-WebP accepted: ${bad.status}`);
+
+  // a work of another tenant is out of reach: no row is written, nothing is stored
+  const otherTenantWork = randomUUID();
+  await admin.query("insert into works (id, tenant_id, title, language) values ($1, $2, 'Demo tenant cover work', 'tr')", [otherTenantWork, DEMO_TENANT]);
+  const foreign = await send(`/api/books/${otherTenantWork}/cover`, 'PUT', webp);
+  check([403, 404, 409].includes(foreign.status), `cover written to another tenant's work: ${foreign.status}`);
+  const foreignRow = await admin.query("select metadata->'cover' as cover from works where id = $1", [otherTenantWork]);
+  check(foreignRow.rows[0].cover === null, 'foreign work received a cover');
+
+  // replacing and removing
+  const second = await send(`/api/books/${work.work}/cover`, 'PUT', webp);
+  check(second.status === 200, `second PUT ${second.status}`);
+  const replaced = (await admin.query("select metadata->'cover'->>'key' as key from works where id = $1", [work.work])).rows[0].key;
+  check(replaced !== cover.key, 'a new upload keeps the old key');
+  const removed = await send(`/api/books/${work.work}/cover`, 'DELETE');
+  check(removed.status === 200, `cover DELETE ${removed.status}`);
+  const after = await admin.query("select metadata ? 'cover' as has from works where id = $1", [work.work]);
+  check(after.rows[0].has === false, 'cover still recorded after DELETE');
+  check((await send(`/api/books/${work.work}/cover`, 'GET')).status === 404, 'cover still served after DELETE');
+
+  scenarioCount++;
+  console.log('PASS covers: upload, read, replace, remove, tenant scope, WebP only, key never sent to the browser.');
+}
+
 // Scenario 3c: the OPDS feed is not a browser session.
 //
 // /opds is fetched by reading apps with an API key and no cookie, so nothing
@@ -546,6 +602,7 @@ try {
   await grantedTest(context);
   await adminTest(context);
   await updateBookTenantTest(context);
+  await coverTest(context);
   await opdsTenantTest(context);
   await demoModeTest();
 
