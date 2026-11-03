@@ -47,7 +47,7 @@
 // v45: covers of the two public-demo books (library-covers.mjs). A cached v44 shell would not know them.
 // v46: theme and surround swatches, foldable contents (index.html, app.js, styles.css, i18n.mjs). A cached v45 shell would pair the old
 // markup with the new script.
-const CACHE = 'akademik-shell-v47';
+const CACHE = 'akademik-shell-v48';
 const SHELL = [
   '/',
   '/styles.css',
