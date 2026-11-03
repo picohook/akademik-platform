@@ -20,7 +20,7 @@ import {
 import {
   upsertTenant, readTenant, preProvisionUser, applyAccountStatus, applyMembershipStatus,
   applySubscriptionSync, readSubscription, resolveTenant, withBridgeAdmin,
-  readCatalogPage, readCatalogWork,
+  readCatalogPage, readCatalogWork, readAccessDiagnosis,
 } from './libedge-bridge-db.mjs';
 
 const ACCOUNT_STATUSES = ['active', 'disabled'];
@@ -51,6 +51,9 @@ const ROUTES = [
   // `akademik_app`, while publishing and curating run as `akademik_catalog`. A route
   // in the wrong half would be rejected by the policies in 022 rather than here, which
   // is a 500 instead of a 403 - so the scope is stated per route, once.
+  // Read only: why a person can or cannot open a book (section 5.8). Entitlements scope, because it
+  // shows entitlement state and nothing of the catalogue's own rows.
+  { method: 'GET', pattern: '/diagnostics/access', scope: 'entitlements', handler: getAccessDiagnosis },
   { method: 'GET', pattern: '/catalog', scope: 'entitlements', handler: listCatalogWorks },
   { method: 'GET', pattern: '/catalog/works/:id', scope: 'entitlements', handler: getCatalogWork },
 ];
@@ -373,6 +376,21 @@ async function listCatalogWorks({ pool, query }) {
   const offset = parseOffset(query.offset);
   const page = await readCatalogPage(pool, { limit, offset });
   return { body: page };
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// GET /diagnostics/access?tenant_kind=&tenant_ref=&user=&work=  (section 5.8)
+async function getAccessDiagnosis({ pool, query, now }) {
+  const kind = String(query.tenant_kind ?? '');
+  if (!TENANT_KINDS.includes(kind)) throw new BridgeError(400, 'INVALID_BODY', 'tenant_kind must be institution, individual or staff');
+  const ref = String(query.tenant_ref ?? '').trim();
+  if (!ref || ref.length > 200) throw new BridgeError(400, 'INVALID_BODY', 'tenant_ref is required (at most 200 characters)');
+  const user = String(query.user ?? '').trim();
+  if (!user || user.length > 128) throw new BridgeError(400, 'INVALID_BODY', 'user (the LibEdge user id) is required (at most 128 characters)');
+  const work = query.work === undefined || query.work === '' ? null : String(query.work);
+  if (work !== null && !UUID_PATTERN.test(work)) throw new BridgeError(400, 'INVALID_BODY', 'work must be a work id (uuid)');
+  return { body: await readAccessDiagnosis(pool, { kind, ref, libedgeUserId: user, workId: work, now }) };
 }
 
 async function getCatalogWork({ pool, params }) {

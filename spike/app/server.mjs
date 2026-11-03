@@ -3,6 +3,7 @@ import { sortBooks } from './public/library-model.mjs';
 import { createStorage, serveStoredAsset } from './storage.mjs';
 import { updateGlobalWork, writeGlobalCover } from './catalog-edit.mjs';
 import { APP_CSP, appCsp } from './security-headers.mjs';
+import { grantAllows } from './access-rules.mjs';
 import { assetVersionToken, versionShellAssets } from './asset-version.mjs';
 import { normalizeBookVariant } from './public/book-variants.mjs';
 import { mutateAnnotation, memoryAnnotationMutations, purgeAnnotationReceipts } from './annotation-sync.mjs';
@@ -779,22 +780,7 @@ async function deleteUploadedBook(id) {
 // single grants row names subject_id 11111111-... while the catalogue is under
 // 5799f2a5-..., so it matches nobody, and the admin saw 13 works only because
 // this returned true. Access that cannot be decided must be denied.
-function grantAllows(book, grants) {
-  if (!Array.isArray(grants) || !grants.length) return false;
-  const publisher = String(book.publisher || '').toLocaleLowerCase('tr');
-  const subjects = (book.subjects || []).map((value) => String(value).toLocaleLowerCase('tr'));
-  return grants.some((grant) => {
-    if (grant.scope_type === 'all') return true;
-    if (grant.scope_type === 'title') return String(grant.scope_id || '') === String(book.id);
-    if (grant.scope_type === 'publisher') return String(grant.scope_key || '').toLocaleLowerCase('tr') === publisher;
-    if (grant.scope_type === 'subject') return subjects.includes(String(grant.scope_key || '').toLocaleLowerCase('tr'));
-    if (grant.scope_type === 'collection') {
-      return (book.collection_ids || []).map(String).includes(String(grant.scope_id || ''));
-    }
-    return false;
-  });
-}
-
+// (the rules live in access-rules.mjs, shared with the bridge's access diagnosis)
 async function activeGrants(auth, dbClient = null) {
   if (!auth) return [];
   // The tenant a user's grants belong to is the tenant they signed in to, not

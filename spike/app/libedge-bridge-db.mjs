@@ -18,6 +18,7 @@
 // libedge_accounts, the subscription sync row, and lookups by (kind, ref)).
 
 import { BridgeError, revisionDecision } from './libedge-bridge.mjs';
+import { diagnoseAccess } from './access-rules.mjs';
 
 const notFound = (code, detail) => new BridgeError(404, code, detail);
 const conflict = (code, detail) => new BridgeError(409, code, detail);
@@ -749,6 +750,74 @@ export async function readSubscription(pool, sourceId) {
     );
     if (!rows.length) throw notFound('SUBSCRIPTION_NOT_FOUND', `no subscription "${sourceId}"`);
     return rows[0];
+  });
+}
+
+// ---------------------------------------------------------------------------
+// GET /diagnostics/access  (section 5.8)
+// ---------------------------------------------------------------------------
+
+// Read only. Everything an admin needs to answer "why can this person not open this book": the
+// LibEdge account and membership, whether the person has ever signed in, the grants that could
+// apply, the applied subscriptions behind them, and the decision the reader would take - made by
+// the same rules (access-rules.mjs) the reader enforces with. It runs under the tenant's own row
+// level security, so it cannot show another tenant's rows.
+export async function readAccessDiagnosis(pool, { kind, ref, libedgeUserId, workId, now }) {
+  return withBridgeTenantFor(pool, kind, ref, async (client, tenant) => {
+    const one = async (sql, params) => (await client.query(sql, params)).rows[0] || null;
+    const account = await one('select status, revision, changed_at from libedge_accounts where libedge_user_id = $1', [libedgeUserId]);
+    const membership = await one('select status, revision, changed_at from libedge_memberships where tenant_id = $1 and libedge_user_id = $2', [tenant.id, libedgeUserId]);
+    const readerUser = await one('select id, role from users where tenant_id = $1 and libedge_user_id = $2', [tenant.id, libedgeUserId]);
+    const { rows: grants } = await client.query(
+      `select id, subject_type, scope_type, scope_id, scope_key, valid_from, valid_to, source, status, subscription_source_id
+         from grants
+        where tenant_id = $1
+          and ((subject_type = 'tenant' and subject_id = $1)
+            or ($2::uuid is not null and ((subject_type = 'user' and subject_id = $2::uuid)
+              or (subject_type = 'group' and subject_id in (select group_id from user_group_members where user_id = $2::uuid)))))
+        order by created_at desc limit 200`,
+      [tenant.id, readerUser ? readerUser.id : null],
+    );
+    const { rows: sync } = await client.query(
+      `select source_id, subject_type, subject_user_id, revision, status, lease_until, applied_at
+         from libedge_subscription_sync
+        where tenant_id = $1 and (subject_type = 'tenant' or subject_user_id = $2)
+        order by applied_at desc limit 50`,
+      [tenant.id, libedgeUserId],
+    );
+    let work = null;
+    if (workId) {
+      work = await one(
+        `select w.id, w.title, w.subjects, (w.tenant_id is null) as is_global, (w.withdrawn_at is not null) as withdrawn,
+                (select e.publisher from editions e where e.work_id = w.id order by e.created_at limit 1) as publisher,
+                coalesce((select array_agg(ci.collection_id::text) from collection_items ci where ci.work_id = w.id), '{}') as collection_ids
+           from works w where w.id = $1 and (w.tenant_id is null or w.tenant_id = $2)`,
+        [workId, tenant.id],
+      );
+    }
+    const { decision, grants: grantRows } = diagnoseAccess({
+      now, tenant, account, membership, readerUser, grants, sync, work, workAsked: Boolean(workId),
+    });
+    const iso = (value) => (value ? new Date(value).toISOString() : null);
+    return {
+      generated_at: now.toISOString(),
+      tenant: { kind, ref: String(ref), status: tenant.status },
+      account: account ? { status: account.status, revision: Number(account.revision), changed_at: iso(account.changed_at) } : null,
+      membership: membership ? { status: membership.status, revision: Number(membership.revision), changed_at: iso(membership.changed_at) } : null,
+      reader_user: readerUser ? { exists: true, role: readerUser.role } : { exists: false, role: null },
+      work: work ? { id: work.id, title: work.title, global: work.is_global, withdrawn: work.withdrawn } : null,
+      grants: grantRows,
+      subscriptions: sync.map((row) => ({
+        source_id: row.source_id,
+        subject: row.subject_type === 'user' ? 'user' : 'tenant',
+        status: row.status,
+        applied_revision: Number(row.revision),
+        lease_until: iso(row.lease_until),
+        lease_expired: row.status === 'active' && row.lease_until !== null && new Date(row.lease_until).getTime() <= now.getTime(),
+        applied_at: iso(row.applied_at),
+      })),
+      decision,
+    };
   });
 }
 

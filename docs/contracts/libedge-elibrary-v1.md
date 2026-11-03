@@ -290,6 +290,7 @@ Kaynak taslak `origin/feat/elibrary-admin` (`17ef5eb`) olduğu gibi alınmaz; #2
 | entitlements | `PUT /accounts/{uid}` | hesap `{revision, status}` (§2.5) |
 | entitlements | `PUT /subscriptions/{source_id}` | erişim eşitlemesi (§5.4) |
 | entitlements | `GET /subscriptions/{source_id}` | uygulanmış durum |
+| entitlements | `GET /diagnostics/access?tenant_kind=&tenant_ref=&user=&work=` | bir kişinin okuyucuda neden erişebildiği/erişemediği, salt okunur (§5.8) |
 | entitlements | `GET /catalog`, `GET /catalog/works/{id}` | global katalog (§5.5) |
 | entitlements | `GET /collections`, `GET /collections/{id}/works` | global koleksiyonlar |
 | entitlements | `GET /tenants/{kind}/{ref}/usage?from=&to=` | kullanım özeti |
@@ -476,6 +477,31 @@ Yalnız global eser global koleksiyona eklenebilir; aksi → `422 UNKNOWN_SCOPE`
 İş akışı: personel eseri okuyucunun mevcut yükleme/içe aktarma yoluyla `staff` tenant'ına yükler (v134'ten beri EPUB'lar filigran ön kontrolünden geçer) → LibEdge Admin'den "Ortak katalogda yayımla" → koleksiyona ekle.
 
 ---
+
+### 5.8 Erişim tanısı (salt okunur)
+
+`GET /diagnostics/access?tenant_kind=institution|individual|staff&tenant_ref=<ref>&user=<libedge_user_id>[&work=<work_id>]`
+— `entitlements` token'ı. Yazmaz, hiçbir şeyi değiştirmez. Bir yöneticinin "bu kişi bu kitabı neden açamıyor?"
+sorusunu tek çağrıda yanıtlar. Karar, okuyucunun erişimi uygularken kullandığı **aynı kurallarla** (`access-rules.mjs`) verilir,
+yani açıklama karardan sapamaz. Sorgu tenant'ın kendi satır güvenliği altında çalışır; başka tenant'ın satırı görünmez.
+
+| Alan | Anlamı |
+| --- | --- |
+| `tenant` | `{kind, ref, status}` |
+| `account` | LibEdge hesabı `{status, revision, changed_at}` ya da `null` (hiç kapatılmamış/açılmamış) |
+| `membership` | bu tenant'taki üyelik `{status, revision, changed_at}` ya da `null` |
+| `reader_user` | `{exists, role}`; `exists: false` = kişi bu tenant'ta hiç oturum açmamış |
+| `work` | sorulan eser `{id, title, global, withdrawn}` ya da `null` |
+| `grants[]` | kişiye uygulanabilen haklar: `id, subject_type, scope_type, scope, source, subscription_source_id, valid_from, valid_to, state, lease_expired, covers_work`; `state` ∈ `active, not_started, ended, pending, expired, revoked` |
+| `subscriptions[]` | uygulanmış eşitleme satırları `{source_id, subject, status, applied_revision, lease_until, lease_expired, applied_at}` |
+| `decision` | `{can_open, reason, via_grant_id, hints[]}` |
+
+`decision.reason` (ilk kapatan neden, okuyucunun uygulama sırasıyla): `ACCOUNT_DISABLED`, `MEMBERSHIP_REVOKED`,
+`TENANT_INACTIVE`, `WORK_NOT_FOUND`, `GRANT_NOT_ACTIVE` (eseri kapsayan hak var ama aktif değil), `NO_MATCHING_GRANT`
+(eser sorulmuş, kapsayan hak yok), `NO_ACTIVE_GRANT` (eser sorulmamış, aktif hak yok), `OK`. `hints`: `NEVER_SIGNED_IN`
+(kullanıcı/grup hakları kişi ilk kez giriş yapana kadar listelenemez; tenant haklarıyla karar yine verilir) ve
+`LEASE_EXPIRED_GRANT_STILL_OPEN` (aboneliğin kirası bitmiş ama hak henüz kapanmamış; zamanlayıcı kapatacak).
+Hatalar: `400 INVALID_BODY` (kind/ref/user/work biçimi), `404 TENANT_NOT_FOUND`, `401`, `403 TOKEN_SCOPE`.
 
 ## 6. Eşitleme, hata ve iptal
 

@@ -512,6 +512,99 @@ async function main() {
     `the bridge root answered ${shell.status} ${shellText.slice(0, 200)}`);
   checks += 1;
 
+
+  // -------------------------------------------------------------------------
+  // GET /diagnostics/access: why a person can or cannot open a book (section 5.8).
+  //
+  // Read only, and made by the same rules the reader enforces with, against real rows: the
+  // answer after each change below is checked against what the change should do.
+  // -------------------------------------------------------------------------
+  {
+    const V1 = '/api/libedge/v1';
+    const diagnose = (query, options) => bridge(base, `${V1}/diagnostics/access?${new URLSearchParams(query)}`, options);
+    const hour = 3600_000;
+    // a PUT that creates answers 201 and one that changes an existing row 200: both are "applied"
+    const applied = (result, label) => {
+      assert.ok([200, 201].includes(result.status), `${label}: expected 200 or 201, got ${result.status} ${(result.text || '').slice(0, 300)}`);
+      checks += 1;
+    };
+    const subscription = (over = {}) => ({
+      revision: 1, tenant: { kind: 'institution', ref: '42' }, subject: { type: 'tenant' }, status: 'active',
+      valid_from: new Date(Date.now() - hour).toISOString(), valid_to: null,
+      lease_until: new Date(Date.now() + 24 * hour).toISOString(), scopes: [{ type: 'title', id: GLOBAL_WORK }], ...over,
+    });
+    const ask = async (user, work, extra = {}) => {
+      const result = await diagnose({ tenant_kind: 'institution', tenant_ref: '42', user, ...(work ? { work } : {}), ...extra });
+      return expect(result, 200, undefined, `diagnosis for ${user} ${work || '(any)'}`).data;
+    };
+
+    // a person LibEdge knows, who has not signed in to the reader yet, in an institution with no subscription
+    applied(await bridge(base, `${V1}/tenants/institution/42/users/u-diag`, { method: 'PUT', body: { email: 'diag@kurum42.test', name: 'Diag' } }), 'pre-provision the person');
+    let d = await ask('u-diag', GLOBAL_WORK);
+    check(d.decision.can_open === false && d.decision.reason === 'NO_MATCHING_GRANT', `no subscription yet: ${JSON.stringify(d.decision)}`);
+    check(d.reader_user.exists === true && d.grants.length === 0 && d.subscriptions.length === 0, 'nothing granted, nothing synced');
+    check(d.work?.id === GLOBAL_WORK && d.work.global === true, 'the work is named');
+
+    // the institution subscribes to that one title
+    applied(await bridge(base, `${V1}/subscriptions/institution:42`, { method: 'PUT', body: subscription() }), 'apply the institution subscription');
+    d = await ask('u-diag', GLOBAL_WORK);
+    check(d.decision.can_open === true && d.decision.reason === 'OK', `subscribed: ${JSON.stringify(d.decision)}`);
+    check(d.grants.length === 1 && d.grants[0].state === 'active' && d.grants[0].covers_work === true && d.grants[0].scope_type === 'title', 'one active grant covers the work');
+    check(d.decision.via_grant_id === d.grants[0].id, 'the decision names the grant');
+    check(d.subscriptions[0]?.source_id === 'institution:42' && d.subscriptions[0].status === 'active' && d.subscriptions[0].lease_expired === false, 'the applied subscription is shown');
+
+    // a different book is not covered, a withdrawn one is still named, an unknown one is not found
+    d = await ask('u-diag', TENANT_WORK);
+    check(d.decision.reason === 'NO_MATCHING_GRANT' || d.decision.reason === 'WORK_NOT_FOUND', `another institution's work: ${d.decision.reason}`);
+    d = await ask('u-diag', WITHDRAWN_WORK);
+    check(d.decision.reason === 'NO_MATCHING_GRANT' && d.work?.withdrawn === true, `a withdrawn work: ${JSON.stringify(d.decision)} ${JSON.stringify(d.work)}`);
+    d = await ask('u-diag', 'ffffffff-ffff-4fff-8fff-ffffffffffff');
+    check(d.decision.reason === 'WORK_NOT_FOUND' && d.work === null, 'an unknown work is not found');
+    d = await ask('u-diag');
+    check(d.decision.can_open === true && d.decision.reason === 'OK' && d.work === null, 'with no book asked, any active grant is enough');
+
+    // a person the reader has never seen still gets the institution's access, and the hint says why
+    d = await ask('u-never-signed-in', GLOBAL_WORK);
+    check(d.reader_user.exists === false && d.decision.can_open === true && d.decision.hints.includes('NEVER_SIGNED_IN'), `never signed in: ${JSON.stringify(d.decision)}`);
+
+    // the account is disabled, then reopened: the reason follows, a stale (lower) revision changes nothing
+    applied(await bridge(base, `${V1}/accounts/u-diag`, { method: 'PUT', body: { revision: 5, status: 'disabled' } }), 'disable the account');
+    d = await ask('u-diag', GLOBAL_WORK);
+    check(d.decision.reason === 'ACCOUNT_DISABLED' && d.decision.can_open === false && d.account.status === 'disabled' && d.account.revision === 5, `account disabled: ${JSON.stringify(d.decision)}`);
+    expect(await bridge(base, `${V1}/accounts/u-diag`, { method: 'PUT', body: { revision: 4, status: 'active' } }), 409, 'STALE_REVISION', 'a late reopen is refused');
+    check((await ask('u-diag', GLOBAL_WORK)).decision.reason === 'ACCOUNT_DISABLED', 'and the person stays closed');
+    applied(await bridge(base, `${V1}/accounts/u-diag`, { method: 'PUT', body: { revision: 6, status: 'active' } }), 'reopen the account');
+    check((await ask('u-diag', GLOBAL_WORK)).decision.reason === 'OK', 'reopened');
+
+    // the membership is revoked, then reopened
+    applied(await bridge(base, `${V1}/tenants/institution/42/memberships/u-diag`, { method: 'PUT', body: { revision: 1, status: 'revoked' } }), 'revoke the membership');
+    d = await ask('u-diag', GLOBAL_WORK);
+    check(d.decision.reason === 'MEMBERSHIP_REVOKED' && d.membership.status === 'revoked', `membership revoked: ${JSON.stringify(d.decision)}`);
+    check((await ask('u-other', GLOBAL_WORK)).decision.reason === 'OK', 'another person of the institution is not affected');
+    applied(await bridge(base, `${V1}/tenants/institution/42/memberships/u-diag`, { method: 'PUT', body: { revision: 2, status: 'active' } }), 'reopen the membership');
+    check((await ask('u-diag', GLOBAL_WORK)).decision.reason === 'OK', 'membership reopened');
+
+    // the subscription is cancelled: the grant is no longer active, and the diagnosis says so
+    applied(await bridge(base, `${V1}/subscriptions/institution:42`, { method: 'PUT', body: { revision: 2, tenant: { kind: 'institution', ref: '42' }, subject: { type: 'tenant' }, status: 'cancelled' } }), 'cancel the subscription');
+    d = await ask('u-diag', GLOBAL_WORK);
+    check(d.decision.can_open === false && d.decision.reason === 'GRANT_NOT_ACTIVE', `cancelled: ${JSON.stringify(d.decision)}`);
+    check(d.grants[0].state !== 'active' && d.subscriptions[0].status === 'cancelled', 'the grant and the subscription both show it');
+
+    // another tenant shows none of this institution's rows
+    const individual = await diagnose({ tenant_kind: 'individual', tenant_ref: 'b2c', user: 'u-diag', work: GLOBAL_WORK });
+    if (individual.status === 200) check(individual.data.grants.length === 0 && individual.data.subscriptions.length === 0, "another tenant does not see this institution's grants");
+    else expect(individual, 404, 'TENANT_NOT_FOUND', 'the individual tenant may not exist in this fixture');
+
+    // the request itself
+    expect(await diagnose({ tenant_kind: 'university', tenant_ref: '42', user: 'u-diag' }), 400, 'INVALID_BODY', 'a tenant kind that does not exist');
+    expect(await diagnose({ tenant_kind: 'institution', tenant_ref: '42' }), 400, 'INVALID_BODY', 'no user');
+    expect(await diagnose({ tenant_kind: 'institution', tenant_ref: '42', user: 'u-diag', work: 'not-a-uuid' }), 400, 'INVALID_BODY', 'a work id that is not a uuid');
+    expect(await diagnose({ tenant_kind: 'institution', tenant_ref: '4242', user: 'u-diag' }), 404, 'TENANT_NOT_FOUND', 'an unknown institution');
+    expect(await diagnose({ tenant_kind: 'institution', tenant_ref: '42', user: 'u-diag' }, { token: null }), 401, 'UNAUTHORIZED', 'no token');
+    expect(await diagnose({ tenant_kind: 'institution', tenant_ref: '42', user: 'u-diag' }, { token: CATALOG_TOKEN }), 403, 'TOKEN_SCOPE', 'the catalog token');
+    expect(await bridge(base, `${V1}/diagnostics/access?tenant_kind=institution&tenant_ref=42&user=u-diag`, { method: 'POST', body: {} }), 404, 'NOT_FOUND', 'no write method exists on it');
+  }
+
   for (const entry of children) await shutdown(entry);
   return appUrl;
 }
