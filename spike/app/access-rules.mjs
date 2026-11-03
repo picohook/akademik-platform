@@ -3,12 +3,16 @@
 
 // Does one grant cover this book? (`book` needs id, publisher, subjects, collection_ids.)
 export function grantMatchesBook(grant, book) {
-  const publisher = String(book.publisher || '').toLocaleLowerCase('tr');
-  const subjects = (book.subjects || []).map((value) => String(value).toLocaleLowerCase('tr'));
+  // Scope values are stored as entered. Locale-sensitive lowercasing can turn
+  // uppercase I into dotless ı on one side while lowercase i stays unchanged
+  // on the other (for example, ELSEVIER versus Elsevier).
+  const fold = (value) => String(value || '').normalize('NFC').toLowerCase().normalize('NFC');
+  const publisher = fold(book.publisher);
+  const subjects = (book.subjects || []).map(fold);
   if (grant.scope_type === 'all') return true;
   if (grant.scope_type === 'title') return String(grant.scope_id || '') === String(book.id);
-  if (grant.scope_type === 'publisher') return String(grant.scope_key || '').toLocaleLowerCase('tr') === publisher;
-  if (grant.scope_type === 'subject') return subjects.includes(String(grant.scope_key || '').toLocaleLowerCase('tr'));
+  if (grant.scope_type === 'publisher') return fold(grant.scope_key) === publisher;
+  if (grant.scope_type === 'subject') return subjects.includes(fold(grant.scope_key));
   if (grant.scope_type === 'collection') {
     return (book.collection_ids || []).map(String).includes(String(grant.scope_id || ''));
   }
