@@ -2,7 +2,7 @@ import { createLibraryApi } from './library-api.mjs';
 import { sortBooks } from './public/library-model.mjs';
 import { createStorage, serveStoredAsset } from './storage.mjs';
 import { updateGlobalWork, writeGlobalCover } from './catalog-edit.mjs';
-import { APP_CSP } from './security-headers.mjs';
+import { APP_CSP, appCsp } from './security-headers.mjs';
 import { assetVersionToken, versionShellAssets } from './asset-version.mjs';
 import { normalizeBookVariant } from './public/book-variants.mjs';
 import { mutateAnnotation, memoryAnnotationMutations, purgeAnnotationReceipts } from './annotation-sync.mjs';
@@ -2332,7 +2332,7 @@ async function serveStatic(req, res, pathname) {
   // escape an allowed prefix into uploads/ or ocr/.
   const relative = '/' + path.relative(PUBLIC_DIR, filePath).split(path.sep).join('/');
   const allowedFiles = new Set([
-    '/book-variants.mjs', '/book-links.mjs', '/library.mjs', '/library-model.mjs', '/library.css', '/library-designs.mjs', '/library-covers.mjs','/reader-appearance.mjs','/subject-groups.mjs','/library-designs.css', '/design-init.js',
+    '/book-variants.mjs', '/board-clip.mjs', '/book-links.mjs', '/library.mjs', '/library-model.mjs', '/library.css', '/library-designs.mjs', '/library-covers.mjs','/reader-appearance.mjs','/subject-groups.mjs','/library-designs.css', '/design-init.js',
     '/index.html', '/app.js', '/styles.css', '/i18n.mjs', '/citations.mjs', '/pdf-structure.mjs',
     '/search.mjs', '/epub-engine.mjs', '/offline.mjs', '/downloads.mjs', '/ocr-layer.mjs', '/read-aloud.mjs', '/read-aloud-sources.mjs', '/sw.js', '/manifest.webmanifest',
     // Browsers request /favicon.ico on their own when a page declares no icon,
@@ -2546,6 +2546,21 @@ const SSO_SESSION_HOURS = ssoSessionHours();
 // `const` below it would still be in its temporal dead zone when the callback handler runs.
 const SSO_SESSION_TTL_MS = SSO_SESSION_HOURS * 3600_000;
 const SSO_RATE_LIMIT = { max: 20, window: 15 * 60 * 1000 };
+
+// The research board on the main LibEdge site can receive a passage from the reader. Off unless the
+// inbox address is set; the address must be https (plain http only for a local test server).
+function boardInboxUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  try {
+    const url = new URL(raw);
+    const local = url.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(url.hostname);
+    return (url.protocol === 'https:' || local) && url.pathname === '/api/inbox' && !url.username && !url.password && !url.search && !url.hash ? url.href : null;
+  } catch { return null; }
+}
+const BOARD_INBOX_URL = boardInboxUrl(process.env.LIBEDGE_BOARD_INBOX_URL);
+// Pages of the LibEdge site that may read the signed-in user's book list (read only, with cookies).
+const BOARD_ORIGINS = String(process.env.LIBEDGE_BOARD_ORIGINS || 'https://libedge.com,https://www.libedge.com').split(',').map((item) => item.trim()).filter(Boolean);
 const ssoAttempts = new Map();
 
 // The reason page for a rejected handoff. Deliberately plain: no error code, no reason, no
@@ -2773,7 +2788,17 @@ async function handleRequest(req, res) {
     res.setHeader('referrer-policy', 'no-referrer');
     res.setHeader('cache-control', 'no-store');
   }
-  res.setHeader('content-security-policy', APP_CSP);
+  res.setHeader('content-security-policy', BOARD_INBOX_URL ? appCsp([new URL(BOARD_INBOX_URL).origin]) : APP_CSP);
+  // The board's library section lists the user's own books from the LibEdge site: that one read-only
+  // call may carry cookies from those pages. Everything else stays same-origin.
+  if (pathname === '/api/books' && req.method === 'GET') {
+    res.setHeader('vary', 'Origin');
+    const origin = req.headers.origin;
+    if (origin && BOARD_ORIGINS.includes(origin)) {
+      res.setHeader('access-control-allow-origin', origin);
+      res.setHeader('access-control-allow-credentials', 'true');
+    }
+  }
 
   try {
     if (pathname === '/sushi' && req.method === 'GET') {
@@ -2842,6 +2867,7 @@ async function handleRequest(req, res) {
         environment: APP_ENV,
         supportEmail: SUPPORT_EMAIL,
         aiSelection: await aiSelection.isEnabled(),
+        boardInbox: BOARD_INBOX_URL,
       });
       return;
     }

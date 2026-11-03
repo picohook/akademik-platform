@@ -5,6 +5,7 @@ import { subjectGroup, subjectGroupLabel, subjectGroupKeys } from '/subject-grou
 import { DEFAULT_TYPOGRAPHY, normalizeTypography, typographyRules, loadTypography, saveTypography, bookmarksExport } from '/reader-appearance.mjs';
 import { normalizeBookVariant, bookRequestId, offlineBookKey, groupBookVariants, variantLabel, locationMatchesBook, bookFromLocation, findOfflineVariant } from '/book-variants.mjs';
 import { renderPdfLinks, destinationPage } from '/book-links.mjs';
+import { boardQuotePayload } from '/board-clip.mjs';
 import * as pdfjsLib from '/vendor/pdfjs/pdf.mjs';
 import { buildPdfStructure } from '/pdf-structure.mjs';
 import { renderHocrText } from '/ocr-layer.mjs';
@@ -267,6 +268,7 @@ const noteDrafts = new Map();
 let selectionSaving = false;
 const hlCopy = $('hlCopy');
 const hlCopyCite = $('hlCopyCite');
+const hlBoard = $('hlBoard');
 const hlExplain = $('hlExplain');
 const hlSummarize = $('hlSummarize');
 const aiPanel = $('aiPanel');
@@ -1365,6 +1367,10 @@ function updateCopyControls() {
   }
   // The AI buttons exist only when the server says the feature is on, and follow the
   // same copy policy: a passage the reader may not copy is not sent anywhere either.
+  // Adding a passage to the research board follows the same copy policy as the AI buttons.
+  hlBoard.hidden = !state.boardInbox;
+  hlBoard.disabled = blocked || state.boardBusy === true;
+  hlBoard.title = blocked ? t('Bu kitapta kopyalama kapalı') : t("Araştırma Panosu'nun gelen kutusuna gönder");
   for (const button of [hlExplain, hlSummarize]) {
     button.hidden = !state.aiSelection;
     button.disabled = blocked || state.aiBusy;
@@ -1672,6 +1678,39 @@ if ('mediaSession' in navigator) {
   bind('previoustrack', () => readAloud?.prev());
   bind('nexttrack', () => readAloud?.next());
   bind('stop', () => raReset());
+}
+
+async function sendSelectionToBoard() {
+  if (!state.boardInbox || !state.book || reader.hidden || hlBar.hidden || state.boardBusy) return;
+  if (state.book.allow_copy === false) {
+    toast(t('Bu kitapta kopyalama kapalı'));
+    return;
+  }
+  const selected = state.epubMode ? state.epubSelection : state.pending;
+  if (!selected?.text) return;
+  const payload = boardQuotePayload(
+    state.book,
+    state.epubMode ? { text: selected.text, cfiRange: selected.cfiRange, chapter: selected.chapter } : { text: selected.text, page: selected.anchor.page },
+    { origin: window.location.origin, assetId: bookRequestId(state.book) },
+  );
+  if (!payload) return;
+  state.boardBusy = true;
+  updateCopyControls();
+  try {
+    const response = await fetch(state.boardInbox, {
+      method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ kind: 'quote', payload }), signal: AbortSignal.timeout(15000),
+    });
+    if (response.ok) toast(t("Alıntı panoya alındı. Araştırma Panosu'nda Gelen kutusunda bulabilirsiniz."));
+    else if (response.status === 401) toast(t("Panoya almak için LibEdge'de oturum açın."));
+    else if (response.status === 409) toast(t('Gelen kutusu dolu. Önce panodan bazı öğeleri alın.'));
+    else toast(t('Panoya alınamadı. Biraz sonra tekrar deneyin.'));
+  } catch {
+    toast(t('Panoya alınamadı. Biraz sonra tekrar deneyin.'));
+  } finally {
+    state.boardBusy = false;
+    updateCopyControls();
+  }
 }
 
 async function copySelectedText(withCitation = false) {
@@ -5518,6 +5557,7 @@ $('hlSave').addEventListener('click', saveHighlight);
 hlCopy.addEventListener('click', () => copySelectedText(false));
 hlCopyCite.addEventListener('click', () => copySelectedText(true));
 hlExplain.addEventListener('click', () => askAi('explain'));
+hlBoard.addEventListener('click', sendSelectionToBoard);
 hlSummarize.addEventListener('click', () => askAi('summarize'));
 $('aiPanelClose').addEventListener('click', closeAiPanel);
 hlColors.addEventListener('click', (event) => {
@@ -5741,6 +5781,7 @@ window.__readerStress = stressPages;
       applyBrand(config.brandName, config.brandTagline);
       applyFooter(config);
       state.aiSelection = config.aiSelection === true;
+      state.boardInbox = typeof config.boardInbox === 'string' ? config.boardInbox : null;
       mode.textContent = t(config.mode === 'db' ? 'DB modu' : 'Demo modu');
       mode.classList.toggle('db', config.mode === 'db');
     } else {

@@ -72,6 +72,7 @@ const SHELL = [
   '/offline.mjs',
   '/downloads.mjs',
   '/book-variants.mjs',
+  '/board-clip.mjs',
   '/book-links.mjs',
   '/vendor/pdfjs/pdf.mjs',
   '/vendor/pdfjs/pdf.worker.mjs',
