@@ -991,7 +991,7 @@ async function createGrant(body, auth) {
     : null;
   if (!scopeType) throw new Error('invalid scope');
   const subjectType = ['tenant', 'user', 'group'].includes(body.subjectType) ? body.subjectType : 'tenant';
-  let subjectId = TENANT_ID;
+  let subjectId = requestTenant();
   if (subjectType === 'group') {
     subjectId = String(body.subjectGroup || '').trim();
     if (!subjectId) throw new Error('group required');
@@ -1025,7 +1025,7 @@ async function createGrant(body, auth) {
   const seatLimit = Number(body.seatLimit);
   const grant = {
     id: randomUUID(),
-    tenant_id: TENANT_ID,
+    tenant_id: requestTenant(),
     subject_type: subjectType,
     subject_id: subjectId,
     scope_type: scopeType,

@@ -1004,7 +1004,15 @@ async function loadAdminAudit() {
   } catch { adminRow(list, t('Geçmiş yüklenemedi.')); }
 }
 
+let adminReady = false;
+let adminSaving = false;
+
 async function loadAdmin() {
+  adminReady = false;
+  $('saveAdmin').disabled = true;
+  $('adminAiForm').hidden = true;
+  for (const id of ['adminUsage', 'adminTop', 'adminAudit']) $(id).replaceChildren();
+  $('adminUsageBar').value = 0;
   $('adminError').hidden = true;
   const response = await fetch('/api/admin/ai', { cache: 'no-store' });
   if (response.status === 403) {
@@ -1013,8 +1021,10 @@ async function loadAdmin() {
     return;
   }
   if (!response.ok) throw new Error('admin load failed');
-  $('adminAiForm').hidden = false;
   renderAdmin(await response.json());
+  $('adminAiForm').hidden = false;
+  adminReady = true;
+  $('saveAdmin').disabled = adminSaving;
   await loadAdminAudit();
 }
 
@@ -1033,6 +1043,8 @@ function closeAdmin() {
 
 async function saveAdmin(event) {
   event.preventDefault();
+  if (!adminReady || adminSaving) return;
+  adminSaving = true;
   const error = $('adminError');
   error.hidden = true;
   const payload = {
@@ -1056,7 +1068,11 @@ async function saveAdmin(event) {
       return;
     }
     toast(t('Kaydedildi'));
-    await loadAdmin();
+    try {
+      await loadAdmin();
+    } catch {
+      $('adminStatus').textContent = t('Ayarlar kaydedildi; güncel yönetim verisi alınamadı. Paneli yeniden açın.');
+    }
     // the reader's own buttons follow the switch without a reload
     try {
       state.aiSelection = (await (await fetch('/api/config', { cache: 'no-store' })).json()).aiSelection === true;
@@ -1066,13 +1082,16 @@ async function saveAdmin(event) {
     error.textContent = t('Kaydedilemedi. Biraz sonra tekrar deneyin.');
     error.hidden = false;
   } finally {
-    $('saveAdmin').disabled = false;
+    adminSaving = false;
+    $('saveAdmin').disabled = !adminReady;
   }
 }
 
 function grantSubjectTypeChanged() {
   const type = $('grantSubjectType').value;
-  $('grantEmailLabel').hidden = type === 'group';
+  $('grantEmailLabel').hidden = type !== 'user';
+  $('grantSubjectEmail').disabled = type !== 'user';
+  $('grantSubjectEmail').required = type === 'user';
   $('grantGroupLabel').hidden = type !== 'group';
 }
 

@@ -206,6 +206,43 @@ try {
   await page.keyboard.press('Escape');
   state.getStatus = 200; state.data = panelData();
 
+  // Failure states must not leave stale settings writable or misreport a completed PUT.
+  await button.click();
+  await page.waitForFunction(() => !document.querySelector('#saveAdmin').disabled);
+  await page.keyboard.press('Escape');
+  state.getStatus = 500;
+  await button.click();
+  await page.waitForFunction(() => document.querySelector('#adminStatus').textContent.includes('yüklenemedi'));
+  same(await page.locator('#saveAdmin').isDisabled(), true, 'failed GET disables saving stale settings');
+  same(await page.locator('#adminAiForm').isVisible(), false, 'failed GET hides stale settings');
+  same(await page.locator('#adminTop').innerText(), '', 'failed GET removes stale usage rows');
+  await shoot(page, 'reader-admin-load-failure');
+  await page.keyboard.press('Escape');
+  state.getStatus = 200;
+  await button.click();
+  await page.waitForFunction(() => !document.querySelector('#saveAdmin').disabled);
+  state.putStatus = 200; state.putBody = { ok: true }; state.getStatus = 500;
+  const putsBefore = state.puts.length;
+  await page.locator('#saveAdmin').click();
+  await page.waitForFunction(() => document.querySelector('#adminStatus').textContent.includes('güncel yönetim verisi') || !document.querySelector('#adminError').hidden);
+  same(state.puts.length, putsBefore + 1, 'completed PUT is not sent twice');
+  same(await page.locator('#adminError').isVisible(), false, 'successful save plus failed refresh is not reported as a write failure');
+  check((await page.locator('#adminStatus').innerText()).includes('Ayarlar kaydedildi'), 'save and refresh outcomes are stated separately');
+  same(await page.locator('#saveAdmin').isDisabled(), true, 'failed refresh disables stale resubmission');
+  await shoot(page, 'reader-admin-save-refresh-warning');
+  await page.keyboard.press('Escape');
+  state.getStatus = 200;
+  const accessContext = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const access = await signIn(accessContext, 'librarian@example.edu.tr');
+  await access.page.locator('#grantsBtn').click();
+  await access.page.locator('#grantSubjectType').selectOption('user');
+  await access.page.locator('#grantSubjectEmail').fill('invalid-address');
+  same(await access.page.locator('#grantForm').evaluate(f=>f.checkValidity()), false, 'user grant validates email');
+  await access.page.locator('#grantSubjectType').selectOption('tenant');
+  same(await access.page.locator('#grantEmailLabel').isVisible(), false, 'tenant grant hides irrelevant email');
+  same(await access.page.locator('#grantForm').evaluate(f=>f.checkValidity()), true, 'irrelevant invalid email cannot block a tenant grant');
+  await accessContext.close();
+
   // English
   await page.locator('.topbar [data-lang-toggle]').click();
   await button.click();
@@ -218,17 +255,14 @@ try {
   check((await page.locator('#adminHeading').innerText()).includes('Admin'), 'heading in English');
   await shoot(page, 'desktop-admin-panel-en');
   await page.keyboard.press('Escape');
+  // Reuse the real authenticated context: mobile reflow does not need another login.
+  await page.setViewportSize({ width: 390, height: 800 });
+  await button.click();
+  await page.waitForFunction(() => document.querySelector('#adminPerMinute').value === '5');
+  same(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'no horizontal page scroll at phone width');
+  same(await page.locator('#adminModal .admin-card').evaluate((el) => el.getBoundingClientRect().right <= window.innerWidth + 1), true, 'the panel fits inside the screen');
+  await shoot(page, 'phone-admin-panel');
   await ctx.close();
-
-  // phone width: no sideways scroll, the panel fits
-  const phoneCtx = await browser.newContext({ viewport: { width: 390, height: 800 } });
-  const phone = await signIn(phoneCtx, 'librarian@example.edu.tr', 'admin');
-  await phone.page.locator('#adminBtn').click();
-  await phone.page.waitForFunction(() => document.querySelector('#adminPerMinute').value === '5');
-  same(await phone.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'no horizontal page scroll at phone width');
-  same(await phone.page.locator('#adminModal .admin-card').evaluate((el) => el.getBoundingClientRect().right <= window.innerWidth + 1), true, 'the panel fits inside the screen');
-  await shoot(phone.page, 'phone-admin-panel');
-  await phoneCtx.close();
 
   console.log(JSON.stringify({ passed: true, checks }));
 } catch (error) {
