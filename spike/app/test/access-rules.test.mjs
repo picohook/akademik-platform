@@ -27,6 +27,19 @@ test('every scope type matches the way the reader has always matched it', () => 
   assert.equal(grantMatchesBook({ scope_type: 'unknown' }, book), false);
 });
 
+test('publisher and subject scope matching is independent of the process locale', () => {
+  for (const scopeKey of ['ELSEVIER', 'Elsevier', 'elsevier']) {
+    assert.equal(grantMatchesBook({ scope_type: 'publisher', scope_key: scopeKey }, book), true, scopeKey);
+  }
+
+  const istanbulBook = { ...book, publisher: 'İstanbul' };
+  assert.equal(grantMatchesBook({ scope_type: 'publisher', scope_key: 'İSTANBUL' }, istanbulBook), true);
+  assert.equal(grantMatchesBook({ scope_type: 'publisher', scope_key: 'İstanbul' }, istanbulBook), true);
+  assert.equal(grantMatchesBook({ scope_type: 'subject', scope_key: 'ELSEVIER' }, {
+    ...book, subjects: ['Elsevier'],
+  }), true);
+});
+
 test('no grant, no access (fail closed)', () => {
   assert.equal(grantAllows(book, []), false);
   assert.equal(grantAllows(book, null), false);
