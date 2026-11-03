@@ -15,3 +15,9 @@ export const APP_CSP = "default-src 'self'; script-src 'self'; "
   + "img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; "
   + "frame-src 'self' blob: data:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; "
   + "form-action 'self'; frame-ancestors 'none'";
+
+// The same policy with extra origins the page may send requests to (the research board's inbox).
+export function appCsp(connectOrigins = []) {
+  const extra = connectOrigins.filter(Boolean).join(' ');
+  return extra ? APP_CSP.replace("connect-src 'self';", `connect-src 'self' ${extra};`) : APP_CSP;
+}
