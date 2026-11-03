@@ -54,6 +54,7 @@ try {
   same((await fetch(base + '/demo/', { method: 'POST' })).status, 405, 'the demo route is read-only');
   same((await fetch(base + '/demo/server.mjs')).status, 404, 'only the listed demo files are served');
   same((await fetch(base + '/api/books/' + NIGHT)).status, 200, 'the demo EPUB is public');
+  same((await fetch(base + '/covers/demo-earth-at-night.jpg')).headers.get('content-type'), 'image/jpeg', 'a .jpg cover is served as image/jpeg');
   const ranged = await fetch(base + '/api/books/' + ART, { headers: { range: 'bytes=0-9' } });
   same([ranged.status, (await ranged.arrayBuffer()).byteLength], [206, 10], 'the demo PDF answers a range');
   same((await fetch(base + '/api/books/33333333-3333-3333-3333-333333333333/file')).status, 401, 'any other book file still needs a session');
@@ -184,7 +185,18 @@ try {
   await g.locator('dialog.demo-guide button[data-step="look"]').click();
   await g.waitForFunction(() => document.querySelector('#themeBtn')?.closest('details')?.open === true);
   check(true, 'the guide opens the Appearance menu');
-  await g.locator('#readerTheme').selectOption('dark');
+  // the theme and the surround are chosen from swatches; the (hidden) selects follow
+  same(await g.locator('#themeSwatches [role="radio"][aria-checked="true"]').getAttribute('data-theme-choice'), 'light', 'the current theme is the marked swatch');
+  await g.locator('#themeSwatches [data-theme-choice="dark"]').click();
+  same(await g.locator('#reader').getAttribute('data-theme'), 'dark', 'a theme swatch changes the theme');
+  same(await g.locator('#readerTheme').inputValue(), 'dark', 'and the select it stands for');
+  same(await g.locator('#themeSwatches [data-theme-choice="dark"]').getAttribute('aria-checked'), 'true', 'the chosen swatch is marked');
+  await g.keyboard.press('ArrowLeft');
+  same(await g.locator('#reader').getAttribute('data-theme'), 'sepia', 'the arrow keys move between swatches');
+  await g.locator('#workspaceSwatches [data-workspace-choice="slate"]').click();
+  same(await g.locator('#reader').getAttribute('data-workspace'), 'slate', 'a surround swatch changes the surround');
+  same(await g.locator('#workspaceSwatches [data-workspace-choice="slate"]').getAttribute('aria-checked'), 'true', 'and is marked');
+  await g.locator('#themeSwatches [data-theme-choice="dark"]').click();
   await g.waitForFunction(() => document.querySelector('.demo-pill .demo-guide-open')?.textContent === 'Rehber 3/3');
   check(true, 'changing the look ticks step 3');
   await g.locator('.demo-pill .demo-guide-open').click();

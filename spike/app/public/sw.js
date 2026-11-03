@@ -45,7 +45,9 @@
 // script with the new server answer.
 // v44: the first subject decides a book's group (subject-groups.mjs). A cached v43 shell would keep the old grouping.
 // v45: covers of the two public-demo books (library-covers.mjs). A cached v44 shell would not know them.
-const CACHE = 'akademik-shell-v45';
+// v46: theme and surround swatches, foldable contents (index.html, app.js, styles.css, i18n.mjs). A cached v45 shell would pair the old
+// markup with the new script.
+const CACHE = 'akademik-shell-v46';
 const SHELL = [
   '/',
   '/styles.css',

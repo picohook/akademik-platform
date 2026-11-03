@@ -2166,6 +2166,39 @@ function storedTheme() {
   }
 }
 
+// The theme and the surround are chosen from swatches; the selects they sit beside stay (hidden) as the one place the choice is
+// stored and changed, so everything that reads or sets them keeps working.
+function syncSwatches(id, value) {
+  document.querySelectorAll(`#${id} [role="radio"]`).forEach((button) => {
+    const choice = button.dataset.themeChoice ?? button.dataset.workspaceChoice;
+    button.setAttribute('aria-checked', String(choice === value));
+    button.tabIndex = choice === value ? 0 : -1;
+  });
+}
+
+function bindSwatches(id, selectId) {
+  const group = document.getElementById(id);
+  const select = document.getElementById(selectId);
+  if (!group || !select) return;
+  const buttons = () => [...group.querySelectorAll('[role="radio"]')];
+  const choose = (button) => {
+    select.value = button.dataset.themeChoice ?? button.dataset.workspaceChoice;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    button.focus();
+  };
+  group.addEventListener('click', (event) => { const button = event.target.closest('[role="radio"]'); if (button) choose(button); });
+  group.addEventListener('keydown', (event) => {
+    const all = buttons();
+    const at = all.indexOf(document.activeElement);
+    if (at < 0) return;
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+    if (!step) return;
+    event.preventDefault();
+    choose(all[(at + step + all.length) % all.length]);
+  });
+  syncSwatches(id, select.value);
+}
+
 function applyTheme(theme) {
   const preference = ['light', 'sepia', 'dark', 'system'].includes(theme) ? theme : 'light';
   const next = preference === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference;
@@ -2175,10 +2208,12 @@ function applyTheme(theme) {
     const workspace = localStorage.getItem(`readerWorkspace:${storageUserKey()}`) || 'auto';
     reader.dataset.workspace = ['auto','gray','cream','slate'].includes(workspace) ? workspace : 'auto';
     document.getElementById('readerWorkspace').value = reader.dataset.workspace;
+    syncSwatches('workspaceSwatches', reader.dataset.workspace);
   } catch {}
   themeBtn.textContent = 'Görünüm';
   const picker = document.getElementById('readerTheme');
   if (picker) picker.value = preference;
+  syncSwatches('themeSwatches', preference);
   themeBtn.title = t(next === 'dark' ? 'Koyu tema' : next === 'sepia' ? 'Sepia tema' : 'Açık tema');
   themeBtn.setAttribute('aria-label', themeBtn.title);
   try {
@@ -2235,16 +2270,65 @@ function renderEpubToc(query) {
     tocEmpty.textContent = state.epubEngine.getToc().length ? t('Eşleşen bölüm yok.') : t('Bu EPUB’ta içindekiler yok.');
     return;
   }
+  appendToc(items.map((item) => ({ level: item.level, text: item.label || item.href, onClick: () => state.epubEngine.goToHref(item.href) })), Boolean(query));
+}
+
+// The contents list. A heading that has sub-headings gets a small fold control; folded headings are remembered while the book is
+// open. While the list is being filtered it is flat, so every match shows.
+const tocCollapsed = new Set();
+function applyTocFold(nodes) {
+  let hideBelow = Infinity;
+  for (const node of nodes) {
+    if (node.level > hideBelow) node.row.hidden = true;
+    else { node.row.hidden = false; hideBelow = node.parent && tocCollapsed.has(node.key) ? node.level : Infinity; }
+    const fold = node.row.querySelector('.toc-fold');
+    if (fold) {
+      const folded = tocCollapsed.has(node.key);
+      fold.textContent = folded ? '▸' : '▾';
+      fold.setAttribute('aria-expanded', String(!folded));
+      fold.setAttribute('aria-label', t(folded ? 'Alt başlıkları genişlet' : 'Alt başlıkları daralt'));
+    }
+  }
+}
+
+function appendToc(rows, filtering) {
   const fragment = document.createDocumentFragment();
-  for (const item of items) {
+  const nodes = [];
+  const foldable = !filtering && rows.some((row, index) => rows[index + 1] && rows[index + 1].level > row.level);
+  rows.forEach((row, index) => {
+    const parent = foldable && Boolean(rows[index + 1]) && rows[index + 1].level > row.level;
+    const key = `${state.book?.asset_id || ''}|${index}|${row.text}`;
+    const wrap = document.createElement('div');
+    wrap.className = 'toc-row';
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'toc-item';
-    button.style.paddingLeft = `${9 + item.level * 12}px`;
-    button.textContent = item.label || item.href;
-    button.addEventListener('click', () => state.epubEngine.goToHref(item.href));
-    fragment.appendChild(button);
-  }
+    button.className = `toc-item${row.active ? ' active' : ''}`;
+    if (row.active) button.setAttribute('aria-current', 'location');
+    button.style.paddingLeft = `${(foldable ? 24 : 9) + row.level * 12}px`;
+    button.textContent = row.text;
+    if (row.page) {
+      const page = document.createElement('span');
+      page.className = 'toc-page';
+      page.textContent = row.page;
+      button.appendChild(page);
+    }
+    button.addEventListener('click', row.onClick);
+    wrap.appendChild(button);
+    if (parent) {
+      const fold = document.createElement('button');
+      fold.type = 'button';
+      fold.className = 'toc-fold';
+      fold.style.left = `${4 + row.level * 12}px`;
+      fold.addEventListener('click', () => {
+        if (tocCollapsed.has(key)) tocCollapsed.delete(key); else tocCollapsed.add(key);
+        applyTocFold(nodes);
+      });
+      wrap.appendChild(fold);
+    }
+    nodes.push({ row: wrap, level: row.level, parent, key });
+    fragment.appendChild(wrap);
+  });
+  if (foldable) applyTocFold(nodes);
   tocList.appendChild(fragment);
 }
 
@@ -2264,22 +2348,7 @@ function renderToc() {
       tocEmpty.textContent = t('Eşleşen bölüm yok.');
       return;
     }
-    const fragment = document.createDocumentFragment();
-    for (const item of items) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = `toc-item${item.page === state.page ? ' active' : ''}`;
-      if (item.page === state.page) button.setAttribute('aria-current', 'location');
-      button.style.paddingLeft = `${9 + item.depth * 12}px`;
-      button.textContent = item.title;
-      const page = document.createElement('span');
-      page.className = 'toc-page';
-      page.textContent = pdfPageText(item.page);
-      button.appendChild(page);
-      button.addEventListener('click', () => goToPage(item.page));
-      fragment.appendChild(button);
-    }
-    tocList.appendChild(fragment);
+    appendToc(items.map((item) => ({ level: item.depth, text: item.title, active: item.page === state.page, page: pdfPageText(item.page), onClick: () => goToPage(item.page) })), Boolean(query));
     return;
   }
 
@@ -4245,6 +4314,7 @@ async function openBook(book, options = {}) {
   searchEmpty.hidden = true;
   showTocTab('toc');
   tocFilter.value = '';
+  tocCollapsed.clear();
   tocPanel.hidden = true;
   reader.hidden = false;
   setAppInert(true);
@@ -5379,8 +5449,11 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
 const workspacePicker = document.getElementById('readerWorkspace');
 workspacePicker.addEventListener('change', () => {
   reader.dataset.workspace = workspacePicker.value;
+  syncSwatches('workspaceSwatches', workspacePicker.value);
   try { localStorage.setItem(`readerWorkspace:${storageUserKey()}`, workspacePicker.value); } catch {}
 });
+bindSwatches('themeSwatches', 'readerTheme');
+bindSwatches('workspaceSwatches', 'readerWorkspace');
 document.getElementById('readerFocus').addEventListener('change', (event) => {
   reader.classList.toggle('reading-focus', event.target.checked);
 });
