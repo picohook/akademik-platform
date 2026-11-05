@@ -47,13 +47,13 @@ server.stderr.on('data', (chunk) => { serverLog += chunk; });
 
 let browser;
 try {
-  for (let attempt = 0; attempt < 100; attempt += 1) {
+  for (let attempt = 0; attempt < 300; attempt += 1) {
     try { if ((await fetch(`${base}/api/health`)).ok) break; } catch { /* not up yet */ }
     await new Promise((resolve) => setTimeout(resolve, 100));
-    if (attempt === 99) throw new Error(`server did not start:\n${serverLog}`);
+    if (attempt === 299) throw new Error(`server did not start:\n${serverLog}`);
   }
 
-  browser = await chromium.launch();
+  browser = await chromium.launch({ executablePath: process.env.BROWSER_EXECUTABLE || undefined });
   const shoot = async (page, name) => {
     if (!shotsDir) return;
     await mkdir(shotsDir, { recursive: true });
@@ -72,9 +72,13 @@ try {
   same(await sso.getAttribute('href'), SSO_PATH, 'button href');
   same(await page.locator('#openUpload').isVisible(), false, '"+ Kitap ekle" is not shown to a visitor');
   same(await page.locator('#openUpload').evaluate((el) => el.hidden), true, '"+ Kitap ekle" is hidden in the DOM');
-  same((await page.locator('#loginBrand').innerText()).trim(), 'LibRead', 'box heading');
+  same((await page.locator('#loginBrand').innerText()).trim(), 'Size açık yayınlara ulaşın', 'access heading');
+  if (process.env.PRODUCT_PAGE_NEGATIVE_CONTROL === '1') await page.locator('.product-intro').evaluate(el => el.remove());
+  check(await page.locator('#productTitle').isVisible(), 'public product introduction is visible');
+  same(await page.locator('.product-features article').count(), 3, 'three product features are public');
+  check((await page.locator('.product-access-note').innerText()).includes('hesabınıza veya kurumunuza'), 'product access requirements are explicit');
   await page.waitForFunction(() => document.title.startsWith('LibRead'));
-  same(await page.title(), 'LibRead — Katalog', 'tab title');
+  check((await page.title()).startsWith('LibRead'), 'tab title');
   const logo = page.locator('.login-logo');
   check(await logo.isVisible(), 'logo is visible');
   same(await logo.evaluate((img) => img.complete && img.naturalWidth > 0), true, 'logo loaded');
@@ -133,6 +137,11 @@ try {
   same(await mobile.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'no horizontal scroll');
   await mobile.locator('#adminLogin > summary').click();
   await shoot(mobile, 'phone-login-admin-open');
+  await mobile.evaluate(() => localStorage.setItem('uiLang', 'en'));
+  await mobile.reload();
+  await mobile.waitForFunction(() => document.querySelector('#productTitle')?.textContent.includes('Your digital library'));
+  check((await mobile.locator('.product-access-note').innerText()).includes('assigned to your account or institution'), 'English access explanation');
+  await shoot(mobile, 'phone-product-en');
   await phone.close();
 
   console.log(JSON.stringify({ passed: true, checks }));

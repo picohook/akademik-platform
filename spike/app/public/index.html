@@ -11,7 +11,8 @@
   <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/icons/icon-180.png" />
-  <title>LibRead</title>
+  <title>LibRead — LibEdge E-Kütüphane</title>
+  <meta name="description" content="LibRead ile dijital kütüphanenizi keşfedin, tarayıcınızda okuyun ve notlarınızı bir arada tutun." />
   <!-- ?v= is a placeholder: server.mjs rewrites it to the running build's
        identity (BUILD_SHA, falling back to APP_VERSION) when serving this file.
        Do not hand-edit it; a stale literal is what served a new app.js behind an
@@ -24,10 +25,15 @@
 </head>
 <body>
   <a class="skip-link" href="#mainContent">İçeriğe atla</a>
-  <div class="login-screen" id="loginScreen" hidden>
+  <div class="login-screen product-screen" id="loginScreen">
+    <div class="product-page">
+      <header class="product-header"><a class="product-brand" href="/">Lib<span>Read</span><small>BY LIBEDGE</small></a><a href="https://www.libedge.com/products.html">LibEdge ürünleri</a></header>
+      <section class="product-intro" aria-labelledby="productTitle">
+        <div class="product-copy"><p class="product-eyebrow">LibEdge E-Kütüphane</p><h1 id="productTitle">Dijital kütüphaneniz. Okumaya ayrılmış bir alan.</h1><p class="product-description">Kitaplarınızı keşfedin, kaldığınız yerden okuyun ve notlarınızı bir arada tutun. LibRead, kurumunuzun ve hesabınızın erişebildiği yayınları tek bir çalışma alanında buluşturur.</p><a class="product-explore" href="#productFeatures">LibRead hakkında <span aria-hidden="true">↓</span></a></div>
     <form class="login-card" id="loginForm">
       <img class="login-logo" src="/icons/libread-logo.png" alt="LibRead" width="180" height="89" />
-      <h2 id="loginBrand">LibRead</h2>
+      <h2 id="loginBrand">Size açık yayınlara ulaşın</h2>
+      <p class="product-access-note">Kütüphane ve okuyucuyu kullanmak için LibEdge hesabınızla giriş yapın. Erişiminiz, hesabınıza veya kurumunuza tanımlanan ürün ve yayınlara bağlıdır.</p>
       <button class="lang-link" data-lang-toggle type="button">EN</button>
       <a class="primary sso-btn" id="ssoLogin" href="/auth/libedge/start?ctx=individual">LibEdge hesabınla giriş yap</a>
       <div class="login-error" id="loginError" role="alert" hidden></div>
@@ -39,6 +45,10 @@
       </details>
       <button class="footer-link" type="button" data-open-messages aria-haspopup="dialog" aria-controls="messagesModal">Bildirimler</button>
     </form>
+      </section>
+      <section class="product-features" id="productFeatures" aria-label="LibRead hakkında"><article><span class="product-number">01</span><h2>Kütüphaneyi keşfedin</h2><p>Katalogda arayın, yayınları filtreleyin ve favorilerinizi oluşturun.</p></article><article><span class="product-number">02</span><h2>Okumaya odaklanın</h2><p>Tarayıcınızda okuyun; yer imleri ve okuma geçmişiyle kaldığınız yere dönün.</p></article><article><span class="product-number">03</span><h2>Notlarınızı bir arada tutun</h2><p>Okurken vurgulayın, not alın ve çalışmanızı düzenleyin.</p></article></section>
+      <footer class="product-footer"><span>LibRead · LibEdge</span><span>Bir sayfa daha. Bir fikir daha.</span></footer>
+    </div>
   </div>
 
   <button class="lr-nav-backdrop" id="lrNavBackdrop" type="button" tabindex="-1" aria-label="Menüyü kapat" hidden></button>
