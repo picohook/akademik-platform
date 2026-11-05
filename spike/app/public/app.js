@@ -1913,8 +1913,8 @@ function applyBrand(name, tagline) {
   brandTag.hidden = !tag;
   // The sign-in box and the page title carry the product name, not the deployment's
   // BRAND_NAME (which is still "LibEdge" in production); the top bar and footer keep it.
-  loginBrand.textContent = PRODUCT_NAME;
-  document.title = `${PRODUCT_NAME} — Katalog`;
+  loginBrand.textContent = t('Size açık yayınlara ulaşın');
+  document.title = `${PRODUCT_NAME} — ${t('LibEdge E-Kütüphane')}`;
 }
 
 function applyFooter(config) {
@@ -2020,8 +2020,6 @@ function showLogin(message = '') {
   if (message) {
     $('adminLogin').open = true;
     setTimeout(() => loginPassword.focus(), 0);
-  } else {
-    setTimeout(() => $('ssoLogin').focus(), 0);
   }
 }
 

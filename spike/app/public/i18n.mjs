@@ -2,6 +2,21 @@
 // Static DOM is translated on load; dynamic renderers call translateDom()/t().
 
 const DICT = {
+"Dijital kütüphaneniz. Okumaya ayrılmış bir alan.": "Your digital library. A space for reading.",
+"LibEdge E-Kütüphane": "LibEdge E-Library",
+"Kitaplarınızı keşfedin, kaldığınız yerden okuyun ve notlarınızı bir arada tutun. LibRead, kurumunuzun ve hesabınızın erişebildiği yayınları tek bir çalışma alanında buluşturur.": "Discover books, pick up where you left off, and keep your notes together. LibRead brings the publications available to your institution and account into one workspace.",
+"Kütüphaneyi keşfedin": "Discover your library",
+"Katalogda arayın, yayınları filtreleyin ve favorilerinizi oluşturun.": "Search the catalog, filter publications, and build your favourites.",
+"Okumaya odaklanın": "Focus on reading",
+"Tarayıcınızda okuyun; yer imleri ve okuma geçmişiyle kaldığınız yere dönün.": "Read in your browser and return to your place with bookmarks and reading history.",
+"Notlarınızı bir arada tutun": "Keep your notes together",
+"Okurken vurgulayın, not alın ve çalışmanızı düzenleyin.": "Highlight, take notes, and organise your work as you read.",
+"Size açık yayınlara ulaşın": "Access your available publications",
+"Kütüphane ve okuyucuyu kullanmak için LibEdge hesabınızla giriş yapın. Erişiminiz, hesabınıza veya kurumunuza tanımlanan ürün ve yayınlara bağlıdır.": "Sign in with your LibEdge account to use the library and reader. Access depends on the products and publications assigned to your account or institution.",
+"Bir sayfa daha. Bir fikir daha.": "One more page. One more idea.",
+"LibRead hakkında": "About LibRead",
+"LibEdge ürünleri": "LibEdge products",
+
   "Ayarlar kaydedildi; güncel yönetim verisi alınamadı. Paneli yeniden açın.": "Settings saved, but current admin data could not be refreshed. Reopen the panel.",
   "Katalog sıralaması": "Catalogue order",
   "Katalog dili": "Catalogue language",
