@@ -48,7 +48,8 @@
 // v46: theme and surround swatches, foldable contents (index.html, app.js, styles.css, i18n.mjs). A cached v45 shell would pair the old
 // markup with the new script.
 // v49: public product page and bilingual sign-in introduction.
-const CACHE = 'akademik-shell-v49';
+// v50: hide the public sign-in screen after restoring an authenticated session.
+const CACHE = 'akademik-shell-v50';
 const SHELL = [
   '/',
   '/styles.css',

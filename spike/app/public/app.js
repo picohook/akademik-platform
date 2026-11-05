@@ -5804,6 +5804,8 @@ window.__readerStress = stressPages;
     }
     const initialUser = await me.json();
     if (state.authEpoch !== authEpoch) { showLogin(); return; }
+    // SSO and reload restore the cookie session without submitting the login form.
+    loginScreen.hidden = true;
     setUser(initialUser);
     await bootData();
     syncOfflineAnnotations().catch(() => {});
