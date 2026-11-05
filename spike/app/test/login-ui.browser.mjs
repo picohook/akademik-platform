@@ -112,6 +112,11 @@ try {
   await page.locator('#loginScreen').waitFor({ state: 'hidden' });
   await page.locator('#openUpload').waitFor({ state: 'visible' });
   check(await page.locator('#openUpload').isVisible(), 'a librarian gets "+ Kitap ekle"');
+  // SSO callbacks and reloads restore /api/me without submitting the password form.
+  await page.reload();
+  await page.locator('#loginScreen').waitFor({ state: 'hidden' });
+  check(await page.locator('#openUpload').isVisible(), 'restored librarian session exposes the catalogue');
+  same(await page.locator('#mainContent').evaluate(el => el.inert), false, 'restored catalogue is interactive');
   await shoot(page, 'desktop-catalog-opening-text');
   await context.close();
 
